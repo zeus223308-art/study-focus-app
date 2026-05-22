@@ -10,8 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { MountainMLogo } from '@/components/MountainMLogo';
-import { theme } from '@/constants/theme';
+import { LOGO_WHITE, MountainMLogo, SPLASH_NAVY } from '@/components/MountainMLogo';
 
 type Props = {
   onFinish: () => void;
@@ -20,11 +19,10 @@ type Props = {
 const EASE = Easing.bezier(0.4, 0, 0.2, 1);
 const EASE_OUT = Easing.out(Easing.cubic);
 
-/** ms — Netflix 스타일 순서: 산 M → 사라짐 → Memory Sherpa → 하단 → 페이드아웃 → 앱 */
 const T = {
-  mountainIn: 700,
-  mountainHold: 450,
-  mountainOut: 800,
+  mountainIn: 750,
+  mountainHold: 500,
+  mountainOut: 850,
   brandIn: 650,
   brandHold: 300,
   footerIn: 550,
@@ -34,16 +32,15 @@ const T = {
 
 export function SplashBrand({ onFinish }: Props) {
   const mountainOpacity = useSharedValue(0);
-  const mountainScale = useSharedValue(0.72);
+  const mountainScale = useSharedValue(0.88);
   const brandOpacity = useSharedValue(0);
-  const brandTranslateY = useSharedValue(12);
+  const brandTranslateY = useSharedValue(10);
   const footerOpacity = useSharedValue(0);
-  const footerTranslateY = useSharedValue(16);
+  const footerTranslateY = useSharedValue(14);
   const screenOpacity = useSharedValue(1);
 
   useEffect(() => {
-    const t0 = 0;
-    const tMountainOut = t0 + T.mountainIn + T.mountainHold;
+    const tMountainOut = T.mountainIn + T.mountainHold;
     const tBrandIn = tMountainOut + T.mountainOut;
     const tFooterIn = tBrandIn + T.brandIn + T.brandHold;
     const tAllOut = tFooterIn + T.footerIn + T.footerHold;
@@ -54,26 +51,14 @@ export function SplashBrand({ onFinish }: Props) {
     );
     mountainScale.value = withSequence(
       withTiming(1, { duration: T.mountainIn, easing: EASE_OUT }),
-      withDelay(T.mountainHold, withTiming(1.04, { duration: T.mountainOut, easing: EASE }))
+      withDelay(T.mountainHold, withTiming(1.02, { duration: T.mountainOut, easing: EASE }))
     );
 
-    brandOpacity.value = withDelay(
-      tBrandIn,
-      withTiming(1, { duration: T.brandIn, easing: EASE_OUT })
-    );
-    brandTranslateY.value = withDelay(
-      tBrandIn,
-      withTiming(0, { duration: T.brandIn, easing: EASE_OUT })
-    );
+    brandOpacity.value = withDelay(tBrandIn, withTiming(1, { duration: T.brandIn, easing: EASE_OUT }));
+    brandTranslateY.value = withDelay(tBrandIn, withTiming(0, { duration: T.brandIn, easing: EASE_OUT }));
 
-    footerOpacity.value = withDelay(
-      tFooterIn,
-      withTiming(1, { duration: T.footerIn, easing: EASE_OUT })
-    );
-    footerTranslateY.value = withDelay(
-      tFooterIn,
-      withTiming(0, { duration: T.footerIn, easing: EASE_OUT })
-    );
+    footerOpacity.value = withDelay(tFooterIn, withTiming(1, { duration: T.footerIn, easing: EASE_OUT }));
+    footerTranslateY.value = withDelay(tFooterIn, withTiming(0, { duration: T.footerIn, easing: EASE_OUT }));
 
     screenOpacity.value = withDelay(
       tAllOut,
@@ -106,7 +91,7 @@ export function SplashBrand({ onFinish }: Props) {
     <Animated.View style={[styles.root, screenStyle]}>
       <View style={styles.center}>
         <Animated.View style={[styles.mountainWrap, mountainStyle]}>
-          <MountainMLogo width={160} height={115} color="#C4C4C4" />
+          <MountainMLogo width={220} height={154} color={LOGO_WHITE} />
         </Animated.View>
 
         <Animated.View style={[styles.brandWrap, brandStyle]}>
@@ -126,7 +111,7 @@ export function SplashBrand({ onFinish }: Props) {
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: theme.blackPure,
+    backgroundColor: SPLASH_NAVY,
     zIndex: 9999,
   },
   center: {
@@ -144,10 +129,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   brand: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: theme.white,
-    letterSpacing: 1,
+    fontSize: 30,
+    fontWeight: '600',
+    color: LOGO_WHITE,
+    letterSpacing: 2,
   },
   footer: {
     position: 'absolute',
@@ -158,22 +143,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   brandKo: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#D4D4D4',
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.75)',
     marginBottom: 10,
   },
   tagline: {
-    fontSize: 22,
+    fontSize: 20,
     fontStyle: 'italic',
-    fontWeight: '500',
-    color: theme.white,
-    letterSpacing: 0.3,
-    marginBottom: 16,
+    fontWeight: '400',
+    color: LOGO_WHITE,
+    letterSpacing: 0.4,
+    marginBottom: 14,
   },
   copy: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
-    color: '#8A8A8A',
+    color: 'rgba(255,255,255,0.45)',
   },
 });
