@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 
+import { folderColor } from '@/constants/theme';
 import { initI18n } from '@/i18n';
 import { loadAppData, saveAppData } from '@/lib/storage';
 import { isDueToday } from '@/lib/review';
@@ -27,6 +28,8 @@ type AppContextValue = {
   dueToday: StudyItem[];
   refresh: () => void;
   addFolder: (name: string, scheduleId: string) => void;
+  setFolderSchedule: (folderId: string, scheduleId: string) => void;
+  toggleActiveSchedule: (scheduleId: string) => void;
   addItem: (item: Omit<StudyItem, 'id' | 'createdAt' | 'layers' | 'reviewStepIndex' | 'lastReviewedAt'>) => string;
   updateItem: (id: string, patch: Partial<StudyItem>) => void;
   moveItemToTrash: (id: string) => void;
@@ -77,13 +80,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const photoCount = data?.items.length ?? 0;
 
   const addFolder = useCallback((name: string, scheduleId: string) => {
+    const id = `folder_${Date.now()}`;
     const folder: Folder = {
-      id: `folder_${Date.now()}`,
+      id,
       name: name.trim(),
       reviewScheduleId: scheduleId,
+      color: folderColor(id),
       createdAt: new Date().toISOString(),
     };
     setData((prev) => (prev ? { ...prev, folders: [...prev.folders, folder] } : prev));
+  }, []);
+
+  const setFolderSchedule = useCallback((folderId: string, scheduleId: string) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      if (!prev.settings.activeScheduleIds.includes(scheduleId)) return prev;
+      return {
+        ...prev,
+        folders: prev.folders.map((f) =>
+          f.id === folderId ? { ...f, reviewScheduleId: scheduleId } : f
+        ),
+      };
+    });
+  }, []);
+
+  const toggleActiveSchedule = useCallback((scheduleId: string) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      const active = [...prev.settings.activeScheduleIds];
+      const idx = active.indexOf(scheduleId);
+      if (idx >= 0) {
+        if (active.length <= 1) return prev;
+        active.splice(idx, 1);
+      } else if (active.length < 2) {
+        active.push(scheduleId);
+      } else {
+        active.shift();
+        active.push(scheduleId);
+      }
+      return { ...prev, settings: { ...prev.settings, activeScheduleIds: active } };
+    });
   }, []);
 
   const addItem = useCallback(
@@ -166,6 +202,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dueToday,
       refresh: load,
       addFolder,
+      setFolderSchedule,
+      toggleActiveSchedule,
       addItem,
       updateItem,
       moveItemToTrash,
@@ -181,6 +219,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dueToday,
     load,
     addFolder,
+    setFolderSchedule,
+    toggleActiveSchedule,
     addItem,
     updateItem,
     moveItemToTrash,

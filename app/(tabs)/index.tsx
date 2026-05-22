@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ReviewCalendar } from '@/components/ReviewCalendar';
-import { Button } from '@/components/ui/Button';
+import { SubjectReviewCard } from '@/components/SubjectReviewCard';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -22,39 +23,48 @@ export default function DashboardScreen() {
     return map;
   }, [dueToday]);
 
+  const folderEntries = Array.from(byFolder.entries())
+    .map(([folderId, count]) => {
+      const folder = data.folders.find((f) => f.id === folderId);
+      return folder ? { folder, count } : null;
+    })
+    .filter(Boolean) as { folder: (typeof data.folders)[0]; count: number }[];
+
+  const pairs: typeof folderEntries[] = [];
+  for (let i = 0; i < folderEntries.length; i += 2) {
+    pairs.push(folderEntries.slice(i, i + 2));
+  }
+
   return (
     <Screen scroll>
-      <Text style={styles.title}>{t('dashboard.title')}</Text>
-      <Text style={styles.sub}>
-        {dueToday.length > 0
-          ? t('dashboard.dueCount', { count: dueToday.length })
-          : t('dashboard.empty')}
-      </Text>
+      <ScreenHeader title={t('dashboard.title')} showSettings />
 
-      {dueToday.length > 0 && (
-        <>
-          <View style={styles.chips}>
-            {Array.from(byFolder.entries()).map(([folderId, count]) => {
-              const folder = data.folders.find((f) => f.id === folderId);
-              return (
-                <View key={folderId} style={styles.chip}>
-                  <View style={styles.chipDot} />
-                  <Text style={styles.chipText}>
-                    {folder?.name} · {count}
-                  </Text>
-                </View>
-              );
-            })}
+      {pairs.length === 0 ? (
+        <Text style={styles.empty}>{t('dashboard.empty')}</Text>
+      ) : (
+        pairs.map((row, ri) => (
+          <View key={ri} style={styles.cardRow}>
+            {row.map(({ folder, count }) => (
+              <SubjectReviewCard
+                key={folder.id}
+                name={folder.name}
+                count={count}
+                color={folder.color}
+                totalLabel={t('dashboard.totalPages', { count })}
+                onPress={() => router.push('/review/session')}
+              />
+            ))}
+            {row.length === 1 && <View style={styles.cardSpacer} />}
           </View>
-          <Button
-            label={t('dashboard.startReview')}
-            onPress={() => router.push('/review/session')}
-            style={{ marginTop: 16 }}
-          />
-        </>
+        ))
       )}
 
-      <Text style={styles.section}>{t('dashboard.calendarHint')}</Text>
+      {dueToday.length > 0 && (
+        <Pressable style={styles.startBtn} onPress={() => router.push('/review/session')}>
+          <Text style={styles.startText}>{t('dashboard.startReview')}</Text>
+        </Pressable>
+      )}
+
       <ReviewCalendar
         items={data.items.filter((i) => !i.archived)}
         folders={data.folders}
@@ -69,32 +79,28 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 28, fontWeight: '700', color: theme.black },
-  sub: { fontSize: 15, color: theme.gray, marginTop: 6, marginBottom: 20 },
-  section: { fontSize: 14, fontWeight: '600', color: theme.gray, marginTop: 8 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.white,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
+  empty: { fontSize: 15, color: theme.gray, marginBottom: 24 },
+  cardRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  cardSpacer: { flex: 1 },
+  startBtn: {
+    alignSelf: 'center',
+    marginVertical: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 24,
+    backgroundColor: theme.accent,
   },
-  chipDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.accent, marginRight: 8 },
-  chipText: { fontSize: 14, color: theme.black, fontWeight: '500' },
+  startText: { color: theme.white, fontWeight: '700', fontSize: 15 },
   fab: {
     position: 'absolute',
-    right: 24,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.accent,
+    right: 20,
+    bottom: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: theme.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fabText: { color: theme.white, fontSize: 28, fontWeight: '300', marginTop: -2 },
+  fabText: { color: theme.white, fontSize: 28, fontWeight: '300' },
 });

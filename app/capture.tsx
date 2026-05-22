@@ -58,7 +58,7 @@ export default function CaptureScreen() {
       textNote: '',
       archived: false,
       tags: [],
-      reviewScheduleId: folder?.reviewScheduleId ?? data.schedules[0].id,
+      reviewScheduleId: folder?.reviewScheduleId ?? 'sched_135714',
       reviewAnchorDate: studyDate,
       slideshowSeconds: 10,
     });

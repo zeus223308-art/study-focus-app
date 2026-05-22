@@ -1,10 +1,11 @@
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { SplashBrand } from '@/components/SplashBrand';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { theme } from '@/constants/theme';
 
@@ -16,15 +17,22 @@ function RootNavigator() {
   const { data, ready } = useApp();
   const router = useRouter();
   const segments = useSegments();
+  const [brandDone, setBrandDone] = useState(false);
+
+  const onBrandFinish = useCallback(() => setBrandDone(true), []);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !brandDone) return;
     SplashScreen.hideAsync();
     const inOnboarding = segments[0] === 'onboarding';
     if (!data.settings.onboardingDone && !inOnboarding) {
       router.replace('/onboarding');
     }
-  }, [ready, data.settings.onboardingDone, segments, router]);
+  }, [ready, brandDone, data.settings.onboardingDone, segments, router]);
+
+  if (!brandDone) {
+    return <SplashBrand onFinish={onBrandFinish} />;
+  }
 
   return (
     <Stack

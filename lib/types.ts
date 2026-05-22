@@ -2,18 +2,23 @@ export type Language = 'ko' | 'en';
 
 export type ReviewScheduleMode = 'everyNDays' | 'customIntervals';
 
+export type ScheduleTier = 'standard' | 'premium';
+
 export type ReviewSchedule = {
   id: string;
   name: string;
+  nameEn: string;
   mode: ReviewScheduleMode;
   everyNDays?: number;
   customIntervals?: number[];
+  tier: ScheduleTier;
 };
 
 export type Folder = {
   id: string;
   name: string;
   reviewScheduleId: string;
+  color: string;
   createdAt: string;
 };
 
@@ -32,6 +37,7 @@ export type StudyItem = {
   slideshowSeconds: number;
   layers: AnnotationLayer[];
   answerImageUri?: string;
+  problemImageUri?: string;
   createdAt: string;
 };
 
@@ -58,6 +64,8 @@ export type AppSettings = {
   onboardingDone: boolean;
   photoLimit: number;
   memoLimit: number;
+  /** 복습 패턴 최대 2개 (스케치) */
+  activeScheduleIds: string[];
 };
 
 export type AppData = {

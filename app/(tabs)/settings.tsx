@@ -3,18 +3,21 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { SettingsGroup, SettingsRow } from '@/components/SettingsGroup';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
 import { scheduleDailyReviewReminder, cancelAllReminders } from '@/lib/notifications';
 import type { Language } from '@/lib/types';
 
-export default function SettingsScreen() {
+export default function DashBoardSettingsScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { data, updateSettings, photoCount } = useApp();
+  const { data, updateSettings, photoCount, toggleActiveSchedule } = useApp();
   const { language, setLanguage } = useLanguage();
-  const { settings, schedules } = data;
+  const { settings, schedules, folders } = data;
+  const active = settings.activeScheduleIds;
 
   useEffect(() => {
     if (settings.notificationsEnabled) {
@@ -27,30 +30,73 @@ export default function SettingsScreen() {
     } else {
       cancelAllReminders();
     }
-  }, [settings.notificationsEnabled, settings.notificationHour, settings.notificationMinute, i18n.language]);
+  }, [settings.notificationsEnabled, settings.notificationHour, i18n.language]);
+
+  const scheduleLabel = (id: string) => {
+    const s = schedules.find((x) => x.id === id);
+    if (!s) return id;
+    return language === 'ko' ? s.name : s.nameEn;
+  };
 
   return (
     <Screen scroll>
-      <Text style={styles.title}>{t('settings.title')}</Text>
+      <ScreenHeader title={t('settings.title')} showSettings={false} />
 
-      <View style={styles.block}>
-        <Text style={styles.label}>{t('settings.language')}</Text>
-        <View style={styles.langRow}>
-          {(['ko', 'en'] as Language[]).map((lang) => (
+      <Text style={styles.sectionTitle}>{t('settings.reviewPattern')}</Text>
+      <Text style={styles.hint}>{t('settings.reviewPatternHint')}</Text>
+      <View style={styles.patternGroup}>
+        {schedules.map((s, i) => {
+          const isActive = active.includes(s.id);
+          const isPremium = s.tier === 'premium';
+          return (
             <Pressable
-              key={lang}
-              onPress={() => setLanguage(lang)}
-              style={[styles.langBtn, language === lang && styles.langBtnOn]}>
-              <Text style={language === lang ? styles.langOn : styles.langText}>
-                {lang === 'ko' ? '한국어' : 'English'}
-              </Text>
+              key={s.id}
+              onPress={() => toggleActiveSchedule(s.id)}
+              style={[styles.patternRow, i < schedules.length - 1 && styles.patternBorder]}>
+              <View style={styles.patternLeft}>
+                <Text style={styles.patternNum}>{i + 1}</Text>
+                <Text style={styles.patternName}>{language === 'ko' ? s.name : s.nameEn}</Text>
+                {isPremium && <Text style={styles.premium}>{t('settings.premium')}</Text>}
+              </View>
+              <View style={[styles.check, isActive && styles.checkOn]}>
+                {isActive && <Text style={styles.checkMark}>✓</Text>}
+              </View>
             </Pressable>
-          ))}
-        </View>
+          );
+        })}
       </View>
 
-      <View style={styles.block}>
-        <View style={styles.row}>
+      <SettingsGroup title={t('settings.filesSection')}>
+        {folders.map((f, i) => (
+          <SettingsRow
+            key={f.id}
+            label={f.name}
+            value={scheduleLabel(f.reviewScheduleId)}
+            last={i === folders.length - 1}
+          />
+        ))}
+      </SettingsGroup>
+
+      <SettingsGroup>
+        <SettingsRow
+          label={t('settings.language')}
+          right={
+            <View style={styles.langRow}>
+              {(['ko', 'en'] as Language[]).map((lang) => (
+                <Pressable
+                  key={lang}
+                  onPress={() => setLanguage(lang)}
+                  style={[styles.langChip, language === lang && styles.langChipOn]}>
+                  <Text style={language === lang ? styles.langOn : styles.langText}>
+                    {lang === 'ko' ? '한국어' : 'EN'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          }
+          last={false}
+        />
+        <View style={[styles.row, styles.rowBorder]}>
           <Text style={styles.label}>{t('settings.notifications')}</Text>
           <Switch
             value={settings.notificationsEnabled}
@@ -58,34 +104,14 @@ export default function SettingsScreen() {
             trackColor={{ true: theme.accent }}
           />
         </View>
-      </View>
-
-      <View style={styles.block}>
-        <Text style={styles.label}>{t('settings.schedules')}</Text>
-        {schedules.map((s) => (
-          <Text key={s.id} style={styles.scheduleItem}>
-            · {s.name}
-            {s.mode === 'everyNDays' ? ` (${s.everyNDays}일)` : ` [${s.customIntervals?.join(',')}]`}
-          </Text>
-        ))}
-      </View>
-
-      <View style={styles.block}>
-        <Text style={styles.label}>{t('settings.limits')}</Text>
-        <Text style={styles.meta}>
-          {t('settings.photos', { used: photoCount, max: settings.photoLimit })}
-        </Text>
-      </View>
-
-      <View style={styles.block}>
-        <Text style={styles.label}>{t('settings.cloud')}</Text>
-        <Text style={styles.meta}>{t('settings.cloudSoon')}</Text>
-      </View>
-
-      <View style={styles.block}>
-        <Text style={styles.label}>{t('settings.ocr')}</Text>
-        <Text style={styles.meta}>{t('settings.ocrSoon')}</Text>
-      </View>
+        <SettingsRow
+          label={t('settings.limits')}
+          value={`${photoCount} / ${settings.photoLimit}`}
+          last={false}
+        />
+        <SettingsRow label={t('settings.cloud')} value={t('settings.cloudSoon')} last={false} />
+        <SettingsRow label={t('settings.ocr')} value={t('settings.ocrSoon')} last />
+      </SettingsGroup>
 
       <Pressable onPress={() => router.push('/onboarding')} style={styles.link}>
         <Text style={styles.linkText}>{t('settings.onboarding')}</Text>
@@ -95,30 +121,61 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 28, fontWeight: '700', color: theme.black, marginBottom: 20 },
-  block: {
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.gray,
+    marginBottom: 4,
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  hint: { fontSize: 13, color: theme.gray, marginBottom: 8, marginLeft: 4 },
+  patternGroup: {
     backgroundColor: theme.white,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.grayLight,
+    marginBottom: 24,
+    overflow: 'hidden',
   },
-  label: { fontSize: 15, fontWeight: '700', color: theme.black, marginBottom: 10 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  langRow: { flexDirection: 'row', gap: 8 },
-  langBtn: {
+  patternRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
   },
-  langBtnOn: { backgroundColor: theme.accent, borderColor: theme.accent },
-  langText: { color: theme.black },
-  langOn: { color: theme.white, fontWeight: '600' },
-  scheduleItem: { fontSize: 14, color: theme.gray, marginTop: 4 },
-  meta: { fontSize: 14, color: theme.gray, lineHeight: 22 },
-  link: { marginTop: 8, padding: 12 },
-  linkText: { color: theme.accent, fontWeight: '600' },
+  patternBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
+  patternLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  patternNum: { fontSize: 15, fontWeight: '700', color: theme.accent, width: 20 },
+  patternName: { fontSize: 17, color: theme.black },
+  premium: { fontSize: 11, color: theme.accent, fontWeight: '600' },
+  check: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: theme.grayLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkOn: { backgroundColor: theme.accent, borderColor: theme.accent },
+  checkMark: { color: theme.white, fontSize: 12, fontWeight: '700' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
+  label: { fontSize: 17, color: theme.black },
+  langRow: { flexDirection: 'row', gap: 6 },
+  langChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: theme.grayLight },
+  langChipOn: { backgroundColor: theme.accent, borderColor: theme.accent },
+  langText: { fontSize: 13, color: theme.black },
+  langOn: { fontSize: 13, color: theme.white, fontWeight: '600' },
+  link: { padding: 16 },
+  linkText: { color: theme.accent, fontWeight: '600', textAlign: 'center' },
 });

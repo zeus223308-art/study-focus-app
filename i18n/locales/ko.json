@@ -1,20 +1,23 @@
 {
-  "appName": "Memora",
+  "appName": "MemorySherpa",
+  "appNameShort": "메셰",
+  "splashTagline": "Conquer your memory",
   "tabs": {
-    "dashboard": "오늘",
-    "vault": "보관함",
-    "settings": "설정"
+    "dashboard": "Today's review",
+    "vault": "Files",
+    "settings": "DashBoard"
   },
   "dashboard": {
-    "title": "오늘의 복습",
+    "title": "Today's review",
     "empty": "오늘 복습할 항목이 없습니다.",
     "startReview": "복습 시작",
-    "studyPlease": "공부하세요",
+    "studyPlease": "오늘 Today's review 있습니다",
     "dueCount": "{{count}}개 대기",
-    "calendarHint": "복습 예정일"
+    "calendarHint": "Calendar",
+    "totalPages": "Total {{count}}장"
   },
   "vault": {
-    "title": "보관함",
+    "title": "Files",
     "addFolder": "폴더 추가",
     "photos": "{{count}}장"
   },
@@ -62,22 +65,25 @@
     "autoDeleteHint": "다음 날 자동 삭제 · 3일 지나면 복원 불가"
   },
   "settings": {
-    "title": "설정",
+    "title": "DashBoard",
     "language": "언어",
     "notifications": "복습 알림",
-    "schedules": "복습 주기",
+    "reviewPattern": "Review Pattern",
+    "reviewPatternHint": "How to repeat · 최대 2개",
+    "filesSection": "Files",
+    "premium": "Premium",
     "onboarding": "설정 방법 다시 보기",
     "limits": "저장 한도",
     "photos": "사진 {{used}} / {{max}}",
-    "cloud": "클라우드 백업 (Google Drive)",
-    "cloudSoon": "준비 중 — 썸네일 로컬, 원본 Drive 연동",
-    "ocr": "문서 검색 (OCR)",
-    "ocrSoon": "준비 중 — 사진 속 글자 검색"
+    "cloud": "Cloud backup",
+    "cloudSoon": "준비 중",
+    "ocr": "OCR 검색",
+    "ocrSoon": "준비 중"
   },
   "onboarding": {
-    "welcome": "Memora에 오신 것을 환영합니다",
-    "step1": "보관함에 과목 폴더를 만들고 사진을 저장하세요.",
-    "step2": "복습 주기를 정하면 오늘 볼 항목을 대시보드에 띄웁니다.",
+    "welcome": "MemorySherpa · 메셰",
+    "step1": "Files에 과목 폴더를 만들고 사진을 저장하세요.",
+    "step2": "Review Pattern을 정하면 Today's review에 띄웁니다.",
     "step3": "아카이브에 넣으면 복습 대상에서 빠집니다.",
     "start": "시작하기"
   },

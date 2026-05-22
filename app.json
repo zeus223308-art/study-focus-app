@@ -1,28 +1,33 @@
 {
   "expo": {
-    "name": "Memora",
+    "name": "MemorySherpa",
     "slug": "study-focus-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "memora",
+    "scheme": "memorysherpa",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.memora.study",
+      "bundleIdentifier": "com.memorysherpa.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "공부 내용을 촬영해 보관함에 저장합니다.",
+        "NSCameraUsageDescription": "공부 내용을 촬영해 Files에 저장합니다.",
         "NSPhotoLibraryUsageDescription": "촬영한 사진을 앱에 저장합니다."
       }
     },
     "android": {
-      "package": "com.memora.study",
+      "package": "com.memorysherpa.app",
       "versionCode": 1,
       "permissions": ["CAMERA", "RECEIVE_BOOT_COMPLETED", "VIBRATE"],
       "adaptiveIcon": {
-        "backgroundColor": "#F5F0E8",
+        "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -35,7 +40,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#F5F0E8"
+          "backgroundColor": "#000000"
         }
       ],
       [

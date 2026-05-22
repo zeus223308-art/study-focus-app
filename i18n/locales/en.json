@@ -1,20 +1,23 @@
 {
-  "appName": "Memora",
+  "appName": "MemorySherpa",
+  "appNameShort": "메셰",
+  "splashTagline": "Conquer your memory",
   "tabs": {
-    "dashboard": "Today",
-    "vault": "Vault",
-    "settings": "Settings"
+    "dashboard": "Today's review",
+    "vault": "Files",
+    "settings": "DashBoard"
   },
   "dashboard": {
     "title": "Today's review",
     "empty": "Nothing to review today.",
     "startReview": "Start review",
-    "studyPlease": "Time to study",
+    "studyPlease": "Today's review is ready",
     "dueCount": "{{count}} pending",
-    "calendarHint": "Review schedule"
+    "calendarHint": "Calendar",
+    "totalPages": "Total {{count}}"
   },
   "vault": {
-    "title": "Vault",
+    "title": "Files",
     "addFolder": "Add folder",
     "photos": "{{count}} photos"
   },
@@ -62,23 +65,26 @@
     "autoDeleteHint": "Auto-deletes next day · No restore after 3 days"
   },
   "settings": {
-    "title": "Settings",
+    "title": "DashBoard",
     "language": "Language",
     "notifications": "Review reminders",
-    "schedules": "Review schedules",
-    "onboarding": "Show setup guide again",
+    "reviewPattern": "Review Pattern",
+    "reviewPatternHint": "How to repeat · max 2",
+    "filesSection": "Files",
+    "premium": "Premium",
+    "onboarding": "Show setup guide",
     "limits": "Storage limits",
     "photos": "Photos {{used}} / {{max}}",
-    "cloud": "Cloud backup (Google Drive)",
-    "cloudSoon": "Coming soon — local thumbnails, originals on Drive",
-    "ocr": "Document search (OCR)",
-    "ocrSoon": "Coming soon — search text in photos"
+    "cloud": "Cloud backup",
+    "cloudSoon": "Coming soon",
+    "ocr": "OCR search",
+    "ocrSoon": "Coming soon"
   },
   "onboarding": {
-    "welcome": "Welcome to Memora",
-    "step1": "Create subject folders in the vault and save photos.",
-    "step2": "Set a review schedule and see due items on the dashboard.",
-    "step3": "Archive items to remove them from review rotation.",
+    "welcome": "MemorySherpa",
+    "step1": "Save photos in subject folders under Files.",
+    "step2": "Set Review Pattern — due items appear on Today's review.",
+    "step3": "Archive removes items from the review rotation.",
     "start": "Get started"
   },
   "common": {

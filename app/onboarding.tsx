@@ -26,6 +26,11 @@ export default function OnboardingScreen() {
 
   return (
     <Screen>
+      <View style={styles.logoBox}>
+        <Text style={styles.logoM}>M</Text>
+      </View>
+      <Text style={styles.brand}>{t('appName')}</Text>
+      <Text style={styles.brandKo}>{t('appNameShort')}</Text>
       <View style={styles.card}>
         <Text style={styles.title}>{t(`onboarding.${key}`)}</Text>
       </View>
@@ -44,6 +49,19 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
+  logoBox: {
+    width: 64,
+    height: 64,
+    borderWidth: 2,
+    borderColor: theme.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginTop: 24,
+  },
+  logoM: { fontSize: 36, color: theme.gray, fontWeight: '200' },
+  brand: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginTop: 12, color: theme.black },
+  brandKo: { fontSize: 15, textAlign: 'center', color: theme.gray, marginBottom: 24 },
   card: {
     flex: 1,
     justifyContent: 'center',
@@ -54,7 +72,7 @@ const styles = StyleSheet.create({
     borderColor: theme.grayLight,
     marginBottom: 24,
   },
-  title: { fontSize: 22, lineHeight: 32, color: theme.black, fontWeight: '600' },
+  title: { fontSize: 20, lineHeight: 30, color: theme.black, fontWeight: '500' },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 24 },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: theme.grayLight },
   dotActive: { backgroundColor: theme.accent, width: 20 },

@@ -1,23 +1,20 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { groupItemsByDate } from '@/lib/grouping';
 
-export default function VaultScreen() {
+const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
+
+export default function FilesScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, addFolder, photoCount } = useApp();
+  const { data, addFolder } = useApp();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
 
@@ -25,39 +22,61 @@ export default function VaultScreen() {
 
   const confirmAdd = () => {
     if (!newName.trim()) return;
-    addFolder(newName, data.schedules[0]?.id ?? 'sched_1357');
+    const scheduleId = data.settings.activeScheduleIds[0] ?? data.schedules[0].id;
+    addFolder(newName, scheduleId);
     setNewName('');
     setAdding(false);
   };
 
   return (
     <Screen scroll>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('vault.title')}</Text>
-        <Pressable onPress={() => router.push('/search')}>
-          <Text style={styles.link}>{t('item.search')}</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title={t('vault.title')}
+        showSettings
+        right={
+          <Pressable onPress={() => router.push('/search')}>
+            <Text style={styles.searchLink}>{t('item.search')}</Text>
+          </Pressable>
+        }
+      />
 
-      <View style={styles.folderGrid}>
-        {data.folders.map((folder) => {
-          const count = activeItems.filter((i) => i.folderId === folder.id).length;
+      <View style={styles.albumGrid}>
+        {data.folders.map((folder, index) => {
+          const items = activeItems.filter((i) => i.folderId === folder.id);
+          const stacks = groupItemsByDate(items);
+          const preview = items[0];
+
           return (
             <Pressable
               key={folder.id}
-              style={styles.folderCard}
+              style={styles.albumCard}
               onPress={() => router.push(`/folder/${folder.id}`)}>
-              <Text style={styles.folderName}>{folder.name}</Text>
-              <Text style={styles.folderCount}>{t('vault.photos', { count })}</Text>
+              <View style={styles.albumTop}>
+                <Text style={styles.circled}>{CIRCLED[index] ?? `${index + 1}`}</Text>
+                <Text style={styles.folderName}>{folder.name}</Text>
+              </View>
+              <View style={styles.thumbRow}>
+                {preview ? (
+                  <Image source={{ uri: preview.imageUri }} style={styles.thumb} />
+                ) : (
+                  <View style={[styles.thumb, styles.thumbEmpty]} />
+                )}
+                {stacks.length > 0 && (
+                  <View style={styles.dateList}>
+                    {stacks.slice(0, 3).map((s) => (
+                      <Text key={s.studyDate} style={styles.dateLine}>
+                        {s.studyDate.slice(5).replace('-', '/')} · {s.items.length}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
             </Pressable>
           );
         })}
-        <Pressable style={[styles.folderCard, styles.addCard]} onPress={() => setAdding(true)}>
-          <Text style={styles.addText}>+ {t('vault.addFolder')}</Text>
-        </Pressable>
       </View>
 
-      {adding && (
+      {adding ? (
         <View style={styles.addBox}>
           <TextInput
             value={newName}
@@ -75,38 +94,38 @@ export default function VaultScreen() {
             </Pressable>
           </View>
         </View>
+      ) : (
+        <Pressable onPress={() => setAdding(true)} style={styles.addRow}>
+          <Text style={styles.addLabel}>+ {t('vault.addFolder')}</Text>
+        </Pressable>
       )}
 
       <Pressable style={styles.trashLink} onPress={() => router.push('/trash')}>
         <Text style={styles.trashText}>{t('trash.title')}</Text>
-      </Pressable>
-
-      <Pressable style={styles.fab} onPress={() => router.push('/capture')}>
-        <Text style={styles.fabText}>📷</Text>
       </Pressable>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 28, fontWeight: '700', color: theme.black },
-  link: { fontSize: 15, color: theme.accent, fontWeight: '600' },
-  folderGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 20 },
-  folderCard: {
-    width: '47%',
+  searchLink: { fontSize: 15, color: theme.accent, fontWeight: '600' },
+  albumGrid: { gap: 12 },
+  albumCard: {
     backgroundColor: theme.white,
     borderRadius: 14,
-    padding: 20,
+    padding: 16,
     borderWidth: 1,
     borderColor: theme.grayLight,
-    minHeight: 100,
-    justifyContent: 'center',
+    ...theme.cardShadow,
   },
+  albumTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  circled: { fontSize: 18, marginRight: 10, color: theme.black },
   folderName: { fontSize: 20, fontWeight: '700', color: theme.black },
-  folderCount: { fontSize: 13, color: theme.gray, marginTop: 6 },
-  addCard: { borderStyle: 'dashed', alignItems: 'center' },
-  addText: { fontSize: 15, color: theme.gray, fontWeight: '600' },
+  thumbRow: { flexDirection: 'row', alignItems: 'center' },
+  thumb: { width: 56, height: 72, borderRadius: 8, backgroundColor: theme.grayLight },
+  thumbEmpty: { borderWidth: 1, borderColor: theme.grayLight, borderStyle: 'dashed' },
+  dateList: { marginLeft: 14, flex: 1 },
+  dateLine: { fontSize: 13, color: theme.gray, marginBottom: 4 },
   addBox: {
     marginTop: 16,
     backgroundColor: theme.white,
@@ -115,22 +134,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.grayLight,
   },
-  input: { fontSize: 16, color: theme.black, paddingVertical: 8 },
-  addActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 8 },
+  input: { fontSize: 16, color: theme.black },
+  addActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 12 },
   cancel: { color: theme.gray },
   save: { color: theme.accent, fontWeight: '700' },
-  trashLink: { marginTop: 24 },
+  addRow: { marginTop: 16, padding: 12 },
+  addLabel: { color: theme.gray, fontWeight: '600' },
+  trashLink: { marginTop: 20, marginBottom: 40 },
   trashText: { color: theme.gray, fontSize: 14 },
-  fab: {
-    position: 'absolute',
-    right: 24,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabText: { fontSize: 24 },
 });

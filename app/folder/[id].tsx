@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { DateStackCard } from '@/components/DateStackCard';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -25,8 +26,8 @@ export default function FolderScreen() {
 
   return (
     <Screen padded={false}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{folder.name}</Text>
+      <View style={styles.headerPad}>
+        <ScreenHeader title={folder.name} />
       </View>
       {stacks.length === 0 ? (
         <Text style={styles.empty}>{t('folder.empty')}</Text>
@@ -53,8 +54,7 @@ export default function FolderScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-  title: { fontSize: 26, fontWeight: '700', color: theme.black },
+  headerPad: { paddingHorizontal: 20 },
   empty: { textAlign: 'center', color: theme.gray, marginTop: 40, fontSize: 15 },
   list: { paddingHorizontal: 16 },
   row: { justifyContent: 'space-between' },
