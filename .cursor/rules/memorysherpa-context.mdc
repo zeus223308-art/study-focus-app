@@ -1,0 +1,25 @@
+---
+description: MemorySherpa project context — read first every session
+alwaysApply: true
+---
+
+# MemorySherpa (study-focus-app)
+
+**Before planning or editing code**, read `AGENTS.md` in the repo root for full handoff (tabs, DateRibbon, domain paths, known gaps).
+
+## Quick facts
+
+- Expo ~56 + `expo-router`; path `C:\Users\codib\study-focus-app`
+- **Tabs:** Dashboard (`index`) · Files · Camera · Settings — screen header on dashboard is **Today's review** (not the tab label)
+- **DateRibbon** (`components/dashboard/DateRibbon.tsx`): swipe + center snap; tap selects only (no scroll); **firstLaunchDate → local today** via `hooks/useLocalCalendarDay.ts` + `lib/domain/dates.ts` — **no future days**
+- **State:** `context/AppContext.tsx` — `localToday`, `selectedDate`, `dueSelected`, `ribbonMarks`
+- **Storage:** `services/storage/` + `lib/domain/` (legacy `lib/storage.ts` / `lib/defaults.ts` removed)
+- **Web:** `MobileWebFrame`; `lib/notifications.ts` native-only
+- **i18n:** English product strings in `i18n/locales/en.json` (ko parallel)
+- **Not done:** Firebase/GCS, real OCR, ads, EAS — don't re-implement unless asked
+
+## Conventions
+
+- Match existing patterns; minimal diff; no commits/push unless user asks
+- Calendar dates: use `todayKey()` / local `startOfDay` — never `toISOString().slice(0,10)` for "today"
+- After ribbon/date/tab changes, sanity-check `DateRibbon.tsx`, `dates.ts`, `AppContext.tsx`

@@ -1,5 +1,7 @@
 # MemorySherpa — Agent handoff
 
+> **Cursor:** `.cursor/rules/memorysherpa-context.mdc` is `alwaysApply: true` — agents should load this file automatically; use this doc for deeper detail.
+
 **Repo:** `C:\Users\codib\study-focus-app` (Expo SDK ~56, React Native, `expo-router`)
 
 Read Expo v56 docs: https://docs.expo.dev/versions/v56.0.0/
