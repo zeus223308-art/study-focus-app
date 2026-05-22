@@ -1,0 +1,24 @@
+---
+description: UI must support phone, tablet, and web — use viewport utilities
+globs: "**/*.{tsx,ts}"
+alwaysApply: false
+---
+
+# Responsive UI (MemorySherpa)
+
+When adding or changing screens, modals, toolbars, lists, or carousels:
+
+1. **Breakpoints** — `getDeviceClass` / `useViewportLayout` in `lib/ui/viewport-layout.ts`
+   - Phone: short edge under 600px
+   - Tablet: 600–767px
+   - Large tablet: ≥ 768px
+
+2. **Do not** hardcode single sizes (e.g. 360×360 pager) without deriving from `viewport.pagerSize` or layout measurement.
+
+3. **Safe area** — `useSafeAreaInsets()` for top/bottom chrome; sheets and full-screen modals included.
+
+4. **Partial rows** — carousels/grids must use fixed slot width (see vault `foldersPerPage` + `computeVaultFolderTileWidth`), not `flex: 1` on fewer items.
+
+5. **Web** — avoid `Platform.select` web styles inside `StyleSheet.create` (breaks TS); use separate `ViewStyle` constants. Respect `MobileWebFrame` width on desktop.
+
+6. **Verify** mentally for portrait phone, landscape phone, iPad portrait/landscape, and narrow/wide web frame.

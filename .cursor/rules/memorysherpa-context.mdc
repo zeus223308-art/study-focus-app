@@ -23,3 +23,13 @@ alwaysApply: true
 - Match existing patterns; minimal diff; no commits/push unless user asks
 - Calendar dates: use `todayKey()` / local `startOfDay` — never `toISOString().slice(0,10)` for "today"
 - After ribbon/date/tab changes, sanity-check `DateRibbon.tsx`, `dates.ts`, `AppContext.tsx`
+
+## Responsive / cross-platform (required for UI work)
+
+Every UI change must work on **phone, tablet (iPad / Galaxy Tab), and web**.
+
+- Use `lib/ui/viewport-layout.ts` (`useViewportLayout`, `getDeviceClass`, `computeVaultFolderTileWidth`, etc.) and `lib/ui/fullscreen-viewer-layout.ts` for breakpoints — do not hardcode 360px widths.
+- Prefer `useSafeAreaInsets` over fixed `paddingTop` / `paddingBottom` (notch, home indicator).
+- Use `flex` + `onLayout` for image/annotation areas; avoid fixed heights tied to one device.
+- Web: `MobileWebFrame` widens on tablet viewports; test `Platform.OS === 'web'` drag/pointer separately from native `PanResponder`.
+- Tablet landscape: reuse patterns like unified top bars (`useUnifiedTopBar`) where vertical space is tight.
