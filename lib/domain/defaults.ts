@@ -6,10 +6,10 @@ import type { AppData, ReviewSchedule, SubjectFolder } from './types';
 export const DEFAULT_SCHEDULES: ReviewSchedule[] = [
   {
     id: 'sched_135714',
-    name: '1-3-5-7-14',
-    nameEn: '1-3-5-7-14',
-    mode: 'customIntervals',
-    customIntervals: [1, 3, 5, 7, 14],
+    name: '이틀에 한 번',
+    nameEn: 'Every 2 days',
+    mode: 'everyNDays',
+    everyNDays: 2,
     tier: 'standard',
   },
   {
@@ -22,10 +22,10 @@ export const DEFAULT_SCHEDULES: ReviewSchedule[] = [
   },
   {
     id: 'sched_2days',
-    name: '이틀에 한 번',
-    nameEn: 'Every 2 days',
-    mode: 'everyNDays',
-    everyNDays: 2,
+    name: '+추가',
+    nameEn: '+ Add',
+    mode: 'customIntervals',
+    customIntervals: [1, 3, 5, 7, 14],
     tier: 'premium',
   },
 ];
@@ -35,7 +35,8 @@ export const DEFAULT_SUBJECTS: Omit<SubjectFolder, 'createdAt' | 'sortOrder'>[] 
   { id: 'folder_english', name: '영어', reviewScheduleId: 'sched_135714', color: theme.graySecondary },
   { id: 'folder_science', name: '과학', reviewScheduleId: 'sched_daily', color: theme.grayMuted },
   { id: 'folder_korean', name: '국어', reviewScheduleId: 'sched_daily', color: theme.black },
-  { id: 'folder_history', name: '역사', reviewScheduleId: 'sched_2days', color: theme.gray },
+  { id: 'folder_history', name: '역사', reviewScheduleId: 'sched_135714', color: theme.gray },
+  { id: 'folder_social', name: '사회', reviewScheduleId: 'sched_135714', color: theme.graySecondary },
 ];
 
 export const DEFAULT_DATA: AppData = {
@@ -72,7 +73,7 @@ export const PEN_TOOLS = [
 ];
 
 export const HIGHLIGHTER_TOOLS = [
-  { id: 'hi-yellow' as const, color: 'rgba(255, 230, 0, 0.45)', width: 12, label: 'Yellow' },
-  { id: 'hi-green' as const, color: 'rgba(74, 222, 128, 0.4)', width: 12, label: 'Green' },
-  { id: 'hi-pink' as const, color: 'rgba(244, 114, 182, 0.4)', width: 12, label: 'Pink' },
+  { id: 'hi-yellow' as const, color: '#FFE600', width: 12, opacity: 0.45, label: 'Yellow' },
+  { id: 'hi-green' as const, color: '#4ADE80', width: 12, opacity: 0.4, label: 'Green' },
+  { id: 'hi-pink' as const, color: '#F472B6', width: 12, opacity: 0.4, label: 'Pink' },
 ];

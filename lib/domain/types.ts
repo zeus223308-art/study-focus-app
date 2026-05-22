@@ -75,9 +75,14 @@ export type NotePage = {
   tags: string[];
   asset: CloudAsset;
   answerAsset: CloudAsset | null;
+  /** OCR text extracted from answer (back) image for auto-grading */
+  answerOcrText: string;
   layers: NoteLayer[];
   ocrText: string;
+  /** Slideshow dwell time for front (problem) image */
   slideshowSeconds: number;
+  /** Slideshow dwell time for back (answer) image — up to 180s */
+  answerSlideshowSeconds: number;
   createdAt: string;
   updatedAt: string;
 };

@@ -1,5 +1,6 @@
+import { format } from 'date-fns';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
@@ -7,117 +8,269 @@ import {
   Modal,
   Pressable,
   StyleSheet,
+  Switch,
   Text,
-  TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { RecallCanvas, type RecallTool } from '@/components/review/RecallCanvas';
+import { RecallToolbar } from '@/components/review/RecallToolbar';
+import { ScheduleAdvanceSheet } from '@/components/review/ScheduleAdvanceSheet';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import type { NoteBundle, NotePage } from '@/lib/domain/types';
+import type { InkStroke, NoteBundle, NotePage } from '@/lib/domain/types';
 import { BLACKOUT_COUNTDOWN } from '@/lib/review/blackout';
-import { OCR_PASS_THRESHOLD, scoreRecallAgainstAnswer } from '@/lib/review/ocr-score';
+import { resolveImageUri } from '@/lib/files/resolve-image-uri';
+import { getAnswerImageUri, OCR_PASS_THRESHOLD, scoreActiveRecall } from '@/lib/review/answer-text';
+import { slideshowMsForSide } from '@/lib/domain/slideshow-timing';
+import { advanceAfterReview, getNextReviewDate } from '@/lib/spacing/engine';
 
-type Slide = { bundle: NoteBundle; page: NotePage };
+const HINT_PEEK_MS = 8000;
+const AD_LOCK_MS = 5000;
+
+type SlideSide = 'front' | 'back';
+type Slide = { bundle: NoteBundle; page: NotePage; side: SlideSide };
+type Phase = 'front' | 'countdown' | 'blackout' | 'peek' | 'pass' | 'fail';
 
 export default function ReviewSessionScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const params = useLocalSearchParams<{ bundleId?: string; slideshow?: string; blackout?: string }>();
-  const { dueToday, dueSelected, data, completeReview, storage, updateBundle } = useApp();
+  const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{
+    bundleId?: string;
+    subjectId?: string;
+    slideshow?: string;
+    blackout?: string;
+  }>();
+  const { dueToday, dueSelected, data, completeReview, storage, updateBundle, getSchedule } =
+    useApp();
 
   const slides = useMemo<Slide[]>(() => {
-    const bundles = params.bundleId
+    let bundles = params.bundleId
       ? data.bundles.filter((b) => b.id === params.bundleId)
       : dueSelected.length
         ? dueSelected
         : dueToday;
+    if (params.subjectId) {
+      bundles = bundles.filter((b) => b.subjectId === params.subjectId);
+    }
+    const isSlideshow = params.slideshow === '1';
     const list: Slide[] = [];
     for (const bundle of bundles) {
       for (const page of bundle.pages) {
-        list.push({ bundle, page });
+        list.push({ bundle, page, side: 'front' });
+        if (isSlideshow && getAnswerImageUri(page)) {
+          list.push({ bundle, page, side: 'back' });
+        }
       }
     }
     return list;
-  }, [params.bundleId, dueSelected, dueToday, data.bundles]);
+  }, [params.bundleId, params.subjectId, params.slideshow, dueSelected, dueToday, data.bundles]);
 
   const [index, setIndex] = useState(0);
+  const [phase, setPhase] = useState<Phase>('front');
   const [countdown, setCountdown] = useState<number | null>(null);
-  const [blackedOut, setBlackedOut] = useState(false);
-  const [scratch, setScratch] = useState('');
+  const [recallStrokes, setRecallStrokes] = useState<InkStroke[]>([]);
+  const [recallTool, setRecallTool] = useState<RecallTool>('pen-black');
+  const [adLocked, setAdLocked] = useState(false);
   const [adVisible, setAdVisible] = useState(false);
-  const [hintVisible, setHintVisible] = useState(false);
-  const fade = useMemo(() => new Animated.Value(1), []);
+  const [hintOffer, setHintOffer] = useState(false);
+  const [premiumReveal, setPremiumReveal] = useState(false);
+  const [scheduleSheetVisible, setScheduleSheetVisible] = useState(false);
+  const [lastPassScore, setLastPassScore] = useState(0);
+  const [passAnim] = useState(() => new Animated.Value(0));
+  const passScale = useRef(new Animated.Value(0.7)).current;
+  const frontFade = useRef(new Animated.Value(1)).current;
+  const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
+  const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
 
   const current = slides[index];
+  const frontUri = current?.page.asset.originalLocalUri ?? current?.page.asset.thumbnailUri;
+  const answerUri = current ? getAnswerImageUri(current.page) : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!frontUri) {
+      setResolvedFrontUri(null);
+      return;
+    }
+    resolveImageUri(frontUri).then((u) => {
+      if (!cancelled) setResolvedFrontUri(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [frontUri, current?.page.id, current?.side]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!answerUri) {
+      setResolvedAnswerUri(null);
+      return;
+    }
+    resolveImageUri(answerUri).then((u) => {
+      if (!cancelled) setResolvedAnswerUri(u);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [answerUri, current?.page.id]);
   const auto = params.slideshow === '1';
   const useBlackout = params.blackout !== '0';
+  const isPro = data.settings.tier === 'pro';
+
+  const resetSlide = useCallback(() => {
+    setPhase('front');
+    setCountdown(null);
+    setRecallStrokes([]);
+    setRecallTool('pen-black');
+    setAdLocked(false);
+    setAdVisible(false);
+    setHintOffer(false);
+    setPremiumReveal(false);
+    setScheduleSheetVisible(false);
+    setLastPassScore(0);
+    frontFade.setValue(1);
+    passAnim.setValue(0);
+    passScale.setValue(0.7);
+  }, [frontFade, passAnim, passScale]);
 
   useEffect(() => {
-    if (!auto || !current) return;
-    const timer = setTimeout(() => advance(), (current.page.slideshowSeconds ?? 10) * 1000);
+    resetSlide();
+  }, [index, resetSlide]);
+
+  useEffect(() => {
+    if (!auto || !current || phase !== 'front') return;
+    const timer = setTimeout(() => advance(), slideshowMsForSide(current.page, current.side));
     return () => clearTimeout(timer);
-  }, [index, auto, current]);
+  }, [index, auto, current, phase]);
 
   useEffect(() => {
-    if (!current?.page.asset.remotePath || current.page.asset.originalLocalUri) return;
-    if (current.page.asset.syncStatus === 'fetch_required' || current.page.asset.syncStatus === 'synced') {
-      storage.fetchMasterAsset(
-        current.page.asset.remotePath!,
-        current.page.asset.originalLocalUri ?? current.page.asset.localMiniUri
-      );
+    if (!current) return;
+    const front = current.page.asset;
+    if (
+      front.remotePath &&
+      !front.originalLocalUri &&
+      (front.syncStatus === 'fetch_required' || front.syncStatus === 'synced')
+    ) {
+      storage.fetchMasterAsset(front.remotePath, front.originalLocalUri ?? front.localMiniUri);
     }
-  }, [current?.page.id]);
+    const back = current.page.answerAsset;
+    if (
+      back?.remotePath &&
+      !back.originalLocalUri &&
+      (back.syncStatus === 'fetch_required' || back.syncStatus === 'synced')
+    ) {
+      storage.fetchMasterAsset(back.remotePath, back.originalLocalUri ?? back.localMiniUri);
+    }
+  }, [current?.page.id, current?.side]);
 
-  useEffect(() => {
-    if (!useBlackout || !current) return;
-    setBlackedOut(false);
-    setScratch('');
-    setCountdown(BLACKOUT_COUNTDOWN[0]);
+  const startCountdown = () => {
+    if (!useBlackout) {
+      setPhase('blackout');
+      frontFade.setValue(0);
+      return;
+    }
+    setPhase('countdown');
     let step = 0;
+    setCountdown(BLACKOUT_COUNTDOWN[0]);
     const tick = setInterval(() => {
       step += 1;
       if (step < BLACKOUT_COUNTDOWN.length) {
         setCountdown(BLACKOUT_COUNTDOWN[step]);
       } else {
         setCountdown(null);
-        setBlackedOut(true);
-        Animated.timing(fade, { toValue: 0.15, duration: 400, useNativeDriver: true }).start();
+        setPhase('blackout');
+        frontFade.setValue(0);
         clearInterval(tick);
       }
     }, 1000);
-    return () => clearInterval(tick);
-  }, [index, useBlackout, current?.page.id]);
+  };
 
   const advance = useCallback(() => {
     if (index < slides.length - 1) {
       setIndex((i) => i + 1);
-      fade.setValue(1);
     } else {
       router.back();
     }
-  }, [index, slides.length, router, fade]);
+  }, [index, slides.length, router]);
+
+  const nextReviewDateLabel = useMemo(() => {
+    if (!current) return null;
+    const schedule = getSchedule(current.bundle.review.reviewScheduleId);
+    if (!schedule) return null;
+    const advanced = advanceAfterReview(current.bundle);
+    return format(getNextReviewDate(advanced, schedule), 'yyyy-MM-dd');
+  }, [current, getSchedule]);
+
+  const finishAfterScheduleChoice = useCallback(() => {
+    setScheduleSheetVisible(false);
+    passAnim.setValue(0);
+    passScale.setValue(0.7);
+    setPhase('front');
+    advance();
+  }, [advance, passAnim, passScale]);
+
+  const showPassCelebration = (score: number) => {
+    setLastPassScore(score);
+    setPhase('pass');
+    passAnim.setValue(0);
+    passScale.setValue(0.7);
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(passAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
+        Animated.spring(passScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
+      ]),
+      Animated.delay(650),
+    ]).start(() => {
+      setScheduleSheetVisible(true);
+    });
+  };
+
+  const onScheduleYes = () => {
+    if (!current) return;
+    completeReview(current.bundle.id);
+    finishAfterScheduleChoice();
+  };
+
+  const onScheduleNo = () => {
+    finishAfterScheduleChoice();
+  };
 
   const submitRecall = () => {
-    if (!current) return;
-    const answerText =
-      current.page.answerAsset?.thumbnailUri ??
-      current.page.textNote ??
-      current.page.ocrText;
-    const score = scoreRecallAgainstAnswer(scratch, answerText);
+    if (!current || adLocked) return;
+    const score = scoreActiveRecall(recallStrokes, current.page);
     updateBundle(current.bundle.id, {
       review: { ...current.bundle.review, aiScoreLast: score },
     });
     if (score >= OCR_PASS_THRESHOLD) {
-      completeReview(current.bundle.id);
-      advance();
+      showPassCelebration(score);
     } else {
+      setPhase('fail');
+      setAdLocked(true);
       setAdVisible(true);
       setTimeout(() => {
         setAdVisible(false);
-      }, 5000);
+        setAdLocked(false);
+        setPhase('blackout');
+      }, AD_LOCK_MS);
     }
+  };
+
+  const watchHintAd = () => {
+    setHintOffer(false);
+    setAdVisible(true);
+    const peekMs = current?.page.answerAsset ? HINT_PEEK_MS : 5000;
+    setTimeout(() => {
+      setAdVisible(false);
+      setPhase('peek');
+      setTimeout(() => {
+        setPhase('blackout');
+        frontFade.setValue(0);
+      }, peekMs);
+    }, 2000);
   };
 
   if (!current) {
@@ -125,58 +278,152 @@ export default function ReviewSessionScreen() {
     return null;
   }
 
-  const uri = current.page.asset.originalLocalUri ?? current.page.asset.thumbnailUri;
-  const isPro = data.settings.tier === 'pro';
+  const showAnswerOverlay = isPro && premiumReveal && answerUri && !auto;
+  const hasAnswer = Boolean(answerUri);
+  const recallMode = phase === 'blackout' && !showAnswerOverlay;
+  const showingBack = current.side === 'back' && Boolean(answerUri);
+  const displayUri = showingBack ? resolvedAnswerUri : resolvedFrontUri;
+  const sideBadge = showingBack ? t('capture.backLabel') : t('review.frontLabel');
 
   return (
-    <View style={styles.root}>
-      <Animated.View style={[styles.imageWrap, { opacity: blackedOut ? fade : 1 }]}>
-        <Image source={{ uri }} style={styles.image} resizeMode="contain" />
-      </Animated.View>
-
-      {countdown !== null && (
-        <View style={styles.countdown}>
-          <Text style={styles.countdownText}>{countdown}</Text>
-        </View>
-      )}
-
-      {blackedOut && (
-        <View style={styles.scratch}>
-          <TextInput
-            style={styles.scratchInput}
-            multiline
-            placeholder={t('review.recallPlaceholder')}
-            placeholderTextColor={theme.grayMuted}
-            value={scratch}
-            onChangeText={setScratch}
-          />
-          <Button label={t('review.submitRecall')} onPress={submitRecall} />
-          {!isPro && (
-            <Pressable onPress={() => setHintVisible(true)}>
-              <Text style={styles.hint}>{t('review.hintAd')}</Text>
-            </Pressable>
-          )}
-        </View>
-      )}
-
-      {!blackedOut && (
-        <View style={styles.footer}>
-          <Text style={styles.progress}>
+    <View style={[styles.root, recallMode && styles.rootRecall]}>
+      <View
+        style={[
+          styles.topBar,
+          { paddingTop: insets.top + 8 },
+          recallMode && styles.topBarRecall,
+        ]}>
+        {!auto ? (
+          isPro ? (
+            <View style={styles.premiumToggle}>
+              <Text style={[styles.premiumLabel, recallMode && styles.topBarDarkText]}>
+                {t('review.answerToggle')}
+              </Text>
+              <Switch
+                value={premiumReveal}
+                onValueChange={setPremiumReveal}
+                trackColor={{ false: theme.grayLight, true: theme.orange }}
+                thumbColor={theme.white}
+              />
+            </View>
+          ) : (
+            <View style={styles.premiumLocked}>
+              <Text style={[styles.premiumLockedText, recallMode && styles.topBarDarkMuted]}>
+                {t('review.answerPremium')}
+              </Text>
+            </View>
+          )
+        ) : (
+          <Text style={[styles.slideshowProgress, recallMode && styles.topBarDarkText]}>
             {index + 1} / {slides.length}
           </Text>
-          <Button
-            label={t('review.complete')}
-            onPress={() => {
-              completeReview(current.bundle.id);
-              advance();
-            }}
-          />
-        </View>
-      )}
+        )}
+        <Pressable style={styles.close} onPress={() => router.back()} hitSlop={12}>
+          <Text style={[styles.closeText, recallMode && styles.topBarDarkText]}>✕</Text>
+        </Pressable>
+      </View>
 
-      <Pressable style={styles.close} onPress={() => router.back()}>
-        <Text style={styles.closeText}>✕</Text>
-      </Pressable>
+      {recallMode ? (
+        <View style={styles.recallFull}>
+          <Text style={styles.recallTitle}>{t('review.scratchTitle')}</Text>
+          <RecallToolbar
+            tool={recallTool}
+            canEdit={recallStrokes.length > 0}
+            penLabel={t('review.toolPen')}
+            eraserLabel={t('review.toolEraser')}
+            undoLabel={t('review.undo')}
+            clearLabel={t('review.clearAll')}
+            onToolChange={setRecallTool}
+            onUndo={() => setRecallStrokes((s) => s.slice(0, -1))}
+            onClear={() => setRecallStrokes([])}
+          />
+          <RecallCanvas
+            strokes={recallStrokes}
+            onStrokesChange={setRecallStrokes}
+            tool={recallTool}
+            fullScreen
+          />
+          {!hasAnswer && <Text style={styles.warn}>{t('review.noBackPhoto')}</Text>}
+          <View style={styles.recallActions}>
+            <Button label={t('review.submitRecall')} onPress={submitRecall} disabled={adLocked} />
+            {!isPro && (
+              <Pressable onPress={() => setHintOffer(true)} disabled={!hasAnswer}>
+                <Text style={[styles.hintLink, !hasAnswer && styles.hintDisabled]}>
+                  {t('review.hintAd')}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      ) : (
+        <>
+          <View style={styles.stage}>
+            <Animated.View style={[styles.imageWrap, { opacity: showAnswerOverlay ? 0 : frontFade }]}>
+              {displayUri ? (
+                <Image source={{ uri: displayUri }} style={styles.image} resizeMode="contain" />
+              ) : (
+                <View style={[styles.image, styles.imageMissing]} />
+              )}
+              {phase === 'front' && (
+                <View
+                  style={[
+                    styles.frontBadge,
+                    showingBack && styles.backBadge,
+                  ]}>
+                  <Text style={styles.frontBadgeText}>{sideBadge}</Text>
+                </View>
+              )}
+            </Animated.View>
+
+            {showAnswerOverlay && resolvedAnswerUri && (
+              <Image source={{ uri: resolvedAnswerUri }} style={styles.image} resizeMode="contain" />
+            )}
+
+            {phase === 'peek' && resolvedAnswerUri && (
+              <View style={styles.peekOverlay}>
+                <Image source={{ uri: resolvedAnswerUri }} style={styles.image} resizeMode="contain" />
+                <Text style={styles.peekHint}>{t('review.hintPeek')}</Text>
+              </View>
+            )}
+
+            {countdown !== null && (
+              <View style={styles.countdown}>
+                <Text style={styles.countdownText}>{countdown}</Text>
+              </View>
+            )}
+
+            {phase === 'pass' && !scheduleSheetVisible && (
+              <Animated.View style={[styles.passOverlay, { opacity: passAnim }]}>
+                <Animated.View style={{ transform: [{ scale: passScale }] }}>
+                  <Text style={styles.passEmoji}>✓</Text>
+                  <Text style={styles.passTitle}>{t('review.passTitle')}</Text>
+                  <Text style={styles.passSub}>{t('review.passScore', { score: lastPassScore })}</Text>
+                </Animated.View>
+              </Animated.View>
+            )}
+          </View>
+
+          {phase === 'front' && !auto && (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
+          <Text style={styles.progress}>
+            {index + 1} / {slides.length}
+            {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
+          </Text>
+          {useBlackout ? (
+            <Button label={t('review.startCountdown')} onPress={startCountdown} />
+          ) : (
+            <Button
+              label={t('review.complete')}
+              onPress={() => {
+                completeReview(current.bundle.id);
+                advance();
+              }}
+            />
+          )}
+        </View>
+          )}
+        </>
+      )}
 
       <Modal visible={adVisible} transparent animationType="fade">
         <View style={styles.ad}>
@@ -185,61 +432,124 @@ export default function ReviewSessionScreen() {
         </View>
       </Modal>
 
-      <Modal visible={hintVisible} transparent animationType="fade">
+      <Modal visible={hintOffer} transparent animationType="fade">
         <View style={styles.ad}>
           <Text style={styles.adTitle}>{t('review.hintTitle')}</Text>
-          <Pressable
-            onPress={() => {
-              setHintVisible(false);
-              Animated.timing(fade, { toValue: 0.6, duration: 200, useNativeDriver: true }).start();
-              setTimeout(() => Animated.timing(fade, { toValue: 0.15, duration: 300, useNativeDriver: true }).start(), 8000);
-            }}>
+          <Text style={styles.adSub}>{t('review.hintAdSub')}</Text>
+          <Pressable onPress={watchHintAd}>
             <Text style={styles.hintBtn}>{t('review.watchAd')}</Text>
           </Pressable>
-          <Pressable onPress={() => setHintVisible(false)}>
+          <Pressable onPress={() => setHintOffer(false)}>
             <Text style={styles.cancel}>{t('common.cancel')}</Text>
           </Pressable>
         </View>
       </Modal>
+
+      <ScheduleAdvanceSheet
+        visible={scheduleSheetVisible}
+        score={lastPassScore}
+        nextReviewDate={
+          nextReviewDateLabel ? t('review.advanceNextDate', { date: nextReviewDateLabel }) : null
+        }
+        title={t('review.advanceTitle')}
+        body={t('review.advanceBody')}
+        yesLabel={t('review.advanceYes')}
+        noLabel={t('review.advanceNo')}
+        onYes={onScheduleYes}
+        onNo={onScheduleNo}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.blackPure },
+  rootRecall: { backgroundColor: theme.beige },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    zIndex: 10,
+  },
+  topBarRecall: {
+    backgroundColor: theme.beige,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.grayLight,
+  },
+  topBarDarkText: { color: theme.black },
+  topBarDarkMuted: { color: theme.gray },
+  premiumToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  premiumLabel: { color: theme.white, fontSize: theme.font.caption, fontWeight: '700' },
+  premiumLocked: { flex: 1 },
+  premiumLockedText: { color: theme.grayMuted, fontSize: 11, fontWeight: '600' },
+  slideshowProgress: { color: theme.white, fontSize: theme.font.caption, fontWeight: '700' },
+  close: { padding: 4 },
+  closeText: { color: theme.white, fontSize: 22 },
+  stage: { flex: 1, position: 'relative' },
   imageWrap: { flex: 1 },
   image: { flex: 1, width: '100%' },
+  imageMissing: { backgroundColor: theme.grayLight },
+  frontBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(255,107,0,0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.sm,
+  },
+  frontBadgeText: { color: theme.white, fontWeight: '800', fontSize: 11 },
+  backBadge: { backgroundColor: 'rgba(37,99,235,0.92)' },
+  recallFull: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    gap: 10,
+  },
+  recallActions: { gap: 8, paddingTop: 4 },
+  peekOverlay: { ...StyleSheet.absoluteFill, backgroundColor: theme.beige },
+  peekHint: {
+    position: 'absolute',
+    bottom: 24,
+    alignSelf: 'center',
+    width: '100%',
+    textAlign: 'center',
+    color: theme.orange,
+    fontWeight: '800',
+  },
   countdown: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   countdownText: { fontSize: 96, fontWeight: '200', color: theme.white },
-  scratch: { padding: 20, backgroundColor: theme.beige, gap: 12 },
-  scratchInput: {
-    minHeight: 100,
-    backgroundColor: theme.white,
-    borderRadius: theme.radius.md,
-    padding: 14,
-    fontSize: theme.font.body,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-  },
-  hint: { color: theme.orange, fontWeight: '700', textAlign: 'center' },
-  footer: { padding: 20, backgroundColor: theme.beige, gap: 8 },
+  recallTitle: { fontSize: theme.font.caption, fontWeight: '800', color: theme.gray, marginTop: 4 },
+  warn: { fontSize: 11, color: theme.orange, fontWeight: '600' },
+  hintLink: { color: theme.orange, fontWeight: '700', textAlign: 'center', marginTop: 4 },
+  hintDisabled: { opacity: 0.4 },
+  footer: { paddingTop: 20, paddingHorizontal: 20, backgroundColor: theme.beige, gap: 8 },
   progress: { textAlign: 'center', color: theme.gray },
-  close: { position: 'absolute', top: 48, right: 20 },
-  closeText: { color: theme.white, fontSize: 24 },
+  passOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,107,0,0.92)',
+  },
+  passEmoji: { color: theme.white, fontSize: 56, textAlign: 'center', marginBottom: 8 },
+  passTitle: { color: theme.white, fontSize: 32, fontWeight: '900', textAlign: 'center' },
+  passSub: { color: theme.white, marginTop: 8, fontWeight: '600', textAlign: 'center' },
   ad: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(0,0,0,0.88)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
   },
   adTitle: { color: theme.white, fontSize: 22, fontWeight: '800' },
-  adSub: { color: theme.grayMuted, marginTop: 12 },
+  adSub: { color: theme.grayMuted, marginTop: 12, textAlign: 'center' },
   hintBtn: { color: theme.orange, fontWeight: '800', marginTop: 24, fontSize: 18 },
   cancel: { color: theme.white, marginTop: 16 },
 });

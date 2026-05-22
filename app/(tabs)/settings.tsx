@@ -8,13 +8,19 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
+import {
+  SCHEDULE_ADD_ID,
+  folderScheduleLabel,
+  toggleFolderScheduleId,
+} from '@/lib/domain/folder-schedule';
 import type { Language } from '@/lib/domain/types';
 import { scheduleDailyReviewReminder, cancelAllReminders } from '@/lib/notifications';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { data, updateSettings, toggleActiveSchedule, freemium } = useApp();
+  const { data, updateSettings, toggleActiveSchedule, setSubjectSchedule, setPaywallVisible, freemium } =
+    useApp();
   const { language, setLanguage } = useLanguage();
   const { settings, schedules, subjects } = data;
   const active = settings.activeScheduleIds;
@@ -33,11 +39,11 @@ export default function SettingsScreen() {
     }
   }, [settings.notificationsEnabled, settings.notificationHour, i18n.language]);
 
-  const scheduleLabel = (id: string) => {
-    const s = schedules.find((x) => x.id === id);
-    if (!s) return id;
-    return language === 'ko' ? s.name : s.nameEn;
-  };
+  const folderIntervalLabel = (scheduleId: string) =>
+    folderScheduleLabel(scheduleId, language, {
+      daily: t('schedule.daily'),
+      everyTwoDays: t('schedule.everyTwoDays'),
+    });
 
   return (
     <Screen scroll>
@@ -47,21 +53,34 @@ export default function SettingsScreen() {
       <Text style={styles.hint}>{t('settings.reviewPatternHint')}</Text>
       <View style={styles.patternGroup}>
         {schedules.map((s, i) => {
-          const isActive = active.includes(s.id);
-          const isPremium = s.tier === 'premium';
+          const isAddRow = s.id === SCHEDULE_ADD_ID;
+          const isActive = !isAddRow && active.includes(s.id);
+          const patternTitle = isAddRow
+            ? t('settings.addPattern')
+            : language === 'ko'
+              ? s.name
+              : s.nameEn;
           return (
             <Pressable
               key={s.id}
-              onPress={() => toggleActiveSchedule(s.id)}
+              onPress={() => {
+                if (isAddRow) {
+                  setPaywallVisible(true);
+                  return;
+                }
+                toggleActiveSchedule(s.id);
+              }}
               style={[styles.patternRow, i < schedules.length - 1 && styles.patternBorder]}>
               <View style={styles.patternLeft}>
                 <Text style={styles.patternNum}>{i + 1}</Text>
-                <Text style={styles.patternName}>{language === 'ko' ? s.name : s.nameEn}</Text>
-                {isPremium && <Text style={styles.premium}>{t('settings.premium')}</Text>}
+                <Text style={[styles.patternName, isAddRow && styles.patternAdd]}>{patternTitle}</Text>
+                {isAddRow && <Text style={styles.premium}>{t('settings.premium')}</Text>}
               </View>
-              <View style={[styles.check, isActive && styles.checkOn]}>
-                {isActive && <Text style={styles.checkMark}>✓</Text>}
-              </View>
+              {!isAddRow && (
+                <View style={[styles.check, isActive && styles.checkOn]}>
+                  {isActive && <Text style={styles.checkMark}>✓</Text>}
+                </View>
+              )}
             </Pressable>
           );
         })}
@@ -72,7 +91,8 @@ export default function SettingsScreen() {
           <SettingsRow
             key={f.id}
             label={f.name}
-            value={scheduleLabel(f.reviewScheduleId)}
+            value={folderIntervalLabel(f.reviewScheduleId)}
+            onPress={() => setSubjectSchedule(f.id, toggleFolderScheduleId(f.reviewScheduleId))}
             last={i === subjects.length - 1}
           />
         ))}
@@ -151,6 +171,7 @@ const styles = StyleSheet.create({
   patternLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   patternNum: { fontSize: 15, fontWeight: '700', color: theme.orange, width: 20 },
   patternName: { fontSize: theme.font.body, fontWeight: '700', color: theme.black },
+  patternAdd: { color: theme.orange },
   premium: { fontSize: theme.font.label, color: theme.orange, fontWeight: '700' },
   check: {
     width: 24,

@@ -68,9 +68,11 @@ function itemToPage(item: LegacyItem, bundleId: string, sortIndex: number): Note
     tags: item.tags ?? [],
     asset: legacyAsset(item.imageUri),
     answerAsset: item.answerImageUri ? legacyAsset(item.answerImageUri) : null,
+    answerOcrText: '',
     layers: [],
     ocrText: '',
     slideshowSeconds: item.slideshowSeconds ?? 10,
+    answerSlideshowSeconds: item.slideshowSeconds ?? 10,
     createdAt: item.createdAt,
     updatedAt: item.createdAt,
   };

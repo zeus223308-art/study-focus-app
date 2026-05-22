@@ -7,6 +7,9 @@ export const theme = {
   gray: '#3D3832',
   graySecondary: '#5C554D',
   grayLight: '#E8E4DE',
+  /** Top dock bar — soft gray tint */
+  dock: '#D8D5D0',
+  dockDivider: 'rgba(61, 56, 50, 0.14)',
   grayMuted: '#9A948C',
   /** 5% rule — active only */
   orange: '#FF6B00',

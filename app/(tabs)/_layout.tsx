@@ -1,68 +1,28 @@
-import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
-import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 
-import { theme } from '@/constants/theme';
+import { DockTabBar } from '@/components/DockTabBar';
 
 export default function TabLayout() {
-  const { t } = useTranslation();
-
   return (
+    <View style={styles.root}>
     <Tabs
+      initialRouteName="index"
+      tabBar={(props) => <DockTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: theme.orange,
-        tabBarInactiveTintColor: theme.gray,
-        tabBarStyle: {
-          backgroundColor: theme.white,
-          borderTopColor: theme.grayLight,
-        },
         headerShown: false,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarShowLabel: false,
+        tabBarStyle: { display: 'none' },
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t('tabs.dashboard'),
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'square.grid.2x2.fill', android: 'dashboard', web: 'dashboard' }}
-              tintColor={color}
-              size={24}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="vault"
-        options={{
-          title: t('tabs.vault'),
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'folder.fill', android: 'folder', web: 'folder' }} tintColor={color} size={24} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="capture"
-        options={{
-          title: t('tabs.capture'),
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }}
-              tintColor={color}
-              size={24}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t('tabs.settings'),
-          tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'gearshape.fill', android: 'settings', web: 'settings' }} tintColor={color} size={24} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="vault" />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="capture" options={{ href: null }} />
+      <Tabs.Screen name="settings" />
     </Tabs>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+});

@@ -1,4 +1,5 @@
 import { Modal, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function PaywallSheet({ visible, reason, used, max, onClose }: Props) {
+  const insets = useSafeAreaInsets();
   const title = reason === 'images' ? '사진 한도에 도달했어요' : '메모 한도에 도달했어요';
   const body =
     reason === 'images'
@@ -21,7 +23,7 @@ export function PaywallSheet({ visible, reason, used, max, onClose }: Props) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: Math.max(40, insets.bottom + 20) }]}>
           <View style={styles.accentBar} />
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
@@ -45,7 +47,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: theme.radius.lg,
     borderTopRightRadius: theme.radius.lg,
     padding: 28,
-    paddingBottom: 40,
   },
   accentBar: {
     width: 40,

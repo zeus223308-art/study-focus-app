@@ -3,8 +3,9 @@ import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useWindowDimensions } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { getDeviceClass } from '@/lib/ui/viewport-layout';
 
-/** iPhone 14 class width — web preview matches native phone layout */
+/** iPhone 14 class width — default web phone preview */
 export const MOBILE_FRAME_WIDTH = 390;
 
 type Props = {
@@ -31,9 +32,15 @@ export function MobileWebFrame({ children }: Props) {
     return <>{children}</>;
   }
 
-  const { width: windowWidth } = useWindowDimensions();
-  const showBezel = windowWidth > MOBILE_FRAME_WIDTH + 48;
-  const frameWidth = Math.min(MOBILE_FRAME_WIDTH, windowWidth);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const deviceClass = getDeviceClass(windowWidth, windowHeight);
+  const frameWidth =
+    deviceClass === 'largeTablet'
+      ? Math.min(1100, windowWidth - 48)
+      : deviceClass === 'tablet'
+        ? Math.min(820, windowWidth - 48)
+        : Math.min(MOBILE_FRAME_WIDTH, windowWidth);
+  const showBezel = windowWidth > frameWidth + 48;
 
   return (
     <View style={styles.shell}>

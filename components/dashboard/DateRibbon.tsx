@@ -10,6 +10,7 @@ import {
   Text,
   View,
   type ListRenderItemInfo,
+  type ViewStyle,
 } from 'react-native';
 
 import { SpringPressable } from '@/components/ui/SpringPressable';
@@ -20,6 +21,14 @@ const CHIP_WIDTH = 56;
 const CHIP_GAP = 10;
 const RIBBON_DAY_STRIDE = CHIP_WIDTH + CHIP_GAP;
 const IS_WEB = Platform.OS === 'web';
+
+const webWrapStyle: ViewStyle | undefined = IS_WEB
+  ? ({ cursor: 'grab' as const, touchAction: 'pan-y' } as unknown as ViewStyle)
+  : undefined;
+
+const webListStyle: ViewStyle | undefined = IS_WEB
+  ? ({ pointerEvents: 'box-none' } as ViewStyle)
+  : undefined;
 const DRAG_THRESHOLD = 5;
 const RELEASE_ANIM_MS = 400;
 const END_DEBOUNCE_MS = 60;
@@ -329,7 +338,7 @@ export function DateRibbon({ marks, selectedDate, firstLaunchDate, localToday, o
 
   return (
     <View
-      style={styles.wrap}
+      style={[styles.wrap, webWrapStyle]}
       onLayout={(e) => {
         const w = Math.round(e.nativeEvent.layout.width);
         if (w > 0 && w !== listWidth) setListWidth(w);
@@ -370,7 +379,7 @@ export function DateRibbon({ marks, selectedDate, firstLaunchDate, localToday, o
           onScrollToIndexFailed={(info) => {
             scrollToOffsetSafe(snapOffsetForIndex(info.index));
           }}
-          style={IS_WEB ? styles.webList : undefined}
+          style={webListStyle}
         />
       )}
     </View>
@@ -382,15 +391,7 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 88,
     marginBottom: 8,
-    ...Platform.select({
-      web: { cursor: 'grab', touchAction: 'pan-y' } as object,
-      default: {},
-    }),
   },
-  webList: Platform.select({
-    web: { pointerEvents: 'box-none' } as object,
-    default: undefined,
-  }),
   listContent: {
     paddingVertical: 6,
     paddingHorizontal: 4,

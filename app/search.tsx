@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ResolvedImage } from '@/components/ui/ResolvedImage';
 
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -10,6 +12,7 @@ import { searchBundles } from '@/lib/grouping/bundles';
 export default function SearchScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { data } = useApp();
   const [query, setQuery] = useState('');
   const [examOnly, setExamOnly] = useState(false);
@@ -17,7 +20,11 @@ export default function SearchScreen() {
   const results = searchBundles(data.bundles, query, examOnly);
 
   return (
-    <View style={styles.root}>
+    <View
+      style={[
+        styles.root,
+        { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+      ]}>
       <TextInput
         style={styles.input}
         placeholder={t('item.search')}
@@ -41,7 +48,7 @@ export default function SearchScreen() {
             <Pressable
               style={styles.row}
               onPress={() => router.push({ pathname: '/bundle/[id]', params: { id: bundle.id } })}>
-              {cover ? <Image source={{ uri: cover }} style={styles.thumb} /> : null}
+              {cover ? <ResolvedImage uri={cover} style={styles.thumb} /> : null}
               <View>
                 <Text style={styles.date}>{bundle.studyDate}</Text>
                 {bundle.title ? <Text style={styles.note} numberOfLines={1}>{bundle.title}</Text> : null}
@@ -55,7 +62,7 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.beige, padding: 20, paddingTop: 60 },
+  root: { flex: 1, backgroundColor: theme.beige, paddingHorizontal: 20 },
   input: {
     backgroundColor: theme.white,
     borderRadius: 12,

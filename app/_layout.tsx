@@ -5,14 +5,23 @@ import { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { FloatingCameraButton } from '@/components/FloatingCameraButton';
 import { MobileWebFrame } from '@/components/MobileWebFrame';
 import { SplashBrand } from '@/components/SplashBrand';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { theme } from '@/constants/theme';
+import { StyleSheet, View } from 'react-native';
 
 export { ErrorBoundary } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync();
+
+/** Session-only overlay — not persisted; unmounts when app closes. */
+function shouldShowFloatingCamera(segments: string[]): boolean {
+  if (segments[0] === 'onboarding') return false;
+  if (segments.includes('capture')) return false;
+  return true;
+}
 
 function RootNavigator() {
   const { data, ready } = useApp();
@@ -33,25 +42,34 @@ function RootNavigator() {
 
   if (!brandDone) return <SplashBrand onFinish={onBrandFinish} />;
 
+  const showCamera = shouldShowFloatingCamera(segments);
+
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: theme.beige },
-        headerTintColor: theme.black,
-        headerShadowVisible: false,
-        contentStyle: { backgroundColor: theme.beige },
-      }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      <Stack.Screen name="capture" options={{ headerShown: false }} />
-      <Stack.Screen name="folder/[id]" options={{ title: '' }} />
-      <Stack.Screen name="bundle/[id]" options={{ title: '' }} />
-      <Stack.Screen name="review/session" options={{ headerShown: false }} />
-      <Stack.Screen name="trash" options={{ title: '' }} />
-      <Stack.Screen name="search" options={{ presentation: 'modal', title: '' }} />
-    </Stack>
+    <View style={styles.appShell}>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: theme.beige },
+          headerTintColor: theme.black,
+          headerShadowVisible: false,
+          contentStyle: { backgroundColor: theme.beige },
+        }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen name="capture" options={{ headerShown: false }} />
+        <Stack.Screen name="folder/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="bundle/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="review/session" options={{ headerShown: false }} />
+        <Stack.Screen name="trash" options={{ headerShown: false }} />
+        <Stack.Screen name="search" options={{ presentation: 'modal', headerShown: false }} />
+      </Stack>
+      {showCamera && <FloatingCameraButton />}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  appShell: { flex: 1 },
+});
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({

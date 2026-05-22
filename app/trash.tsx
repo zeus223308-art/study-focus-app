@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -21,7 +22,11 @@ export default function TrashScreen() {
           const cover = entry.bundleSnapshot.pages[0]?.asset.thumbnailUri;
           return (
             <View key={entry.id} style={styles.row}>
-              {cover ? <Image source={{ uri: cover }} style={styles.thumb} /> : <View style={[styles.thumb, styles.thumbEmpty]} />}
+              {cover ? (
+                <ResolvedImage uri={cover} style={styles.thumb} />
+              ) : (
+                <View style={[styles.thumb, styles.thumbEmpty]} />
+              )}
               <View style={styles.meta}>
                 <Text style={styles.date}>{entry.bundleSnapshot.studyDate}</Text>
                 {canRestoreFromBackup(entry) && (

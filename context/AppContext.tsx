@@ -13,7 +13,7 @@ import { theme } from '@/constants/theme';
 import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
 import { todayKey } from '@/lib/domain/dates';
-import { appendCaptureToData } from '@/lib/domain/bundle-factory';
+import { appendCaptureToData, appendPageToBundle } from '@/lib/domain/bundle-factory';
 import type {
   AppData,
   AppSettings,
@@ -23,6 +23,8 @@ import type {
   ReviewSchedule,
   SubjectFolder,
 } from '@/lib/domain/types';
+import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
+import { removePageFromData } from '@/lib/domain/remove-page';
 import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
 import { isDueToday, advanceAfterReview, resetReviewCycle, maintainReviewCycle } from '@/lib/spacing/engine';
 import {
@@ -48,6 +50,18 @@ type AppContextValue = {
   setPaywallVisible: (v: boolean) => void;
   refresh: () => Promise<void>;
   capturePhoto: (imageUri: string, subjectId: string, studyDate?: string) => Promise<string | null>;
+  captureFlashcardPair: (
+    frontUri: string,
+    backUri: string | null,
+    subjectId: string,
+    studyDate?: string
+  ) => Promise<string | null>;
+  importPhotosToSubject: (
+    subjectId: string,
+    imageUris: string[],
+    studyDate?: string
+  ) => Promise<number>;
+  importPhotosToBundle: (bundleId: string, imageUris: string[]) => Promise<number>;
   addSubject: (name: string, scheduleId: string) => void;
   setSubjectSchedule: (subjectId: string, scheduleId: string) => void;
   toggleActiveSchedule: (id: string) => void;
@@ -55,11 +69,23 @@ type AppContextValue = {
   completeReview: (bundleId: string) => void;
   archiveBundle: (id: string) => void;
   moveBundleToTrash: (id: string) => void;
+  deletePage: (bundleId: string, pageId: string) => void;
   restoreTrash: (trashId: string) => void;
   applyLayerCycleChoice: (bundleId: string, choice: LayerCycleChoice) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
   getSchedule: (id: string) => ReviewSchedule | undefined;
   syncCloud: () => Promise<void>;
+  movingBundleId: string | null;
+  dragSourceSubjectId: string | null;
+  dragHoverSubjectId: string | null;
+  startMovingBundle: (bundleId: string, sourceSubjectId: string) => void;
+  cancelMovingBundle: () => void;
+  registerSubjectDropZone: (
+    subjectId: string,
+    rect: { x: number; y: number; width: number; height: number } | null
+  ) => void;
+  updateDragHover: (pageX: number, pageY: number) => void;
+  finishBundleDrop: (pageX: number, pageY: number) => string | null;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -71,7 +97,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const localToday = useLocalCalendarDay();
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [movingBundleId, setMovingBundleId] = useState<string | null>(null);
+  const [dragSourceSubjectId, setDragSourceSubjectId] = useState<string | null>(null);
+  const [dragHoverSubjectId, setDragHoverSubjectId] = useState<string | null>(null);
+  const dropZonesRef = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(
+    new Map()
+  );
   const prevLocalTodayRef = useRef(localToday);
+  const dataRef = useRef<AppData | null>(null);
 
   const load = useCallback(async () => {
     const loaded = await storage.loadAppData();
@@ -97,11 +130,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [localToday]);
 
   useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  useEffect(() => {
     if (!ready || !data) return;
     storage.saveAppData(data);
   }, [data, ready, storage]);
 
-  const persist = useCallback((next: AppData) => setData(next), []);
+  const persist = useCallback((next: AppData) => {
+    dataRef.current = next;
+    setData(next);
+  }, []);
 
   const getSchedule = useCallback(
     (id: string) => data?.schedules.find((s) => s.id === id),
@@ -131,28 +171,80 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return getDueBundlesForDate(data, selectedDate, getSchedule);
   }, [data, selectedDate, getSchedule]);
 
-  const capturePhoto = useCallback(
-    async (imageUri: string, subjectId: string, studyDate?: string) => {
-      if (!data) return null;
-      const check = checkFreemiumLimits(data);
+  const captureFlashcardPair = useCallback(
+    async (
+      frontUri: string,
+      backUri: string | null,
+      subjectId: string,
+      studyDate?: string
+    ) => {
+      const prev = dataRef.current;
+      if (!prev) return null;
+      const check = checkFreemiumLimits(prev);
       if (!check.allowed) {
         setPaywallVisible(true);
         return null;
       }
-      const { data: next } = await appendCaptureToData(storage, data, {
-        imageUri,
+      const { data: next, bundleId } = await appendCaptureToData(storage, prev, {
+        imageUri: frontUri,
+        answerImageUri: backUri,
         subjectId,
         studyDate,
       });
       persist(next);
-      const bundle = next.bundles.find(
-        (b) =>
-          b.subjectId === subjectId &&
-          (studyDate ? b.studyDate === studyDate : b.studyDate === todayKey())
-      );
-      return bundle?.id ?? next.bundles[0]?.id ?? null;
+      return bundleId;
     },
-    [data, storage, persist]
+    [storage, persist]
+  );
+
+  const capturePhoto = useCallback(
+    async (imageUri: string, subjectId: string, studyDate?: string) => {
+      return captureFlashcardPair(imageUri, null, subjectId, studyDate);
+    },
+    [captureFlashcardPair]
+  );
+
+  const importPhotosToSubject = useCallback(
+    async (subjectId: string, imageUris: string[], studyDate?: string) => {
+      if (imageUris.length === 0) return 0;
+      let prev = dataRef.current;
+      if (!prev) return 0;
+
+      const chunks =
+        imageUris.length === 2
+          ? [{ front: imageUris[0], back: imageUris[1] }]
+          : imageUris.map((uri) => ({ front: uri, back: null as string | null }));
+
+      let saved = 0;
+      for (const chunk of chunks) {
+        const check = checkFreemiumLimits(prev);
+        if (!check.allowed) {
+          setPaywallVisible(true);
+          break;
+        }
+        const result = await appendCaptureToData(storage, prev, {
+          imageUri: chunk.front,
+          answerImageUri: chunk.back,
+          subjectId,
+          studyDate,
+        });
+        prev = result.data;
+        saved += 1;
+      }
+
+      if (saved > 0) persist(prev);
+      return saved;
+    },
+    [storage, persist]
+  );
+
+  const importPhotosToBundle = useCallback(
+    async (bundleId: string, imageUris: string[]) => {
+      const bundle = dataRef.current?.bundles.find((b) => b.id === bundleId);
+      if (!bundle || imageUris.length === 0) return 0;
+      return importPhotosToSubject(bundle.subjectId, imageUris, bundle.studyDate);
+    },
+    [importPhotosToSubject]
   );
 
   const addSubject = useCallback((name: string, scheduleId: string) => {
@@ -243,6 +335,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const deletePage = useCallback((bundleId: string, pageId: string) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      const { data: next, bundleRemoved, removedBundle } = removePageFromData(
+        prev,
+        bundleId,
+        pageId
+      );
+      if (bundleRemoved && removedBundle) {
+        return {
+          ...next,
+          trash: [createTrashLifecycle(removedBundle), ...next.trash],
+        };
+      }
+      return next;
+    });
+  }, []);
+
   const restoreTrash = useCallback((trashId: string) => {
     setData((prev) => {
       if (!prev) return prev;
@@ -284,6 +394,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persist(next);
   }, [data, storage, persist]);
 
+  const startMovingBundle = useCallback((bundleId: string, sourceSubjectId: string) => {
+    setMovingBundleId(bundleId);
+    setDragSourceSubjectId(sourceSubjectId);
+    setDragHoverSubjectId(null);
+  }, []);
+
+  const cancelMovingBundle = useCallback(() => {
+    setMovingBundleId(null);
+    setDragSourceSubjectId(null);
+    setDragHoverSubjectId(null);
+  }, []);
+
+  const registerSubjectDropZone = useCallback(
+    (subjectId: string, rect: { x: number; y: number; width: number; height: number } | null) => {
+      if (rect) dropZonesRef.current.set(subjectId, rect);
+      else dropZonesRef.current.delete(subjectId);
+    },
+    []
+  );
+
+  const updateDragHover = useCallback(
+    (pageX: number, pageY: number) => {
+      if (!movingBundleId) return;
+      let found: string | null = null;
+      for (const [subjectId, rect] of dropZonesRef.current.entries()) {
+        if (
+          pageX >= rect.x &&
+          pageX <= rect.x + rect.width &&
+          pageY >= rect.y &&
+          pageY <= rect.y + rect.height
+        ) {
+          found = subjectId;
+          break;
+        }
+      }
+      const next = found && found !== dragSourceSubjectId ? found : null;
+      setDragHoverSubjectId((prev) => (prev === next ? prev : next));
+    },
+    [dragSourceSubjectId, movingBundleId]
+  );
+
+  const finishBundleDrop = useCallback(
+    (pageX: number, pageY: number) => {
+      if (!data || !movingBundleId) return null;
+      let target: string | null = null;
+      for (const [subjectId, rect] of dropZonesRef.current.entries()) {
+        if (
+          pageX >= rect.x &&
+          pageX <= rect.x + rect.width &&
+          pageY >= rect.y &&
+          pageY <= rect.y + rect.height
+        ) {
+          target = subjectId;
+          break;
+        }
+      }
+      if (!target || target === dragSourceSubjectId) {
+        cancelMovingBundle();
+        return null;
+      }
+      const next = moveBundleToSubjectData(data, movingBundleId, target);
+      persist(next);
+      const name = data.subjects.find((s) => s.id === target)?.name ?? null;
+      cancelMovingBundle();
+      return name;
+    },
+    [cancelMovingBundle, data, dragSourceSubjectId, movingBundleId, persist]
+  );
+
   const value = useMemo<AppContextValue | null>(() => {
     if (!data) return null;
     return {
@@ -301,6 +480,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPaywallVisible,
       refresh: load,
       capturePhoto,
+      captureFlashcardPair,
+      importPhotosToSubject,
+      importPhotosToBundle,
       addSubject,
       setSubjectSchedule,
       toggleActiveSchedule,
@@ -308,11 +490,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
       completeReview,
       archiveBundle,
       moveBundleToTrash,
+      deletePage,
       restoreTrash,
       applyLayerCycleChoice,
       updateSettings,
       getSchedule,
       syncCloud,
+      movingBundleId,
+      dragSourceSubjectId,
+      dragHoverSubjectId,
+      startMovingBundle,
+      cancelMovingBundle,
+      registerSubjectDropZone,
+      updateDragHover,
+      finishBundleDrop,
     };
   }, [
     ready,
@@ -327,6 +518,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     paywallVisible,
     load,
     capturePhoto,
+    captureFlashcardPair,
+    importPhotosToSubject,
+    importPhotosToBundle,
     addSubject,
     setSubjectSchedule,
     toggleActiveSchedule,
@@ -334,11 +528,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     completeReview,
     archiveBundle,
     moveBundleToTrash,
+    deletePage,
     restoreTrash,
     applyLayerCycleChoice,
     updateSettings,
     getSchedule,
     syncCloud,
+    movingBundleId,
+    dragSourceSubjectId,
+    dragHoverSubjectId,
+    startMovingBundle,
+    cancelMovingBundle,
+    registerSubjectDropZone,
+    updateDragHover,
+    finishBundleDrop,
   ]);
 
   if (!value) return null;

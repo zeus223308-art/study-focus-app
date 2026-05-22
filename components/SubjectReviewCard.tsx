@@ -1,44 +1,56 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { SubjectFolderPreview } from '@/components/files/SubjectFolderPreview';
 import { theme } from '@/constants/theme';
+import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 
 type Props = {
-  name: string;
-  count: number;
-  color: string;
-  onPress: () => void;
+  subjectTag: string;
+  previewItems: SubjectPreviewItem[];
   totalLabel: string;
+  emptyHint: string;
+  selected?: boolean;
+  onPress: () => void;
+  onFocus: () => void;
 };
 
-export function SubjectReviewCard({ name, count, color, onPress, totalLabel }: Props) {
+/** Dashboard due card — subject tag + swipeable problem previews. */
+export function SubjectReviewCard({
+  subjectTag,
+  previewItems,
+  totalLabel,
+  emptyHint,
+  selected,
+  onPress,
+  onFocus,
+}: Props) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.card,
-        { borderLeftColor: color },
-        pressed && styles.pressed,
-      ]}>
-      <Text style={styles.name}>{name}</Text>
-      <Text style={styles.count}>{totalLabel}</Text>
-    </Pressable>
+    <View style={[styles.wrap, selected && styles.wrapSelected]}>
+      <SubjectFolderPreview
+        variant="dashboard"
+        subjectTag={subjectTag}
+        items={previewItems}
+        totalLabel={totalLabel}
+        emptyHint={emptyHint}
+        onOpen={onPress}
+        onGestureLock={() => {}}
+        onInteraction={onFocus}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  wrap: {
     flex: 1,
-    minHeight: 120,
-    backgroundColor: theme.white,
+    minWidth: 0,
     borderRadius: 16,
-    padding: 20,
-    borderLeftWidth: 4,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    justifyContent: 'center',
-    ...theme.cardShadow,
   },
-  pressed: { opacity: 0.92 },
-  name: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
-  count: { fontSize: theme.font.bodySmall, fontWeight: '600', color: theme.gray, marginTop: 10 },
+  wrapSelected: {
+    shadowColor: theme.orange,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 4,
+  },
 });

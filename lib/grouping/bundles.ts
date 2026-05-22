@@ -1,4 +1,4 @@
-import type { NoteBundle } from '@/lib/domain/types';
+import type { NoteBundle, NotePage } from '@/lib/domain/types';
 
 export type BundleStack = {
   studyDate: string;
@@ -23,6 +23,25 @@ export function groupBundlesByDate(bundles: NoteBundle[], subjectId: string): Bu
 
 export function totalPagesInBundle(bundle: NoteBundle): number {
   return bundle.pages.length;
+}
+
+/** One list row per problem (page). Same date can have many cards. */
+export type SubjectProblemItem = {
+  bundleId: string;
+  pageId: string;
+  bundle: NoteBundle;
+  page: NotePage;
+};
+
+export function listSubjectProblems(bundles: NoteBundle[], subjectId: string): SubjectProblemItem[] {
+  const items: SubjectProblemItem[] = [];
+  for (const bundle of bundles) {
+    if (bundle.subjectId !== subjectId || bundle.archived) continue;
+    for (const page of [...bundle.pages].sort((a, b) => a.sortIndex - b.sortIndex)) {
+      items.push({ bundleId: bundle.id, pageId: page.id, bundle, page });
+    }
+  }
+  return items.sort((a, b) => a.page.createdAt.localeCompare(b.page.createdAt));
 }
 
 export function searchBundles(bundles: NoteBundle[], query: string, examOnly?: boolean): NoteBundle[] {

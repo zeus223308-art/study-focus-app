@@ -18,7 +18,7 @@
       "bundleIdentifier": "com.memorysherpa.app",
       "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "공부 내용을 촬영해 Files에 저장합니다.",
+        "NSCameraUsageDescription": "공부 내용을 촬영해 파일에 저장합니다.",
         "NSPhotoLibraryUsageDescription": "촬영한 사진을 앱에 저장합니다."
       }
     },

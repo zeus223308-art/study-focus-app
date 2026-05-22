@@ -1,23 +1,46 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 
+import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
-import { SpringPressable } from '@/components/ui/SpringPressable';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import type { SubjectFolder } from '@/lib/domain/types';
+import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
+import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
-const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
+const PANEL_PAD = 14;
 
 export default function FilesScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, addSubject } = useApp();
+  const { data, addSubject, movingBundleId } = useApp();
+  const { width: windowWidth } = useWindowDimensions();
+  const viewport = useViewportLayout();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
+  const [panelWidth, setPanelWidth] = useState(0);
+
+  const pageWidth = panelWidth > 0 ? panelWidth : Math.max(280, windowWidth - 40);
+
+  const subjectPages = useMemo(() => {
+    const sorted = [...data.subjects].sort((a, b) => a.sortOrder - b.sortOrder);
+    const pages: SubjectFolder[][] = [];
+    const perPage = viewport.vaultFoldersPerPage;
+    for (let i = 0; i < sorted.length; i += perPage) {
+      pages.push(sorted.slice(i, i + perPage));
+    }
+    return pages;
+  }, [data.subjects, viewport.vaultFoldersPerPage]);
+
+  const pageCountFor = (subjectId: string) =>
+    data.bundles
+      .filter((b) => b.subjectId === subjectId && !b.archived)
+      .reduce((n, b) => n + totalPagesInBundle(b), 0);
 
   const confirmAdd = () => {
     if (!newName.trim()) return;
@@ -27,10 +50,14 @@ export default function FilesScreen() {
   };
 
   return (
-    <Screen scroll>
+    <Screen scroll nestedScrollEnabled>
+      {movingBundleId ? (
+        <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
+      ) : null}
+
       <ScreenHeader
         title={t('vault.title')}
-        showSettings
+        showSettings={false}
         right={
           <Pressable onPress={() => router.push('/search')}>
             <Text style={styles.search}>{t('item.search')}</Text>
@@ -38,32 +65,23 @@ export default function FilesScreen() {
         }
       />
 
-      <View style={styles.grid}>
-        {data.subjects.map((subject, index) => {
-          const bundles = data.bundles.filter((b) => b.subjectId === subject.id && !b.archived);
-          const preview = bundles[0]?.pages[0];
-          const pageCount = bundles.reduce((n, b) => n + totalPagesInBundle(b), 0);
-
-          return (
-            <SpringPressable
-              key={subject.id}
-              style={styles.card}
-              onPress={() => router.push(`/folder/${subject.id}`)}>
-              <View style={styles.cardTop}>
-                <Text style={styles.circled}>{CIRCLED[index] ?? `${index + 1}`}</Text>
-                <Text style={styles.name}>{subject.name}</Text>
-              </View>
-              <View style={styles.thumbRow}>
-                {preview ? (
-                  <Image source={{ uri: preview.asset.thumbnailUri }} style={styles.thumb} />
-                ) : (
-                  <View style={[styles.thumb, styles.thumbEmpty]} />
-                )}
-                <Text style={styles.meta}>{t('vault.photos', { count: pageCount })}</Text>
-              </View>
-            </SpringPressable>
-          );
-        })}
+      <View style={styles.panel}>
+        <View
+          style={styles.carouselSlot}
+          onLayout={(e) => {
+            const w = Math.round(e.nativeEvent.layout.width);
+            if (w > 0 && w !== panelWidth) setPanelWidth(w);
+          }}>
+          <SubjectFilesCarousel
+            pages={subjectPages}
+            pageWidth={pageWidth}
+            totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
+            previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
+            onSubjectPress={(id) => router.push(`/folder/${id}`)}
+            swipeHint={subjectPages.length > 1 ? t('vault.swipeHint') : undefined}
+            emptyLabel={t('folder.empty')}
+          />
+        </View>
       </View>
 
       {adding ? (
@@ -84,34 +102,36 @@ export default function FilesScreen() {
         </Pressable>
       )}
 
-      <Pressable onPress={() => router.push('/trash')} style={{ marginTop: 24 }}>
+      <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
         <Text style={styles.trash}>{t('trash.title')}</Text>
       </Pressable>
-
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   search: { fontSize: theme.font.bodySmall, color: theme.orange, fontWeight: '700' },
-  grid: { gap: 12 },
-  card: {
-    backgroundColor: theme.white,
-    borderRadius: theme.radius.md,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    ...theme.cardShadow,
+  moveBanner: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.orange,
+    textAlign: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 12,
   },
-  cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  circled: { fontSize: theme.font.body, fontWeight: '700', marginRight: 10 },
-  name: { fontSize: theme.font.heading, fontWeight: '800' },
-  thumbRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  thumb: { width: 52, height: 68, borderRadius: theme.radius.sm },
-  thumbEmpty: { backgroundColor: theme.grayLight, borderStyle: 'dashed', borderWidth: 1 },
-  meta: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray },
+  panel: {
+    borderWidth: 1.5,
+    borderColor: theme.black,
+    borderRadius: theme.radius.sm,
+    paddingVertical: PANEL_PAD,
+    backgroundColor: theme.white,
+    overflow: 'hidden',
+  },
+  carouselSlot: {
+    width: '100%',
+  },
   addBox: {
-    marginTop: 16,
+    marginTop: 20,
     backgroundColor: theme.white,
     padding: 16,
     borderRadius: theme.radius.md,
@@ -122,6 +142,7 @@ const styles = StyleSheet.create({
   addActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 12 },
   cancel: { color: theme.gray },
   save: { color: theme.orange, fontWeight: '800' },
-  addLabel: { marginTop: 16, fontWeight: '700', color: theme.gray },
+  addLabel: { marginTop: 20, fontWeight: '700', color: theme.gray },
+  trashLink: { marginTop: 24 },
   trash: { color: theme.gray, fontSize: theme.font.caption },
 });
