@@ -49,5 +49,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   badgeText: { color: theme.white, fontSize: 12, fontWeight: '700' },
-  date: { marginTop: 8, fontSize: 14, color: theme.black, fontWeight: '500' },
+  date: { marginTop: 8, fontSize: theme.font.bodySmall, color: theme.black, fontWeight: '700' },
 });

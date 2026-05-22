@@ -39,6 +39,6 @@ const styles = StyleSheet.create({
     ...theme.cardShadow,
   },
   pressed: { opacity: 0.92 },
-  name: { fontSize: 22, fontWeight: '700', color: theme.black },
-  count: { fontSize: 14, color: theme.gray, marginTop: 8 },
+  name: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
+  count: { fontSize: theme.font.bodySmall, fontWeight: '600', color: theme.gray, marginTop: 10 },
 });

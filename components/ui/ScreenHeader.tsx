@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  title: { fontSize: 26, fontWeight: '700', color: theme.black, letterSpacing: -0.5 },
+  title: { fontSize: theme.font.title, fontWeight: '800', color: theme.black, letterSpacing: -0.3 },
   right: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   gear: { padding: 4 },
 });

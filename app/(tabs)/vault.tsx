@@ -108,7 +108,7 @@ export default function FilesScreen() {
 }
 
 const styles = StyleSheet.create({
-  searchLink: { fontSize: 15, color: theme.accent, fontWeight: '600' },
+  searchLink: { fontSize: theme.font.bodySmall, color: theme.accent, fontWeight: '700' },
   albumGrid: { gap: 12 },
   albumCard: {
     backgroundColor: theme.white,
@@ -119,13 +119,13 @@ const styles = StyleSheet.create({
     ...theme.cardShadow,
   },
   albumTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  circled: { fontSize: 18, marginRight: 10, color: theme.black },
-  folderName: { fontSize: 20, fontWeight: '700', color: theme.black },
+  circled: { fontSize: theme.font.body, fontWeight: '700', marginRight: 10, color: theme.black },
+  folderName: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
   thumbRow: { flexDirection: 'row', alignItems: 'center' },
   thumb: { width: 56, height: 72, borderRadius: 8, backgroundColor: theme.grayLight },
   thumbEmpty: { borderWidth: 1, borderColor: theme.grayLight, borderStyle: 'dashed' },
   dateList: { marginLeft: 14, flex: 1 },
-  dateLine: { fontSize: 13, color: theme.gray, marginBottom: 4 },
+  dateLine: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray, marginBottom: 4 },
   addBox: {
     marginTop: 16,
     backgroundColor: theme.white,

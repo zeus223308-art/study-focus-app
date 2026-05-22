@@ -17,6 +17,7 @@ export default function TabLayout() {
           borderTopColor: theme.grayLight,
         },
         headerShown: false,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}>
       <Tabs.Screen
         name="index"

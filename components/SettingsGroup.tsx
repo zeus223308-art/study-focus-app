@@ -70,6 +70,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
-  label: { fontSize: 17, color: theme.black },
-  value: { fontSize: 17, color: theme.gray },
+  label: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
+  value: { fontSize: theme.font.body, fontWeight: '600', color: theme.gray },
 });

@@ -16,18 +16,17 @@ type Props = {
   onFinish: () => void;
 };
 
-/** 스케치: 검정 화면 + Conquer your memory 빛이 지나가며 읽힘 */
 export function SplashBrand({ onFinish }: Props) {
   const shimmer = useSharedValue(0);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 600 });
+    opacity.value = withTiming(1, { duration: 500 });
     shimmer.value = withDelay(
-      400,
+      300,
       withRepeat(
         withSequence(
-          withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
           withTiming(0, { duration: 200 })
         ),
         2,
@@ -39,13 +38,12 @@ export function SplashBrand({ onFinish }: Props) {
   }, [onFinish, opacity, shimmer]);
 
   const textStyle = useAnimatedStyle(() => ({
-    opacity: 0.35 + opacity.value * 0.65,
-    transform: [{ scale: 0.98 + shimmer.value * 0.02 }],
+    opacity: 0.92 + opacity.value * 0.08,
   }));
 
   const highlightStyle = useAnimatedStyle(() => ({
-    opacity: shimmer.value * 0.9,
-    transform: [{ translateX: -120 + shimmer.value * 240 }],
+    opacity: shimmer.value * 0.85,
+    transform: [{ translateX: -140 + shimmer.value * 280 }],
   }));
 
   return (
@@ -75,55 +73,57 @@ const styles = StyleSheet.create({
     zIndex: 9999,
   },
   logoBox: {
-    width: 72,
-    height: 72,
+    width: 76,
+    height: 76,
     borderWidth: 2,
     borderColor: theme.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
   logoM: {
-    fontSize: 40,
-    fontWeight: '200',
-    color: '#9CA3AF',
+    fontSize: 44,
+    fontWeight: '300',
+    color: '#E5E5E5',
     marginTop: -4,
   },
   brand: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: 26,
+    fontWeight: '700',
     color: theme.white,
     letterSpacing: 0.5,
   },
   brandKo: {
-    fontSize: 15,
-    color: theme.grayMuted,
-    marginTop: 4,
-    marginBottom: 48,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#D4D4D4',
+    marginTop: 6,
+    marginBottom: 44,
   },
   taglineWrap: {
     overflow: 'hidden',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   tagline: {
-    fontSize: 26,
+    fontSize: 30,
     fontStyle: 'italic',
     color: theme.white,
-    fontWeight: '300',
-    letterSpacing: 0.3,
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
   shimmerBar: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    width: 60,
-    backgroundColor: 'rgba(255,255,255,0.35)',
+    width: 80,
+    backgroundColor: 'rgba(255,255,255,0.45)',
   },
   copy: {
     position: 'absolute',
     bottom: 48,
-    fontSize: 11,
-    color: theme.grayMuted,
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#A3A3A3',
   },
 });

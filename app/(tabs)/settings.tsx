@@ -122,15 +122,15 @@ export default function DashBoardSettingsScreen() {
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: theme.gray,
+    fontSize: theme.font.label,
+    fontWeight: '700',
+    color: theme.graySecondary,
     marginBottom: 4,
     marginLeft: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  hint: { fontSize: 13, color: theme.gray, marginBottom: 8, marginLeft: 4 },
+  hint: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray, marginBottom: 8, marginLeft: 4 },
   patternGroup: {
     backgroundColor: theme.white,
     borderRadius: 12,
@@ -149,8 +149,8 @@ const styles = StyleSheet.create({
   patternBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
   patternLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   patternNum: { fontSize: 15, fontWeight: '700', color: theme.accent, width: 20 },
-  patternName: { fontSize: 17, color: theme.black },
-  premium: { fontSize: 11, color: theme.accent, fontWeight: '600' },
+  patternName: { fontSize: theme.font.body, fontWeight: '700', color: theme.black },
+  premium: { fontSize: theme.font.label, color: theme.accent, fontWeight: '700' },
   check: {
     width: 24,
     height: 24,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
-  label: { fontSize: 17, color: theme.black },
+  label: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
   langRow: { flexDirection: 'row', gap: 6 },
   langChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: theme.grayLight },
   langChipOn: { backgroundColor: theme.accent, borderColor: theme.accent },

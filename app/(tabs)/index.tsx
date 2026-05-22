@@ -79,7 +79,7 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  empty: { fontSize: 15, color: theme.gray, marginBottom: 24 },
+  empty: { fontSize: theme.font.body, fontWeight: '600', color: theme.gray, marginBottom: 24 },
   cardRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   cardSpacer: { flex: 1 },
   startBtn: {
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: theme.accent,
   },
-  startText: { color: theme.white, fontWeight: '700', fontSize: 15 },
+  startText: { color: theme.white, fontWeight: '800', fontSize: theme.font.body },
   fab: {
     position: 'absolute',
     right: 20,

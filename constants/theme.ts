@@ -1,30 +1,41 @@
-/** 스케치: 베이지·흑백 + 주황 포인트 ~5% */
+/** 스케치: 베이지·흑백 + 주황 포인트 ~5% — 가독성 우선 대비 */
 export const theme = {
   beige: '#F5F0E8',
   white: '#FFFFFF',
-  black: '#1A1A1A',
+  black: '#0D0D0D',
   blackPure: '#000000',
-  gray: '#6B6560',
+  /** 본문·라벨 (베이지 위에서도 선명) */
+  gray: '#3D3832',
+  /** 보조 설명 */
+  graySecondary: '#5C554D',
   grayLight: '#E8E2D9',
-  grayMuted: '#B8B0A4',
-  accent: '#E85D04',
-  accentMuted: 'rgba(232, 93, 4, 0.12)',
-  danger: '#C41E1E',
-  success: '#2D6A4F',
-  /** 과목 달력 점 색 (스케치: 수학 분홍, 영어 초록) */
+  grayMuted: '#8A8278',
+  accent: '#D14D00',
+  accentMuted: 'rgba(209, 77, 0, 0.14)',
+  danger: '#B91C1C',
+  success: '#1B6B42',
   subject: {
-    math: '#E8A0BF',
-    english: '#8FBC8F',
-    science: '#9BB8D3',
-    korean: '#D4A574',
-    default: '#1A1A1A',
+    math: '#D4789A',
+    english: '#5A9A5A',
+    science: '#5A8FB8',
+    korean: '#B8864A',
+    default: '#0D0D0D',
   },
   cardShadow: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
+  },
+  /** 공통 글자 크기 */
+  font: {
+    title: 28,
+    heading: 22,
+    body: 17,
+    bodySmall: 15,
+    caption: 13,
+    label: 12,
   },
 };
 
