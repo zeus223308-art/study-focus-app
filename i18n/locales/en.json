@@ -1,0 +1,89 @@
+{
+  "appName": "Memora",
+  "tabs": {
+    "dashboard": "Today",
+    "vault": "Vault",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Today's review",
+    "empty": "Nothing to review today.",
+    "startReview": "Start review",
+    "studyPlease": "Time to study",
+    "dueCount": "{{count}} pending",
+    "calendarHint": "Review schedule"
+  },
+  "vault": {
+    "title": "Vault",
+    "addFolder": "Add folder",
+    "photos": "{{count}} photos"
+  },
+  "capture": {
+    "title": "Capture",
+    "saveTodayTitle": "Save with today's date?",
+    "saveTodayMessage": "No date was set. Save using the capture date?",
+    "yes": "Save",
+    "no": "Pick date",
+    "pickSubject": "Choose subject",
+    "pickDate": "Pick date",
+    "saved": "Saved"
+  },
+  "folder": {
+    "empty": "No photos yet",
+    "archive": "Archive",
+    "unarchive": "Move back"
+  },
+  "item": {
+    "layers": "Layers",
+    "layerOn": "Show layer",
+    "layerOff": "Hide layer",
+    "addLayer": "Add today's layer",
+    "note": "Note",
+    "slideshow": "Slideshow",
+    "sec5": "5s",
+    "sec10": "10s",
+    "sec30": "30s",
+    "archive": "Archive",
+    "delete": "Trash",
+    "resetReviewTitle": "Review cycle",
+    "keepCycle": "Keep original cycle",
+    "resetCycle": "Reset from today",
+    "tagExam": "Before exam",
+    "search": "Search"
+  },
+  "review": {
+    "complete": "Done",
+    "next": "Next"
+  },
+  "trash": {
+    "title": "Trash",
+    "empty": "Trash is empty",
+    "restore": "Restore",
+    "autoDeleteHint": "Auto-deletes next day · No restore after 3 days"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "notifications": "Review reminders",
+    "schedules": "Review schedules",
+    "onboarding": "Show setup guide again",
+    "limits": "Storage limits",
+    "photos": "Photos {{used}} / {{max}}",
+    "cloud": "Cloud backup (Google Drive)",
+    "cloudSoon": "Coming soon — local thumbnails, originals on Drive",
+    "ocr": "Document search (OCR)",
+    "ocrSoon": "Coming soon — search text in photos"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Memora",
+    "step1": "Create subject folders in the vault and save photos.",
+    "step2": "Set a review schedule and see due items on the dashboard.",
+    "step3": "Archive items to remove them from review rotation.",
+    "start": "Get started"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "done": "Done"
+  }
+}

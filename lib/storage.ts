@@ -3,24 +3,25 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEFAULT_DATA } from './defaults';
 import type { AppData } from './types';
 
-const STORAGE_KEY = '@study_focus_data_v1';
+const KEY = '@memora_app_v2';
 
 export async function loadAppData(): Promise<AppData> {
   try {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_DATA };
+    const raw = await AsyncStorage.getItem(KEY);
+    if (!raw) return structuredClone(DEFAULT_DATA);
     const parsed = JSON.parse(raw) as AppData;
     return {
       ...DEFAULT_DATA,
       ...parsed,
       settings: { ...DEFAULT_DATA.settings, ...parsed.settings },
-      subjects: parsed.subjects?.length ? parsed.subjects : DEFAULT_DATA.subjects,
+      schedules: parsed.schedules?.length ? parsed.schedules : DEFAULT_DATA.schedules,
+      folders: parsed.folders?.length ? parsed.folders : DEFAULT_DATA.folders,
     };
   } catch {
-    return { ...DEFAULT_DATA };
+    return structuredClone(DEFAULT_DATA);
   }
 }
 
 export async function saveAppData(data: AppData): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  await AsyncStorage.setItem(KEY, JSON.stringify(data));
 }

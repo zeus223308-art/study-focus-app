@@ -1,31 +1,69 @@
-export type SessionMode = 'focus' | 'shortBreak' | 'longBreak';
+export type Language = 'ko' | 'en';
 
-export type Subject = {
+export type ReviewScheduleMode = 'everyNDays' | 'customIntervals';
+
+export type ReviewSchedule = {
   id: string;
   name: string;
-  color: string;
+  mode: ReviewScheduleMode;
+  everyNDays?: number;
+  customIntervals?: number[];
 };
 
-export type StudySession = {
+export type Folder = {
   id: string;
-  subjectId: string;
-  mode: SessionMode;
-  durationMinutes: number;
-  completedAt: string;
+  name: string;
+  reviewScheduleId: string;
+  createdAt: string;
+};
+
+export type StudyItem = {
+  id: string;
+  folderId: string;
+  studyDate: string;
+  imageUri: string;
+  textNote: string;
+  archived: boolean;
+  tags: string[];
+  reviewScheduleId: string;
+  reviewAnchorDate: string;
+  reviewStepIndex: number;
+  lastReviewedAt: string | null;
+  slideshowSeconds: number;
+  layers: AnnotationLayer[];
+  answerImageUri?: string;
+  createdAt: string;
+};
+
+export type AnnotationLayer = {
+  id: string;
+  studyDate: string;
+  imageUri: string;
+  note: string;
+  visible: boolean;
+  createdAt: string;
+};
+
+export type TrashEntry = {
+  id: string;
+  item: StudyItem;
+  deletedAt: string;
 };
 
 export type AppSettings = {
-  focusMinutes: number;
-  shortBreakMinutes: number;
-  longBreakMinutes: number;
-  sessionsUntilLongBreak: number;
-  dailyGoalMinutes: number;
+  language: Language;
+  notificationsEnabled: boolean;
+  notificationHour: number;
+  notificationMinute: number;
+  onboardingDone: boolean;
+  photoLimit: number;
+  memoLimit: number;
 };
 
 export type AppData = {
-  subjects: Subject[];
-  sessions: StudySession[];
+  folders: Folder[];
+  schedules: ReviewSchedule[];
+  items: StudyItem[];
+  trash: TrashEntry[];
   settings: AppSettings;
-  lastStudyDate: string | null;
-  streak: number;
 };

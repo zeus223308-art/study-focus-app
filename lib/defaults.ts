@@ -1,36 +1,48 @@
-import type { AppData, AppSettings, Subject } from './types';
+import type { AppData, ReviewSchedule } from './types';
 
-export const SUBJECT_COLORS = [
-  '#6366F1',
-  '#8B5CF6',
-  '#EC4899',
-  '#F43F5E',
-  '#F97316',
-  '#EAB308',
-  '#22C55E',
-  '#14B8A6',
-  '#0EA5E9',
+export const DEFAULT_SCHEDULES: ReviewSchedule[] = [
+  {
+    id: 'sched_2days',
+    name: '2일마다',
+    mode: 'everyNDays',
+    everyNDays: 2,
+  },
+  {
+    id: 'sched_1357',
+    name: '1·3·5·7일',
+    mode: 'customIntervals',
+    customIntervals: [1, 3, 5, 7],
+  },
+  {
+    id: 'sched_3days',
+    name: '3일마다',
+    mode: 'everyNDays',
+    everyNDays: 3,
+  },
 ];
 
-export const DEFAULT_SUBJECTS: Subject[] = [
-  { id: 'math', name: '수학', color: '#6366F1' },
-  { id: 'english', name: '영어', color: '#0EA5E9' },
-  { id: 'science', name: '과학', color: '#22C55E' },
-  { id: 'korean', name: '국어', color: '#F43F5E' },
+export const DEFAULT_FOLDERS = [
+  { id: 'folder_math', name: '수학', reviewScheduleId: 'sched_1357' },
+  { id: 'folder_science', name: '과학', reviewScheduleId: 'sched_1357' },
+  { id: 'folder_korean', name: '국어', reviewScheduleId: 'sched_2days' },
+  { id: 'folder_english', name: '영어', reviewScheduleId: 'sched_2days' },
 ];
-
-export const DEFAULT_SETTINGS: AppSettings = {
-  focusMinutes: 25,
-  shortBreakMinutes: 5,
-  longBreakMinutes: 15,
-  sessionsUntilLongBreak: 4,
-  dailyGoalMinutes: 120,
-};
 
 export const DEFAULT_DATA: AppData = {
-  subjects: DEFAULT_SUBJECTS,
-  sessions: [],
-  settings: DEFAULT_SETTINGS,
-  lastStudyDate: null,
-  streak: 0,
+  folders: DEFAULT_FOLDERS.map((f) => ({
+    ...f,
+    createdAt: new Date().toISOString(),
+  })),
+  schedules: DEFAULT_SCHEDULES,
+  items: [],
+  trash: [],
+  settings: {
+    language: 'ko',
+    notificationsEnabled: true,
+    notificationHour: 9,
+    notificationMinute: 0,
+    onboardingDone: false,
+    photoLimit: 300,
+    memoLimit: 100,
+  },
 };

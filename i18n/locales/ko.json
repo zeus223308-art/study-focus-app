@@ -1,0 +1,89 @@
+{
+  "appName": "Memora",
+  "tabs": {
+    "dashboard": "오늘",
+    "vault": "보관함",
+    "settings": "설정"
+  },
+  "dashboard": {
+    "title": "오늘의 복습",
+    "empty": "오늘 복습할 항목이 없습니다.",
+    "startReview": "복습 시작",
+    "studyPlease": "공부하세요",
+    "dueCount": "{{count}}개 대기",
+    "calendarHint": "복습 예정일"
+  },
+  "vault": {
+    "title": "보관함",
+    "addFolder": "폴더 추가",
+    "photos": "{{count}}장"
+  },
+  "capture": {
+    "title": "촬영",
+    "saveTodayTitle": "오늘 날짜로 저장할까요?",
+    "saveTodayMessage": "날짜를 입력하지 않았습니다. 촬영한 날짜로 저장합니다.",
+    "yes": "저장",
+    "no": "날짜 선택",
+    "pickSubject": "과목을 선택하세요",
+    "pickDate": "날짜 선택",
+    "saved": "저장되었습니다"
+  },
+  "folder": {
+    "empty": "아직 사진이 없습니다",
+    "archive": "아카이브",
+    "unarchive": "보관함으로"
+  },
+  "item": {
+    "layers": "레이어",
+    "layerOn": "레이어 켜기",
+    "layerOff": "레이어 끄기",
+    "addLayer": "오늘 필기 추가",
+    "note": "메모",
+    "slideshow": "슬라이드",
+    "sec5": "5초",
+    "sec10": "10초",
+    "sec30": "30초",
+    "archive": "아카이브에 넣기",
+    "delete": "휴지통",
+    "resetReviewTitle": "복습 주기",
+    "keepCycle": "원래 주기 유지",
+    "resetCycle": "오늘부터 다시",
+    "tagExam": "시험 직전",
+    "search": "검색"
+  },
+  "review": {
+    "complete": "완료",
+    "next": "다음"
+  },
+  "trash": {
+    "title": "휴지통",
+    "empty": "휴지통이 비었습니다",
+    "restore": "복원",
+    "autoDeleteHint": "다음 날 자동 삭제 · 3일 지나면 복원 불가"
+  },
+  "settings": {
+    "title": "설정",
+    "language": "언어",
+    "notifications": "복습 알림",
+    "schedules": "복습 주기",
+    "onboarding": "설정 방법 다시 보기",
+    "limits": "저장 한도",
+    "photos": "사진 {{used}} / {{max}}",
+    "cloud": "클라우드 백업 (Google Drive)",
+    "cloudSoon": "준비 중 — 썸네일 로컬, 원본 Drive 연동",
+    "ocr": "문서 검색 (OCR)",
+    "ocrSoon": "준비 중 — 사진 속 글자 검색"
+  },
+  "onboarding": {
+    "welcome": "Memora에 오신 것을 환영합니다",
+    "step1": "보관함에 과목 폴더를 만들고 사진을 저장하세요.",
+    "step2": "복습 주기를 정하면 오늘 볼 항목을 대시보드에 띄웁니다.",
+    "step3": "아카이브에 넣으면 복습 대상에서 빠집니다.",
+    "start": "시작하기"
+  },
+  "common": {
+    "cancel": "취소",
+    "save": "저장",
+    "done": "완료"
+  }
+}

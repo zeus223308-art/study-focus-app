@@ -1,103 +1,124 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { Card } from '@/components/Card';
-import { Screen } from '@/components/Screen';
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useStudy } from '@/context/StudyContext';
-import type { AppSettings } from '@/lib/types';
-
-type SettingKey = keyof Pick<
-  AppSettings,
-  | 'focusMinutes'
-  | 'shortBreakMinutes'
-  | 'longBreakMinutes'
-  | 'sessionsUntilLongBreak'
-  | 'dailyGoalMinutes'
->;
-
-const SETTING_ROWS: { key: SettingKey; label: string; step: number; min: number; max: number; unit: string }[] = [
-  { key: 'focusMinutes', label: '집중 시간', step: 5, min: 5, max: 90, unit: '분' },
-  { key: 'shortBreakMinutes', label: '짧은 휴식', step: 1, min: 1, max: 30, unit: '분' },
-  { key: 'longBreakMinutes', label: '긴 휴식', step: 5, min: 5, max: 45, unit: '분' },
-  { key: 'sessionsUntilLongBreak', label: '긴 휴식 주기', step: 1, min: 2, max: 8, unit: '회' },
-  { key: 'dailyGoalMinutes', label: '일일 목표', step: 15, min: 30, max: 480, unit: '분' },
-];
+import { Screen } from '@/components/ui/Screen';
+import { theme } from '@/constants/theme';
+import { useApp, useLanguage } from '@/context/AppContext';
+import { scheduleDailyReviewReminder, cancelAllReminders } from '@/lib/notifications';
+import type { Language } from '@/lib/types';
 
 export default function SettingsScreen() {
-  const scheme = useColorScheme() ?? 'light';
-  const colors = Colors[scheme];
-  const { data, updateSettings } = useStudy();
-  const { settings } = data;
+  const { t, i18n } = useTranslation();
+  const router = useRouter();
+  const { data, updateSettings, photoCount } = useApp();
+  const { language, setLanguage } = useLanguage();
+  const { settings, schedules } = data;
 
-  const adjust = (key: SettingKey, delta: number, min: number, max: number) => {
-    const next = Math.min(max, Math.max(min, settings[key] + delta));
-    updateSettings({ [key]: next });
-  };
+  useEffect(() => {
+    if (settings.notificationsEnabled) {
+      scheduleDailyReviewReminder(
+        settings.notificationHour,
+        settings.notificationMinute,
+        t('dashboard.studyPlease'),
+        t('dashboard.title')
+      );
+    } else {
+      cancelAllReminders();
+    }
+  }, [settings.notificationsEnabled, settings.notificationHour, settings.notificationMinute, i18n.language]);
 
   return (
     <Screen scroll>
-      <Text style={[styles.title, { color: colors.text }]}>설정</Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-        나에게 맞는 포모도로 루틴을 설정하세요
-      </Text>
+      <Text style={styles.title}>{t('settings.title')}</Text>
 
-      <Card>
-        {SETTING_ROWS.map((row, index) => (
-          <View
-            key={row.key}
-            style={[
-              styles.row,
-              index < SETTING_ROWS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-            ]}>
-            <Text style={[styles.rowLabel, { color: colors.text }]}>{row.label}</Text>
-            <View style={styles.stepper}>
-              <Pressable
-                onPress={() => adjust(row.key, -row.step, row.min, row.max)}
-                style={[styles.stepBtn, { borderColor: colors.border }]}>
-                <Text style={{ color: colors.text, fontSize: 20 }}>−</Text>
-              </Pressable>
-              <Text style={[styles.value, { color: colors.tint }]}>
-                {settings[row.key]}
-                {row.unit}
+      <View style={styles.block}>
+        <Text style={styles.label}>{t('settings.language')}</Text>
+        <View style={styles.langRow}>
+          {(['ko', 'en'] as Language[]).map((lang) => (
+            <Pressable
+              key={lang}
+              onPress={() => setLanguage(lang)}
+              style={[styles.langBtn, language === lang && styles.langBtnOn]}>
+              <Text style={language === lang ? styles.langOn : styles.langText}>
+                {lang === 'ko' ? '한국어' : 'English'}
               </Text>
-              <Pressable
-                onPress={() => adjust(row.key, row.step, row.min, row.max)}
-                style={[styles.stepBtn, { borderColor: colors.border }]}>
-                <Text style={{ color: colors.text, fontSize: 20 }}>+</Text>
-              </Pressable>
-            </View>
-          </View>
-        ))}
-      </Card>
+            </Pressable>
+          ))}
+        </View>
+      </View>
 
-      <Card style={{ marginTop: 16 }}>
-        <Text style={[styles.aboutTitle, { color: colors.text }]}>스터디 포커스</Text>
-        <Text style={[styles.aboutText, { color: colors.textSecondary }]}>
-          포모도로 타이머와 과목별 공부 기록을 한곳에서 관리하는 공부 앱입니다.
+      <View style={styles.block}>
+        <View style={styles.row}>
+          <Text style={styles.label}>{t('settings.notifications')}</Text>
+          <Switch
+            value={settings.notificationsEnabled}
+            onValueChange={(v) => updateSettings({ notificationsEnabled: v })}
+            trackColor={{ true: theme.accent }}
+          />
+        </View>
+      </View>
+
+      <View style={styles.block}>
+        <Text style={styles.label}>{t('settings.schedules')}</Text>
+        {schedules.map((s) => (
+          <Text key={s.id} style={styles.scheduleItem}>
+            · {s.name}
+            {s.mode === 'everyNDays' ? ` (${s.everyNDays}일)` : ` [${s.customIntervals?.join(',')}]`}
+          </Text>
+        ))}
+      </View>
+
+      <View style={styles.block}>
+        <Text style={styles.label}>{t('settings.limits')}</Text>
+        <Text style={styles.meta}>
+          {t('settings.photos', { used: photoCount, max: settings.photoLimit })}
         </Text>
-        <Text style={[styles.version, { color: colors.textSecondary }]}>버전 1.0.0</Text>
-      </Card>
+      </View>
+
+      <View style={styles.block}>
+        <Text style={styles.label}>{t('settings.cloud')}</Text>
+        <Text style={styles.meta}>{t('settings.cloudSoon')}</Text>
+      </View>
+
+      <View style={styles.block}>
+        <Text style={styles.label}>{t('settings.ocr')}</Text>
+        <Text style={styles.meta}>{t('settings.ocrSoon')}</Text>
+      </View>
+
+      <Pressable onPress={() => router.push('/onboarding')} style={styles.link}>
+        <Text style={styles.linkText}>{t('settings.onboarding')}</Text>
+      </Pressable>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 28, fontWeight: '800', marginTop: 8 },
-  subtitle: { fontSize: 15, marginTop: 4, marginBottom: 20 },
-  row: { paddingVertical: 14 },
-  rowLabel: { fontSize: 16, fontWeight: '600', marginBottom: 10 },
-  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  stepBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+  title: { fontSize: 28, fontWeight: '700', color: theme.black, marginBottom: 20 },
+  block: {
+    backgroundColor: theme.white,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: theme.grayLight,
   },
-  value: { fontSize: 20, fontWeight: '700', minWidth: 80, textAlign: 'center' },
-  aboutTitle: { fontSize: 17, fontWeight: '700', marginBottom: 8 },
-  aboutText: { fontSize: 14, lineHeight: 22 },
-  version: { fontSize: 12, marginTop: 12 },
+  label: { fontSize: 15, fontWeight: '700', color: theme.black, marginBottom: 10 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  langRow: { flexDirection: 'row', gap: 8 },
+  langBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+  },
+  langBtnOn: { backgroundColor: theme.accent, borderColor: theme.accent },
+  langText: { color: theme.black },
+  langOn: { color: theme.white, fontWeight: '600' },
+  scheduleItem: { fontSize: 14, color: theme.gray, marginTop: 4 },
+  meta: { fontSize: 14, color: theme.gray, lineHeight: 22 },
+  link: { marginTop: 8, padding: 12 },
+  linkText: { color: theme.accent, fontWeight: '600' },
 });
