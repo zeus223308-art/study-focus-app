@@ -1,10 +1,12 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { ReviewCalendar } from '@/components/ReviewCalendar';
+import { DateRibbon } from '@/components/dashboard/DateRibbon';
+import { PaywallSheet } from '@/components/paywall/PaywallSheet';
 import { SubjectReviewCard } from '@/components/SubjectReviewCard';
+import { SpringPressable } from '@/components/ui/SpringPressable';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
@@ -13,94 +15,106 @@ import { useApp } from '@/context/AppContext';
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, dueToday, getSchedule } = useApp();
+  const {
+    data,
+    dueSelected,
+    ribbonMarks,
+    localToday,
+    selectedDate,
+    setSelectedDate,
+    freemium,
+    paywallVisible,
+    setPaywallVisible,
+  } = useApp();
 
-  const byFolder = useMemo(() => {
+  const display = dueSelected;
+
+  const bySubject = useMemo(() => {
     const map = new Map<string, number>();
-    for (const item of dueToday) {
-      map.set(item.folderId, (map.get(item.folderId) ?? 0) + 1);
+    for (const b of display) {
+      map.set(b.subjectId, (map.get(b.subjectId) ?? 0) + b.pages.length);
     }
     return map;
-  }, [dueToday]);
+  }, [display]);
 
-  const folderEntries = Array.from(byFolder.entries())
-    .map(([folderId, count]) => {
-      const folder = data.folders.find((f) => f.id === folderId);
-      return folder ? { folder, count } : null;
-    })
-    .filter(Boolean) as { folder: (typeof data.folders)[0]; count: number }[];
-
-  const pairs: typeof folderEntries[] = [];
-  for (let i = 0; i < folderEntries.length; i += 2) {
-    pairs.push(folderEntries.slice(i, i + 2));
-  }
+  const pairs = useMemo(() => {
+    const entries = Array.from(bySubject.entries()).map(([subjectId, count]) => {
+      const subject = data.subjects.find((s) => s.id === subjectId);
+      return subject ? { subject, count } : null;
+    }).filter(Boolean) as { subject: (typeof data.subjects)[0]; count: number }[];
+    const rows: typeof entries[] = [];
+    for (let i = 0; i < entries.length; i += 2) rows.push(entries.slice(i, i + 2));
+    return rows;
+  }, [bySubject, data.subjects]);
 
   return (
-    <Screen scroll>
-      <ScreenHeader title={t('dashboard.title')} showSettings />
+    <Screen scroll nestedScrollEnabled>
+      <ScreenHeader title={t('dashboard.title')} showSettings={false} />
+      <View style={styles.ribbonBlock}>
+        <DateRibbon
+          marks={ribbonMarks}
+          selectedDate={selectedDate}
+          firstLaunchDate={data.settings.firstLaunchDate}
+          localToday={localToday}
+          onSelectDate={setSelectedDate}
+        />
+      </View>
 
-      {pairs.length === 0 ? (
-        <Text style={styles.empty}>{t('dashboard.empty')}</Text>
+      {display.length === 0 ? (
+        <Text style={styles.empty}>
+          {selectedDate === localToday
+            ? t('dashboard.empty')
+            : t('dashboard.emptyDate', { date: selectedDate })}
+        </Text>
       ) : (
         pairs.map((row, ri) => (
           <View key={ri} style={styles.cardRow}>
-            {row.map(({ folder, count }) => (
+            {row.map(({ subject, count }) => (
               <SubjectReviewCard
-                key={folder.id}
-                name={folder.name}
+                key={subject.id}
+                name={subject.name}
                 count={count}
-                color={folder.color}
+                color={theme.gray}
                 totalLabel={t('dashboard.totalPages', { count })}
-                onPress={() => router.push('/review/session')}
+                onPress={() => router.push({ pathname: '/review/session', params: { blackout: '1' } })}
               />
             ))}
-            {row.length === 1 && <View style={styles.cardSpacer} />}
+            {row.length === 1 && <View style={styles.spacer} />}
           </View>
         ))
       )}
 
-      {dueToday.length > 0 && (
-        <Pressable style={styles.startBtn} onPress={() => router.push('/review/session')}>
+      {display.length > 0 && (
+        <SpringPressable
+          style={styles.startBtn}
+          onPress={() => router.push({ pathname: '/review/session', params: { blackout: '1' } })}>
           <Text style={styles.startText}>{t('dashboard.startReview')}</Text>
-        </Pressable>
+        </SpringPressable>
       )}
 
-      <ReviewCalendar
-        items={data.items.filter((i) => !i.archived)}
-        folders={data.folders}
-        getSchedule={getSchedule}
+      <PaywallSheet
+        visible={paywallVisible}
+        reason={freemium.reason ?? 'images'}
+        used={freemium.reason === 'memos' ? freemium.usedMemos : freemium.usedImages}
+        max={freemium.reason === 'memos' ? data.settings.memoLimit : data.settings.photoLimit}
+        onClose={() => setPaywallVisible(false)}
       />
-
-      <Pressable style={styles.fab} onPress={() => router.push('/capture')}>
-        <Text style={styles.fabText}>+</Text>
-      </Pressable>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  empty: { fontSize: theme.font.body, fontWeight: '600', color: theme.gray, marginBottom: 24 },
+  ribbonBlock: { marginBottom: 4 },
+  empty: { fontSize: theme.font.body, fontWeight: '600', color: theme.gray, marginVertical: 24 },
   cardRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  cardSpacer: { flex: 1 },
+  spacer: { flex: 1 },
   startBtn: {
     alignSelf: 'center',
-    marginVertical: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderRadius: 24,
-    backgroundColor: theme.accent,
+    marginVertical: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.orange,
   },
   startText: { color: theme.white, fontWeight: '800', fontSize: theme.font.body },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: theme.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabText: { color: theme.white, fontSize: 28, fontWeight: '300' },
 });

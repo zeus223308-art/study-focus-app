@@ -4,11 +4,11 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { canRestoreFromTrash } from '@/lib/trash';
+import { canRestoreFromBackup } from '@/lib/trash/lifecycle';
 
 export default function TrashScreen() {
   const { t } = useTranslation();
-  const { data, restoreFromTrash } = useApp();
+  const { data, restoreTrash } = useApp();
 
   return (
     <Screen scroll>
@@ -17,19 +17,22 @@ export default function TrashScreen() {
       {data.trash.length === 0 ? (
         <Text style={styles.empty}>{t('trash.empty')}</Text>
       ) : (
-        data.trash.map((entry) => (
-          <View key={entry.id} style={styles.row}>
-            <Image source={{ uri: entry.item.imageUri }} style={styles.thumb} />
-            <View style={styles.meta}>
-              <Text style={styles.date}>{entry.item.studyDate}</Text>
-              {canRestoreFromTrash(entry) && (
-                <Pressable onPress={() => restoreFromTrash(entry.id)}>
-                  <Text style={styles.restore}>{t('trash.restore')}</Text>
-                </Pressable>
-              )}
+        data.trash.map((entry) => {
+          const cover = entry.bundleSnapshot.pages[0]?.asset.thumbnailUri;
+          return (
+            <View key={entry.id} style={styles.row}>
+              {cover ? <Image source={{ uri: cover }} style={styles.thumb} /> : <View style={[styles.thumb, styles.thumbEmpty]} />}
+              <View style={styles.meta}>
+                <Text style={styles.date}>{entry.bundleSnapshot.studyDate}</Text>
+                {canRestoreFromBackup(entry) && (
+                  <Pressable onPress={() => restoreTrash(entry.id)}>
+                    <Text style={styles.restore}>{t('trash.restore')}</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
-          </View>
-        ))
+          );
+        })
       )}
     </Screen>
   );
@@ -49,7 +52,8 @@ const styles = StyleSheet.create({
     borderColor: theme.grayLight,
   },
   thumb: { width: 56, height: 56, borderRadius: 8 },
+  thumbEmpty: { backgroundColor: theme.grayLight },
   meta: { marginLeft: 12, justifyContent: 'center' },
   date: { fontSize: 15, color: theme.black },
-  restore: { color: theme.accent, fontWeight: '600', marginTop: 6 },
+  restore: { color: theme.orange, fontWeight: '600', marginTop: 6 },
 });

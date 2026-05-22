@@ -1,15 +1,16 @@
 {
   "appName": "MemorySherpa",
-  "appNameShort": "메셰",
   "splashTagline": "Conquer your memory",
   "tabs": {
-    "dashboard": "Today's review",
+    "dashboard": "Dashboard",
     "vault": "Files",
-    "settings": "DashBoard"
+    "capture": "Camera",
+    "settings": "Settings"
   },
   "dashboard": {
     "title": "Today's review",
     "empty": "오늘 복습할 항목이 없습니다.",
+    "emptyDate": "{{date}} — 복습할 항목이 없습니다.",
     "startReview": "복습 시작",
     "studyPlease": "오늘 Today's review 있습니다",
     "dueCount": "{{count}}개 대기",
@@ -23,6 +24,10 @@
   },
   "capture": {
     "title": "촬영",
+    "permissionHint": "문서를 촬영해 Files에 저장하려면 카메라 권한이 필요합니다.",
+    "allowCamera": "카메라 허용",
+    "shutter": "촬영",
+    "retake": "다시 찍기",
     "saveTodayTitle": "오늘 날짜로 저장할까요?",
     "saveTodayMessage": "날짜를 입력하지 않았습니다. 촬영한 날짜로 저장합니다.",
     "yes": "저장",
@@ -56,7 +61,14 @@
   },
   "review": {
     "complete": "완료",
-    "next": "다음"
+    "next": "다음",
+    "recallPlaceholder": "기억나는 내용을 적어 보세요",
+    "submitRecall": "채점하기",
+    "hintAd": "광고 보고 힌트 5초",
+    "adTitle": "광고 재생 중",
+    "adWait": "5초 후 다시 시도할 수 있습니다",
+    "hintTitle": "힌트 보기",
+    "watchAd": "광고 시청"
   },
   "trash": {
     "title": "휴지통",
@@ -65,7 +77,7 @@
     "autoDeleteHint": "다음 날 자동 삭제 · 3일 지나면 복원 불가"
   },
   "settings": {
-    "title": "DashBoard",
+    "title": "Settings",
     "language": "언어",
     "notifications": "복습 알림",
     "reviewPattern": "Review Pattern",
@@ -81,7 +93,7 @@
     "ocrSoon": "준비 중"
   },
   "onboarding": {
-    "welcome": "MemorySherpa · 메셰",
+    "welcome": "MemorySherpa",
     "step1": "Files에 과목 폴더를 만들고 사진을 저장하세요.",
     "step2": "Review Pattern을 정하면 Today's review에 띄웁니다.",
     "step3": "아카이브에 넣으면 복습 대상에서 빠집니다.",

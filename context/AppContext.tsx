@@ -4,104 +4,180 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 
-import { folderColor } from '@/constants/theme';
+import { theme } from '@/constants/theme';
+import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
-import { loadAppData, saveAppData } from '@/lib/storage';
-import { isDueToday } from '@/lib/review';
-import { shouldAutoDeleteFromTrash } from '@/lib/trash';
+import { todayKey } from '@/lib/domain/dates';
+import { appendCaptureToData } from '@/lib/domain/bundle-factory';
 import type {
   AppData,
   AppSettings,
-  Folder,
-  ReviewSchedule,
-  StudyItem,
   Language,
-} from '@/lib/types';
+  LayerCycleChoice,
+  NoteBundle,
+  ReviewSchedule,
+  SubjectFolder,
+} from '@/lib/domain/types';
+import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
+import { isDueToday, advanceAfterReview, resetReviewCycle, maintainReviewCycle } from '@/lib/spacing/engine';
+import {
+  createTrashLifecycle,
+  filterActiveTrash,
+  canRestoreFromBackup,
+} from '@/lib/trash/lifecycle';
+import { createStorageProvider, checkFreemiumLimits, countPages } from '@/services/storage';
+import type { StorageProvider, FreemiumCheck } from '@/services/storage/types';
 
 type AppContextValue = {
   ready: boolean;
+  storage: StorageProvider;
   data: AppData;
-  dueToday: StudyItem[];
-  refresh: () => void;
-  addFolder: (name: string, scheduleId: string) => void;
-  setFolderSchedule: (folderId: string, scheduleId: string) => void;
-  toggleActiveSchedule: (scheduleId: string) => void;
-  addItem: (item: Omit<StudyItem, 'id' | 'createdAt' | 'layers' | 'reviewStepIndex' | 'lastReviewedAt'>) => string;
-  updateItem: (id: string, patch: Partial<StudyItem>) => void;
-  moveItemToTrash: (id: string) => void;
-  restoreFromTrash: (trashId: string) => void;
-  purgeTrash: () => void;
+  dueToday: NoteBundle[];
+  ribbonMarks: ReturnType<typeof buildDateRibbonMarks>;
+  localToday: string;
+  selectedDate: string;
+  setSelectedDate: (d: string) => void;
+  dueSelected: NoteBundle[];
+  freemium: FreemiumCheck;
+  paywallVisible: boolean;
+  setPaywallVisible: (v: boolean) => void;
+  refresh: () => Promise<void>;
+  capturePhoto: (imageUri: string, subjectId: string, studyDate?: string) => Promise<string | null>;
+  addSubject: (name: string, scheduleId: string) => void;
+  setSubjectSchedule: (subjectId: string, scheduleId: string) => void;
+  toggleActiveSchedule: (id: string) => void;
+  updateBundle: (id: string, patch: Partial<NoteBundle>) => void;
+  completeReview: (bundleId: string) => void;
+  archiveBundle: (id: string) => void;
+  moveBundleToTrash: (id: string) => void;
+  restoreTrash: (trashId: string) => void;
+  applyLayerCycleChoice: (bundleId: string, choice: LayerCycleChoice) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
   getSchedule: (id: string) => ReviewSchedule | undefined;
-  photoCount: number;
+  syncCloud: () => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const storage = useMemo(() => createStorageProvider(), []);
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<AppData | null>(null);
+  const localToday = useLocalCalendarDay();
+  const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [paywallVisible, setPaywallVisible] = useState(false);
+  const prevLocalTodayRef = useRef(localToday);
 
   const load = useCallback(async () => {
-    const loaded = await loadAppData();
-    const trash = loaded.trash.filter((t) => !shouldAutoDeleteFromTrash(t));
-    setData({ ...loaded, trash });
+    const loaded = await storage.loadAppData();
+    const activeTrash = filterActiveTrash(loaded.trash);
+    setData({ ...loaded, trash: activeTrash });
     initI18n(loaded.settings.language);
     setReady(true);
-  }, []);
+  }, [storage]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   useEffect(() => {
+    const prev = prevLocalTodayRef.current;
+    if (prev === localToday) return;
+    prevLocalTodayRef.current = localToday;
+    setSelectedDate((cur) => {
+      if (cur > localToday) return localToday;
+      if (cur === prev) return localToday;
+      return cur;
+    });
+  }, [localToday]);
+
+  useEffect(() => {
     if (!ready || !data) return;
-    saveAppData(data);
-  }, [data, ready]);
+    storage.saveAppData(data);
+  }, [data, ready, storage]);
+
+  const persist = useCallback((next: AppData) => setData(next), []);
 
   const getSchedule = useCallback(
     (id: string) => data?.schedules.find((s) => s.id === id),
     [data]
   );
 
+  const freemium = useMemo(
+    () => (data ? checkFreemiumLimits(data) : { allowed: true, reason: null, usedImages: 0, usedMemos: 0 }),
+    [data]
+  );
+
   const dueToday = useMemo(() => {
     if (!data) return [];
-    return data.items.filter((item) => {
-      const schedule = getSchedule(item.reviewScheduleId);
-      if (!schedule) return false;
-      return isDueToday(item, schedule);
+    return data.bundles.filter((b) => {
+      const s = getSchedule(b.review.reviewScheduleId);
+      return s ? isDueToday(b, s) : false;
     });
   }, [data, getSchedule]);
 
-  const photoCount = data?.items.length ?? 0;
+  const ribbonMarks = useMemo(() => {
+    if (!data) return [];
+    return buildDateRibbonMarks(data.bundles, getSchedule, data.settings.firstLaunchDate);
+  }, [data, getSchedule, localToday]);
 
-  const addFolder = useCallback((name: string, scheduleId: string) => {
-    const id = `folder_${Date.now()}`;
-    const folder: Folder = {
-      id,
+  const dueSelected = useMemo(() => {
+    if (!data) return [];
+    return getDueBundlesForDate(data, selectedDate, getSchedule);
+  }, [data, selectedDate, getSchedule]);
+
+  const capturePhoto = useCallback(
+    async (imageUri: string, subjectId: string, studyDate?: string) => {
+      if (!data) return null;
+      const check = checkFreemiumLimits(data);
+      if (!check.allowed) {
+        setPaywallVisible(true);
+        return null;
+      }
+      const { data: next } = await appendCaptureToData(storage, data, {
+        imageUri,
+        subjectId,
+        studyDate,
+      });
+      persist(next);
+      const bundle = next.bundles.find(
+        (b) =>
+          b.subjectId === subjectId &&
+          (studyDate ? b.studyDate === studyDate : b.studyDate === todayKey())
+      );
+      return bundle?.id ?? next.bundles[0]?.id ?? null;
+    },
+    [data, storage, persist]
+  );
+
+  const addSubject = useCallback((name: string, scheduleId: string) => {
+    const subject: SubjectFolder = {
+      id: `folder_${Date.now()}`,
       name: name.trim(),
       reviewScheduleId: scheduleId,
-      color: folderColor(id),
+      color: theme.gray,
+      sortOrder: data?.subjects.length ?? 0,
       createdAt: new Date().toISOString(),
     };
-    setData((prev) => (prev ? { ...prev, folders: [...prev.folders, folder] } : prev));
-  }, []);
+    setData((prev) => (prev ? { ...prev, subjects: [...prev.subjects, subject] } : prev));
+  }, [data?.subjects.length]);
 
-  const setFolderSchedule = useCallback((folderId: string, scheduleId: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      if (!prev.settings.activeScheduleIds.includes(scheduleId)) return prev;
-      return {
-        ...prev,
-        folders: prev.folders.map((f) =>
-          f.id === folderId ? { ...f, reviewScheduleId: scheduleId } : f
-        ),
-      };
-    });
+  const setSubjectSchedule = useCallback((subjectId: string, scheduleId: string) => {
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            subjects: prev.subjects.map((s) =>
+              s.id === subjectId ? { ...s, reviewScheduleId: scheduleId } : s
+            ),
+          }
+        : prev
+    );
   }, []);
 
   const toggleActiveSchedule = useCallback((scheduleId: string) => {
@@ -122,67 +198,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const addItem = useCallback(
-    (partial: Omit<StudyItem, 'id' | 'createdAt' | 'layers' | 'reviewStepIndex' | 'lastReviewedAt'>) => {
-      const id = `item_${Date.now()}`;
-      const item: StudyItem = {
-        ...partial,
-        id,
-        layers: [],
-        reviewStepIndex: 0,
-        lastReviewedAt: null,
-        createdAt: new Date().toISOString(),
-      };
-      setData((prev) => (prev ? { ...prev, items: [item, ...prev.items] } : prev));
-      return id;
-    },
-    []
-  );
-
-  const updateItem = useCallback((id: string, patch: Partial<StudyItem>) => {
+  const updateBundle = useCallback((id: string, patch: Partial<NoteBundle>) => {
     setData((prev) =>
       prev
         ? {
             ...prev,
-            items: prev.items.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+            bundles: prev.bundles.map((b) =>
+              b.id === id ? { ...b, ...patch, updatedAt: new Date().toISOString() } : b
+            ),
           }
         : prev
     );
   }, []);
 
-  const moveItemToTrash = useCallback((id: string) => {
+  const completeReview = useCallback(
+    (bundleId: string) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          bundles: prev.bundles.map((b) =>
+            b.id === bundleId ? advanceAfterReview(b) : b
+          ),
+        };
+      });
+    },
+    []
+  );
+
+  const archiveBundle = useCallback((id: string) => {
+    updateBundle(id, { archived: true, archivedAt: new Date().toISOString() });
+  }, [updateBundle]);
+
+  const moveBundleToTrash = useCallback((id: string) => {
     setData((prev) => {
       if (!prev) return prev;
-      const item = prev.items.find((i) => i.id === id);
-      if (!item) return prev;
+      const bundle = prev.bundles.find((b) => b.id === id);
+      if (!bundle) return prev;
       return {
         ...prev,
-        items: prev.items.filter((i) => i.id !== id),
-        trash: [
-          { id: `trash_${Date.now()}`, item, deletedAt: new Date().toISOString() },
-          ...prev.trash,
-        ],
+        bundles: prev.bundles.filter((b) => b.id !== id),
+        trash: [createTrashLifecycle(bundle), ...prev.trash],
       };
     });
   }, []);
 
-  const restoreFromTrash = useCallback((trashId: string) => {
+  const restoreTrash = useCallback((trashId: string) => {
     setData((prev) => {
       if (!prev) return prev;
       const entry = prev.trash.find((t) => t.id === trashId);
-      if (!entry) return prev;
+      if (!entry || !canRestoreFromBackup(entry)) return prev;
       return {
         ...prev,
-        items: [entry.item, ...prev.items],
+        bundles: [{ ...entry.bundleSnapshot, archived: false }, ...prev.bundles],
         trash: prev.trash.filter((t) => t.id !== trashId),
       };
     });
   }, []);
 
-  const purgeTrash = useCallback(() => {
-    setData((prev) =>
-      prev ? { ...prev, trash: prev.trash.filter((t) => !shouldAutoDeleteFromTrash(t)) } : prev
-    );
+  const applyLayerCycleChoice = useCallback((bundleId: string, choice: LayerCycleChoice) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        bundles: prev.bundles.map((b) => {
+          if (b.id !== bundleId) return b;
+          return choice === 'reset' ? resetReviewCycle(b) : maintainReviewCycle(b);
+        }),
+      };
+    });
   }, []);
 
   const updateSettings = useCallback((patch: Partial<AppSettings>) => {
@@ -194,41 +278,67 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const syncCloud = useCallback(async () => {
+    if (!data) return;
+    const next = await storage.syncAllPending(data);
+    persist(next);
+  }, [data, storage, persist]);
+
   const value = useMemo<AppContextValue | null>(() => {
     if (!data) return null;
     return {
       ready,
+      storage,
       data,
       dueToday,
+      localToday,
+      ribbonMarks,
+      selectedDate,
+      setSelectedDate,
+      dueSelected,
+      freemium,
+      paywallVisible,
+      setPaywallVisible,
       refresh: load,
-      addFolder,
-      setFolderSchedule,
+      capturePhoto,
+      addSubject,
+      setSubjectSchedule,
       toggleActiveSchedule,
-      addItem,
-      updateItem,
-      moveItemToTrash,
-      restoreFromTrash,
-      purgeTrash,
+      updateBundle,
+      completeReview,
+      archiveBundle,
+      moveBundleToTrash,
+      restoreTrash,
+      applyLayerCycleChoice,
       updateSettings,
       getSchedule,
-      photoCount,
+      syncCloud,
     };
   }, [
     ready,
+    storage,
     data,
     dueToday,
+    localToday,
+    ribbonMarks,
+    selectedDate,
+    dueSelected,
+    freemium,
+    paywallVisible,
     load,
-    addFolder,
-    setFolderSchedule,
+    capturePhoto,
+    addSubject,
+    setSubjectSchedule,
     toggleActiveSchedule,
-    addItem,
-    updateItem,
-    moveItemToTrash,
-    restoreFromTrash,
-    purgeTrash,
+    updateBundle,
+    completeReview,
+    archiveBundle,
+    moveBundleToTrash,
+    restoreTrash,
+    applyLayerCycleChoice,
     updateSettings,
     getSchedule,
-    photoCount,
+    syncCloud,
   ]);
 
   if (!value) return null;

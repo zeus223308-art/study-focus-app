@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { MobileWebFrame } from '@/components/MobileWebFrame';
 import { SplashBrand } from '@/components/SplashBrand';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { theme } from '@/constants/theme';
@@ -30,9 +31,7 @@ function RootNavigator() {
     }
   }, [ready, brandDone, data.settings.onboardingDone, segments, router]);
 
-  if (!brandDone) {
-    return <SplashBrand onFinish={onBrandFinish} />;
-  }
+  if (!brandDone) return <SplashBrand onFinish={onBrandFinish} />;
 
   return (
     <Stack
@@ -44,10 +43,10 @@ function RootNavigator() {
       }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      <Stack.Screen name="capture" options={{ presentation: 'modal', title: '' }} />
+      <Stack.Screen name="capture" options={{ headerShown: false }} />
       <Stack.Screen name="folder/[id]" options={{ title: '' }} />
-      <Stack.Screen name="item/[id]" options={{ title: '' }} />
-      <Stack.Screen name="review/session" options={{ title: '', headerShown: false }} />
+      <Stack.Screen name="bundle/[id]" options={{ title: '' }} />
+      <Stack.Screen name="review/session" options={{ headerShown: false }} />
       <Stack.Screen name="trash" options={{ title: '' }} />
       <Stack.Screen name="search" options={{ presentation: 'modal', title: '' }} />
     </Stack>
@@ -67,8 +66,10 @@ export default function RootLayout() {
 
   return (
     <AppProvider>
-      <StatusBar style="dark" />
-      <RootNavigator />
+      <MobileWebFrame>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </MobileWebFrame>
     </AppProvider>
   );
 }

@@ -100,7 +100,6 @@ export function SplashBrand({ onFinish }: Props) {
       </View>
 
       <Animated.View style={[styles.footer, footerStyle]}>
-        <Text style={styles.brandKo}>메셰</Text>
         <Text style={styles.tagline}>Conquer your memory</Text>
         <Text style={styles.copy}>© MemorySherpa</Text>
       </Animated.View>
@@ -141,12 +140,6 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     paddingHorizontal: 24,
-  },
-  brandKo: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.75)',
-    marginBottom: 10,
   },
   tagline: {
     fontSize: 20,

@@ -9,9 +9,10 @@ type Props = {
   scroll?: boolean;
   style?: ViewStyle;
   padded?: boolean;
+  nestedScrollEnabled?: boolean;
 };
 
-export function Screen({ children, scroll, style, padded = true }: Props) {
+export function Screen({ children, scroll, style, padded = true, nestedScrollEnabled }: Props) {
   const insets = useSafeAreaInsets();
   const pad = padded ? 20 : 0;
 
@@ -24,7 +25,8 @@ export function Screen({ children, scroll, style, padded = true }: Props) {
       <ScrollView
         style={styles.root}
         contentContainerStyle={{ paddingBottom: insets.bottom + 96 }}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={nestedScrollEnabled}>
         {inner}
       </ScrollView>
     );

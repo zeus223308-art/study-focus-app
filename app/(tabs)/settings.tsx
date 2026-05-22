@@ -8,24 +8,25 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
+import type { Language } from '@/lib/domain/types';
 import { scheduleDailyReviewReminder, cancelAllReminders } from '@/lib/notifications';
-import type { Language } from '@/lib/types';
 
-export default function DashBoardSettingsScreen() {
+export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { data, updateSettings, photoCount, toggleActiveSchedule } = useApp();
+  const { data, updateSettings, toggleActiveSchedule, freemium } = useApp();
   const { language, setLanguage } = useLanguage();
-  const { settings, schedules, folders } = data;
+  const { settings, schedules, subjects } = data;
   const active = settings.activeScheduleIds;
+  const photoCount = freemium.usedImages;
 
   useEffect(() => {
     if (settings.notificationsEnabled) {
       scheduleDailyReviewReminder(
         settings.notificationHour,
         settings.notificationMinute,
-        t('dashboard.studyPlease'),
-        t('dashboard.title')
+        "You have Today's Reviews waiting.",
+        "Today's review"
       );
     } else {
       cancelAllReminders();
@@ -67,12 +68,12 @@ export default function DashBoardSettingsScreen() {
       </View>
 
       <SettingsGroup title={t('settings.filesSection')}>
-        {folders.map((f, i) => (
+        {subjects.map((f, i) => (
           <SettingsRow
             key={f.id}
             label={f.name}
             value={scheduleLabel(f.reviewScheduleId)}
-            last={i === folders.length - 1}
+            last={i === subjects.length - 1}
           />
         ))}
       </SettingsGroup>
@@ -101,12 +102,12 @@ export default function DashBoardSettingsScreen() {
           <Switch
             value={settings.notificationsEnabled}
             onValueChange={(v) => updateSettings({ notificationsEnabled: v })}
-            trackColor={{ true: theme.accent }}
+            trackColor={{ true: theme.orange }}
           />
         </View>
         <SettingsRow
           label={t('settings.limits')}
-          value={`${photoCount} / ${settings.photoLimit}`}
+          value={`${photoCount} / ${settings.photoLimit} · ${freemium.usedMemos} / ${settings.memoLimit}`}
           last={false}
         />
         <SettingsRow label={t('settings.cloud')} value={t('settings.cloudSoon')} last={false} />
@@ -148,9 +149,9 @@ const styles = StyleSheet.create({
   },
   patternBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
   patternLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  patternNum: { fontSize: 15, fontWeight: '700', color: theme.accent, width: 20 },
+  patternNum: { fontSize: 15, fontWeight: '700', color: theme.orange, width: 20 },
   patternName: { fontSize: theme.font.body, fontWeight: '700', color: theme.black },
-  premium: { fontSize: theme.font.label, color: theme.accent, fontWeight: '700' },
+  premium: { fontSize: theme.font.label, color: theme.orange, fontWeight: '700' },
   check: {
     width: 24,
     height: 24,
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkOn: { backgroundColor: theme.accent, borderColor: theme.accent },
+  checkOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   checkMark: { color: theme.white, fontSize: 12, fontWeight: '700' },
   row: {
     flexDirection: 'row',
@@ -173,9 +174,9 @@ const styles = StyleSheet.create({
   label: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
   langRow: { flexDirection: 'row', gap: 6 },
   langChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: theme.grayLight },
-  langChipOn: { backgroundColor: theme.accent, borderColor: theme.accent },
+  langChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   langText: { fontSize: 13, color: theme.black },
   langOn: { fontSize: 13, color: theme.white, fontWeight: '600' },
   link: { padding: 16 },
-  linkText: { color: theme.accent, fontWeight: '600', textAlign: 'center' },
+  linkText: { color: theme.orange, fontWeight: '600', textAlign: 'center' },
 });

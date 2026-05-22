@@ -1,51 +1,64 @@
-/** 스케치: 베이지·흑백 + 주황 포인트 ~5% — 가독성 우선 대비 */
+/** Premium Minimal Orange-Point — 5% orange, beige base */
 export const theme = {
-  beige: '#F5F0E8',
+  beige: '#F9F8F6',
   white: '#FFFFFF',
   black: '#0D0D0D',
   blackPure: '#000000',
-  /** 본문·라벨 (베이지 위에서도 선명) */
   gray: '#3D3832',
-  /** 보조 설명 */
   graySecondary: '#5C554D',
-  grayLight: '#E8E2D9',
-  grayMuted: '#8A8278',
-  accent: '#D14D00',
-  accentMuted: 'rgba(209, 77, 0, 0.14)',
-  danger: '#B91C1C',
-  success: '#1B6B42',
-  subject: {
-    math: '#D4789A',
-    english: '#5A9A5A',
-    science: '#5A8FB8',
-    korean: '#B8864A',
-    default: '#0D0D0D',
+  grayLight: '#E8E4DE',
+  grayMuted: '#9A948C',
+  /** 5% rule — active only */
+  orange: '#FF6B00',
+  orangeMuted: 'rgba(255, 107, 0, 0.12)',
+  orangeSoft: 'rgba(255, 107, 0, 0.08)',
+  danger: '#DC2626',
+  success: '#16A34A',
+  ribbon: {
+    overdue: '#DC2626',
+    complete: '#0D0D0D',
+    upcoming: '#9A948C',
   },
-  cardShadow: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+  radius: {
+    sm: 16,
+    md: 24,
+    lg: 32,
+    pill: 999,
   },
-  /** 공통 글자 크기 */
   font: {
     title: 28,
     heading: 22,
     body: 17,
     bodySmall: 15,
     caption: 13,
-    label: 12,
+    label: 11,
+  },
+  spring: {
+    damping: 18,
+    stiffness: 220,
+    mass: 0.8,
+  },
+  cardShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  limits: {
+    freeImages: 300,
+    freeMemos: 100,
   },
 };
 
 export const FOLDER_COLORS: Record<string, string> = {
-  folder_math: theme.subject.math,
-  folder_english: theme.subject.english,
-  folder_science: theme.subject.science,
-  folder_korean: theme.subject.korean,
+  folder_math: '#3D3832',
+  folder_english: '#5C554D',
+  folder_science: '#6B6560',
+  folder_korean: '#4A4540',
+  folder_history: '#7A746C',
 };
 
 export function folderColor(folderId: string): string {
-  return FOLDER_COLORS[folderId] ?? theme.subject.default;
+  return FOLDER_COLORS[folderId] ?? theme.gray;
 }

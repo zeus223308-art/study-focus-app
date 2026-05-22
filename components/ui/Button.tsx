@@ -44,11 +44,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  primary: { backgroundColor: theme.accent },
+  primary: { backgroundColor: theme.orange },
   secondary: { backgroundColor: theme.white, borderWidth: 1, borderColor: theme.grayLight },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: theme.font.body, fontWeight: '700' },
   textPrimary: { color: theme.white },
   textSecondary: { color: theme.black },
-  textGhost: { color: theme.accent },
+  textGhost: { color: theme.orange },
 });

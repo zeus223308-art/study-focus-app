@@ -3,7 +3,7 @@ import { initReactI18next } from 'react-i18next';
 
 import en from './locales/en.json';
 import ko from './locales/ko.json';
-import type { Language } from '@/lib/types';
+import type { Language } from '@/lib/domain/types';
 
 const resources = {
   ko: { translation: ko },

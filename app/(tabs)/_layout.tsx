@@ -10,7 +10,7 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: theme.accent,
+        tabBarActiveTintColor: theme.orange,
         tabBarInactiveTintColor: theme.gray,
         tabBarStyle: {
           backgroundColor: theme.white,
@@ -24,7 +24,11 @@ export default function TabLayout() {
         options={{
           title: t('tabs.dashboard'),
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' }} tintColor={color} size={24} />
+            <SymbolView
+              name={{ ios: 'square.grid.2x2.fill', android: 'dashboard', web: 'dashboard' }}
+              tintColor={color}
+              size={24}
+            />
           ),
         }}
       />
@@ -34,6 +38,19 @@ export default function TabLayout() {
           title: t('tabs.vault'),
           tabBarIcon: ({ color }) => (
             <SymbolView name={{ ios: 'folder.fill', android: 'folder', web: 'folder' }} tintColor={color} size={24} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="capture"
+        options={{
+          title: t('tabs.capture'),
+          tabBarIcon: ({ color }) => (
+            <SymbolView
+              name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }}
+              tintColor={color}
+              size={24}
+            />
           ),
         }}
       />

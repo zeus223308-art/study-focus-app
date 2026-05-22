@@ -5,25 +5,23 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
+import { SpringPressable } from '@/components/ui/SpringPressable';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { groupItemsByDate } from '@/lib/grouping';
+import { totalPagesInBundle } from '@/lib/grouping/bundles';
 
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
 
 export default function FilesScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, addFolder } = useApp();
+  const { data, addSubject } = useApp();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
 
-  const activeItems = data.items.filter((i) => !i.archived);
-
   const confirmAdd = () => {
     if (!newName.trim()) return;
-    const scheduleId = data.settings.activeScheduleIds[0] ?? data.schedules[0].id;
-    addFolder(newName, scheduleId);
+    addSubject(newName, data.settings.activeScheduleIds[0] ?? data.schedules[0].id);
     setNewName('');
     setAdding(false);
   };
@@ -35,56 +33,42 @@ export default function FilesScreen() {
         showSettings
         right={
           <Pressable onPress={() => router.push('/search')}>
-            <Text style={styles.searchLink}>{t('item.search')}</Text>
+            <Text style={styles.search}>{t('item.search')}</Text>
           </Pressable>
         }
       />
 
-      <View style={styles.albumGrid}>
-        {data.folders.map((folder, index) => {
-          const items = activeItems.filter((i) => i.folderId === folder.id);
-          const stacks = groupItemsByDate(items);
-          const preview = items[0];
+      <View style={styles.grid}>
+        {data.subjects.map((subject, index) => {
+          const bundles = data.bundles.filter((b) => b.subjectId === subject.id && !b.archived);
+          const preview = bundles[0]?.pages[0];
+          const pageCount = bundles.reduce((n, b) => n + totalPagesInBundle(b), 0);
 
           return (
-            <Pressable
-              key={folder.id}
-              style={styles.albumCard}
-              onPress={() => router.push(`/folder/${folder.id}`)}>
-              <View style={styles.albumTop}>
+            <SpringPressable
+              key={subject.id}
+              style={styles.card}
+              onPress={() => router.push(`/folder/${subject.id}`)}>
+              <View style={styles.cardTop}>
                 <Text style={styles.circled}>{CIRCLED[index] ?? `${index + 1}`}</Text>
-                <Text style={styles.folderName}>{folder.name}</Text>
+                <Text style={styles.name}>{subject.name}</Text>
               </View>
               <View style={styles.thumbRow}>
                 {preview ? (
-                  <Image source={{ uri: preview.imageUri }} style={styles.thumb} />
+                  <Image source={{ uri: preview.asset.thumbnailUri }} style={styles.thumb} />
                 ) : (
                   <View style={[styles.thumb, styles.thumbEmpty]} />
                 )}
-                {stacks.length > 0 && (
-                  <View style={styles.dateList}>
-                    {stacks.slice(0, 3).map((s) => (
-                      <Text key={s.studyDate} style={styles.dateLine}>
-                        {s.studyDate.slice(5).replace('-', '/')} · {s.items.length}
-                      </Text>
-                    ))}
-                  </View>
-                )}
+                <Text style={styles.meta}>{t('vault.photos', { count: pageCount })}</Text>
               </View>
-            </Pressable>
+            </SpringPressable>
           );
         })}
       </View>
 
       {adding ? (
         <View style={styles.addBox}>
-          <TextInput
-            value={newName}
-            onChangeText={setNewName}
-            placeholder={t('vault.addFolder')}
-            style={styles.input}
-            autoFocus
-          />
+          <TextInput value={newName} onChangeText={setNewName} style={styles.input} autoFocus />
           <View style={styles.addActions}>
             <Pressable onPress={() => setAdding(false)}>
               <Text style={styles.cancel}>{t('common.cancel')}</Text>
@@ -95,51 +79,49 @@ export default function FilesScreen() {
           </View>
         </View>
       ) : (
-        <Pressable onPress={() => setAdding(true)} style={styles.addRow}>
+        <Pressable onPress={() => setAdding(true)}>
           <Text style={styles.addLabel}>+ {t('vault.addFolder')}</Text>
         </Pressable>
       )}
 
-      <Pressable style={styles.trashLink} onPress={() => router.push('/trash')}>
-        <Text style={styles.trashText}>{t('trash.title')}</Text>
+      <Pressable onPress={() => router.push('/trash')} style={{ marginTop: 24 }}>
+        <Text style={styles.trash}>{t('trash.title')}</Text>
       </Pressable>
+
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  searchLink: { fontSize: theme.font.bodySmall, color: theme.accent, fontWeight: '700' },
-  albumGrid: { gap: 12 },
-  albumCard: {
+  search: { fontSize: theme.font.bodySmall, color: theme.orange, fontWeight: '700' },
+  grid: { gap: 12 },
+  card: {
     backgroundColor: theme.white,
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: theme.radius.md,
+    padding: 18,
     borderWidth: 1,
     borderColor: theme.grayLight,
     ...theme.cardShadow,
   },
-  albumTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  circled: { fontSize: theme.font.body, fontWeight: '700', marginRight: 10, color: theme.black },
-  folderName: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
-  thumbRow: { flexDirection: 'row', alignItems: 'center' },
-  thumb: { width: 56, height: 72, borderRadius: 8, backgroundColor: theme.grayLight },
-  thumbEmpty: { borderWidth: 1, borderColor: theme.grayLight, borderStyle: 'dashed' },
-  dateList: { marginLeft: 14, flex: 1 },
-  dateLine: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray, marginBottom: 4 },
+  cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  circled: { fontSize: theme.font.body, fontWeight: '700', marginRight: 10 },
+  name: { fontSize: theme.font.heading, fontWeight: '800' },
+  thumbRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  thumb: { width: 52, height: 68, borderRadius: theme.radius.sm },
+  thumbEmpty: { backgroundColor: theme.grayLight, borderStyle: 'dashed', borderWidth: 1 },
+  meta: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray },
   addBox: {
     marginTop: 16,
     backgroundColor: theme.white,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.grayLight,
   },
-  input: { fontSize: 16, color: theme.black },
+  input: { fontSize: theme.font.body },
   addActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 12 },
   cancel: { color: theme.gray },
-  save: { color: theme.accent, fontWeight: '700' },
-  addRow: { marginTop: 16, padding: 12 },
-  addLabel: { color: theme.gray, fontWeight: '600' },
-  trashLink: { marginTop: 20, marginBottom: 40 },
-  trashText: { color: theme.gray, fontSize: 14 },
+  save: { color: theme.orange, fontWeight: '800' },
+  addLabel: { marginTop: 16, fontWeight: '700', color: theme.gray },
+  trash: { color: theme.gray, fontSize: theme.font.caption },
 });
