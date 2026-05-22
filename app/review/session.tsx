@@ -41,6 +41,7 @@ export default function ReviewSessionScreen() {
   const params = useLocalSearchParams<{
     bundleId?: string;
     subjectId?: string;
+    subjectIds?: string;
     slideshow?: string;
     blackout?: string;
   }>();
@@ -48,11 +49,16 @@ export default function ReviewSessionScreen() {
     useApp();
 
   const slides = useMemo<Slide[]>(() => {
+    const pickedSubjectIds =
+      params.subjectIds?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+
     let bundles = params.bundleId
       ? data.bundles.filter((b) => b.id === params.bundleId)
-      : dueSelected.length
-        ? dueSelected
-        : dueToday;
+      : pickedSubjectIds.length > 0
+        ? data.bundles.filter((b) => !b.archived && pickedSubjectIds.includes(b.subjectId))
+        : dueSelected.length
+          ? dueSelected
+          : dueToday;
     if (params.subjectId) {
       bundles = bundles.filter((b) => b.subjectId === params.subjectId);
     }
@@ -67,7 +73,15 @@ export default function ReviewSessionScreen() {
       }
     }
     return list;
-  }, [params.bundleId, params.subjectId, params.slideshow, dueSelected, dueToday, data.bundles]);
+  }, [
+    params.bundleId,
+    params.subjectId,
+    params.subjectIds,
+    params.slideshow,
+    dueSelected,
+    dueToday,
+    data.bundles,
+  ]);
 
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('front');

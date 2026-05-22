@@ -1,17 +1,20 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
+import {
+  DashboardReviewPicker,
+  type DashboardSubjectEntry,
+} from '@/components/dashboard/DashboardReviewPicker';
 import { DateRibbon } from '@/components/dashboard/DateRibbon';
 import { PaywallSheet } from '@/components/paywall/PaywallSheet';
-import { SubjectReviewCard } from '@/components/SubjectReviewCard';
 import { SpringPressable } from '@/components/ui/SpringPressable';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getBundlesFrontPreviews } from '@/lib/files/subject-previews';
-import { useViewportLayout } from '@/lib/ui/viewport-layout';
+import { totalPagesInBundle } from '@/lib/grouping/bundles';
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
@@ -27,60 +30,72 @@ export default function DashboardScreen() {
     paywallVisible,
     setPaywallVisible,
   } = useApp();
-  const viewport = useViewportLayout();
 
-  const display = dueSelected;
-  const [focusedSubjectId, setFocusedSubjectId] = useState<string | null>(null);
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    if (display.length === 0) {
-      setFocusedSubjectId(null);
-      return;
-    }
-    if (!focusedSubjectId || !display.some((b) => b.subjectId === focusedSubjectId)) {
-      setFocusedSubjectId(display[0].subjectId);
-    }
-  }, [display, focusedSubjectId]);
-
-  const bySubject = useMemo(() => {
-    const map = new Map<string, typeof display>();
-    for (const b of display) {
-      const list = map.get(b.subjectId) ?? [];
-      list.push(b);
-      map.set(b.subjectId, list);
-    }
-    return map;
-  }, [display]);
-
-  const pairs = useMemo(() => {
-    const entries = Array.from(bySubject.entries())
-      .map(([subjectId, bundles]) => {
-        const subject = data.subjects.find((s) => s.id === subjectId);
-        if (!subject) return null;
-        const count = bundles.reduce((n, b) => n + b.pages.length, 0);
+  const subjectEntries = useMemo((): DashboardSubjectEntry[] => {
+    const dueIds = new Set(dueSelected.map((b) => b.id));
+    return [...data.subjects]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((subject) => {
+        const bundles = data.bundles.filter((b) => b.subjectId === subject.id && !b.archived);
+        const totalPages = bundles.reduce((n, b) => n + totalPagesInBundle(b), 0);
+        const duePages = bundles
+          .filter((b) => dueIds.has(b.id))
+          .reduce((n, b) => n + totalPagesInBundle(b), 0);
         return {
           subject,
-          count,
-          bundles,
+          totalPages,
+          duePages,
           previews: getBundlesFrontPreviews(bundles),
         };
       })
-      .filter(Boolean) as {
-      subject: (typeof data.subjects)[0];
-      count: number;
-      bundles: typeof display;
-      previews: ReturnType<typeof getBundlesFrontPreviews>;
-    }[];
-    const rows: typeof entries[] = [];
-    const perRow = viewport.dashboardCardsPerRow;
-    for (let i = 0; i < entries.length; i += perRow) rows.push(entries.slice(i, i + perRow));
-    return rows;
-  }, [bySubject, data.subjects, viewport.dashboardCardsPerRow]);
+      .filter((e) => e.totalPages > 0);
+  }, [data.subjects, data.bundles, dueSelected]);
 
-  const openReview = (subjectId?: string) => {
+  useEffect(() => {
+    const dueSubjectIds = subjectEntries
+      .filter((e) => e.duePages > 0)
+      .map((e) => e.subject.id);
+    if (dueSubjectIds.length > 0) {
+      setSelectedSubjectIds(new Set(dueSubjectIds));
+      return;
+    }
+    if (subjectEntries.length > 0) {
+      setSelectedSubjectIds(new Set(subjectEntries.map((e) => e.subject.id)));
+    } else {
+      setSelectedSubjectIds(new Set());
+    }
+  }, [selectedDate, subjectEntries]);
+
+  const toggleSubject = useCallback((subjectId: string) => {
+    setSelectedSubjectIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(subjectId)) next.delete(subjectId);
+      else next.add(subjectId);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedSubjectIds(new Set(subjectEntries.map((e) => e.subject.id)));
+  }, [subjectEntries]);
+
+  const clearAll = useCallback(() => {
+    setSelectedSubjectIds(new Set());
+  }, []);
+
+  const canStart = selectedSubjectIds.size > 0;
+
+  const openReview = () => {
+    if (!canStart) return;
+    const ids = Array.from(selectedSubjectIds);
     router.push({
       pathname: '/review/session',
-      params: subjectId ? { blackout: '1', subjectId } : { blackout: '1' },
+      params: {
+        blackout: '1',
+        subjectIds: ids.join(','),
+      },
     });
   };
 
@@ -96,43 +111,40 @@ export default function DashboardScreen() {
         />
       </View>
 
-      {display.length === 0 ? (
-        <Text style={styles.empty}>
-          {selectedDate === localToday
-            ? t('dashboard.empty')
-            : t('dashboard.emptyDate', { date: selectedDate })}
-        </Text>
+      {subjectEntries.length === 0 ? (
+        <Text style={styles.empty}>{t('dashboard.noSubjects')}</Text>
       ) : (
-        pairs.map((row, ri) => (
-          <View
-            key={ri}
-            style={viewport.dashboardCardsPerRow > 1 ? styles.cardRow : styles.cardRowSingle}>
-            {row.map(({ subject, count, previews }) => (
-              <SubjectReviewCard
-                key={subject.id}
-                subjectTag={subject.name}
-                previewItems={previews}
-                totalLabel={t('dashboard.totalPages', { count })}
-                emptyHint={t('dashboard.previewEmpty')}
-                selected={focusedSubjectId === subject.id}
-                onFocus={() => setFocusedSubjectId(subject.id)}
-                onPress={() => openReview(subject.id)}
-              />
-            ))}
-            {row.length === 1 && viewport.dashboardCardsPerRow > 1 ? (
-              <View style={styles.spacer} />
-            ) : null}
-          </View>
-        ))
+        <>
+          {dueSelected.length === 0 ? (
+            <Text style={styles.emptySchedule}>
+              {selectedDate === localToday
+                ? t('dashboard.empty')
+                : t('dashboard.emptyDate', { date: selectedDate })}
+            </Text>
+          ) : null}
+
+          <DashboardReviewPicker
+            entries={subjectEntries}
+            selectedIds={selectedSubjectIds}
+            onToggle={toggleSubject}
+            onSelectAll={selectAll}
+            onClearAll={clearAll}
+          />
+        </>
       )}
 
-      {display.length > 0 && (
+      {subjectEntries.length > 0 ? (
         <SpringPressable
-          style={styles.startBtn}
-          onPress={() => openReview(focusedSubjectId ?? undefined)}>
+          style={[styles.startBtn, !canStart && styles.startBtnDisabled]}
+          onPress={openReview}
+          disabled={!canStart}>
           <Text style={styles.startText}>{t('dashboard.startReview')}</Text>
         </SpringPressable>
-      )}
+      ) : null}
+
+      {!canStart && subjectEntries.length > 0 ? (
+        <Text style={styles.startHint}>{t('dashboard.startReviewHint')}</Text>
+      ) : null}
 
       <PaywallSheet
         visible={paywallVisible}
@@ -147,10 +159,21 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   ribbonBlock: { marginBottom: 4 },
-  empty: { fontSize: theme.font.body, fontWeight: '600', color: theme.gray, marginVertical: 24 },
-  cardRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  cardRowSingle: { marginBottom: 12 },
-  spacer: { flex: 1 },
+  empty: {
+    fontSize: theme.font.body,
+    fontWeight: '600',
+    color: theme.gray,
+    marginVertical: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  emptySchedule: {
+    fontSize: theme.font.caption,
+    fontWeight: '600',
+    color: theme.grayMuted,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
   startBtn: {
     alignSelf: 'center',
     marginVertical: 20,
@@ -159,5 +182,13 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     backgroundColor: theme.orange,
   },
+  startBtnDisabled: { opacity: 0.45 },
   startText: { color: theme.white, fontWeight: '800', fontSize: theme.font.body },
+  startHint: {
+    textAlign: 'center',
+    fontSize: theme.font.caption,
+    color: theme.gray,
+    marginTop: -12,
+    marginBottom: 16,
+  },
 });

@@ -40,6 +40,15 @@ export function computePagerSize(width: number, deviceClass: DeviceClass): numbe
   return Math.round(Math.max(280, Math.min(cap, available)));
 }
 
+/** 금고 캐러셀 — 페이지에 과목 수가 적어도 타일 너비를 동일하게 유지 */
+export function computeVaultFolderTileWidth(pageWidth: number, foldersPerPage: number): number {
+  const panelPad = 14;
+  const gap = 14;
+  const inner = pageWidth - panelPad * 2;
+  const gaps = Math.max(0, foldersPerPage - 1) * gap;
+  return Math.floor((inner - gaps) / Math.max(1, foldersPerPage));
+}
+
 export function computeContentMaxWidth(width: number, deviceClass: DeviceClass): number {
   if (deviceClass === 'phone') return width;
   if (deviceClass === 'tablet') return Math.min(width - 48, 720);

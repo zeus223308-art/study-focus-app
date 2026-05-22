@@ -16,6 +16,7 @@ import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
 import { theme } from '@/constants/theme';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
+import { computeVaultFolderTileWidth } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -41,6 +42,8 @@ function easeOutCubic(t: number): number {
 type Props = {
   pages: SubjectFolder[][];
   pageWidth: number;
+  /** 한 페이지 슬롯 수(실제 과목 수보다 많을 수 있음) — 타일 너비 고정용 */
+  foldersPerPage: number;
   totalLabelFor: (subjectId: string) => string;
   previewItemsFor: (subjectId: string) => SubjectPreviewItem[];
   onSubjectPress: (subjectId: string) => void;
@@ -51,6 +54,7 @@ type Props = {
 export function SubjectFilesCarousel({
   pages,
   pageWidth,
+  foldersPerPage,
   totalLabelFor,
   previewItemsFor,
   onSubjectPress,
@@ -230,6 +234,11 @@ export function SubjectFilesCarousel({
     [endPointerDrag, movePointer, startPointerDrag]
   );
 
+  const tileWidth = useMemo(
+    () => computeVaultFolderTileWidth(pageWidth, foldersPerPage),
+    [pageWidth, foldersPerPage]
+  );
+
   const handleSubjectPress = useCallback(
     (subjectId: string) => {
       if (didDragRef.current) return;
@@ -241,18 +250,18 @@ export function SubjectFilesCarousel({
   const renderPage = ({ item: row }: ListRenderItemInfo<SubjectFolder[]>) => (
     <View style={[styles.page, { width: pageWidth }]}>
       <View style={styles.row}>
-            {row.map((subject) => (
-              <SubjectFolderTile
-                key={subject.id}
-                subjectId={subject.id}
-                name={subject.name}
-                totalLabel={totalLabelFor(subject.id)}
-                previewItems={previewItemsFor(subject.id)}
-                onPreviewGestureLock={setPreviewGestureLock}
-                onPress={() => handleSubjectPress(subject.id)}
-              />
-            ))}
-        {row.length === 1 && <View style={styles.spacer} />}
+        {row.map((subject) => (
+          <View key={subject.id} style={[styles.tileSlot, { width: tileWidth }]}>
+            <SubjectFolderTile
+              subjectId={subject.id}
+              name={subject.name}
+              totalLabel={totalLabelFor(subject.id)}
+              previewItems={previewItemsFor(subject.id)}
+              onPreviewGestureLock={setPreviewGestureLock}
+              onPress={() => handleSubjectPress(subject.id)}
+            />
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -320,8 +329,13 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: TILE_GAP,
+    alignItems: 'flex-start',
   },
-  spacer: { flex: 1 },
+  tileSlot: {
+    flexGrow: 0,
+    flexShrink: 0,
+    minWidth: 0,
+  },
   empty: {
     paddingHorizontal: PANEL_PAD,
     fontSize: theme.font.body,

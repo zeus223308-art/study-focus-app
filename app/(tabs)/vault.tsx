@@ -75,6 +75,7 @@ export default function FilesScreen() {
           <SubjectFilesCarousel
             pages={subjectPages}
             pageWidth={pageWidth}
+            foldersPerPage={viewport.vaultFoldersPerPage}
             totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
             previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
             onSubjectPress={(id) => router.push(`/folder/${id}`)}

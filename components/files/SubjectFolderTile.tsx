@@ -63,7 +63,7 @@ export function SubjectFolderTile({
 
 const styles = StyleSheet.create({
   wrap: {
-    flex: 1,
+    width: '100%',
     minWidth: 0,
   },
   name: {
