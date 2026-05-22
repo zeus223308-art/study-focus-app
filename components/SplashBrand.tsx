@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { LOGO_WHITE, MountainMLogo, SPLASH_NAVY } from '@/components/MountainMLogo';
+import { LOGO_WHITE, MountainMLogo, SPLASH_BLACK } from '@/components/MountainMLogo';
 
 type Props = {
   onFinish: () => void;
@@ -91,7 +91,7 @@ export function SplashBrand({ onFinish }: Props) {
     <Animated.View style={[styles.root, screenStyle]}>
       <View style={styles.center}>
         <Animated.View style={[styles.mountainWrap, mountainStyle]}>
-          <MountainMLogo width={220} height={154} color={LOGO_WHITE} />
+          <MountainMLogo width={240} height={168} />
         </Animated.View>
 
         <Animated.View style={[styles.brandWrap, brandStyle]}>
@@ -111,7 +111,7 @@ export function SplashBrand({ onFinish }: Props) {
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: SPLASH_NAVY,
+    backgroundColor: SPLASH_BLACK,
     zIndex: 9999,
   },
   center: {
