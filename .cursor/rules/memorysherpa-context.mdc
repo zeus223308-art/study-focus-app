@@ -20,9 +20,21 @@ alwaysApply: true
 
 ## Conventions
 
-- Match existing patterns; minimal diff; no commits/push unless user asks
+- Match existing patterns; minimal diff
 - Calendar dates: use `todayKey()` / local `startOfDay` — never `toISOString().slice(0,10)` for "today"
 - After ribbon/date/tab changes, sanity-check `DateRibbon.tsx`, `dates.ts`, `AppContext.tsx`
+
+## Auto commit + deploy (user requested)
+
+After **any code change** in this repo (features, fixes, i18n, config):
+
+1. **Commit** on `main` with a clear message (unless user says "don't commit" / "don't push" / question-only).
+2. **Push** to `origin main` so GitHub Actions deploys the web app.
+3. Briefly tell the user the commit hash and public URL: `https://zeus223308-art.github.io/study-focus-app/`
+
+Do **not** commit secrets (`.env`, keys). Do **not** force-push. Skip commit if there are no file changes.
+
+**Limits:** This only runs when the user works with the agent in Cursor — not while they edit alone without a session.
 
 ## Responsive / cross-platform (required for UI work)
 
