@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { FloatingCameraButton } from '@/components/FloatingCameraButton';
+import { GoogleOAuthReturnHandler } from '@/components/settings/GoogleOAuthReturnHandler';
 import { MobileWebFrame } from '@/components/MobileWebFrame';
 import { SplashBrand } from '@/components/SplashBrand';
 import { AppProvider, useApp } from '@/context/AppContext';
@@ -46,6 +47,7 @@ function RootNavigator() {
 
   return (
     <View style={styles.appShell}>
+      <GoogleOAuthReturnHandler />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: theme.beige },

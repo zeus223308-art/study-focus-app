@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GoogleOAuthClientIdForm } from '@/components/settings/GoogleOAuthClientIdForm';
@@ -9,12 +10,15 @@ import { SettingsRow } from '@/components/SettingsGroup';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useGoogleDriveAuth } from '@/hooks/useGoogleDriveAuth';
-import { allowsDevClientIdOverride } from '@/services/cloud/google-client-store';
 import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
 import { showMessage } from '@/lib/ui/confirm';
+import { cleanGoogleOAuthUrl } from '@/services/cloud/google-oauth-callback';
+import { allowsDevClientIdOverride } from '@/services/cloud/google-client-store';
+import { loadGoogleDriveSession } from '@/services/cloud/google-session';
 
 export function CloudBackupSettings() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { data, updateSettings, refresh, syncCloud } = useApp();
   const {
     configured,
@@ -25,6 +29,7 @@ export function CloudBackupSettings() {
     requestReady,
     redirectUri,
     reloadClientId,
+    reloadSession,
   } = useGoogleDriveAuth();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -69,11 +74,24 @@ export function CloudBackupSettings() {
     try {
       const connected = await signIn();
       if (connected) {
+        cleanGoogleOAuthUrl();
         updateSettings({ cloudBackupEnabled: true });
+        await refresh();
+        await reloadSession();
+        setNotice(null);
+        router.replace('/(tabs)/settings');
+        return;
+      }
+
+      const existing = await loadGoogleDriveSession();
+      if (existing) {
+        cleanGoogleOAuthUrl();
+        await reloadSession();
         await refresh();
         setNotice(null);
         return;
       }
+
       setNotice(t('settings.cloudSignInCancelled'));
     } catch (err) {
       const message = err instanceof Error ? err.message : t('settings.cloudSignInError');
@@ -82,7 +100,7 @@ export function CloudBackupSettings() {
     } finally {
       setBusy(false);
     }
-  }, [authPreparing, configured, devSetup, refresh, signIn, t, updateSettings]);
+  }, [authPreparing, configured, devSetup, refresh, reloadSession, router, signIn, t, updateSettings]);
 
   const handleDisconnect = useCallback(async () => {
     setBusy(true);

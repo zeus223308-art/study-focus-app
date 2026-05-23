@@ -46,6 +46,12 @@ export function useGoogleDriveAuth() {
     redirectUri,
   });
 
+  const reloadSession = useCallback(async () => {
+    const existing = await loadGoogleDriveSession();
+    setSession(existing);
+    return existing;
+  }, []);
+
   useEffect(() => {
     let active = true;
     (async () => {
@@ -89,6 +95,7 @@ export function useGoogleDriveAuth() {
     configured,
     webClientId,
     reloadClientId,
+    reloadSession,
     redirectUri,
     session,
     loading,
