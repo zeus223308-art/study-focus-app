@@ -47,7 +47,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "export:web": "expo export --platform web",
-    "serve:web": "npx --yes serve dist -s -l 4173"
+    "serve:web": "npx --yes serve dist -s -l 4173",
+    "setup:google-oauth": "node scripts/setup-google-oauth.mjs"
   },
   "private": true
 }

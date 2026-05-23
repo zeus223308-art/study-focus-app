@@ -1,3 +1,19 @@
+/** Canonical values to register in Google Cloud Console (Web OAuth client). */
+export const GOOGLE_OAUTH_JS_ORIGINS = [
+  'https://zeus223308-art.github.io',
+  'http://localhost:8081',
+  'http://localhost:4173',
+] as const;
+
+export const GOOGLE_OAUTH_REDIRECT_URIS = [
+  'https://zeus223308-art.github.io/study-focus-app',
+  'https://zeus223308-art.github.io/study-focus-app/',
+  'http://localhost:8081',
+  'http://localhost:4173',
+  'http://localhost:4173/study-focus-app',
+  'http://localhost:4173/study-focus-app/',
+] as const;
+
 export const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
 
 export const DRIVE_APPDATA_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';

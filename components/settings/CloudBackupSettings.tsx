@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { GoogleOAuthSetupGuide } from '@/components/settings/GoogleOAuthSetupGuide';
 import { GoogleSignInButton } from '@/components/settings/GoogleSignInButton';
 import { SettingsRow } from '@/components/SettingsGroup';
 import { theme } from '@/constants/theme';
@@ -133,6 +134,7 @@ export function CloudBackupSettings() {
     return (
       <View style={styles.block}>
         {headerBlock}
+        <GoogleOAuthSetupGuide />
         <Text style={styles.hint}>{t('settings.cloudSetupHint')}</Text>
         {__DEV__ ? <Text style={styles.devHint}>{t('settings.cloudSetupHintDev')}</Text> : null}
       </View>
