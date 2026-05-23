@@ -192,6 +192,7 @@
     "cloudConnected": "연결됨",
     "cloudDisconnected": "연결 안 됨",
     "cloudConnect": "Google Drive에 내 데이터 연동하기",
+    "cloudSignInGoogle": "Google 아이디로 로그인",
     "cloudSignOut": "연결 해제",
     "cloudSyncNow": "지금 동기화",
     "cloudSyncing": "동기화 중…",

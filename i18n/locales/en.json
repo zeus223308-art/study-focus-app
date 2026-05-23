@@ -192,6 +192,7 @@
     "cloudConnected": "Connected",
     "cloudDisconnected": "Not connected",
     "cloudConnect": "Back up my data to Google Drive",
+    "cloudSignInGoogle": "Sign in with Google",
     "cloudSignOut": "Disconnect",
     "cloudSyncNow": "Sync now",
     "cloudSyncing": "Syncing…",

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { GoogleSignInButton } from '@/components/settings/GoogleSignInButton';
 import { SettingsRow } from '@/components/SettingsGroup';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -30,6 +31,10 @@ export function CloudBackupSettings() {
   }, [refresh, syncCloud, t]);
 
   const handleConnect = useCallback(async () => {
+    if (!configured) {
+      Alert.alert(t('settings.cloud'), t('settings.cloudSetupHint'));
+      return;
+    }
     setBusy(true);
     try {
       const connected = await signIn();
@@ -43,7 +48,7 @@ export function CloudBackupSettings() {
     } finally {
       setBusy(false);
     }
-  }, [refresh, signIn, t]);
+  }, [configured, refresh, signIn, t, updateSettings]);
 
   const handleDisconnect = useCallback(async () => {
     setBusy(true);
@@ -55,27 +60,48 @@ export function CloudBackupSettings() {
     }
   }, [signOut, updateSettings]);
 
+  const statusText = (() => {
+    if (!configured) return t('settings.cloudNotConfigured');
+    if (session) return session.email ?? t('settings.cloudConnected');
+    return t('settings.cloudDisconnected');
+  })();
+
+  const headerRow = (
+    <View style={styles.headerRow}>
+      <Text style={styles.headerLabel}>{t('settings.cloud')}</Text>
+
+      <View style={styles.headerCenter}>
+        {!session ? (
+          <GoogleSignInButton
+            label={t('settings.cloudSignInGoogle')}
+            onPress={handleConnect}
+            disabled={busy || (configured && !requestReady)}
+            loading={busy}
+          />
+        ) : null}
+      </View>
+
+      <Text style={styles.headerStatus} numberOfLines={1}>
+        {session ? session.email ?? t('settings.cloudConnected') : statusText}
+      </Text>
+    </View>
+  );
+
   if (loading) {
     return (
-      <SettingsRow
-        label={t('settings.cloud')}
-        right={<ActivityIndicator color={theme.orange} />}
-        last={false}
-      />
+      <View style={styles.block}>
+        <View style={styles.headerRow}>
+          <Text style={styles.headerLabel}>{t('settings.cloud')}</Text>
+          <ActivityIndicator color={theme.orange} style={styles.headerSpinner} />
+        </View>
+      </View>
     );
   }
 
   if (!configured) {
     return (
       <View style={styles.block}>
-        <SettingsRow
-          label={t('settings.cloud')}
-          value={t('settings.cloudNotConfigured')}
-          last={false}
-        />
-        <View style={[styles.actionRow, styles.connectRow, styles.connectRowDisabled]}>
-          <Text style={styles.connectTextDisabled}>{t('settings.cloudConnect')}</Text>
-        </View>
+        {headerRow}
         <Text style={styles.hint}>{t('settings.cloudSetupHint')}</Text>
         {__DEV__ ? <Text style={styles.devHint}>{t('settings.cloudSetupHintDev')}</Text> : null}
       </View>
@@ -86,15 +112,7 @@ export function CloudBackupSettings() {
 
   return (
     <View style={styles.block}>
-      <SettingsRow
-        label={t('settings.cloud')}
-        value={
-          session
-            ? session.email ?? t('settings.cloudConnected')
-            : t('settings.cloudDisconnected')
-        }
-        last={false}
-      />
+      {headerRow}
 
       {session ? (
         <>
@@ -120,15 +138,7 @@ export function CloudBackupSettings() {
             <Text style={styles.signOutText}>{t('settings.cloudSignOut')}</Text>
           </Pressable>
         </>
-      ) : (
-        <Pressable
-          onPress={busy || !requestReady ? undefined : handleConnect}
-          style={[styles.actionRow, styles.connectRow]}
-          disabled={busy || !requestReady}>
-          <Text style={styles.connectText}>{t('settings.cloudConnect')}</Text>
-          {busy && <ActivityIndicator color={theme.white} />}
-        </Pressable>
-      )}
+      ) : null}
 
       <Text style={styles.hint}>{t('settings.cloudHint')}</Text>
       {__DEV__ ? <Text style={styles.devHint}>redirect: {redirectUri}</Text> : null}
@@ -138,11 +148,44 @@ export function CloudBackupSettings() {
 
 const styles = StyleSheet.create({
   block: { marginBottom: 0 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.grayLight,
+    minHeight: 56,
+  },
+  headerLabel: {
+    fontSize: theme.font.body,
+    fontWeight: '600',
+    color: theme.black,
+    flexShrink: 0,
+    maxWidth: '28%',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  headerStatus: {
+    fontSize: theme.font.caption,
+    fontWeight: '600',
+    color: theme.graySecondary,
+    flexShrink: 1,
+    maxWidth: '34%',
+    textAlign: 'right',
+  },
+  headerSpinner: { marginLeft: 'auto' },
   hint: {
     fontSize: theme.font.caption,
     color: theme.gray,
     fontWeight: '600',
     paddingHorizontal: 16,
+    paddingTop: 10,
     paddingBottom: 12,
     lineHeight: 18,
   },
@@ -164,24 +207,5 @@ const styles = StyleSheet.create({
     borderTopColor: theme.grayLight,
   },
   actionText: { fontSize: theme.font.body, fontWeight: '700', color: theme.orange },
-  connectRow: {
-    backgroundColor: theme.orange,
-    marginHorizontal: 12,
-    marginTop: 4,
-    borderRadius: 10,
-    justifyContent: 'center',
-    gap: 8,
-  },
-  connectRowDisabled: {
-    backgroundColor: theme.grayLight,
-    opacity: 0.85,
-  },
-  connectText: { fontSize: theme.font.body, fontWeight: '700', color: theme.white },
-  connectTextDisabled: {
-    fontSize: theme.font.body,
-    fontWeight: '700',
-    color: theme.graySecondary,
-    textAlign: 'center',
-  },
   signOutText: { fontSize: theme.font.body, fontWeight: '600', color: theme.graySecondary },
 });
