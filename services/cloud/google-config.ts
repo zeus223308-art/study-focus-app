@@ -42,4 +42,6 @@ export type GoogleDriveSession = {
   accessToken: string;
   expiresAt: number;
   email: string | null;
+  /** Used to obtain new access tokens without signing in again. */
+  refreshToken?: string;
 };

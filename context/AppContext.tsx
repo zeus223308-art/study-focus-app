@@ -32,6 +32,7 @@ import {
   filterActiveTrash,
   canRestoreFromBackup,
 } from '@/lib/trash/lifecycle';
+import { ensureGoogleDriveSession } from '@/services/cloud/google-session';
 import { createStorageProvider, checkFreemiumLimits, countPages } from '@/services/storage';
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
 import { hasRecoverableContent } from '@/services/storage/data-safety';
@@ -114,6 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const dataRef = useRef<AppData | null>(null);
 
   const load = useCallback(async () => {
+    await ensureGoogleDriveSession();
     const loaded = await storage.loadAppData();
     const activeTrash = filterActiveTrash(loaded.trash);
     let next = { ...loaded, trash: activeTrash };

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { GoogleAuthBootstrap } from '@/components/GoogleAuthBootstrap';
 import { RecoveryBanner } from '@/components/RecoveryBanner';
 import { FloatingCameraButton } from '@/components/FloatingCameraButton';
 import { GoogleOAuthReturnHandler } from '@/components/settings/GoogleOAuthReturnHandler';
@@ -51,6 +52,7 @@ function RootNavigator() {
 
   return (
     <View style={styles.appShell}>
+      <GoogleAuthBootstrap />
       {autoRecoveryNotice ? (
         <RecoveryBanner
           source={autoRecoveryNotice}

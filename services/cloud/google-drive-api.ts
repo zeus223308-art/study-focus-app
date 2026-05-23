@@ -97,12 +97,14 @@ export async function uploadDriveBackup(
 
 export async function buildSessionFromToken(
   accessToken: string,
-  expiresInSeconds = 3600
+  expiresInSeconds = 3600,
+  extras?: Partial<Pick<GoogleDriveSession, 'refreshToken' | 'email'>>
 ): Promise<GoogleDriveSession> {
-  const email = await fetchGoogleEmail(accessToken);
+  const email = extras?.email ?? (await fetchGoogleEmail(accessToken));
   return {
     accessToken,
     expiresAt: Date.now() + expiresInSeconds * 1000,
     email,
+    refreshToken: extras?.refreshToken,
   };
 }

@@ -11,7 +11,8 @@ import { GOOGLE_DRIVE_SCOPES, type GoogleDriveSession } from '@/services/cloud/g
 import { buildSessionFromToken } from '@/services/cloud/google-drive-api';
 import {
   clearGoogleDriveSession,
-  loadGoogleDriveSession,
+  ensureGoogleDriveSession,
+  hasStoredGoogleRefreshToken,
   saveGoogleDriveSession,
 } from '@/services/cloud/google-session';
 
@@ -19,9 +20,12 @@ WebBrowser.maybeCompleteAuthSession({ skipRedirectCheck: true });
 
 async function sessionFromAuthResult(
   accessToken: string,
-  expiresIn?: number | null
+  expiresIn?: number | null,
+  refreshToken?: string | null
 ): Promise<GoogleDriveSession> {
-  const next = await buildSessionFromToken(accessToken, expiresIn ?? 3600);
+  const next = await buildSessionFromToken(accessToken, expiresIn ?? 3600, {
+    refreshToken: refreshToken ?? undefined,
+  });
   await saveGoogleDriveSession(next);
   return next;
 }
@@ -39,15 +43,17 @@ export function useGoogleDriveAuth() {
   }, []);
 
   const configured = isGoogleClientIdConfigured(webClientId);
+  const [oauthExtra, setOauthExtra] = useState<Record<string, string>>({ access_type: 'offline' });
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: configured ? webClientId : 'unset.apps.googleusercontent.com',
     scopes: GOOGLE_DRIVE_SCOPES,
     redirectUri,
+    extraParams: oauthExtra,
   });
 
   const reloadSession = useCallback(async () => {
-    const existing = await loadGoogleDriveSession();
+    const existing = await ensureGoogleDriveSession();
     setSession(existing);
     return existing;
   }, []);
@@ -56,7 +62,11 @@ export function useGoogleDriveAuth() {
     let active = true;
     (async () => {
       await reloadClientId();
-      const existing = await loadGoogleDriveSession();
+      const hasRefresh = await hasStoredGoogleRefreshToken();
+      if (!hasRefresh) {
+        setOauthExtra({ access_type: 'offline', prompt: 'consent' });
+      }
+      const existing = await ensureGoogleDriveSession();
       if (active) setSession(existing);
       if (active) setLoading(false);
     })();
@@ -70,18 +80,33 @@ export function useGoogleDriveAuth() {
     const accessToken = response.authentication?.accessToken;
     if (!accessToken) return;
 
-    void sessionFromAuthResult(accessToken, response.authentication?.expiresIn).then(setSession);
+    void sessionFromAuthResult(
+      accessToken,
+      response.authentication?.expiresIn,
+      response.authentication?.refreshToken
+    ).then(setSession);
   }, [response]);
 
   const signIn = useCallback(async (): Promise<GoogleDriveSession | null> => {
     if (!configured) {
       throw new Error('Google Drive is not configured');
     }
+    if (await hasStoredGoogleRefreshToken()) {
+      const restored = await ensureGoogleDriveSession();
+      if (restored) {
+        setSession(restored);
+        return restored;
+      }
+    }
     const result = await promptAsync();
     if (result?.type !== 'success') return null;
     const accessToken = result.authentication?.accessToken;
     if (!accessToken) return null;
-    const next = await sessionFromAuthResult(accessToken, result.authentication?.expiresIn);
+    const next = await sessionFromAuthResult(
+      accessToken,
+      result.authentication?.expiresIn,
+      result.authentication?.refreshToken
+    );
     setSession(next);
     return next;
   }, [configured, promptAsync]);

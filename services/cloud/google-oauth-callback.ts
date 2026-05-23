@@ -60,7 +60,9 @@ export async function consumeGoogleOAuthCallbackFromUrl(): Promise<GoogleOAuthCa
     return { type: 'error', message: 'Missing access token' };
   }
 
-  const session = await buildSessionFromToken(accessToken, tokenResponse.expiresIn ?? 3600);
+  const session = await buildSessionFromToken(accessToken, tokenResponse.expiresIn ?? 3600, {
+    refreshToken: tokenResponse.refreshToken,
+  });
   await saveGoogleDriveSession(session);
   cleanGoogleOAuthUrl();
 
