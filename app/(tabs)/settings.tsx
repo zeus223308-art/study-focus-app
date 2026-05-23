@@ -129,9 +129,15 @@ export default function SettingsScreen() {
         <SettingsRow
           label={t('settings.limits')}
           value={`${photoCount} / ${settings.photoLimit} · ${freemium.usedMemos} / ${settings.memoLimit}`}
-          last={false}
+          last
         />
+      </SettingsGroup>
+
+      <SettingsGroup title={t('settings.cloudSection')}>
         <CloudBackupSettings />
+      </SettingsGroup>
+
+      <SettingsGroup>
         <SettingsRow label={t('settings.ocr')} value={t('settings.ocrSoon')} last />
       </SettingsGroup>
 

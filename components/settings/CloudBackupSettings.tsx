@@ -73,7 +73,11 @@ export function CloudBackupSettings() {
           value={t('settings.cloudNotConfigured')}
           last={false}
         />
+        <View style={[styles.actionRow, styles.connectRow, styles.connectRowDisabled]}>
+          <Text style={styles.connectTextDisabled}>{t('settings.cloudConnect')}</Text>
+        </View>
         <Text style={styles.hint}>{t('settings.cloudSetupHint')}</Text>
+        {__DEV__ ? <Text style={styles.devHint}>{t('settings.cloudSetupHintDev')}</Text> : null}
       </View>
     );
   }
@@ -168,6 +172,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
+  connectRowDisabled: {
+    backgroundColor: theme.grayLight,
+    opacity: 0.85,
+  },
   connectText: { fontSize: theme.font.body, fontWeight: '700', color: theme.white },
+  connectTextDisabled: {
+    fontSize: theme.font.body,
+    fontWeight: '700',
+    color: theme.graySecondary,
+    textAlign: 'center',
+  },
   signOutText: { fontSize: theme.font.body, fontWeight: '600', color: theme.graySecondary },
 });
