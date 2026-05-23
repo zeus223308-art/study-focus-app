@@ -15,7 +15,7 @@ import {
   saveGoogleDriveSession,
 } from '@/services/cloud/google-session';
 
-WebBrowser.maybeCompleteAuthSession();
+WebBrowser.maybeCompleteAuthSession({ skipRedirectCheck: true });
 
 async function sessionFromAuthResult(
   accessToken: string,
