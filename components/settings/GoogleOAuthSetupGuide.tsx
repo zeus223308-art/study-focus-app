@@ -75,9 +75,6 @@ export function GoogleOAuthSetupGuide() {
         <CopyRow key={uri} value={uri} onCopied={() => markCopied(uri)} />
       ))}
       <Text style={styles.step}>{t('settings.cloudSetupStep3')}</Text>
-      <Text style={styles.codeHint} selectable>
-        npm run setup:google-oauth -- YOUR_ID.apps.googleusercontent.com
-      </Text>
       {copied ? <Text style={styles.copied}>{t('settings.cloudCopied')}</Text> : null}
     </View>
   );

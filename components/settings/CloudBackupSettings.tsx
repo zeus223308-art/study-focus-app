@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { GoogleOAuthClientIdForm } from '@/components/settings/GoogleOAuthClientIdForm';
 import { GoogleOAuthSetupGuide } from '@/components/settings/GoogleOAuthSetupGuide';
 import { GoogleSignInButton } from '@/components/settings/GoogleSignInButton';
 import { SettingsRow } from '@/components/SettingsGroup';
@@ -14,8 +15,16 @@ import { showMessage } from '@/lib/ui/confirm';
 export function CloudBackupSettings() {
   const { t } = useTranslation();
   const { data, updateSettings, refresh, syncCloud } = useApp();
-  const { configured, session, loading, signIn, signOut, requestReady, redirectUri } =
-    useGoogleDriveAuth();
+  const {
+    configured,
+    session,
+    loading,
+    signIn,
+    signOut,
+    requestReady,
+    redirectUri,
+    reloadClientId,
+  } = useGoogleDriveAuth();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const { settings } = data;
@@ -41,15 +50,14 @@ export function CloudBackupSettings() {
     setNotice(null);
 
     if (!configured) {
-      const message = t('settings.cloudSetupHint');
+      const message = t('settings.cloudClientIdRequired');
       setNotice(message);
       showMessage(t('settings.cloud'), message);
       return;
     }
 
     if (authPreparing) {
-      const message = t('settings.cloudPreparing');
-      setNotice(message);
+      setNotice(t('settings.cloudPreparing'));
       return;
     }
 
@@ -109,7 +117,7 @@ export function CloudBackupSettings() {
           <GoogleSignInButton
             label={signInLabel}
             onPress={handleConnect}
-            disabled={busy}
+            disabled={busy || !configured}
             loading={busy || authPreparing}
           />
         </View>
@@ -134,9 +142,8 @@ export function CloudBackupSettings() {
     return (
       <View style={styles.block}>
         {headerBlock}
+        <GoogleOAuthClientIdForm onSaved={reloadClientId} />
         <GoogleOAuthSetupGuide />
-        <Text style={styles.hint}>{t('settings.cloudSetupHint')}</Text>
-        {__DEV__ ? <Text style={styles.devHint}>{t('settings.cloudSetupHintDev')}</Text> : null}
       </View>
     );
   }
