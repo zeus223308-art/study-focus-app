@@ -9,6 +9,7 @@ import { SettingsRow } from '@/components/SettingsGroup';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useGoogleDriveAuth } from '@/hooks/useGoogleDriveAuth';
+import { allowsDevClientIdOverride } from '@/services/cloud/google-client-store';
 import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
 import { showMessage } from '@/lib/ui/confirm';
 
@@ -28,6 +29,7 @@ export function CloudBackupSettings() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const { settings } = data;
+  const devSetup = allowsDevClientIdOverride();
 
   const authPreparing = configured && !requestReady;
 
@@ -50,7 +52,9 @@ export function CloudBackupSettings() {
     setNotice(null);
 
     if (!configured) {
-      const message = t('settings.cloudClientIdRequired');
+      const message = devSetup
+        ? t('settings.cloudClientIdRequired')
+        : t('settings.cloudComingSoon');
       setNotice(message);
       showMessage(t('settings.cloud'), message);
       return;
@@ -78,7 +82,7 @@ export function CloudBackupSettings() {
     } finally {
       setBusy(false);
     }
-  }, [authPreparing, configured, refresh, signIn, t, updateSettings]);
+  }, [authPreparing, configured, devSetup, refresh, signIn, t, updateSettings]);
 
   const handleDisconnect = useCallback(async () => {
     setBusy(true);
@@ -92,7 +96,9 @@ export function CloudBackupSettings() {
   }, [signOut, updateSettings]);
 
   const statusText = (() => {
-    if (!configured) return t('settings.cloudNotConfigured');
+    if (!configured) {
+      return devSetup ? t('settings.cloudNotConfigured') : t('settings.cloudComingSoon');
+    }
     if (session) return t('settings.cloudConnected');
     return t('settings.cloudDisconnected');
   })();
@@ -112,12 +118,12 @@ export function CloudBackupSettings() {
         </Text>
       </View>
 
-      {!session ? (
+      {!session && configured ? (
         <View style={styles.signInWrap}>
           <GoogleSignInButton
             label={signInLabel}
             onPress={handleConnect}
-            disabled={busy || !configured}
+            disabled={busy}
             loading={busy || authPreparing}
           />
         </View>
@@ -142,8 +148,14 @@ export function CloudBackupSettings() {
     return (
       <View style={styles.block}>
         {headerBlock}
-        <GoogleOAuthClientIdForm onSaved={reloadClientId} />
-        <GoogleOAuthSetupGuide />
+        {devSetup ? (
+          <>
+            <GoogleOAuthClientIdForm onSaved={reloadClientId} />
+            <GoogleOAuthSetupGuide />
+          </>
+        ) : (
+          <Text style={styles.hint}>{t('settings.cloudComingSoon')}</Text>
+        )}
       </View>
     );
   }

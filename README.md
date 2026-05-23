@@ -48,11 +48,21 @@
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=123456789-xxxx.apps.googleusercontent.com
 ```
 
-GitHub Pages 배포 시 **Repository secrets**에 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`를 추가하고, `deploy-web.yml`이 빌드에 주입합니다.
+GitHub Pages 배포 시 **Repository secrets**에 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`를 **개발자가 1회만** 추가합니다. 이후 배포된 앱에서는 **일반 사용자는 Google 로그인만** 하면 됩니다 (Client ID 입력 불필요).
 
-### 3. 사용
+```powershell
+npm run setup:google-oauth -- YOUR_ID.apps.googleusercontent.com
+```
 
-Settings → **Google 계정 연결** → 자동 백업·복원. **지금 동기화**로 수동 업로드 가능.
+### 3. 사용자 vs 개발자
+
+| | 개발자 (당신) | 다른 사용자 |
+|--|--------------|------------|
+| Google Cloud Console | 1회 설정 | **불필요** |
+| Client ID | GitHub Secret에 1회 | **볼 필요 없음** |
+| 앱에서 할 일 | 배포 확인 | **Google 아이디로 로그인** |
+
+Settings → **Google 아이디로 로그인** → 내 Drive에 자동 백업·복원.
 
 > 백업 파일은 Drive 앱 데이터 폴더에만 보이며, 사용자가 일반 Drive UI에서 보지 못합니다.
 

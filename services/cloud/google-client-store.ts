@@ -1,10 +1,29 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { GOOGLE_WEB_CLIENT_ID } from '@/services/cloud/google-config';
+import {
+  GOOGLE_WEB_CLIENT_ID,
+  isValidGoogleClientId,
+} from '@/services/cloud/google-config';
 
 const STORAGE_KEY = '@memory_sherpa_google_oauth_client_id';
 
+export { isValidGoogleClientId };
+
+export function isGoogleClientIdConfigured(clientId: string): boolean {
+  return isValidGoogleClientId(clientId);
+}
+
+/** True when the deployed build includes a Web client ID (GitHub Secret / .env at export). */
+export function isProductionGoogleConfigured(): boolean {
+  return isValidGoogleClientId(GOOGLE_WEB_CLIENT_ID);
+}
+
+export function allowsDevClientIdOverride(): boolean {
+  return __DEV__;
+}
+
 export async function loadStoredGoogleClientId(): Promise<string | null> {
+  if (!allowsDevClientIdOverride()) return null;
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
     if (!raw?.trim()) return null;
@@ -15,6 +34,7 @@ export async function loadStoredGoogleClientId(): Promise<string | null> {
 }
 
 export async function saveStoredGoogleClientId(clientId: string): Promise<void> {
+  if (!allowsDevClientIdOverride()) return;
   const trimmed = clientId.trim();
   if (!trimmed) {
     await AsyncStorage.removeItem(STORAGE_KEY);
@@ -24,22 +44,18 @@ export async function saveStoredGoogleClientId(clientId: string): Promise<void> 
 }
 
 export async function clearStoredGoogleClientId(): Promise<void> {
+  if (!allowsDevClientIdOverride()) return;
   await AsyncStorage.removeItem(STORAGE_KEY);
 }
 
-export function isValidGoogleClientId(clientId: string): boolean {
-  return clientId.includes('.apps.googleusercontent.com') && clientId.length > 20;
-}
-
+/** Build-time client ID first; AsyncStorage override only in local dev. */
 export async function getEffectiveGoogleClientId(): Promise<string> {
-  const stored = await loadStoredGoogleClientId();
-  if (stored && isValidGoogleClientId(stored)) return stored;
-  if (GOOGLE_WEB_CLIENT_ID && isValidGoogleClientId(GOOGLE_WEB_CLIENT_ID)) {
+  if (isProductionGoogleConfigured()) {
     return GOOGLE_WEB_CLIENT_ID;
   }
+  if (allowsDevClientIdOverride()) {
+    const stored = await loadStoredGoogleClientId();
+    if (stored && isValidGoogleClientId(stored)) return stored;
+  }
   return '';
-}
-
-export function isGoogleClientIdConfigured(clientId: string): boolean {
-  return isValidGoogleClientId(clientId);
 }

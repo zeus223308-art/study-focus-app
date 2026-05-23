@@ -29,8 +29,12 @@ export const DRIVE_BACKUP_FILENAME = 'memorysherpa-backup-v1.json';
 
 export const GOOGLE_TOKEN_STORAGE_KEY = '@memory_sherpa_google_drive';
 
+export function isValidGoogleClientId(clientId: string): boolean {
+  return clientId.includes('.apps.googleusercontent.com') && clientId.length > 20;
+}
+
 export function isGoogleDriveConfigured(): boolean {
-  return GOOGLE_WEB_CLIENT_ID.length > 10;
+  return isValidGoogleClientId(GOOGLE_WEB_CLIENT_ID);
 }
 
 export type GoogleDriveSession = {

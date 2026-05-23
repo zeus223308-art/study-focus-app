@@ -187,6 +187,7 @@
     "cloudSection": "Google Drive backup",
     "cloudSoon": "Coming soon",
     "cloudNotConfigured": "Not available yet",
+    "cloudComingSoon": "Backup coming soon",
     "cloudSetupHint": "Google sign-in must be configured in the app build to enable Drive backup.",
     "cloudSetupHintDev": "Dev: set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in .env.",
     "cloudSetupTitle": "Google Cloud Console setup (one-time)",

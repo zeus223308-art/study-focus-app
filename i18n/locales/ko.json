@@ -187,6 +187,7 @@
     "cloudSection": "Google Drive 백업",
     "cloudSoon": "준비 중",
     "cloudNotConfigured": "아직 사용 불가",
+    "cloudComingSoon": "백업 준비 중",
     "cloudSetupHint": "Google Drive 연동을 켜려면 앱 빌드에 OAuth 설정이 필요합니다.",
     "cloudSetupHintDev": "개발: .env에 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID를 넣으세요.",
     "cloudSetupTitle": "Google Cloud Console 설정 (최초 1회)",
