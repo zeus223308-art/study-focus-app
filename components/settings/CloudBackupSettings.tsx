@@ -14,13 +14,12 @@ import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { cleanGoogleOAuthUrl } from '@/services/cloud/google-oauth-callback';
 import { allowsDevClientIdOverride } from '@/services/cloud/google-client-store';
-import { clearGuestSession } from '@/services/storage/guest-session';
-import { loadGoogleDriveSession } from '@/services/cloud/google-session';
+import { ensureGoogleDriveSession } from '@/services/cloud/google-session';
 
 export function CloudBackupSettings() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, updateSettings, refresh, syncCloud, restoreFromCloudBackup, restoreLocalBackup } =
+  const { data, updateSettings, refresh, reloadAccountData, syncCloud, restoreFromCloudBackup, restoreLocalBackup } =
     useApp();
   const {
     configured,
@@ -77,20 +76,20 @@ export function CloudBackupSettings() {
       const connected = await signIn();
       if (connected) {
         cleanGoogleOAuthUrl();
-        clearGuestSession();
-        updateSettings({ cloudBackupEnabled: true });
-        await refresh();
         await reloadSession();
+        await reloadAccountData();
+        updateSettings({ cloudBackupEnabled: true });
         setNotice(null);
         router.replace('/(tabs)/settings');
         return;
       }
 
-      const existing = await loadGoogleDriveSession();
+      const existing = await ensureGoogleDriveSession();
       if (existing) {
         cleanGoogleOAuthUrl();
         await reloadSession();
-        await refresh();
+        await reloadAccountData();
+        updateSettings({ cloudBackupEnabled: true });
         setNotice(null);
         return;
       }
@@ -103,7 +102,7 @@ export function CloudBackupSettings() {
     } finally {
       setBusy(false);
     }
-  }, [authPreparing, configured, devSetup, refresh, reloadSession, router, signIn, t, updateSettings]);
+  }, [authPreparing, configured, devSetup, reloadAccountData, reloadSession, router, signIn, t, updateSettings]);
 
   const handleRestoreDrive = useCallback(() => {
     if (!session) {
@@ -160,13 +159,12 @@ export function CloudBackupSettings() {
     setNotice(null);
     try {
       await signOut();
-      clearGuestSession();
+      await reloadAccountData();
       updateSettings({ cloudBackupEnabled: false });
-      await refresh();
     } finally {
       setBusy(false);
     }
-  }, [refresh, signOut, updateSettings]);
+  }, [reloadAccountData, signOut, updateSettings]);
 
   const statusText = (() => {
     if (!configured) {

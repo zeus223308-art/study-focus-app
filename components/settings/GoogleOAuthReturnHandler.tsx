@@ -7,7 +7,7 @@ import { consumeGoogleOAuthCallbackFromUrl } from '@/services/cloud/google-oauth
 /** Handles Google OAuth full-page redirect on web (hash in URL → session → Settings). */
 export function GoogleOAuthReturnHandler() {
   const router = useRouter();
-  const { refresh, updateSettings } = useApp();
+  const { reloadAccountData, updateSettings } = useApp();
   const handledRef = useRef(false);
 
   useEffect(() => {
@@ -17,12 +17,12 @@ export function GoogleOAuthReturnHandler() {
       if (!result) return;
       handledRef.current = true;
       if (result.type === 'success') {
+        await reloadAccountData();
         updateSettings({ cloudBackupEnabled: true });
-        await refresh();
         router.replace('/(tabs)/settings');
       }
     })();
-  }, [refresh, router, updateSettings]);
+  }, [reloadAccountData, router, updateSettings]);
 
   return null;
 }

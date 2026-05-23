@@ -32,10 +32,11 @@ import {
   filterActiveTrash,
   canRestoreFromBackup,
 } from '@/lib/trash/lifecycle';
-import { ensureGoogleDriveSession } from '@/services/cloud/google-session';
+import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/google-session';
 import { createStorageProvider, checkFreemiumLimits, countPages } from '@/services/storage';
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
 import { hasRecoverableContent } from '@/services/storage/data-safety';
+import { clearGuestSession } from '@/services/storage/guest-session';
 import type { StorageProvider, FreemiumCheck } from '@/services/storage/types';
 
 type AppContextValue = {
@@ -52,6 +53,8 @@ type AppContextValue = {
   paywallVisible: boolean;
   setPaywallVisible: (v: boolean) => void;
   refresh: () => Promise<void>;
+  /** After sign-in/out — reloads the correct per-account partition (and Drive if needed). */
+  reloadAccountData: () => Promise<void>;
   capturePhoto: (imageUri: string, subjectId: string, studyDate?: string) => Promise<string | null>;
   captureFlashcardPair: (
     frontUri: string,
@@ -113,29 +116,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
   const prevLocalTodayRef = useRef(localToday);
   const dataRef = useRef<AppData | null>(null);
+  const skipPersistRef = useRef(false);
+
+  const hydrateFromStorage = useCallback(
+    async (options?: { clearGuestFirst?: boolean }) => {
+      if (options?.clearGuestFirst) clearGuestSession();
+      await ensureGoogleDriveSession();
+
+      let loaded = await storage.loadAppData();
+      const token = await getValidAccessToken();
+
+      if (token && !hasRecoverableContent(loaded)) {
+        const fromCloud = await storage.restoreFromCloudBackup();
+        if (fromCloud && hasRecoverableContent(fromCloud)) {
+          loaded = fromCloud;
+        } else {
+          const fromLocal = await storage.restoreLocalBackup();
+          if (fromLocal && hasRecoverableContent(fromLocal)) {
+            loaded = fromLocal;
+          }
+        }
+      }
+
+      const activeTrash = filterActiveTrash(loaded.trash);
+      let next = { ...loaded, trash: activeTrash };
+
+      const recovery = await runAutoRecovery(storage, next);
+      next = { ...recovery.data, trash: filterActiveTrash(recovery.data.trash) };
+
+      let recoveryNotice: AutoRecoverySource | null = null;
+      if (recovery.recovered && recovery.source) {
+        recoveryNotice = recovery.source;
+      } else if (hasRecoverableContent(next)) {
+        const stamped = await stampRecoverySettings(next);
+        if (JSON.stringify(stamped.settings) !== JSON.stringify(next.settings)) {
+          next = stamped;
+          await storage.saveAppData(stamped);
+        }
+      }
+
+      return { next, recoveryNotice };
+    },
+    [storage]
+  );
 
   const load = useCallback(async () => {
-    await ensureGoogleDriveSession();
-    const loaded = await storage.loadAppData();
-    const activeTrash = filterActiveTrash(loaded.trash);
-    let next = { ...loaded, trash: activeTrash };
-
-    const recovery = await runAutoRecovery(storage, next);
-    next = { ...recovery.data, trash: filterActiveTrash(recovery.data.trash) };
-    if (recovery.recovered && recovery.source) {
-      setAutoRecoveryNotice(recovery.source);
-    } else if (hasRecoverableContent(next)) {
-      const stamped = await stampRecoverySettings(next);
-      if (JSON.stringify(stamped.settings) !== JSON.stringify(next.settings)) {
-        next = stamped;
-        await storage.saveAppData(stamped);
-      }
-    }
-
+    const { next, recoveryNotice } = await hydrateFromStorage();
+    if (recoveryNotice) setAutoRecoveryNotice(recoveryNotice);
     setData(next);
     initI18n(next.settings.language);
     setReady(true);
-  }, [storage]);
+  }, [hydrateFromStorage]);
+
+  const reloadAccountData = useCallback(async () => {
+    skipPersistRef.current = true;
+    try {
+      const { next, recoveryNotice } = await hydrateFromStorage({ clearGuestFirst: true });
+      setAutoRecoveryNotice(recoveryNotice);
+      setData(next);
+      initI18n(next.settings.language);
+    } finally {
+      skipPersistRef.current = false;
+    }
+  }, [hydrateFromStorage]);
 
   const dismissAutoRecoveryNotice = useCallback(() => {
     setAutoRecoveryNotice(null);
@@ -161,7 +204,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [data]);
 
   useEffect(() => {
-    if (!ready || !data) return;
+    if (!ready || !data || skipPersistRef.current) return;
     storage.saveAppData(data);
   }, [data, ready, storage]);
 
@@ -522,6 +565,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       paywallVisible,
       setPaywallVisible,
       refresh: load,
+      reloadAccountData,
       capturePhoto,
       captureFlashcardPair,
       importPhotosToSubject,
@@ -564,6 +608,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     freemium,
     paywallVisible,
     load,
+    reloadAccountData,
     capturePhoto,
     captureFlashcardPair,
     importPhotosToSubject,
