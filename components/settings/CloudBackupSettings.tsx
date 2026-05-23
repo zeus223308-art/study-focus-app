@@ -193,7 +193,11 @@ export function CloudBackupSettings() {
       ) : null}
 
       <Text style={styles.hint}>{t('settings.cloudHint')}</Text>
-      {__DEV__ ? <Text style={styles.devHint}>redirect: {redirectUri}</Text> : null}
+      {!session ? (
+        <Text style={styles.devHint} selectable>
+          redirect: {redirectUri}
+        </Text>
+      ) : null}
     </View>
   );
 }

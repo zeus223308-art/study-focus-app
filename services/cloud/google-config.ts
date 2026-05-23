@@ -8,6 +8,7 @@ export const GOOGLE_OAUTH_JS_ORIGINS = [
 export const GOOGLE_OAUTH_REDIRECT_URIS = [
   'https://zeus223308-art.github.io/study-focus-app',
   'https://zeus223308-art.github.io/study-focus-app/',
+  'https://zeus223308-art.github.io',
   'http://localhost:8081',
   'http://localhost:4173',
   'http://localhost:4173/study-focus-app',
