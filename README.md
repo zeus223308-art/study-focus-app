@@ -29,6 +29,44 @@ npm install
 npx expo start
 ```
 
+## 웹 미리보기 (다른 사람과 공유)
+
+앱을 **정적 웹사이트**로 빌드해 GitHub Pages에 올릴 수 있습니다.
+
+### 공개 URL (배포 후)
+
+**https://zeus223308-art.github.io/study-focus-app/**
+
+`main` 브랜치에 push하면 GitHub Actions가 자동으로 `gh-pages` 브랜치에 배포합니다.
+
+### 최초 1회 — GitHub Pages 켜기
+
+1. GitHub 저장소 → **Settings** → **Pages**
+2. **Build and deployment** → Source: **Deploy from a branch**
+3. Branch: **`gh-pages`** / **`/ (root)`** → Save  
+   (첫 배포 워크플로우가 끝난 뒤 `gh-pages` 브랜치가 생깁니다)
+
+### 로컬에서 웹 빌드 확인
+
+```bash
+npm run export:web
+npm run serve:web
+```
+
+브라우저: http://localhost:4173
+
+GitHub Pages와 동일 경로로 테스트하려면 (PowerShell):
+
+```powershell
+$env:EXPO_PUBLIC_BASE_PATH='/study-focus-app'
+npm run export:web
+npm run serve:web
+```
+
+→ http://localhost:4173/study-focus-app/
+
+> 웹은 **미리보기·데모**용입니다. 카메라·알림 등은 네이티브 앱에서 완전히 동작합니다. 데이터는 브라우저(IndexedDB)에 저장됩니다.
+
 ## 빌드
 
 ```bash
