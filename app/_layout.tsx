@@ -6,11 +6,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+import { RecoveryBanner } from '@/components/RecoveryBanner';
 import { FloatingCameraButton } from '@/components/FloatingCameraButton';
 import { GoogleOAuthReturnHandler } from '@/components/settings/GoogleOAuthReturnHandler';
 import { MobileWebFrame } from '@/components/MobileWebFrame';
 import { SplashBrand } from '@/components/SplashBrand';
 import { AppProvider, useApp } from '@/context/AppContext';
+import { useTranslation } from 'react-i18next';
 import { theme } from '@/constants/theme';
 import { StyleSheet, View } from 'react-native';
 
@@ -26,7 +28,8 @@ function shouldShowFloatingCamera(segments: string[]): boolean {
 }
 
 function RootNavigator() {
-  const { data, ready } = useApp();
+  const { t } = useTranslation();
+  const { data, ready, autoRecoveryNotice, dismissAutoRecoveryNotice } = useApp();
   const router = useRouter();
   const segments = useSegments();
   const [brandDone, setBrandDone] = useState(false);
@@ -48,6 +51,13 @@ function RootNavigator() {
 
   return (
     <View style={styles.appShell}>
+      {autoRecoveryNotice ? (
+        <RecoveryBanner
+          source={autoRecoveryNotice}
+          message={t('settings.autoRecoveryDone')}
+          onDismiss={dismissAutoRecoveryNotice}
+        />
+      ) : null}
       <GoogleOAuthReturnHandler />
       <Stack
         screenOptions={{

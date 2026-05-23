@@ -142,6 +142,14 @@ export type AppSettings = {
   defaultSlideshowSeconds: number;
   cloudBackupEnabled: boolean;
   lastCloudSyncAt: string | null;
+  /** User had study photos/content — detects accidental wipe */
+  hadStudyContent: boolean;
+  lastSavedPageCount: number;
+  lastSavedAt: string | null;
+  lastAppVersion: string | null;
+  lastAutoRecoveryAt: string | null;
+  /** Google account that owns this local partition (prevents cross-user restore) */
+  cloudAccountEmail: string | null;
 };
 
 export type AppData = {

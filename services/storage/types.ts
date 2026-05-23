@@ -21,6 +21,7 @@ export interface StorageProvider {
   deleteRemoteAsset(remotePath: string): Promise<void>;
   syncAllPending(data: AppData): Promise<AppData>;
   restoreFromCloudBackup(): Promise<AppData | null>;
+  restoreLocalBackup(): Promise<AppData | null>;
 }
 
 export type FreemiumCheck = {

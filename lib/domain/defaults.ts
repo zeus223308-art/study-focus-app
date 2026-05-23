@@ -63,6 +63,12 @@ export const DEFAULT_DATA: AppData = {
     defaultSlideshowSeconds: 10,
     cloudBackupEnabled: true,
     lastCloudSyncAt: null,
+    hadStudyContent: false,
+    lastSavedPageCount: 0,
+    lastSavedAt: null,
+    lastAppVersion: null,
+    lastAutoRecoveryAt: null,
+    cloudAccountEmail: null,
   },
 };
 

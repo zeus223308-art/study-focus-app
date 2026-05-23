@@ -160,6 +160,14 @@ export function migrateToV4(raw: unknown): AppData {
       lastCloudSyncAt: legacy.settings?.lastCloudSyncAt ?? null,
       defaultSlideshowSeconds: legacy.settings?.defaultSlideshowSeconds ?? 10,
       firstLaunchDate: legacy.settings?.firstLaunchDate,
+      hadStudyContent: legacy.settings?.hadStudyContent ?? bundles.some((b) => b.pages.length > 0),
+      lastSavedPageCount:
+        legacy.settings?.lastSavedPageCount ??
+        bundles.reduce((n, b) => n + b.pages.length, 0),
+      lastSavedAt: legacy.settings?.lastSavedAt ?? null,
+      lastAppVersion: legacy.settings?.lastAppVersion ?? null,
+      lastAutoRecoveryAt: legacy.settings?.lastAutoRecoveryAt ?? null,
+      cloudAccountEmail: legacy.settings?.cloudAccountEmail ?? null,
     },
   };
 

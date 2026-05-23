@@ -34,9 +34,16 @@ export function inferFirstLaunchDate(data: AppData): string {
 export function normalizeAppSettings(settings: AppSettings, data: AppData): AppSettings {
   const merged = { ...data.settings, ...settings };
   const firstLaunchDate = merged.firstLaunchDate ?? inferFirstLaunchDate({ ...data, settings: merged });
+  const pageCount = data.bundles.reduce((n, b) => n + b.pages.length, 0);
   return {
     ...merged,
     firstLaunchDate,
+    hadStudyContent: merged.hadStudyContent ?? pageCount > 0,
+    lastSavedPageCount: merged.lastSavedPageCount ?? pageCount,
+    lastSavedAt: merged.lastSavedAt ?? null,
+    lastAppVersion: merged.lastAppVersion ?? null,
+    lastAutoRecoveryAt: merged.lastAutoRecoveryAt ?? null,
+    cloudAccountEmail: merged.cloudAccountEmail ?? null,
   };
 }
 

@@ -11,15 +11,17 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useGoogleDriveAuth } from '@/hooks/useGoogleDriveAuth';
 import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
-import { showMessage } from '@/lib/ui/confirm';
+import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { cleanGoogleOAuthUrl } from '@/services/cloud/google-oauth-callback';
 import { allowsDevClientIdOverride } from '@/services/cloud/google-client-store';
+import { clearGuestSession } from '@/services/storage/guest-session';
 import { loadGoogleDriveSession } from '@/services/cloud/google-session';
 
 export function CloudBackupSettings() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, updateSettings, refresh, syncCloud } = useApp();
+  const { data, updateSettings, refresh, syncCloud, restoreFromCloudBackup, restoreLocalBackup } =
+    useApp();
   const {
     configured,
     session,
@@ -75,6 +77,7 @@ export function CloudBackupSettings() {
       const connected = await signIn();
       if (connected) {
         cleanGoogleOAuthUrl();
+        clearGuestSession();
         updateSettings({ cloudBackupEnabled: true });
         await refresh();
         await reloadSession();
@@ -102,16 +105,68 @@ export function CloudBackupSettings() {
     }
   }, [authPreparing, configured, devSetup, refresh, reloadSession, router, signIn, t, updateSettings]);
 
+  const handleRestoreDrive = useCallback(() => {
+    if (!session) {
+      showMessage(t('settings.cloud'), t('settings.cloudRestoreFailed'));
+      return;
+    }
+    confirmDestructive({
+      title: t('settings.cloudRestoreDrive'),
+      message: t('settings.cloudRestoreConfirmDrive'),
+      cancelLabel: t('common.cancel'),
+      confirmLabel: t('settings.cloudRestoreDrive'),
+      onConfirm: async () => {
+        setBusy(true);
+        try {
+          const ok = await restoreFromCloudBackup();
+          if (ok) {
+            await refresh();
+            setNotice(t('settings.cloudRestoreDriveOk'));
+          } else {
+            setNotice(t('settings.cloudRestoreFailed'));
+          }
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
+  }, [refresh, restoreFromCloudBackup, session, t]);
+
+  const handleRestoreLocal = useCallback(() => {
+    confirmDestructive({
+      title: t('settings.cloudRestoreLocal'),
+      message: t('settings.cloudRestoreConfirmLocal'),
+      cancelLabel: t('common.cancel'),
+      confirmLabel: t('settings.cloudRestoreLocal'),
+      onConfirm: async () => {
+        setBusy(true);
+        try {
+          const ok = await restoreLocalBackup();
+          if (ok) {
+            await refresh();
+            setNotice(t('settings.cloudRestoreLocalOk'));
+          } else {
+            setNotice(t('settings.cloudRestoreFailed'));
+          }
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
+  }, [refresh, restoreLocalBackup, t]);
+
   const handleDisconnect = useCallback(async () => {
     setBusy(true);
     setNotice(null);
     try {
       await signOut();
+      clearGuestSession();
       updateSettings({ cloudBackupEnabled: false });
+      await refresh();
     } finally {
       setBusy(false);
     }
-  }, [signOut, updateSettings]);
+  }, [refresh, signOut, updateSettings]);
 
   const statusText = (() => {
     if (!configured) {
@@ -200,6 +255,18 @@ export function CloudBackupSettings() {
               {busy ? t('settings.cloudSyncing') : t('settings.cloudSyncNow')}
             </Text>
             {busy && <ActivityIndicator color={theme.orange} />}
+          </Pressable>
+          <Pressable
+            onPress={busy ? undefined : handleRestoreDrive}
+            style={[styles.actionRow, styles.rowBorder]}
+            disabled={busy}>
+            <Text style={styles.actionText}>{t('settings.cloudRestoreDrive')}</Text>
+          </Pressable>
+          <Pressable
+            onPress={busy ? undefined : handleRestoreLocal}
+            style={[styles.actionRow, styles.rowBorder]}
+            disabled={busy}>
+            <Text style={styles.actionText}>{t('settings.cloudRestoreLocal')}</Text>
           </Pressable>
           <Pressable
             onPress={busy ? undefined : handleDisconnect}

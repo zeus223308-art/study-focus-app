@@ -33,6 +33,8 @@ import {
   canRestoreFromBackup,
 } from '@/lib/trash/lifecycle';
 import { createStorageProvider, checkFreemiumLimits, countPages } from '@/services/storage';
+import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
+import { hasRecoverableContent } from '@/services/storage/data-safety';
 import type { StorageProvider, FreemiumCheck } from '@/services/storage/types';
 
 type AppContextValue = {
@@ -75,6 +77,10 @@ type AppContextValue = {
   updateSettings: (patch: Partial<AppSettings>) => void;
   getSchedule: (id: string) => ReviewSchedule | undefined;
   syncCloud: () => Promise<void>;
+  restoreFromCloudBackup: () => Promise<boolean>;
+  restoreLocalBackup: () => Promise<boolean>;
+  autoRecoveryNotice: AutoRecoverySource | null;
+  dismissAutoRecoveryNotice: () => void;
   movingBundleId: string | null;
   dragSourceSubjectId: string | null;
   dragHoverSubjectId: string | null;
@@ -97,6 +103,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const localToday = useLocalCalendarDay();
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [paywallVisible, setPaywallVisible] = useState(false);
+  const [autoRecoveryNotice, setAutoRecoveryNotice] = useState<AutoRecoverySource | null>(null);
   const [movingBundleId, setMovingBundleId] = useState<string | null>(null);
   const [dragSourceSubjectId, setDragSourceSubjectId] = useState<string | null>(null);
   const [dragHoverSubjectId, setDragHoverSubjectId] = useState<string | null>(null);
@@ -109,10 +116,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const load = useCallback(async () => {
     const loaded = await storage.loadAppData();
     const activeTrash = filterActiveTrash(loaded.trash);
-    setData({ ...loaded, trash: activeTrash });
-    initI18n(loaded.settings.language);
+    let next = { ...loaded, trash: activeTrash };
+
+    const recovery = await runAutoRecovery(storage, next);
+    next = { ...recovery.data, trash: filterActiveTrash(recovery.data.trash) };
+    if (recovery.recovered && recovery.source) {
+      setAutoRecoveryNotice(recovery.source);
+    } else if (hasRecoverableContent(next)) {
+      const stamped = await stampRecoverySettings(next);
+      if (JSON.stringify(stamped.settings) !== JSON.stringify(next.settings)) {
+        next = stamped;
+        await storage.saveAppData(stamped);
+      }
+    }
+
+    setData(next);
+    initI18n(next.settings.language);
     setReady(true);
   }, [storage]);
+
+  const dismissAutoRecoveryNotice = useCallback(() => {
+    setAutoRecoveryNotice(null);
+  }, []);
 
   useEffect(() => {
     load();
@@ -394,6 +419,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persist(next);
   }, [data, storage, persist]);
 
+  const restoreFromCloudBackup = useCallback(async () => {
+    const restored = await storage.restoreFromCloudBackup();
+    if (!restored) return false;
+    const activeTrash = filterActiveTrash(restored.trash);
+    persist({ ...restored, trash: activeTrash });
+    return true;
+  }, [storage, persist]);
+
+  const restoreLocalBackup = useCallback(async () => {
+    const restored = await storage.restoreLocalBackup();
+    if (!restored) return false;
+    const activeTrash = filterActiveTrash(restored.trash);
+    persist({ ...restored, trash: activeTrash });
+    return true;
+  }, [storage, persist]);
+
   const startMovingBundle = useCallback((bundleId: string, sourceSubjectId: string) => {
     setMovingBundleId(bundleId);
     setDragSourceSubjectId(sourceSubjectId);
@@ -496,6 +537,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateSettings,
       getSchedule,
       syncCloud,
+      restoreFromCloudBackup,
+      restoreLocalBackup,
+      autoRecoveryNotice,
+      dismissAutoRecoveryNotice,
       movingBundleId,
       dragSourceSubjectId,
       dragHoverSubjectId,
@@ -534,6 +579,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateSettings,
     getSchedule,
     syncCloud,
+    restoreFromCloudBackup,
+    restoreLocalBackup,
     movingBundleId,
     dragSourceSubjectId,
     dragHoverSubjectId,
