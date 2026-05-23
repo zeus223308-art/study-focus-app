@@ -9,6 +9,7 @@ module.exports = ({ config }) => {
       ...config.experiments,
       baseUrl: basePath,
     },
+    plugins: [...(config.plugins ?? []), 'expo-web-browser'],
     web: {
       bundler: 'metro',
       output: 'single',

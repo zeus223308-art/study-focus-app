@@ -14,13 +14,47 @@
 - 휴지통(익일 자동 삭제, 3일 내 복원)
 - 한/영 언어 설정 · 일일 복습 알림
 - 디자인: 베이지·흑백 + 주황 포인트(~5%)
+- Google Drive appDataFolder 백업 (웹 · Settings에서 연결)
 
 ## 스펙상 추후
 
 - OCR 문서 검색
-- Google Drive (썸네일 로컬 / 원본 클라우드)
 - 3·2·1 백지 공부 · 80% 채점 · 광고/유료
 - 위젯 · 드래그 앤 드롭 · PDF · 단권화 · 필기 펜/형광펜
+
+## Google Drive 백업 (웹)
+
+앱 데이터와 사진을 **Google Drive appDataFolder**에 백업해, 웹 앱 업데이트·브라우저 변경 후에도 같은 Google 계정으로 복원할 수 있습니다.
+
+### 1. Google Cloud Console
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → 프로젝트 생성
+2. **APIs & Services** → **Enable APIs** → **Google Drive API** 사용 설정
+3. **OAuth consent screen** → External → 테스트 사용자에 본인 Gmail 추가
+4. **Credentials** → **Create credentials** → **OAuth client ID** → **Web application**
+5. **Authorized JavaScript origins**
+   - `https://zeus223308-art.github.io`
+   - `http://localhost:4173`
+   - `http://localhost:8081`
+6. **Authorized redirect URIs** — 앱 Settings 화면 하단(개발 모드) 또는 브라우저 콘솔에서 `makeRedirectUri` 값 확인 후 등록. 예:
+   - `https://zeus223308-art.github.io/study-focus-app`
+   - `http://localhost:4173`
+
+### 2. 환경 변수
+
+`.env.example`을 `.env`로 복사하고 Web client ID를 넣습니다.
+
+```bash
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=123456789-xxxx.apps.googleusercontent.com
+```
+
+GitHub Pages 배포 시 **Repository secrets**에 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`를 추가하고, `deploy-web.yml`이 빌드에 주입합니다.
+
+### 3. 사용
+
+Settings → **Google 계정 연결** → 자동 백업·복원. **지금 동기화**로 수동 업로드 가능.
+
+> 백업 파일은 Drive 앱 데이터 폴더에만 보이며, 사용자가 일반 Drive UI에서 보지 못합니다.
 
 ## 실행
 

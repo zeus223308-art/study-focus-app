@@ -1,28 +1,51 @@
 import type { AppData } from '@/lib/domain/types';
+import { pullDriveBackupIfNewer, pushDriveBackup } from '@/services/cloud/drive-sync';
+import { getValidAccessToken } from '@/services/cloud/google-session';
+
 import type { StorageProvider, ThumbnailResult, UploadResult } from './types';
-import { LocalStorageProvider } from './local-provider';
 import { createMiniThumbnail } from './asset-pipeline';
+import { LocalStorageProvider } from './local-provider';
+
+const PUSH_DEBOUNCE_MS = 4000;
 
 /**
- * Cloud storage facade — thumbnails always local; masters route to GCS/Firebase when configured.
- * Set EXPO_PUBLIC_FIREBASE_ENABLED=true and add firebase config to activate remote sync.
+ * Local-first storage with optional Google Drive appDataFolder backup (web + native).
+ * Thumbnails stay on device; full backup JSON includes embedded image blobs for web.
  */
 export class CloudStorageProvider implements StorageProvider {
   private local = new LocalStorageProvider();
-  private remoteEnabled = process.env.EXPO_PUBLIC_FIREBASE_ENABLED === 'true';
+  private pushTimer: ReturnType<typeof setTimeout> | null = null;
+  private pushInFlight = false;
 
   async loadAppData(): Promise<AppData> {
-    const data = await this.local.loadAppData();
-    if (!this.remoteEnabled || !data.settings.cloudBackupEnabled) return data;
-    const remote = await this.tryRestoreRemote();
-    return remote ?? data;
+    const local = await this.local.loadAppData();
+    const token = await getValidAccessToken();
+    if (!token) return local;
+
+    const pulled = await pullDriveBackupIfNewer(local);
+    if (pulled.outcome.status === 'pulled') {
+      await this.local.saveAppData(pulled.data);
+      return pulled.data;
+    }
+
+    if (
+      pulled.outcome.status === 'skipped' &&
+      pulled.outcome.reason === 'no_remote' &&
+      local.bundles.length > 0
+    ) {
+      const pushed = await pushDriveBackup(local);
+      if (pushed.outcome.status === 'pushed') {
+        await this.local.saveAppData(pushed.data);
+        return pushed.data;
+      }
+    }
+
+    return pulled.data;
   }
 
   async saveAppData(data: AppData): Promise<void> {
     await this.local.saveAppData(data);
-    if (this.remoteEnabled && data.settings.cloudBackupEnabled) {
-      await this.pushRemoteSchema(data);
-    }
+    void this.scheduleDrivePush();
   }
 
   async createThumbnail(
@@ -34,72 +57,70 @@ export class CloudStorageProvider implements StorageProvider {
   }
 
   async uploadMasterAsset(localUri: string, remotePath: string): Promise<UploadResult> {
-    if (!this.remoteEnabled) {
-      return this.local.uploadMasterAsset(localUri, remotePath);
-    }
-    return this.uploadToGCS(localUri, remotePath);
+    return this.local.uploadMasterAsset(localUri, remotePath);
   }
 
   async fetchMasterAsset(remotePath: string, localDestUri: string): Promise<string> {
-    if (!this.remoteEnabled) {
-      return this.local.fetchMasterAsset(remotePath, localDestUri);
-    }
-    return this.fetchFromGCS(remotePath, localDestUri);
+    return this.local.fetchMasterAsset(remotePath, localDestUri);
   }
 
-  async deleteRemoteAsset(remotePath: string): Promise<void> {
-    if (!this.remoteEnabled) return;
-    await this.deleteFromGCS(remotePath);
+  async deleteRemoteAsset(_remotePath: string): Promise<void> {
+    return;
   }
 
   async syncAllPending(data: AppData): Promise<AppData> {
-    let next = { ...data };
-    for (const bundle of data.bundles) {
-      for (const page of bundle.pages) {
-        if (page.asset.syncStatus === 'pending_upload' && page.asset.originalLocalUri) {
-          const remotePath = `users/default/bundles/${bundle.id}/${page.id}_master.jpg`;
-          try {
-            const uploaded = await this.uploadMasterAsset(page.asset.originalLocalUri, remotePath);
-            page.asset = {
-              ...page.asset,
-              remotePath: uploaded.remotePath,
-              syncStatus: 'synced',
-              uploadedAt: uploaded.uploadedAt,
-            };
-          } catch {
-            page.asset = { ...page.asset, syncStatus: 'error' };
-          }
-        }
-      }
+    let next = await this.local.syncAllPending(data);
+    const token = await getValidAccessToken();
+    if (!token) return next;
+
+    const pulled = await pullDriveBackupIfNewer(next);
+    if (pulled.outcome.status === 'pulled') {
+      next = pulled.data;
+      await this.local.saveAppData(next);
     }
-    next = await this.local.syncAllPending(next);
-    await this.saveAppData(next);
+
+    const pushed = await pushDriveBackup(next);
+    if (pushed.outcome.status === 'pushed') {
+      next = pushed.data;
+      await this.local.saveAppData(next);
+    }
+
     return next;
   }
 
   async restoreFromCloudBackup(): Promise<AppData | null> {
-    if (!this.remoteEnabled) return null;
-    return this.tryRestoreRemote();
-  }
-
-  private async tryRestoreRemote(): Promise<AppData | null> {
+    const local = await this.local.loadAppData();
+    const { data, outcome } = await pullDriveBackupIfNewer(local);
+    if (outcome.status === 'pulled') {
+      await this.local.saveAppData(data);
+      return data;
+    }
     return null;
   }
 
-  private async pushRemoteSchema(_data: AppData): Promise<void> {
-    return;
+  private scheduleDrivePush(): void {
+    if (this.pushTimer) clearTimeout(this.pushTimer);
+    this.pushTimer = setTimeout(() => {
+      this.pushTimer = null;
+      void this.flushDrivePush();
+    }, PUSH_DEBOUNCE_MS);
   }
 
-  private async uploadToGCS(_localUri: string, remotePath: string): Promise<UploadResult> {
-    return { remotePath, uploadedAt: new Date().toISOString() };
-  }
+  private async flushDrivePush(): Promise<void> {
+    if (this.pushInFlight) return;
+    const token = await getValidAccessToken();
+    if (!token) return;
 
-  private async fetchFromGCS(_remotePath: string, localDestUri: string): Promise<string> {
-    return localDestUri;
-  }
-
-  private async deleteFromGCS(_remotePath: string): Promise<void> {
-    return;
+    this.pushInFlight = true;
+    try {
+      const latest = await this.local.loadAppData();
+      const { data, outcome } = await pushDriveBackup(latest);
+      if (outcome.status === 'pushed') {
+        await this.local.saveAppData(data);
+      }
+    } finally {
+      this.pushInFlight = false;
+    }
   }
 }
 

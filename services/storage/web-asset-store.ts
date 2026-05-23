@@ -69,6 +69,10 @@ async function getWebAssetBlob(key: string): Promise<Blob | null> {
   return blob;
 }
 
+export async function getWebAssetBlobByKey(key: string): Promise<Blob | null> {
+  return getWebAssetBlob(key);
+}
+
 export async function getWebAssetObjectUrl(key: string): Promise<string | null> {
   if (!isWeb()) return null;
   const hit = objectUrlCache.get(key);

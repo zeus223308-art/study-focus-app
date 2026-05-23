@@ -1,0 +1,24 @@
+export const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+
+export const DRIVE_APPDATA_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+
+export const GOOGLE_DRIVE_SCOPES = [
+  DRIVE_APPDATA_SCOPE,
+  'openid',
+  'profile',
+  'email',
+];
+
+export const DRIVE_BACKUP_FILENAME = 'memorysherpa-backup-v1.json';
+
+export const GOOGLE_TOKEN_STORAGE_KEY = '@memory_sherpa_google_drive';
+
+export function isGoogleDriveConfigured(): boolean {
+  return GOOGLE_WEB_CLIENT_ID.length > 10;
+}
+
+export type GoogleDriveSession = {
+  accessToken: string;
+  expiresAt: number;
+  email: string | null;
+};

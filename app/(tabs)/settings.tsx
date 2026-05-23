@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { CloudBackupSettings } from '@/components/settings/CloudBackupSettings';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsGroup';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
@@ -130,7 +131,7 @@ export default function SettingsScreen() {
           value={`${photoCount} / ${settings.photoLimit} · ${freemium.usedMemos} / ${settings.memoLimit}`}
           last={false}
         />
-        <SettingsRow label={t('settings.cloud')} value={t('settings.cloudSoon')} last={false} />
+        <CloudBackupSettings />
         <SettingsRow label={t('settings.ocr')} value={t('settings.ocrSoon')} last />
       </SettingsGroup>
 
