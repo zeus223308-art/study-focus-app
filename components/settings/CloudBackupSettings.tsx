@@ -223,7 +223,7 @@ export function CloudBackupSettings() {
         {headerBlock}
         {devSetup ? (
           <>
-            <GoogleOAuthClientIdForm onSaved={reloadClientId} />
+            <GoogleOAuthClientIdForm onSaved={() => void reloadClientId()} />
             <GoogleOAuthSetupGuide />
           </>
         ) : (

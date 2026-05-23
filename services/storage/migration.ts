@@ -159,7 +159,6 @@ export function migrateToV4(raw: unknown): AppData {
       cloudBackupEnabled: legacy.settings?.cloudBackupEnabled ?? true,
       lastCloudSyncAt: legacy.settings?.lastCloudSyncAt ?? null,
       defaultSlideshowSeconds: legacy.settings?.defaultSlideshowSeconds ?? 10,
-      firstLaunchDate: legacy.settings?.firstLaunchDate,
       hadStudyContent: legacy.settings?.hadStudyContent ?? bundles.some((b) => b.pages.length > 0),
       lastSavedPageCount:
         legacy.settings?.lastSavedPageCount ??

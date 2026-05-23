@@ -88,7 +88,7 @@ export function useViewportLayout(): ViewportLayout {
       pagerSize,
       listNumColumns,
       vaultFoldersPerPage,
-      dashboardCardsPerPage: dashboardCardsPerRow,
+      dashboardCardsPerRow,
     };
   }, [width, height]);
 }
