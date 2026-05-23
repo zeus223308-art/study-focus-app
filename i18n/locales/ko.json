@@ -85,6 +85,12 @@
     "layerOff": "레이어 끄기",
     "addLayer": "오늘 필기 추가",
     "note": "메모",
+    "ocrText": "인식된 글자 (문제)",
+    "ocrAnswerText": "인식된 글자 (답)",
+    "ocrRerun": "다시 인식",
+    "ocrRerunning": "인식 중…",
+    "ocrUnavailable": "OCR은 Android/iOS 앱에서만 사용할 수 있습니다.",
+    "ocrNoText": "인식된 글자가 없습니다. 사진을 다시 찍거나 직접 입력하세요.",
     "slideshow": "슬라이드",
     "slideshowFront": "문제 표시 시간",
     "slideshowBack": "정답·풀이 표시 시간",
@@ -226,8 +232,12 @@
     "cloudHint": "같은 Google 계정으로 웹·기기 간 데이터가 유지됩니다. 앱 업데이트 후에도 복원할 수 있습니다.",
     "cloudSignInError": "Google 로그인에 실패했습니다.",
     "cloudSyncError": "동기화에 실패했습니다.",
-    "ocr": "OCR 검색",
-    "ocrSoon": "준비 중"
+    "ocr": "OCR (글자 인식)",
+    "ocrSoon": "준비 중",
+    "ocrOnDevice": "앱에서 자동 인식 (ML Kit)",
+    "ocrWebOnly": "웹에서는 OCR 미지원",
+    "ocrUnsupported": "이 기기에서는 OCR 미지원",
+    "ocrSearchHint": "메모·인식된 글자·태그로 검색됩니다."
   },
   "onboarding": {
     "welcome": "MemorySherpa",

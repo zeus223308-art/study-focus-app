@@ -24,11 +24,16 @@ export async function createPageFromCapture(
 
   let answerAsset: NotePage['answerAsset'] = null;
   let answerOcrText = '';
+  let ansMaster = '';
   if (params.answerImageUri) {
     const ansKey = `${pageId}_back`;
-    const ansMaster = await persistOriginalCopy(params.answerImageUri, params.bundleId, ansKey);
+    ansMaster = await persistOriginalCopy(params.answerImageUri, params.bundleId, ansKey);
     const ansThumb = await storage.createThumbnail(ansMaster, params.bundleId, ansKey);
     answerAsset = buildLocalCloudAsset(ansMaster, ansThumb, 'pending_upload');
+  }
+
+  const ocrText = await extractOcrFromImageUri(masterUri);
+  if (ansMaster) {
     answerOcrText = await extractOcrFromImageUri(ansMaster);
   }
 
@@ -43,7 +48,7 @@ export async function createPageFromCapture(
     answerAsset,
     answerOcrText,
     layers: [],
-    ocrText: '',
+    ocrText,
     slideshowSeconds: 10,
     answerSlideshowSeconds: 10,
     createdAt: now,

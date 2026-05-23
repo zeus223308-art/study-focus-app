@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -38,6 +39,8 @@ import {
 } from '@/lib/domain/slideshow-timing';
 import type { InkToolId, NoteLayer } from '@/lib/domain/types';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
+import { getAnswerImageUri } from '@/lib/review/answer-text';
+import { extractOcrFromImageUri, isOcrAvailable } from '@/lib/review/ocr-extract';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -79,6 +82,10 @@ export default function BundleScreen() {
   const [pageIndex, setPageIndex] = useState(initialPageIndex);
   const [importingMore, setImportingMore] = useState(false);
   const [note, setNote] = useState('');
+  const [ocrTextDraft, setOcrTextDraft] = useState('');
+  const [answerOcrDraft, setAnswerOcrDraft] = useState('');
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const ocrEnabled = Platform.OS !== 'web' && isOcrAvailable();
   const [tool, setTool] = useState<InkToolId>('pen-black');
   const [penWidth, setPenWidth] = useState<number>(PEN_WIDTHS[1]);
   const [highlighterWidth, setHighlighterWidth] = useState<number>(HIGHLIGHTER_WIDTHS[1]);
@@ -107,6 +114,13 @@ export default function BundleScreen() {
   }, [initialPageIndex]);
 
   useEffect(() => {
+    if (!page) return;
+    setNote(page.textNote);
+    setOcrTextDraft(page.ocrText);
+    setAnswerOcrDraft(page.answerOcrText);
+  }, [page?.id]);
+
+  useEffect(() => {
     if (!bundle) return;
     setPageIndex((i) => Math.min(i, Math.max(0, bundle.pages.length - 1)));
   }, [bundle?.id, bundle?.pages.length]);
@@ -116,6 +130,34 @@ export default function BundleScreen() {
   const folderBack: { pathname: '/folder/[id]'; params: { id: string } } = {
     pathname: '/folder/[id]',
     params: { id: bundle.subjectId },
+  };
+
+  const saveOcrFields = (ocrText: string, answerOcrText: string) => {
+    updateBundle(bundle.id, {
+      pages: bundle.pages.map((p) =>
+        p.id === page.id ? { ...p, ocrText, answerOcrText, updatedAt: new Date().toISOString() } : p
+      ),
+    });
+  };
+
+  const rerunOcr = async () => {
+    if (!ocrEnabled) {
+      showMessage(t('item.ocrUnavailable'));
+      return;
+    }
+    setOcrBusy(true);
+    try {
+      const frontUri = page.asset.originalLocalUri ?? page.asset.thumbnailUri;
+      const front = frontUri ? await extractOcrFromImageUri(frontUri) : '';
+      const ansUri = getAnswerImageUri(page);
+      const back = ansUri ? await extractOcrFromImageUri(ansUri) : answerOcrDraft;
+      setOcrTextDraft(front);
+      setAnswerOcrDraft(back);
+      saveOcrFields(front, back);
+      if (!front && !back) showMessage(t('item.ocrNoText'));
+    } finally {
+      setOcrBusy(false);
+    }
   };
 
   const confirmDeleteCurrentPage = () => {
@@ -398,6 +440,36 @@ export default function BundleScreen() {
         placeholderTextColor={theme.gray}
       />
 
+      {ocrEnabled ? (
+        <View style={styles.ocrBlock}>
+          <Pressable onPress={rerunOcr} disabled={ocrBusy} style={styles.ocrRerun}>
+            <Text style={[styles.link, ocrBusy && styles.linkDisabled]}>
+              {ocrBusy ? t('item.ocrRerunning') : t('item.ocrRerun')}
+            </Text>
+          </Pressable>
+          <TextInput
+            style={styles.note}
+            multiline
+            value={ocrTextDraft}
+            onChangeText={setOcrTextDraft}
+            onBlur={() => saveOcrFields(ocrTextDraft, answerOcrDraft)}
+            placeholder={t('item.ocrText')}
+            placeholderTextColor={theme.gray}
+          />
+          {page.answerAsset ? (
+            <TextInput
+              style={styles.note}
+              multiline
+              value={answerOcrDraft}
+              onChangeText={setAnswerOcrDraft}
+              onBlur={() => saveOcrFields(ocrTextDraft, answerOcrDraft)}
+              placeholder={t('item.ocrAnswerText')}
+              placeholderTextColor={theme.gray}
+            />
+          ) : null}
+        </View>
+      ) : null}
+
       <View style={styles.timingBlock}>
         <Text style={styles.label}>{t('item.slideshowFront')}</Text>
         <View style={styles.secRow}>
@@ -607,6 +679,8 @@ const styles = StyleSheet.create({
     borderColor: theme.grayLight,
     fontSize: theme.font.body,
   },
+  ocrBlock: { marginTop: 8, gap: 8 },
+  ocrRerun: { alignSelf: 'flex-start' },
   timingBlock: { marginTop: 8, marginBottom: 4 },
   labelSpaced: { marginTop: 14 },
   secRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },

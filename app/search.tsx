@@ -38,7 +38,7 @@ export default function SearchScreen() {
           {examOnly ? '✓ ' : ''}{t('item.tagExam')}
         </Text>
       </Pressable>
-      <Text style={styles.soon}>{t('settings.ocrSoon')}</Text>
+      <Text style={styles.soon}>{t('settings.ocrSearchHint')}</Text>
       <FlatList
         data={results}
         keyExtractor={(b) => b.id}

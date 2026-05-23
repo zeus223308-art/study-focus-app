@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { CloudBackupSettings } from '@/components/settings/CloudBackupSettings';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsGroup';
@@ -16,6 +16,7 @@ import {
 } from '@/lib/domain/folder-schedule';
 import type { Language } from '@/lib/domain/types';
 import { scheduleDailyReviewReminder, cancelAllReminders } from '@/lib/notifications';
+import { isOcrAvailable } from '@/lib/review/ocr-extract';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
@@ -26,6 +27,13 @@ export default function SettingsScreen() {
   const { settings, schedules, subjects } = data;
   const active = settings.activeScheduleIds;
   const photoCount = freemium.usedImages;
+
+  const ocrStatusLabel =
+    Platform.OS === 'web'
+      ? t('settings.ocrWebOnly')
+      : isOcrAvailable()
+        ? t('settings.ocrOnDevice')
+        : t('settings.ocrUnsupported');
 
   useEffect(() => {
     if (settings.notificationsEnabled) {
@@ -138,7 +146,7 @@ export default function SettingsScreen() {
       </SettingsGroup>
 
       <SettingsGroup>
-        <SettingsRow label={t('settings.ocr')} value={t('settings.ocrSoon')} last />
+        <SettingsRow label={t('settings.ocr')} value={ocrStatusLabel} last />
       </SettingsGroup>
 
       <Pressable onPress={() => router.push('/onboarding')} style={styles.link}>

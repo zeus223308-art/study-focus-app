@@ -85,6 +85,12 @@
     "layerOff": "Hide layer",
     "addLayer": "Add today's layer",
     "note": "Note",
+    "ocrText": "Recognized text (question)",
+    "ocrAnswerText": "Recognized text (answer)",
+    "ocrRerun": "Recognize again",
+    "ocrRerunning": "Recognizing…",
+    "ocrUnavailable": "OCR is only available in the Android/iOS app.",
+    "ocrNoText": "No text recognized. Retake the photo or type it manually.",
     "slideshow": "Slideshow",
     "slideshowFront": "Question display time",
     "slideshowBack": "Answer display time",
@@ -226,8 +232,12 @@
     "cloudHint": "Data follows your Google account across browsers and devices, including after web app updates.",
     "cloudSignInError": "Google sign-in failed.",
     "cloudSyncError": "Sync failed.",
-    "ocr": "OCR search",
-    "ocrSoon": "Coming soon"
+    "ocr": "OCR (text recognition)",
+    "ocrSoon": "Coming soon",
+    "ocrOnDevice": "On-device auto recognition (ML Kit)",
+    "ocrWebOnly": "OCR not available on web",
+    "ocrUnsupported": "OCR not supported on this device",
+    "ocrSearchHint": "Search notes, recognized text, and tags."
   },
   "onboarding": {
     "welcome": "MemorySherpa",

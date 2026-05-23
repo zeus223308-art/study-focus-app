@@ -55,6 +55,7 @@ export function searchBundles(bundles: NoteBundle[], query: string, examOnly?: b
       (p) =>
         p.textNote.toLowerCase().includes(q) ||
         p.ocrText.toLowerCase().includes(q) ||
+        p.answerOcrText.toLowerCase().includes(q) ||
         p.tags.some((t) => t.toLowerCase().includes(q))
     );
     return inTitle || inPages;
