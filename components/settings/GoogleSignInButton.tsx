@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 
@@ -18,21 +18,31 @@ function GoogleMark() {
 }
 
 export function GoogleSignInButton({ label, onPress, disabled, loading }: Props) {
+  const inactive = disabled || loading;
+
   return (
     <Pressable
-      onPress={disabled ? undefined : onPress}
+      accessibilityRole="button"
+      onPress={inactive ? undefined : onPress}
+      hitSlop={8}
       style={({ pressed }) => [
         styles.btn,
-        disabled && styles.btnDisabled,
-        pressed && !disabled && styles.btnPressed,
+        Platform.OS === 'web' && styles.btnWeb,
+        inactive && styles.btnDisabled,
+        pressed && !inactive && styles.btnPressed,
       ]}
-      disabled={disabled || loading}>
+      disabled={inactive}>
       {loading ? (
-        <ActivityIndicator color={theme.gray} size="small" />
+        <>
+          <ActivityIndicator color={theme.gray} size="small" />
+          <Text style={styles.label} numberOfLines={1}>
+            {label}
+          </Text>
+        </>
       ) : (
         <>
           <GoogleMark />
-          <Text style={[styles.label, disabled && styles.labelDisabled]} numberOfLines={1}>
+          <Text style={[styles.label, inactive && styles.labelDisabled]} numberOfLines={1}>
             {label}
           </Text>
         </>
@@ -47,18 +57,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: theme.grayLight,
     backgroundColor: theme.white,
-    minHeight: 36,
-    flexShrink: 1,
+    minHeight: 40,
+    width: '100%',
+    maxWidth: 240,
+    zIndex: 2,
   },
+  btnWeb: {
+    cursor: 'pointer',
+    userSelect: 'none',
+  } as object,
   btnDisabled: {
     backgroundColor: theme.beige,
-    opacity: 0.72,
+    opacity: 0.85,
+    ...(Platform.OS === 'web' ? ({ cursor: 'not-allowed' } as object) : null),
   },
   btnPressed: {
     backgroundColor: theme.beige,
