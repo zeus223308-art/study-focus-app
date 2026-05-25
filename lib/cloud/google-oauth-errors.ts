@@ -19,6 +19,10 @@ export function googleOAuthErrorMessage(raw: unknown, t: (key: string) => string
     return t('settings.cloudOAuthBlocked');
   }
 
+  if (lower.includes('disallowed_useragent') || lower.includes('does not comply')) {
+    return t('settings.cloudOAuthDisallowedUseragent');
+  }
+
   if (
     lower.includes('access_type') &&
     lower.includes('offline') &&

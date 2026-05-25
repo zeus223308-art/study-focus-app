@@ -7,7 +7,9 @@
 **https://zeus223308-art.github.io/study-focus-app/**
 
 - 끝에 `/study-focus-app` 경로가 있어야 합니다 (루트만 열면 OAuth가 깨질 수 있음)
-- **Chrome** 또는 **Safari** 권장 (카카오톡·인스타 등 **인앱 브라우저**는 로그인 실패가 잦음)
+- **Chrome** 또는 **Safari** 필수  
+  카카오톡·인스타·페이스북 등 **인앱 브라우저**에서는 Google이 `403 disallowed_useragent`로 **로그인을 막습니다** (Google 정책).
+- 링크를 카톡으로 받았다면: **⋯ → Safari/Chrome에서 열기**, 또는 주소를 복사해 Chrome에 붙여넣기
 
 ## 로그인 절차
 

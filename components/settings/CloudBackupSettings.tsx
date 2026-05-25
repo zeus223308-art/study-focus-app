@@ -3,6 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import {
+  GoogleOAuthInAppBrowserBlock,
+  useInAppBrowserBlocked,
+} from '@/components/settings/GoogleOAuthInAppBrowserBlock';
 import { GoogleOAuthClientIdForm } from '@/components/settings/GoogleOAuthClientIdForm';
 import { GoogleOAuthMobileGuide } from '@/components/settings/GoogleOAuthMobileGuide';
 import { GoogleOAuthSetupGuide } from '@/components/settings/GoogleOAuthSetupGuide';
@@ -38,6 +42,7 @@ export function CloudBackupSettings() {
   const [notice, setNotice] = useState<string | null>(null);
   const { settings } = data;
   const devSetup = allowsDevClientIdOverride();
+  const inAppBrowserBlocked = useInAppBrowserBlocked();
 
   const authPreparing = configured && !requestReady;
 
@@ -58,6 +63,13 @@ export function CloudBackupSettings() {
 
   const handleConnect = useCallback(async () => {
     setNotice(null);
+
+    if (inAppBrowserBlocked) {
+      const message = t('settings.cloudOAuthDisallowedUseragent');
+      setNotice(message);
+      showMessage(t('settings.cloud'), message);
+      return;
+    }
 
     if (!configured) {
       const message = devSetup
@@ -196,15 +208,17 @@ export function CloudBackupSettings() {
           <GoogleSignInButton
             label={signInLabel}
             onPress={handleConnect}
-            disabled={busy}
+            disabled={busy || inAppBrowserBlocked}
             loading={busy || authPreparing}
           />
         </View>
       ) : null}
 
+      <GoogleOAuthInAppBrowserBlock />
+
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-      {Platform.OS === 'web' && configured ? (
+      {Platform.OS === 'web' && configured && !inAppBrowserBlocked ? (
         <Text style={styles.webMobileHint}>{t('settings.cloudWebMobileHint')}</Text>
       ) : null}
 
