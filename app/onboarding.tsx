@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+
+const mountainLogo = require('@/assets/images/mountain-m-logo.png');
 
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
@@ -27,7 +29,12 @@ export default function OnboardingScreen() {
   return (
     <Screen>
       <View style={styles.logoBox}>
-        <Text style={styles.logoM}>M</Text>
+        <Image
+          source={mountainLogo}
+          style={styles.logoImage}
+          resizeMode="contain"
+          accessibilityLabel={t('appName')}
+        />
       </View>
       <Text style={styles.brand}>{t('appName')}</Text>
       <View style={styles.card}>
@@ -61,7 +68,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: 24,
   },
-  logoM: { fontSize: 36, color: theme.black, fontWeight: '200' },
+  logoImage: { width: 60, height: 60 },
   brand: {
     fontSize: 22,
     fontWeight: '700',
