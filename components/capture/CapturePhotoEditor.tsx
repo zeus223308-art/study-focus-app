@@ -12,8 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CaptureInteractiveCrop } from '@/components/capture/CaptureInteractiveCrop';
 import { theme } from '@/constants/theme';
-import type { CropTransform } from '@/lib/files/interactive-crop';
-import { exportCropTransform } from '@/lib/files/interactive-crop';
+import type { CropSelection } from '@/lib/files/interactive-crop';
+import { exportCropSelection } from '@/lib/files/interactive-crop';
 
 type Props = {
   uri: string;
@@ -28,7 +28,7 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
   const [workingUri, setWorkingUri] = useState(uri);
   const [busy, setBusy] = useState(false);
   const [cropReady, setCropReady] = useState(false);
-  const cropTransformRef = useRef<CropTransform | null>(null);
+  const cropSelectionRef = useRef<CropSelection | null>(null);
 
   const rotate = async () => {
     setBusy(true);
@@ -39,7 +39,7 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
       setWorkingUri(result.uri);
-      cropTransformRef.current = null;
+      cropSelectionRef.current = null;
       setCropReady(false);
     } finally {
       setBusy(false);
@@ -47,11 +47,11 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
   };
 
   const confirm = async () => {
-    const transform = cropTransformRef.current;
-    if (!transform) return;
+    const selection = cropSelectionRef.current;
+    if (!selection) return;
     setBusy(true);
     try {
-      const finalUri = await exportCropTransform(workingUri, transform);
+      const finalUri = await exportCropSelection(workingUri, selection);
       onConfirm(finalUri);
     } finally {
       setBusy(false);
@@ -81,8 +81,8 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
         <CaptureInteractiveCrop
           key={workingUri}
           uri={workingUri}
-          onTransformChange={(next) => {
-            cropTransformRef.current = next;
+          onSelectionChange={(next) => {
+            cropSelectionRef.current = next;
             setCropReady(Boolean(next));
           }}
         />

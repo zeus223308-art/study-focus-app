@@ -2,108 +2,112 @@ import * as ImageManipulator from 'expo-image-manipulator';
 
 export type CropRect = { left: number; top: number; width: number; height: number };
 
-/** Kakao-style: fixed crop window, user pans/zooms the photo underneath. */
-export type CropTransform = {
+/** Draggable crop region over the photo (viewport coordinates). */
+export type CropSelection = {
   imageWidth: number;
   imageHeight: number;
   viewportWidth: number;
   viewportHeight: number;
   crop: CropRect;
-  scale: number;
-  translateX: number;
-  translateY: number;
 };
 
-const MIN_ZOOM = 1;
-const MAX_ZOOM = 4;
+const MIN_CROP_SIZE = 48;
 
-export function fixedCropWindow(viewportWidth: number, viewportHeight: number): CropRect {
-  const inset = 16;
-  const w = Math.max(0, viewportWidth - inset * 2);
-  const h = Math.max(0, viewportHeight - inset * 2);
-  return {
-    left: (viewportWidth - w) / 2,
-    top: (viewportHeight - h) / 2,
-    width: w,
-    height: h,
-  };
-}
-
-export function coverScale(
-  imageWidth: number,
-  imageHeight: number,
-  cropWidth: number,
-  cropHeight: number
-): number {
-  if (imageWidth < 1 || imageHeight < 1 || cropWidth < 1 || cropHeight < 1) return 1;
-  return Math.max(cropWidth / imageWidth, cropHeight / imageHeight);
-}
-
-export function clampCropTransform(transform: CropTransform): CropTransform {
-  const { imageWidth: iw, imageHeight: ih, crop, scale } = transform;
-  const w = iw * scale;
-  const h = ih * scale;
-  const cx = crop.left + crop.width / 2;
-  const cy = crop.top + crop.height / 2;
-
-  let translateX = transform.translateX;
-  let translateY = transform.translateY;
-
-  if (w >= crop.width) {
-    const maxX = w / 2 - crop.width / 2;
-    const minX = crop.width / 2 - w / 2;
-    translateX = Math.min(maxX, Math.max(minX, translateX));
-  } else {
-    translateX = 0;
-  }
-
-  if (h >= crop.height) {
-    const maxY = h / 2 - crop.height / 2;
-    const minY = crop.height / 2 - h / 2;
-    translateY = Math.min(maxY, Math.max(minY, translateY));
-  } else {
-    translateY = 0;
-  }
-
-  return { ...transform, translateX, translateY };
-}
-
-export function initialCropTransform(
+export function imageContainRect(
   imageWidth: number,
   imageHeight: number,
   viewportWidth: number,
   viewportHeight: number
-): CropTransform {
-  const crop = fixedCropWindow(viewportWidth, viewportHeight);
-  const scale = coverScale(imageWidth, imageHeight, crop.width, crop.height);
-  return clampCropTransform({
+): CropRect & { scale: number } {
+  if (imageWidth < 1 || imageHeight < 1 || viewportWidth < 1 || viewportHeight < 1) {
+    return { left: 0, top: 0, width: viewportWidth, height: viewportHeight, scale: 1 };
+  }
+  const scale = Math.min(viewportWidth / imageWidth, viewportHeight / imageHeight);
+  const width = imageWidth * scale;
+  const height = imageHeight * scale;
+  return {
+    left: (viewportWidth - width) / 2,
+    top: (viewportHeight - height) / 2,
+    width,
+    height,
+    scale,
+  };
+}
+
+export function initialCropSelection(
+  imageWidth: number,
+  imageHeight: number,
+  viewportWidth: number,
+  viewportHeight: number
+): CropSelection {
+  const image = imageContainRect(imageWidth, imageHeight, viewportWidth, viewportHeight);
+  const insetX = image.width * 0.05;
+  const insetY = image.height * 0.05;
+  return clampCropSelection({
     imageWidth,
     imageHeight,
     viewportWidth,
     viewportHeight,
-    crop,
-    scale,
-    translateX: 0,
-    translateY: 0,
+    crop: {
+      left: image.left + insetX,
+      top: image.top + insetY,
+      width: Math.max(MIN_CROP_SIZE, image.width - insetX * 2),
+      height: Math.max(MIN_CROP_SIZE, image.height - insetY * 2),
+    },
   });
 }
 
-export function cropRegionFromTransform(transform: CropTransform): {
+export function clampCropSelection(selection: CropSelection): CropSelection {
+  const image = imageContainRect(
+    selection.imageWidth,
+    selection.imageHeight,
+    selection.viewportWidth,
+    selection.viewportHeight
+  );
+
+  const maxLeft = image.left + image.width - MIN_CROP_SIZE;
+  const maxTop = image.top + image.height - MIN_CROP_SIZE;
+
+  let left = Math.min(Math.max(image.left, selection.crop.left), maxLeft);
+  let top = Math.min(Math.max(image.top, selection.crop.top), maxTop);
+
+  let width = Math.max(MIN_CROP_SIZE, selection.crop.width);
+  let height = Math.max(MIN_CROP_SIZE, selection.crop.height);
+
+  if (left + width > image.left + image.width) width = image.left + image.width - left;
+  if (top + height > image.top + image.height) height = image.top + image.height - top;
+
+  if (width < MIN_CROP_SIZE) {
+    width = MIN_CROP_SIZE;
+    left = Math.min(left, image.left + image.width - MIN_CROP_SIZE);
+  }
+  if (height < MIN_CROP_SIZE) {
+    height = MIN_CROP_SIZE;
+    top = Math.min(top, image.top + image.height - MIN_CROP_SIZE);
+  }
+
+  return { ...selection, crop: { left, top, width, height } };
+}
+
+export function cropRegionFromSelection(selection: CropSelection): {
   originX: number;
   originY: number;
   width: number;
   height: number;
 } {
-  const { imageWidth: iw, imageHeight: ih, crop, scale, translateX, translateY } = transform;
-  const displayW = iw * scale;
-  const displayH = ih * scale;
-  const imageLeft = crop.left + crop.width / 2 - displayW / 2 + translateX;
-  const imageTop = crop.top + crop.height / 2 - displayH / 2 + translateY;
+  const image = imageContainRect(
+    selection.imageWidth,
+    selection.imageHeight,
+    selection.viewportWidth,
+    selection.viewportHeight
+  );
+  const { crop } = selection;
+  const scale = image.scale;
 
-  const originX = Math.max(0, Math.round((crop.left - imageLeft) / scale));
-  const originY = Math.max(0, Math.round((crop.top - imageTop) / scale));
-  const width = Math.min(iw - originX, Math.round(crop.width / scale));
-  const height = Math.min(ih - originY, Math.round(crop.height / scale));
+  const originX = Math.max(0, Math.round((crop.left - image.left) / scale));
+  const originY = Math.max(0, Math.round((crop.top - image.top) / scale));
+  const width = Math.min(selection.imageWidth - originX, Math.round(crop.width / scale));
+  const height = Math.min(selection.imageHeight - originY, Math.round(crop.height / scale));
 
   return {
     originX,
@@ -113,8 +117,8 @@ export function cropRegionFromTransform(transform: CropTransform): {
   };
 }
 
-export async function exportCropTransform(uri: string, transform: CropTransform): Promise<string> {
-  const crop = cropRegionFromTransform(transform);
+export async function exportCropSelection(uri: string, selection: CropSelection): Promise<string> {
+  const crop = cropRegionFromSelection(selection);
   const result = await ImageManipulator.manipulateAsync(
     uri,
     [{ crop }],
@@ -122,5 +126,3 @@ export async function exportCropTransform(uri: string, transform: CropTransform)
   );
   return result.uri;
 }
-
-export { MIN_ZOOM, MAX_ZOOM };

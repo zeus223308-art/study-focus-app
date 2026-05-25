@@ -1,31 +1,68 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Image,
-  LayoutChangeEvent,
-  PanResponder,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Image, LayoutChangeEvent, PanResponder, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import {
-  clampCropTransform,
-  coverScale,
-  initialCropTransform,
-  MAX_ZOOM,
-  MIN_ZOOM,
-  type CropTransform,
+  clampCropSelection,
+  imageContainRect,
+  initialCropSelection,
+  type CropRect,
+  type CropSelection,
 } from '@/lib/files/interactive-crop';
+
+type HandleId = 'move' | 'tl' | 'tr' | 'bl' | 'br' | 't' | 'b' | 'l' | 'r';
+
+const HANDLE_HIT = 36;
+const EDGE_HIT = 22;
 
 type Props = {
   uri: string;
-  onTransformChange?: (transform: CropTransform | null) => void;
+  onSelectionChange?: (selection: CropSelection | null) => void;
 };
 
-function CropGrid({ crop }: { crop: { left: number; top: number; width: number; height: number } }) {
+function resizeCrop(start: CropRect, handle: HandleId, dx: number, dy: number): CropRect {
+  let { left, top, width, height } = start;
+
+  if (handle === 'move') {
+    return { left: left + dx, top: top + dy, width, height };
+  }
+  if (handle === 'tl') {
+    const right = start.left + start.width;
+    const bottom = start.top + start.height;
+    left = start.left + dx;
+    top = start.top + dy;
+    width = right - left;
+    height = bottom - top;
+  } else if (handle === 'tr') {
+    const bottom = start.top + start.height;
+    top = start.top + dy;
+    width = start.width + dx;
+    height = bottom - top;
+  } else if (handle === 'bl') {
+    const right = start.left + start.width;
+    left = start.left + dx;
+    width = right - left;
+    height = start.height + dy;
+  } else if (handle === 'br') {
+    width = start.width + dx;
+    height = start.height + dy;
+  } else if (handle === 't') {
+    top = start.top + dy;
+    height = start.height - dy;
+  } else if (handle === 'b') {
+    height = start.height + dy;
+  } else if (handle === 'l') {
+    left = start.left + dx;
+    width = start.width - dx;
+  } else if (handle === 'r') {
+    width = start.width + dx;
+  }
+
+  return { left, top, width, height };
+}
+
+function CropGrid({ crop }: { crop: CropRect }) {
   const thirdW = crop.width / 3;
   const thirdH = crop.height / 3;
   return (
@@ -48,22 +85,22 @@ function CropGrid({ crop }: { crop: { left: number; top: number; width: number; 
   );
 }
 
-export function CaptureInteractiveCrop({ uri, onTransformChange }: Props) {
+export function CaptureInteractiveCrop({ uri, onSelectionChange }: Props) {
   const { t } = useTranslation();
   const [layout, setLayout] = useState({ w: 0, h: 0 });
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
-  const [transform, setTransform] = useState<CropTransform | null>(null);
-  const transformRef = useRef<CropTransform | null>(null);
-  const panStartRef = useRef<CropTransform | null>(null);
+  const [selection, setSelection] = useState<CropSelection | null>(null);
+  const selectionRef = useRef<CropSelection | null>(null);
+  const dragRef = useRef<{ handle: HandleId; startCrop: CropRect } | null>(null);
 
-  const applyTransform = useCallback(
-    (next: CropTransform) => {
-      const clamped = clampCropTransform(next);
-      transformRef.current = clamped;
-      setTransform(clamped);
-      onTransformChange?.(clamped);
+  const applySelection = useCallback(
+    (next: CropSelection) => {
+      const clamped = clampCropSelection(next);
+      selectionRef.current = clamped;
+      setSelection(clamped);
+      onSelectionChange?.(clamped);
     },
-    [onTransformChange]
+    [onSelectionChange]
   );
 
   useEffect(() => {
@@ -76,62 +113,49 @@ export function CaptureInteractiveCrop({ uri, onTransformChange }: Props) {
 
   useEffect(() => {
     if (imageSize.w < 2 || imageSize.h < 2 || layout.w < 8 || layout.h < 8) return;
-    applyTransform(initialCropTransform(imageSize.w, imageSize.h, layout.w, layout.h));
-  }, [applyTransform, imageSize.h, imageSize.w, layout.h, layout.w]);
+    applySelection(initialCropSelection(imageSize.w, imageSize.h, layout.w, layout.h));
+  }, [applySelection, imageSize.h, imageSize.w, layout.h, layout.w]);
 
-  const baseScale = useMemo(() => {
-    if (!transform) return 1;
-    return coverScale(transform.imageWidth, transform.imageHeight, transform.crop.width, transform.crop.height);
-  }, [transform]);
+  const imageRect = useMemo(() => {
+    if (!selection) return null;
+    return imageContainRect(
+      selection.imageWidth,
+      selection.imageHeight,
+      selection.viewportWidth,
+      selection.viewportHeight
+    );
+  }, [selection]);
 
-  const userZoom = transform ? transform.scale / baseScale : 1;
-
-  const adjustZoom = (delta: number) => {
-    if (!transform) return;
-    const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, userZoom + delta));
-    applyTransform({ ...transform, scale: baseScale * nextZoom });
-  };
-
-  const panResponder = useMemo(
-    () =>
+  const makeResponder = useCallback(
+    (handle: HandleId) =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
         onPanResponderGrant: () => {
-          panStartRef.current = transformRef.current;
+          if (!selectionRef.current) return;
+          dragRef.current = { handle, startCrop: { ...selectionRef.current.crop } };
         },
         onPanResponderMove: (_, gesture) => {
-          const start = panStartRef.current;
-          if (!start) return;
-          applyTransform({
-            ...start,
-            translateX: start.translateX + gesture.dx,
-            translateY: start.translateY + gesture.dy,
-          });
+          const drag = dragRef.current;
+          const current = selectionRef.current;
+          if (!drag || !current) return;
+          const nextCrop = resizeCrop(drag.startCrop, drag.handle, gesture.dx, gesture.dy);
+          applySelection({ ...current, crop: nextCrop });
+        },
+        onPanResponderRelease: () => {
+          dragRef.current = null;
         },
       }),
-    [applyTransform]
+    [applySelection]
   );
 
-  const display =
-    transform && transform.crop.width > 0
-      ? {
-          width: transform.imageWidth * transform.scale,
-          height: transform.imageHeight * transform.scale,
-          left:
-            transform.crop.left +
-            transform.crop.width / 2 -
-            (transform.imageWidth * transform.scale) / 2 +
-            transform.translateX,
-          top:
-            transform.crop.top +
-            transform.crop.height / 2 -
-            (transform.imageHeight * transform.scale) / 2 +
-            transform.translateY,
-        }
-      : null;
+  const panResponders = useMemo(() => {
+    const handles: HandleId[] = ['move', 'tl', 'tr', 'bl', 'br', 't', 'b', 'l', 'r'];
+    return Object.fromEntries(handles.map((h) => [h, makeResponder(h)])) as HandleId[]);
+  }, [makeResponder]);
 
-  const crop = transform?.crop;
+  const crop = selection?.crop;
+  const half = HANDLE_HIT / 2;
 
   return (
     <View
@@ -139,21 +163,18 @@ export function CaptureInteractiveCrop({ uri, onTransformChange }: Props) {
       onLayout={(e: LayoutChangeEvent) => {
         const { width, height } = e.nativeEvent.layout;
         setLayout({ w: width, h: height });
-      }}
-      {...panResponder.panHandlers}>
-      {display ? (
+      }}>
+      {imageRect ? (
         <Image
           source={{ uri }}
-          style={[
-            styles.image,
-            {
-              width: display.width,
-              height: display.height,
-              left: display.left,
-              top: display.top,
-            },
-          ]}
-          resizeMode="cover"
+          style={{
+            position: 'absolute',
+            left: imageRect.left,
+            top: imageRect.top,
+            width: imageRect.width,
+            height: imageRect.height,
+          }}
+          resizeMode="contain"
         />
       ) : null}
 
@@ -175,65 +196,119 @@ export function CaptureInteractiveCrop({ uri, onTransformChange }: Props) {
             ]}
             pointerEvents="none"
           />
+
           <View
-            pointerEvents="none"
             style={[
               styles.frame,
               { left: crop.left, top: crop.top, width: crop.width, height: crop.height },
             ]}
+            {...panResponders.move.panHandlers}
           />
           <CropGrid crop={crop} />
+
+          {/* edge handles */}
+          <View
+            style={[
+              styles.edgeHandle,
+              {
+                left: crop.left + crop.width / 2 - 20,
+                top: crop.top - EDGE_HIT / 2,
+                width: 40,
+                height: EDGE_HIT,
+              },
+            ]}
+            {...panResponders.t.panHandlers}
+          />
+          <View
+            style={[
+              styles.edgeHandle,
+              {
+                left: crop.left + crop.width / 2 - 20,
+                top: crop.top + crop.height - EDGE_HIT / 2,
+                width: 40,
+                height: EDGE_HIT,
+              },
+            ]}
+            {...panResponders.b.panHandlers}
+          />
+          <View
+            style={[
+              styles.edgeHandle,
+              {
+                left: crop.left - EDGE_HIT / 2,
+                top: crop.top + crop.height / 2 - 20,
+                width: EDGE_HIT,
+                height: 40,
+              },
+            ]}
+            {...panResponders.l.panHandlers}
+          />
+          <View
+            style={[
+              styles.edgeHandle,
+              {
+                left: crop.left + crop.width - EDGE_HIT / 2,
+                top: crop.top + crop.height / 2 - 20,
+                width: EDGE_HIT,
+                height: 40,
+              },
+            ]}
+            {...panResponders.r.panHandlers}
+          />
+
+          {/* corner handles */}
+          <View
+            style={[styles.cornerHandle, { left: crop.left - half, top: crop.top - half }]}
+            {...panResponders.tl.panHandlers}
+          />
+          <View
+            style={[styles.cornerHandle, { left: crop.left + crop.width - half, top: crop.top - half }]}
+            {...panResponders.tr.panHandlers}
+          />
+          <View
+            style={[styles.cornerHandle, { left: crop.left - half, top: crop.top + crop.height - half }]}
+            {...panResponders.bl.panHandlers}
+          />
+          <View
+            style={[
+              styles.cornerHandle,
+              { left: crop.left + crop.width - half, top: crop.top + crop.height - half },
+            ]}
+            {...panResponders.br.panHandlers}
+          />
         </>
       ) : null}
 
-      <View style={styles.zoomRow} pointerEvents="box-none">
-        <Pressable style={styles.zoomBtn} onPress={() => adjustZoom(-0.2)}>
-          <Text style={styles.zoomBtnText}>−</Text>
-        </Pressable>
-        <Text style={styles.hint}>{t('capture.kakaoCropHint')}</Text>
-        <Pressable style={styles.zoomBtn} onPress={() => adjustZoom(0.2)}>
-          <Text style={styles.zoomBtnText}>+</Text>
-        </Pressable>
-      </View>
+      <Text style={styles.hint}>{t('capture.cropDragRegionHint')}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.blackPure,
-    overflow: 'hidden',
-  },
-  image: { position: 'absolute' },
+  root: { flex: 1, backgroundColor: theme.blackPure, overflow: 'hidden' },
   dim: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.6)' },
-  frame: {
-    position: 'absolute',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.9)',
-  },
+  frame: { position: 'absolute', borderWidth: 2, borderColor: theme.white },
   gridWrap: { position: 'absolute' },
   gridLine: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.35)' },
-  zoomRow: {
+  cornerHandle: {
+    position: 'absolute',
+    width: HANDLE_HIT,
+    height: HANDLE_HIT,
+    borderRadius: HANDLE_HIT / 2,
+    backgroundColor: theme.white,
+    borderWidth: 2,
+    borderColor: theme.orange,
+    zIndex: 5,
+  },
+  edgeHandle: {
+    position: 'absolute',
+    zIndex: 4,
+  },
+  hint: {
     position: 'absolute',
     bottom: 8,
     left: 12,
     right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  zoomBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  zoomBtnText: { color: theme.white, fontSize: 20, fontWeight: '700' },
-  hint: {
-    flex: 1,
     textAlign: 'center',
     color: 'rgba(255,255,255,0.85)',
     fontSize: 12,
