@@ -22,7 +22,23 @@ async function normalizeJpeg(
   maxEdge: number,
   quality: number
 ): Promise<{ uri: string; width?: number; height?: number }> {
-  const inputUri = (await resolveImageUri(sourceUri)) ?? sourceUri;
+  let inputUri = (await resolveImageUri(sourceUri)) ?? sourceUri;
+
+  if (isWeb && inputUri.startsWith('blob:')) {
+    try {
+      const { uriToBlob } = await import('@/services/storage/web-asset-store');
+      const blob = await uriToBlob(inputUri);
+      inputUri = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error ?? new Error('blob read failed'));
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      /* fall through — manipulator may still accept the blob URL */
+    }
+  }
+
   const probe = await ImageManipulator.manipulateAsync(inputUri, [], {
     format: ImageManipulator.SaveFormat.JPEG,
   });

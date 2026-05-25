@@ -27,6 +27,7 @@ import {
 } from '@/lib/files/bake-capture-ink';
 import type { CropSelection } from '@/lib/files/interactive-crop';
 import { cropRegionFromSelection, exportCropSelection } from '@/lib/files/interactive-crop';
+import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 
@@ -196,7 +197,7 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
         }
       }
 
-      onConfirm({ uri: finalUri });
+      onConfirm({ uri: await stabilizeCaptureImageUri(finalUri) });
     } finally {
       setBusy(false);
     }

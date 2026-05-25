@@ -63,7 +63,9 @@ function drawStroke(
 async function loadHtmlImage(uri: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (!uri.startsWith('blob:') && !uri.startsWith('data:')) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error('image load failed'));
     img.src = uri;

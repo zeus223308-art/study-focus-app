@@ -24,6 +24,7 @@ import { todayKey } from '@/lib/domain/dates';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { pickForImport } from '@/lib/import/pick-for-import';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
+import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
 import { showMessage } from '@/lib/ui/confirm';
 
 type Step = 'camera' | 'edit' | 'answer-prompt' | 'save-sheet';
@@ -139,7 +140,9 @@ export default function CaptureTabScreen() {
     if (!frontUri || !subjectId || saveState === 'saving' || saveState === 'saved') return;
     setSaveState('saving');
     try {
-      const id = await captureFlashcardPair(frontUri, backUri, subjectId, studyDate);
+      const stableFront = await stabilizeCaptureImageUri(frontUri);
+      const stableBack = backUri ? await stabilizeCaptureImageUri(backUri) : null;
+      const id = await captureFlashcardPair(stableFront, stableBack, subjectId, studyDate);
       if (!id) {
         setSaveState('error');
         showMessage(t('capture.saveFailed'));
