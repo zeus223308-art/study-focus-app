@@ -36,7 +36,7 @@ export default function SearchScreen() {
       />
       <Pressable onPress={() => setExamOnly((e) => !e)} style={styles.filter}>
         <Text style={[styles.filterText, examOnly && styles.filterOn]}>
-          {examOnly ? '??' : ''}{t('item.tagExam')}
+          {examOnly ? '✓ ' : ''}{t('item.tagExam')}
         </Text>
       </Pressable>
       <FlatList
