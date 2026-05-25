@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { GOOGLE_ANDROID_PACKAGE } from '@/lib/cloud/google-android-oauth';
 import { GOOGLE_IOS_BUNDLE_ID } from '@/lib/cloud/google-ios-oauth';
 import {
   GOOGLE_OAUTH_CONSENT_URL,
@@ -36,23 +37,23 @@ export function GoogleOAuthMobileGuide({ redirectUri }: Props) {
           </Text>
           <Text style={styles.hint}>{t('settings.cloudMobileOAuthIosRebuild')}</Text>
         </>
-      ) : null}
+      ) : (
+        <>
+          <Text style={styles.step}>{t('settings.cloudMobileOAuthAndroidPackage')}</Text>
+          <Text style={styles.code} selectable>
+            {GOOGLE_ANDROID_PACKAGE}
+          </Text>
+          <Text style={styles.hint}>{t('settings.cloudMobileOAuthAndroidRebuild')}</Text>
+        </>
+      )}
 
       {!hasNativeClient ? (
         <>
           <Text style={styles.warn}>
             {platform === 'ios'
               ? t('settings.cloudMobileOAuthNeedIosClient')
-              : t('settings.cloudMobileOAuthNeedNativeClient')}
+              : t('settings.cloudMobileOAuthNeedAndroidClient')}
           </Text>
-          {platform !== 'ios' ? (
-            <>
-              <Text style={styles.step}>{t('settings.cloudMobileOAuthRedirectHint')}</Text>
-              <Text style={styles.code} selectable>
-                {redirectUri}
-              </Text>
-            </>
-          ) : null}
           <Text style={styles.hint}>{t('settings.cloudMobileOAuthRedirectNote')}</Text>
         </>
       ) : (
