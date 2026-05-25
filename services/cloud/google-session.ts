@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 import {
   GOOGLE_TOKEN_STORAGE_KEY,
@@ -35,6 +36,12 @@ export async function ensureGoogleDriveSession(): Promise<GoogleDriveSession | n
   if (isAccessTokenFresh(stored)) return stored;
 
   if (!stored.refreshToken) {
+    // Web OAuth (implicit) has no refresh token — use access token until expiry, then re-login.
+    if (Platform.OS === 'web') {
+      if (isAccessTokenFresh(stored)) return stored;
+      await clearGoogleDriveSession();
+      return null;
+    }
     await clearGoogleDriveSession();
     return null;
   }

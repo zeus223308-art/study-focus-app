@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { consumeGoogleOAuthCallbackFromUrl } from '@/services/cloud/google-oauth-callback';
 import { getGoogleRedirectUri } from '@/services/cloud/google-auth';
 import {
   getGoogleOAuthClientIds,
@@ -58,7 +59,7 @@ export function useGoogleDriveAuth() {
   /** Web uses token/id_token implicit flow — access_type=offline is invalid (Google 400). */
   const oauthExtra = useMemo((): Record<string, string> => {
     if (Platform.OS === 'web') {
-      return forceConsent ? { prompt: 'consent' } : {};
+      return forceConsent ? { prompt: 'select_account' } : {};
     }
     return forceConsent
       ? { access_type: 'offline', prompt: 'consent' }
@@ -91,8 +92,10 @@ export function useGoogleDriveAuth() {
     let active = true;
     (async () => {
       await reloadClientId();
-      const hasRefresh = await hasStoredGoogleRefreshToken();
-      if (!hasRefresh) setForceConsent(true);
+      if (Platform.OS !== 'web') {
+        const hasRefresh = await hasStoredGoogleRefreshToken();
+        if (!hasRefresh) setForceConsent(true);
+      }
       const existing = await ensureGoogleDriveSession();
       if (active) setSession(existing);
       if (active) setLoading(false);
@@ -118,14 +121,26 @@ export function useGoogleDriveAuth() {
     if (!configured) {
       throw new Error('Google Drive is not configured');
     }
-    if (await hasStoredGoogleRefreshToken()) {
+    if (Platform.OS !== 'web' && (await hasStoredGoogleRefreshToken())) {
       const restored = await ensureGoogleDriveSession();
       if (restored) {
         setSession(restored);
         return restored;
       }
     }
-    // Mobile browsers often block OAuth popups; full-page redirect works on web.
+
+    if (Platform.OS === 'web') {
+      const fromUrl = await consumeGoogleOAuthCallbackFromUrl();
+      if (fromUrl?.type === 'success') {
+        const restored = await ensureGoogleDriveSession();
+        if (restored) {
+          setSession(restored);
+          return restored;
+        }
+      }
+    }
+
+    // Mobile web: full-page redirect (popups are blocked).
     const result = await promptAsync(
       Platform.OS === 'web' ? { windowName: '_self' } : undefined
     );
@@ -133,7 +148,16 @@ export function useGoogleDriveAuth() {
       const params = result.params as Record<string, string> | undefined;
       throw new Error(params?.error_description ?? params?.error ?? 'Google sign-in failed');
     }
-    if (result?.type !== 'success') return null;
+    if (result?.type !== 'success') {
+      if (Platform.OS === 'web') {
+        const restored = await ensureGoogleDriveSession();
+        if (restored) {
+          setSession(restored);
+          return restored;
+        }
+      }
+      return null;
+    }
     const accessToken = result.authentication?.accessToken;
     if (!accessToken) return null;
     const next = await sessionFromAuthResult(
