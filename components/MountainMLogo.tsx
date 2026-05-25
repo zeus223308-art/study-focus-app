@@ -5,6 +5,21 @@ export const LOGO_WHITE = '#FFFFFF';
 export const LOGO_GRAY = '#6B6B6B';
 export const LOGO_GRAY_DARK = '#3A3A3A';
 export const LOGO_GRAY_LIGHT = '#B5B5B5';
+/** Outer rim — like inner highlight, slightly darker */
+export const LOGO_GRAY_RIM = '#949494';
+
+const MOUNTAIN_OUTLINE = `
+  M 12 134
+  C 12 118, 18 96, 30 76
+  C 44 52, 54 34, 68 22
+  C 76 16, 84 18, 92 28
+  C 96 42, 98 58, 100 72
+  C 102 58, 104 42, 108 28
+  C 116 18, 124 16, 132 22
+  C 146 34, 156 52, 170 76
+  C 182 96, 188 118, 188 134
+  Z
+`;
 
 type Props = {
   width?: number;
@@ -17,22 +32,18 @@ type Props = {
 export function MountainMLogo({ width = 240, height = 168 }: Props) {
   return (
     <Svg width={width} height={height} viewBox="0 0 200 140">
-      {/* Base silhouette */}
+      {/* Outer rim — soft edge like inner highlight, slightly darker */}
       <Path
-        fill={LOGO_GRAY_DARK}
-        d="
-          M 12 134
-          C 12 118, 18 96, 30 76
-          C 44 52, 54 34, 68 22
-          C 76 16, 84 18, 92 28
-          C 96 42, 98 58, 100 72
-          C 102 58, 104 42, 108 28
-          C 116 18, 124 16, 132 22
-          C 146 34, 156 52, 170 76
-          C 182 96, 188 118, 188 134
-          Z
-        "
+        d={MOUNTAIN_OUTLINE}
+        fill="none"
+        stroke={LOGO_GRAY_RIM}
+        strokeWidth={1.35}
+        strokeLinejoin="round"
+        strokeLinecap="round"
       />
+
+      {/* Base silhouette */}
+      <Path fill={LOGO_GRAY_DARK} d={MOUNTAIN_OUTLINE} />
 
       {/* Left slope (mid tone) */}
       <Path
@@ -63,10 +74,14 @@ export function MountainMLogo({ width = 240, height = 168 }: Props) {
       {/* Snow caps */}
       <Path
         fill={LOGO_WHITE}
+        stroke={LOGO_GRAY_RIM}
+        strokeWidth={0.7}
         d="M 64 28 C 70 14, 78 16, 84 26 C 80 34, 72 36, 64 28 Z"
       />
       <Path
         fill={LOGO_WHITE}
+        stroke={LOGO_GRAY_RIM}
+        strokeWidth={0.7}
         d="M 136 28 C 130 14, 122 16, 116 26 C 120 34, 128 36, 136 28 Z"
       />
 
