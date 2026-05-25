@@ -4,6 +4,8 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
+import { useCaptureSession } from '@/context/CaptureSessionContext';
+import { confirmChoice } from '@/lib/ui/confirm';
 
 export const DOCK_EDGE_GAP = 12;
 export const DOCK_HEIGHT = 48;
@@ -23,6 +25,7 @@ const DOCK_LABELS: Record<(typeof DOCK_ORDER)[number], 'tabs.vault' | 'tabs.dash
 export function DockTabBar({ state, navigation }: BottomTabBarProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { getHandlers } = useCaptureSession();
 
   const items = DOCK_ORDER.map((routeName) => ({
     routeName,
@@ -49,14 +52,38 @@ export function DockTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityState={focused ? { selected: true } : {}}
                 accessibilityLabel={item.label}
                 onPress={() => {
-                  const event = navigation.emit({
-                    type: 'tabPress',
-                    target: state.routes[routeIndex].key,
-                    canPreventDefault: true,
-                  });
-                  if (!focused && !event.defaultPrevented) {
-                    navigation.navigate(item.routeName);
+                  const navigate = () => {
+                    const event = navigation.emit({
+                      type: 'tabPress',
+                      target: state.routes[routeIndex].key,
+                      canPreventDefault: true,
+                    });
+                    if (!focused && !event.defaultPrevented) {
+                      navigation.navigate(item.routeName);
+                    }
+                  };
+
+                  const currentRoute = state.routes[state.index]?.name;
+                  const handlers = getHandlers();
+                  if (currentRoute === 'capture' && handlers?.hasDraft) {
+                    confirmChoice({
+                      title: t('capture.leaveSaveTitle'),
+                      message: t('capture.leaveSaveMessage'),
+                      yesLabel: t('capture.leaveSaveYes'),
+                      noLabel: t('capture.leaveSaveNo'),
+                      onYes: async () => {
+                        const ok = await handlers.saveDraft();
+                        if (ok) navigate();
+                      },
+                      onNo: () => {
+                        handlers.discardDraft();
+                        navigate();
+                      },
+                    });
+                    return;
                   }
+
+                  navigate();
                 }}
                 style={({ pressed }) => [styles.segment, pressed && styles.segmentPressed]}>
                 <Text style={[styles.label, { color }, focused && styles.labelFocused]}>{item.label}</Text>

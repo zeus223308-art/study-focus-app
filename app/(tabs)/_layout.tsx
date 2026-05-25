@@ -2,9 +2,11 @@ import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { DockTabBar } from '@/components/DockTabBar';
+import { CaptureSessionProvider } from '@/context/CaptureSessionContext';
 
 export default function TabLayout() {
   return (
+    <CaptureSessionProvider>
     <View style={styles.root}>
     <Tabs
       initialRouteName="index"
@@ -20,6 +22,7 @@ export default function TabLayout() {
       <Tabs.Screen name="settings" />
     </Tabs>
     </View>
+    </CaptureSessionProvider>
   );
 }
 

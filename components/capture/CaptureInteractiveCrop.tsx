@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Image, LayoutChangeEvent, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { CaptureInkOverlay } from '@/components/capture/CaptureInkOverlay';
+import { captureDisplayRect } from '@/lib/files/bake-capture-ink';
+import type { InkStroke } from '@/lib/domain/types';
 import {
   clampCropSelection,
   imageDisplayRect,
@@ -21,6 +24,7 @@ const EDGE_HIT = 28;
 type Props = {
   uri: string;
   seedSelection?: CropSelection | null;
+  strokes?: InkStroke[];
   onSeedApplied?: () => void;
   onSelectionChange?: (selection: CropSelection | null) => void;
 };
@@ -92,6 +96,7 @@ function CropGrid({ crop }: { crop: CropRect }) {
 export function CaptureInteractiveCrop({
   uri,
   seedSelection,
+  strokes = [],
   onSeedApplied,
   onSelectionChange,
 }: Props) {
@@ -257,6 +262,10 @@ export function CaptureInteractiveCrop({
 
   const crop = selection?.crop;
   const half = HANDLE_HIT / 2;
+  const inkRect = useMemo(() => {
+    if (!selection) return null;
+    return captureDisplayRect(selection);
+  }, [selection]);
 
   return (
     <View
@@ -280,6 +289,8 @@ export function CaptureInteractiveCrop({
           <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
         </View>
       ) : null}
+
+      {inkRect ? <CaptureInkOverlay strokes={strokes} displayRect={inkRect} /> : null}
 
       {crop ? (
         <>

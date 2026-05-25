@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useRegisterCaptureSession } from '@/context/CaptureSessionContext';
 import { todayKey } from '@/lib/domain/dates';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { pickForImport } from '@/lib/import/pick-for-import';
@@ -57,7 +58,7 @@ export default function CaptureTabScreen() {
     }
   }, [data.subjects, subjectId]);
 
-  const resetCamera = () => {
+  const resetCamera = useCallback(() => {
     setEditUri(null);
     setFrontUri(null);
     setBackUri(null);
@@ -65,7 +66,7 @@ export default function CaptureTabScreen() {
     setStudyDate(todayKey());
     setEditSide('front');
     setStep('camera');
-  };
+  }, []);
 
   const openEditor = (uri: string, side: EditSide, returnStep?: Step) => {
     setEditUri(uri);
@@ -139,7 +140,7 @@ export default function CaptureTabScreen() {
   };
 
   const save = async () => {
-    if (!frontUri || !subjectId || saveState === 'saving' || saveState === 'saved') return;
+    if (!frontUri || !subjectId || saveState === 'saving' || saveState === 'saved') return false;
     setSaveState('saving');
     try {
       const stableFront = await stabilizeCaptureImageUri(frontUri);
@@ -148,7 +149,7 @@ export default function CaptureTabScreen() {
       if (!id) {
         setSaveState('error');
         showMessage(t('capture.saveFailed'));
-        return;
+        return false;
       }
 
       setSaveState('saved');
@@ -164,11 +165,65 @@ export default function CaptureTabScreen() {
           params: { id: savedSubjectId },
         });
       }, 900);
+      return true;
     } catch {
       setSaveState('error');
       showMessage(t('capture.saveFailed'));
+      return false;
     }
   };
+
+  const saveDraft = useCallback(async (): Promise<boolean> => {
+    if (!frontUri) return false;
+    if (!hasSubjects) {
+      showMessage(t('capture.noSubjectsHint'));
+      return false;
+    }
+    const sid = subjectId || data.subjects[0]?.id;
+    if (!sid) return false;
+    if (saveState === 'saving' || saveState === 'saved') return true;
+
+    setSaveState('saving');
+    try {
+      const stableFront = await stabilizeCaptureImageUri(frontUri);
+      const stableBack = backUri ? await stabilizeCaptureImageUri(backUri) : null;
+      const id = await captureFlashcardPair(stableFront, stableBack, sid, studyDate);
+      if (!id) {
+        setSaveState('error');
+        showMessage(t('capture.saveFailed'));
+        return false;
+      }
+      resetCamera();
+      return true;
+    } catch {
+      setSaveState('error');
+      showMessage(t('capture.saveFailed'));
+      return false;
+    }
+  }, [
+    backUri,
+    captureFlashcardPair,
+    data.subjects,
+    frontUri,
+    hasSubjects,
+    resetCamera,
+    saveState,
+    studyDate,
+    subjectId,
+    t,
+  ]);
+
+  const captureSession = useMemo(() => {
+    const hasDraft = Boolean(frontUri || backUri);
+    if (!hasDraft) return null;
+    return {
+      hasDraft: true,
+      saveDraft,
+      discardDraft: resetCamera,
+    };
+  }, [frontUri, backUri, resetCamera, saveDraft]);
+
+  useRegisterCaptureSession(captureSession);
 
   const sheetBottom = Math.max(36, insets.bottom + 20);
   const saveBusy = saveState === 'saving' || saveState === 'saved';
@@ -293,7 +348,7 @@ export default function CaptureTabScreen() {
                 </ScrollView>
                 <Button
                   label={saveLabel}
-                  onPress={save}
+                  onPress={() => void save()}
                   disabled={saveBusy || !subjectId}
                   style={saveState === 'saved' ? styles.saveBtnDone : undefined}
                 />

@@ -249,8 +249,11 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
             <CaptureInteractiveCrop
               key={workingUri}
               uri={displayUri}
-              seedSelection={seedSelection}
-              onSeedApplied={() => setSeedSelection(null)}
+              seedSelection={cropSelection ?? seedSelection}
+              strokes={strokes}
+              onSeedApplied={() => {
+                if (seedSelection) setSeedSelection(null);
+              }}
               onSelectionChange={applyCropSelection}
             />
           ) : (
