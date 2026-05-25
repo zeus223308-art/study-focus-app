@@ -1,12 +1,14 @@
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Platform } from 'react-native';
 
 import { getGoogleRedirectUri } from '@/services/cloud/google-auth';
 import {
-  getEffectiveGoogleClientId,
+  getGoogleOAuthClientIds,
   isGoogleClientIdConfigured,
 } from '@/services/cloud/google-client-store';
+import { isNativeGoogleClientConfigured } from '@/services/cloud/google-config';
 import { GOOGLE_DRIVE_SCOPES, type GoogleDriveSession } from '@/services/cloud/google-config';
 import { buildSessionFromToken } from '@/services/cloud/google-drive-api';
 import {
@@ -33,20 +35,37 @@ async function sessionFromAuthResult(
 export function useGoogleDriveAuth() {
   const [session, setSession] = useState<GoogleDriveSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const [webClientId, setWebClientId] = useState('');
+  const [clientIds, setClientIds] = useState({ web: '', ios: '', android: '' });
   const redirectUri = getGoogleRedirectUri();
 
   const reloadClientId = useCallback(async () => {
-    const id = await getEffectiveGoogleClientId();
-    setWebClientId(id);
-    return id;
+    const ids = await getGoogleOAuthClientIds();
+    setClientIds(ids);
+    return ids.web;
   }, []);
 
-  const configured = isGoogleClientIdConfigured(webClientId);
+  const configured = isGoogleClientIdConfigured(clientIds.web);
+  const nativeOAuthReady = useMemo(() => {
+    if (Platform.OS === 'web') return true;
+    if (Platform.OS === 'ios') {
+      return isNativeGoogleClientConfigured('ios') || isGoogleClientIdConfigured(clientIds.web);
+    }
+    return isNativeGoogleClientConfigured('android') || isGoogleClientIdConfigured(clientIds.web);
+  }, [clientIds.web]);
+
   const [oauthExtra, setOauthExtra] = useState<Record<string, string>>({ access_type: 'offline' });
 
+  const iosClientId =
+    Platform.OS === 'ios' && isGoogleClientIdConfigured(clientIds.ios) ? clientIds.ios : undefined;
+  const androidClientId =
+    Platform.OS === 'android' && isGoogleClientIdConfigured(clientIds.android)
+      ? clientIds.android
+      : undefined;
+
   const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: configured ? webClientId : 'unset.apps.googleusercontent.com',
+    webClientId: configured ? clientIds.web : 'unset.apps.googleusercontent.com',
+    iosClientId,
+    androidClientId,
     scopes: GOOGLE_DRIVE_SCOPES,
     redirectUri,
     extraParams: oauthExtra,
@@ -99,6 +118,10 @@ export function useGoogleDriveAuth() {
       }
     }
     const result = await promptAsync();
+    if (result?.type === 'error') {
+      const params = result.params as Record<string, string> | undefined;
+      throw new Error(params?.error_description ?? params?.error ?? 'Google sign-in failed');
+    }
     if (result?.type !== 'success') return null;
     const accessToken = result.authentication?.accessToken;
     if (!accessToken) return null;
@@ -118,7 +141,9 @@ export function useGoogleDriveAuth() {
 
   return {
     configured,
-    webClientId,
+    webClientId: clientIds.web,
+    clientIds,
+    nativeOAuthReady,
     reloadClientId,
     reloadSession,
     redirectUri,

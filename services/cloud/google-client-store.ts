@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   GOOGLE_WEB_CLIENT_ID,
   isValidGoogleClientId,
+  resolveGoogleOAuthClientIds,
+  type GoogleOAuthClientIds,
 } from '@/services/cloud/google-config';
 
 const STORAGE_KEY = '@memory_sherpa_google_oauth_client_id';
@@ -50,12 +52,17 @@ export async function clearStoredGoogleClientId(): Promise<void> {
 
 /** Build-time client ID first; AsyncStorage override only in local dev. */
 export async function getEffectiveGoogleClientId(): Promise<string> {
+  const ids = await getGoogleOAuthClientIds();
+  return ids.web;
+}
+
+export async function getGoogleOAuthClientIds(): Promise<GoogleOAuthClientIds> {
   if (isProductionGoogleConfigured()) {
-    return GOOGLE_WEB_CLIENT_ID;
+    return resolveGoogleOAuthClientIds();
   }
   if (allowsDevClientIdOverride()) {
     const stored = await loadStoredGoogleClientId();
-    if (stored && isValidGoogleClientId(stored)) return stored;
+    return resolveGoogleOAuthClientIds(stored ?? '');
   }
-  return '';
+  return resolveGoogleOAuthClientIds('');
 }

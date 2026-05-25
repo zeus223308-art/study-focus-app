@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GoogleOAuthClientIdForm } from '@/components/settings/GoogleOAuthClientIdForm';
+import { GoogleOAuthMobileGuide } from '@/components/settings/GoogleOAuthMobileGuide';
 import { GoogleOAuthSetupGuide } from '@/components/settings/GoogleOAuthSetupGuide';
 import { GoogleSignInButton } from '@/components/settings/GoogleSignInButton';
 import { SettingsRow } from '@/components/SettingsGroup';
@@ -14,6 +15,7 @@ import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { cleanGoogleOAuthUrl } from '@/services/cloud/google-oauth-callback';
 import { allowsDevClientIdOverride } from '@/services/cloud/google-client-store';
+import { googleOAuthErrorMessage } from '@/lib/cloud/google-oauth-errors';
 import { ensureGoogleDriveSession } from '@/services/cloud/google-session';
 
 export function CloudBackupSettings() {
@@ -96,7 +98,7 @@ export function CloudBackupSettings() {
 
       setNotice(t('settings.cloudSignInCancelled'));
     } catch (err) {
-      const message = err instanceof Error ? err.message : t('settings.cloudSignInError');
+      const message = googleOAuthErrorMessage(err, t);
       setNotice(message);
       showMessage(t('settings.cloud'), message);
     } finally {
@@ -201,6 +203,10 @@ export function CloudBackupSettings() {
       ) : null}
 
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
+
+      {Platform.OS !== 'web' && configured ? (
+        <GoogleOAuthMobileGuide redirectUri={redirectUri} />
+      ) : null}
     </View>
   );
 

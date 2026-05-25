@@ -16,6 +16,11 @@ export const GOOGLE_OAUTH_REDIRECT_URIS = [
 ] as const;
 
 export const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? '';
+export const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? '';
+export const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? '';
+
+export const GOOGLE_OAUTH_CONSENT_URL =
+  'https://console.cloud.google.com/apis/credentials/consent';
 
 export const DRIVE_APPDATA_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 
@@ -36,6 +41,32 @@ export function isValidGoogleClientId(clientId: string): boolean {
 
 export function isGoogleDriveConfigured(): boolean {
   return isValidGoogleClientId(GOOGLE_WEB_CLIENT_ID);
+}
+
+export type GoogleOAuthClientIds = {
+  web: string;
+  ios: string;
+  android: string;
+};
+
+export function resolveGoogleOAuthClientIds(webFallback = ''): GoogleOAuthClientIds {
+  const web = isValidGoogleClientId(GOOGLE_WEB_CLIENT_ID)
+    ? GOOGLE_WEB_CLIENT_ID
+    : isValidGoogleClientId(webFallback)
+      ? webFallback
+      : '';
+  return {
+    web,
+    ios: isValidGoogleClientId(GOOGLE_IOS_CLIENT_ID) ? GOOGLE_IOS_CLIENT_ID : '',
+    android: isValidGoogleClientId(GOOGLE_ANDROID_CLIENT_ID) ? GOOGLE_ANDROID_CLIENT_ID : '',
+  };
+}
+
+/** Native builds should use platform OAuth clients; Web-only often returns 400 on phones. */
+export function isNativeGoogleClientConfigured(platform: 'ios' | 'android'): boolean {
+  return platform === 'ios'
+    ? isValidGoogleClientId(GOOGLE_IOS_CLIENT_ID)
+    : isValidGoogleClientId(GOOGLE_ANDROID_CLIENT_ID);
 }
 
 export type GoogleDriveSession = {
