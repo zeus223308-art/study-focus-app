@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
-import { ResolvedImage } from '@/components/ui/ResolvedImage';
+import { CapturePreviewImage } from '@/components/capture/CapturePreviewImage';
 import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
@@ -74,9 +74,10 @@ export default function CaptureTabScreen() {
     setStep('edit');
   };
 
-  const onEditConfirm = ({ uri }: { uri: string }) => {
-    if (editSide === 'front') setFrontUri(uri);
-    else setBackUri(uri);
+  const onEditConfirm = async ({ uri }: { uri: string }) => {
+    const previewUri = await stabilizeCaptureImageUri(uri);
+    if (editSide === 'front') setFrontUri(previewUri);
+    else setBackUri(previewUri);
     setEditUri(null);
     setStep(afterEditStep);
   };
@@ -188,13 +189,15 @@ export default function CaptureTabScreen() {
         <Pressable style={styles.sheetBackdrop} onPress={dismissAnswerPrompt}>
           <Pressable style={[styles.sheet, { paddingBottom: sheetBottom }]} onPress={() => {}}>
             <Text style={styles.sheetTitle}>{t('capture.pairTitle')}</Text>
-            {frontUri ? <ResolvedImage uri={frontUri} style={styles.preview} /> : null}
+            {frontUri ? (
+              <CapturePreviewImage uri={frontUri} style={styles.preview} resizeMode="cover" />
+            ) : null}
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
                 {frontUri ? (
                   <Pressable onPress={() => frontUri && openEditor(frontUri, 'front', 'answer-prompt')}>
-                    <ResolvedImage uri={frontUri} style={styles.pairThumb} />
+                    <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="cover" />
                     <Text style={styles.editLink}>{t('capture.editPhoto')}</Text>
                   </Pressable>
                 ) : null}
@@ -244,7 +247,7 @@ export default function CaptureTabScreen() {
                 <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
                 {frontUri ? (
                   <Pressable onPress={() => openEditor(frontUri, 'front', 'save-sheet')}>
-                    <ResolvedImage uri={frontUri} style={styles.pairThumb} />
+                    <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="cover" />
                   </Pressable>
                 ) : null}
               </View>
@@ -252,7 +255,7 @@ export default function CaptureTabScreen() {
                 <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
                 {backUri ? (
                   <Pressable onPress={() => openEditor(backUri, 'back', 'save-sheet')}>
-                    <ResolvedImage uri={backUri} style={styles.pairThumb} />
+                    <CapturePreviewImage uri={backUri} style={styles.pairThumb} resizeMode="cover" />
                   </Pressable>
                 ) : (
                   <View style={styles.pairEmpty}>

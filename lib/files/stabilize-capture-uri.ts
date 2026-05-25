@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-import { isStaleWebBlobUri } from '@/lib/files/resolve-image-uri';
+import { isDirectImageUri } from '@/lib/files/direct-image-uri';
 import { parseWebStoredUri, persistUriToWebStore } from '@/services/storage/web-asset-store';
 
 const DRAFT_BUNDLE_ID = 'capture_drafts';
@@ -9,18 +9,36 @@ function draftPageId(): string {
   return `draft_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
+async function persistNativeDraft(uri: string): Promise<string> {
+  const FileSystem = await import('expo-file-system/legacy');
+  const dir = `${FileSystem.cacheDirectory}capture_drafts/`;
+  await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+  const dest = `${dir}${draftPageId()}.jpg`;
+  await FileSystem.copyAsync({ from: uri, to: dest });
+  return dest;
+}
+
 /**
- * Web capture/edit produces short-lived blob: URLs (crop, ink bake, manipulator).
- * Persist bytes into IndexedDB before save so processMasterImage can read them later.
+ * Capture/edit produces short-lived blob: URLs (web) or temp camera paths (native).
+ * Persist into durable storage before preview/save so thumbnails stay visible.
  */
 export async function stabilizeCaptureImageUri(uri: string): Promise<string> {
-  if (Platform.OS !== 'web') return uri;
   if (parseWebStoredUri(uri)) return uri;
 
-  const shouldPersist =
-    isStaleWebBlobUri(uri) || uri.startsWith('data:') || uri.startsWith('http');
+  if (Platform.OS === 'web') {
+    if (isDirectImageUri(uri)) {
+      return persistUriToWebStore(uri, DRAFT_BUNDLE_ID, draftPageId(), 'master');
+    }
+    return uri;
+  }
 
-  if (!shouldPersist) return uri;
+  if (uri.startsWith('file:') || uri.startsWith('content:')) {
+    try {
+      return await persistNativeDraft(uri);
+    } catch {
+      return uri;
+    }
+  }
 
-  return persistUriToWebStore(uri, DRAFT_BUNDLE_ID, draftPageId(), 'master');
+  return uri;
 }

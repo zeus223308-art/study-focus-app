@@ -37,7 +37,7 @@ type EditorMode = 'crop' | 'draw';
 type Props = {
   uri: string;
   sideLabel: string;
-  onConfirm: (result: { uri: string }) => void;
+  onConfirm: (result: { uri: string }) => void | Promise<void>;
   onRetake: () => void;
 };
 
@@ -204,7 +204,7 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
         }
       }
 
-      onConfirm({ uri: finalUri });
+      await onConfirm({ uri: finalUri });
     } finally {
       setBusy(false);
     }
