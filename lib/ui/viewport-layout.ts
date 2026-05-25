@@ -20,6 +20,8 @@ export type ViewportLayout = {
   pagerSize: number;
   /** 폴더·검색 등 리스트 열 수 */
   listNumColumns: number;
+  /** 과목 폴더 날짜별 앨범 그리드 열 수 */
+  albumNumColumns: number;
   /** 금고 캐러셀 한 페이지당 폴더 타일 수 */
   vaultFoldersPerPage: number;
   /** 대시보드 복습 카드 한 행 개수 */
@@ -71,6 +73,8 @@ export function useViewportLayout(): ViewportLayout {
     const pagerSize = computePagerSize(width, deviceClass);
 
     const listNumColumns = isPhone ? 1 : 2;
+    const albumNumColumns =
+      deviceClass === 'phone' ? 3 : deviceClass === 'tablet' ? 4 : 5;
     const vaultFoldersPerPage = isPhone ? 2 : deviceClass === 'tablet' ? 3 : 4;
     const dashboardCardsPerRow = isPhone ? 1 : 2;
 
@@ -87,6 +91,7 @@ export function useViewportLayout(): ViewportLayout {
       horizontalPadding,
       pagerSize,
       listNumColumns,
+      albumNumColumns,
       vaultFoldersPerPage,
       dashboardCardsPerRow,
     };

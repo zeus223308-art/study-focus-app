@@ -81,6 +81,9 @@
     "dropHint": "Drag onto another subject to move",
     "movedTo": "Moved to {{name}}",
     "empty": "No photos yet",
+    "dateToday": "Today",
+    "dateYesterday": "Yesterday",
+    "photoCount": "{{count}} photos",
     "archive": "Archive",
     "unarchive": "Move back"
   },

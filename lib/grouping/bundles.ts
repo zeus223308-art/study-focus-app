@@ -41,7 +41,33 @@ export function listSubjectProblems(bundles: NoteBundle[], subjectId: string): S
       items.push({ bundleId: bundle.id, pageId: page.id, bundle, page });
     }
   }
-  return items.sort((a, b) => a.page.createdAt.localeCompare(b.page.createdAt));
+  return items.sort((a, b) => b.page.createdAt.localeCompare(a.page.createdAt));
+}
+
+export function problemStudyDate(item: SubjectProblemItem): string {
+  return item.page.studyDate || item.bundle.studyDate;
+}
+
+export type ProblemDateSection = {
+  studyDate: string;
+  items: SubjectProblemItem[];
+};
+
+/** Newest dates first; within a date, newest photos first (album-style). */
+export function groupSubjectProblemsByDate(problems: SubjectProblemItem[]): ProblemDateSection[] {
+  const map = new Map<string, SubjectProblemItem[]>();
+  for (const item of problems) {
+    const studyDate = problemStudyDate(item);
+    const list = map.get(studyDate) ?? [];
+    list.push(item);
+    map.set(studyDate, list);
+  }
+  return Array.from(map.entries())
+    .map(([studyDate, items]) => ({
+      studyDate,
+      items: items.sort((a, b) => b.page.createdAt.localeCompare(a.page.createdAt)),
+    }))
+    .sort((a, b) => b.studyDate.localeCompare(a.studyDate));
 }
 
 export function searchBundles(bundles: NoteBundle[], query: string, examOnly?: boolean): NoteBundle[] {

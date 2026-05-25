@@ -4,32 +4,33 @@ import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
-import { BundleGalleryCard } from '@/components/files/BundleGalleryCard';
+import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SubjectDropDock } from '@/components/files/SubjectDropDock';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
-import { useApp } from '@/context/AppContext';
-import { bundleDisplayTitle } from '@/lib/domain/bundle-title';
-import { listSubjectProblems } from '@/lib/grouping/bundles';
+import { useApp, useLanguage } from '@/context/AppContext';
+import { groupSubjectProblemsByDate, listSubjectProblems } from '@/lib/grouping/bundles';
 import { pickForImport } from '@/lib/import/pick-for-import';
-import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
+
+const ALBUM_GAP = 8;
 
 export default function FolderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const router = useRouter();
+  const { language } = useLanguage();
   const {
     data,
     localToday,
@@ -48,6 +49,22 @@ export default function FolderScreen() {
   const problems = useMemo(
     () => listSubjectProblems(data.bundles, id ?? ''),
     [data.bundles, id]
+  );
+  const dateSections = useMemo(() => groupSubjectProblemsByDate(problems), [problems]);
+
+  const albumContentWidth = Math.min(
+    viewport.width - 32,
+    viewport.contentMaxWidth - 32
+  );
+
+  const albumLabels = useMemo(
+    () => ({
+      today: t('folder.dateToday'),
+      yesterday: t('folder.dateYesterday'),
+      photoCount: (count: number) => t('folder.photoCount', { count }),
+      problemLabel: (n: number) => t('folder.problemLabel', { n }),
+    }),
+    [t]
   );
 
   const importNewProblem = async () => {
@@ -141,48 +158,44 @@ export default function FolderScreen() {
             </Pressable>
           )}
         </View>
-        <FlatList
-          data={problems}
-          numColumns={viewport.listNumColumns}
-          key={viewport.listNumColumns}
-          columnWrapperStyle={viewport.listNumColumns > 1 ? styles.columnRow : undefined}
+        <ScrollView
           contentContainerStyle={[
-            styles.list,
-            problems.length === 0 && styles.listEmpty,
-            viewport.isTablet && { maxWidth: viewport.contentMaxWidth, alignSelf: 'center', width: '100%' },
+            styles.scroll,
+            problems.length === 0 && styles.scrollEmpty,
+            viewport.isTablet && {
+              maxWidth: viewport.contentMaxWidth,
+              alignSelf: 'center',
+              width: '100%',
+            },
           ]}
-          keyExtractor={(item) => `${item.bundleId}_${item.pageId}`}
-          ListEmptyComponent={
-            <View style={styles.emptyWrap}>
-              <Text style={styles.empty}>{t('folder.empty')}</Text>
-            </View>
-          }
-          renderItem={({ item, index }) => {
-            const title = bundleDisplayTitle(item.bundle);
-            return (
-              <View style={viewport.listNumColumns > 1 ? styles.gridCell : undefined}>
-              <BundleGalleryCard
-                bundleId={item.bundleId}
-                sourceSubjectId={subject.id}
-                thumbnailUri={getPreviewImageUri(item.page.asset) ?? ''}
-                titleLabel={title}
-                dateLabel={item.bundle.studyDate}
-                countLabel={t('folder.problemLabel', { n: index + 1 })}
-                onOpen={() =>
+          showsVerticalScrollIndicator={false}>
+          {dateSections.length === 0 ? (
+            <Text style={styles.empty}>{t('folder.empty')}</Text>
+          ) : (
+            dateSections.map((section) => (
+              <DateAlbumSection
+                key={section.studyDate}
+                section={section}
+                language={language}
+                subjectId={subject.id}
+                albumColumns={viewport.albumNumColumns}
+                contentWidth={albumContentWidth}
+                gap={ALBUM_GAP}
+                labels={albumLabels}
+                onOpen={(bundleId, pageId) =>
                   router.push({
                     pathname: '/bundle/[id]',
-                    params: { id: item.bundleId, pageId: item.pageId },
+                    params: { id: bundleId, pageId },
                   })
                 }
+                onDelete={confirmDeleteProblem}
                 onDragMove={onDragMove}
                 onDragEnd={onDragEnd}
-                onDelete={() => confirmDeleteProblem(item.bundleId, item.pageId)}
               />
-              </View>
-            );
-          }}
-        />
-        <View style={styles.footerAdd}>{addProblemZone}</View>
+            ))
+          )}
+          <View style={styles.footerAdd}>{addProblemZone}</View>
+        </ScrollView>
       </Screen>
       <SubjectDropDock currentSubjectId={subject.id} subjects={data.subjects} />
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
@@ -195,15 +208,11 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20 },
   cancelMove: { alignSelf: 'flex-end', marginTop: -12, marginBottom: 8 },
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
-  emptyWrap: { paddingHorizontal: 16, marginBottom: 8 },
+  scroll: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 },
+  scrollEmpty: { flexGrow: 1, justifyContent: 'center' },
   empty: { textAlign: 'center', color: theme.gray, marginTop: 24, marginBottom: 8 },
-  list: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 },
-  columnRow: { gap: 12, marginBottom: 12 },
-  gridCell: { flex: 1, minWidth: 0 },
-  footerAdd: { paddingHorizontal: 16, paddingBottom: 8 },
-  listEmpty: { flexGrow: 1, justifyContent: 'center' },
+  footerAdd: { marginTop: 8 },
   addZone: {
-    marginTop: 8,
     minHeight: 120,
     borderRadius: theme.radius.md,
     borderWidth: 2,

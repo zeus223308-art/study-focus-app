@@ -81,6 +81,9 @@
     "dropHint": "다른 과목으로 드래그하여 놓기",
     "movedTo": "「{{name}}」으로 옮겼습니다",
     "empty": "아직 사진이 없습니다",
+    "dateToday": "오늘",
+    "dateYesterday": "어제",
+    "photoCount": "{{count}}장",
     "archive": "아카이브",
     "unarchive": "보관함으로"
   },
