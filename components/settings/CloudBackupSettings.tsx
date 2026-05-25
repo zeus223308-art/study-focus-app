@@ -204,6 +204,10 @@ export function CloudBackupSettings() {
 
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
+      {Platform.OS === 'web' && configured ? (
+        <Text style={styles.webMobileHint}>{t('settings.cloudWebMobileHint')}</Text>
+      ) : null}
+
       {Platform.OS !== 'web' && configured ? (
         <GoogleOAuthMobileGuide redirectUri={redirectUri} />
       ) : null}
@@ -345,6 +349,13 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 12,
     lineHeight: 18,
+  },
+  webMobileHint: {
+    marginTop: 8,
+    marginHorizontal: 16,
+    fontSize: 11,
+    color: theme.grayMuted,
+    lineHeight: 16,
   },
   devHint: {
     fontSize: 10,

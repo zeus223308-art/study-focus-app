@@ -73,6 +73,8 @@ npm run setup:google-oauth -- YOUR_ID.apps.googleusercontent.com
 
 Settings → **Google 아이디로 로그인** → 내 Drive에 자동 백업·복원.
 
+**모바일에서 APK 없이** → [docs/MOBILE_WEB_LOGIN.md](docs/MOBILE_WEB_LOGIN.md) (Chrome/Safari로 GitHub Pages 접속)
+
 > 백업 파일은 Drive 앱 데이터 폴더에만 보이며, 사용자가 일반 Drive UI에서 보지 못합니다.
 
 ## 실행

@@ -117,7 +117,10 @@ export function useGoogleDriveAuth() {
         return restored;
       }
     }
-    const result = await promptAsync();
+    // Mobile browsers often block OAuth popups; full-page redirect works on web.
+    const result = await promptAsync(
+      Platform.OS === 'web' ? { windowName: '_self' } : undefined
+    );
     if (result?.type === 'error') {
       const params = result.params as Record<string, string> | undefined;
       throw new Error(params?.error_description ?? params?.error ?? 'Google sign-in failed');
