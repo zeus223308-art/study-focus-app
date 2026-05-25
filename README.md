@@ -125,4 +125,6 @@ npm run serve:web
 ```bash
 npx eas-cli build --platform android --profile production
 npx eas-cli build --platform ios --profile production
+
+Mac 없이 iOS 빌드: [docs/BUILD_IOS_WITHOUT_MAC.md](docs/BUILD_IOS_WITHOUT_MAC.md) · GitHub **Actions → EAS Native Build** (`EXPO_TOKEN` secret)
 ```

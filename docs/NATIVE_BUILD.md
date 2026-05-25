@@ -1,6 +1,8 @@
 # MemorySherpa 네이티브 빌드 (Android / iOS + ML Kit OCR)
 
-Windows에서는 **iOS 로컬 prebuild/Xcode 빌드가 불가**합니다. iOS는 **EAS 클라우드 빌드**를 사용하세요.
+Windows에서는 **iOS 로컬 prebuild/Xcode 빌드가 불가**합니다. **Mac이 없어도** iOS는 **EAS 클라우드 빌드**로 만듭니다 → [BUILD_IOS_WITHOUT_MAC.md](./BUILD_IOS_WITHOUT_MAC.md)
+
+GitHub Actions: **Actions → EAS Native Build** (secret `EXPO_TOKEN` 필요)
 
 ## 1. EAS 로그인 (최초 1회)
 
