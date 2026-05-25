@@ -53,7 +53,17 @@ export function useGoogleDriveAuth() {
     return isNativeGoogleClientConfigured('android') || isGoogleClientIdConfigured(clientIds.web);
   }, [clientIds.web]);
 
-  const [oauthExtra, setOauthExtra] = useState<Record<string, string>>({ access_type: 'offline' });
+  const [forceConsent, setForceConsent] = useState(false);
+
+  /** Web uses token/id_token implicit flow — access_type=offline is invalid (Google 400). */
+  const oauthExtra = useMemo((): Record<string, string> => {
+    if (Platform.OS === 'web') {
+      return forceConsent ? { prompt: 'consent' } : {};
+    }
+    return forceConsent
+      ? { access_type: 'offline', prompt: 'consent' }
+      : { access_type: 'offline' };
+  }, [forceConsent]);
 
   const iosClientId =
     Platform.OS === 'ios' && isGoogleClientIdConfigured(clientIds.ios) ? clientIds.ios : undefined;
@@ -82,9 +92,7 @@ export function useGoogleDriveAuth() {
     (async () => {
       await reloadClientId();
       const hasRefresh = await hasStoredGoogleRefreshToken();
-      if (!hasRefresh) {
-        setOauthExtra({ access_type: 'offline', prompt: 'consent' });
-      }
+      if (!hasRefresh) setForceConsent(true);
       const existing = await ensureGoogleDriveSession();
       if (active) setSession(existing);
       if (active) setLoading(false);

@@ -19,6 +19,14 @@ export function googleOAuthErrorMessage(raw: unknown, t: (key: string) => string
     return t('settings.cloudOAuthBlocked');
   }
 
+  if (
+    lower.includes('access_type') &&
+    lower.includes('offline') &&
+    lower.includes('response_type')
+  ) {
+    return t('settings.cloudOAuthOfflineNotAllowed');
+  }
+
   if (lower.includes('redirect_uri_mismatch') || lower.includes('redirect_uri')) {
     return t('settings.cloudOAuthRedirectMismatch');
   }

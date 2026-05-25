@@ -304,6 +304,7 @@
     "cloudSignInError": "Sign-in failed",
     "cloudOAuthBlocked": "Google blocked sign-in. Add this Gmail under OAuth consent screen → Test users, and use the same Google Cloud project as the app's Client ID. Mobile often needs separate Android/iOS OAuth clients.",
     "cloudOAuthRedirectMismatch": "Redirect URI is not registered in Google Cloud. Add the URI shown in Settings to your Web (or Android/iOS) OAuth client.",
+    "cloudOAuthOfflineNotAllowed": "Web sign-in misconfiguration. Refresh the page to load the latest app, then try again.",
     "cloudMobileOAuthTitle": "Mobile Google sign-in",
     "cloudMobileOAuthTestUsers": "Test users are added in Google Cloud → OAuth consent screen. Sign in with the same Google account you listed there.",
     "cloudMobileOAuthOpenConsent": "Open OAuth consent screen",

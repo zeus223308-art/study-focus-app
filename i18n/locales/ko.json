@@ -304,6 +304,7 @@
     "cloudSignInError": "로그인 실패",
     "cloudOAuthBlocked": "Google이 로그인을 막았습니다. OAuth 동의 화면 → 테스트 사용자에 이 Gmail을 추가했는지, 앱에 넣은 Client ID와 같은 Google Cloud 프로젝트인지 확인하세요. 모바일은 Android/iOS OAuth 클라이언트가 필요할 수 있습니다.",
     "cloudOAuthRedirectMismatch": "리다이렉트 URI가 Google Cloud에 등록되지 않았습니다. 설정에 표시된 URI를 Web 클라이언트(또는 Android/iOS 클라이언트)에 추가하세요.",
+    "cloudOAuthOfflineNotAllowed": "웹 로그인 설정 오류입니다. 앱을 최신 버전으로 새로고침한 뒤 다시 시도하세요.",
     "cloudMobileOAuthTitle": "모바일 Google 로그인",
     "cloudMobileOAuthTestUsers": "테스트 사용자(스크린샷의 사용자 정보)는 Google Cloud → OAuth 동의 화면에 추가합니다. 앱에 등록된 이메일과 동일한 Google 계정으로 로그인해야 합니다.",
     "cloudMobileOAuthOpenConsent": "OAuth 동의 화면 열기",
