@@ -115,6 +115,7 @@
     "leaveSaveTitle": "Save before leaving?",
     "leaveSaveMessage": "Confirm saves and leaves. Cancel keeps you on capture.",
     "leaveSaveConfirm": "Confirm",
+    "completeEditFirst": "Finish editing the photo before saving.",
     "importWeb": "Choose photos",
     "importWebHint": "On web, pick images from your device.",
     "cancelSheet": "Close",

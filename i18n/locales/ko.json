@@ -115,6 +115,7 @@
     "leaveSaveTitle": "저장하시겠습니까?",
     "leaveSaveMessage": "확인을 누르면 저장 후 나갑니다. 취소를 누르면 촬영을 계속합니다.",
     "leaveSaveConfirm": "확인",
+    "completeEditFirst": "사진 편집을 완료한 뒤 저장할 수 있습니다.",
     "importWeb": "사진 선택",
     "importWebHint": "웹에서는 파일에서 사진을 선택합니다.",
     "cancelSheet": "닫기",
