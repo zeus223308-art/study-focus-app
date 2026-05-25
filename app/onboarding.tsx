@@ -3,12 +3,13 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-const mountainLogo = require('@/assets/images/mountain-m-logo.png');
-
+import { SPLASH_BLACK } from '@/components/MountainMLogo';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+
+const mountainLogo = require('@/assets/images/mountain-m-logo.png');
 
 const STEPS = ['welcome', 'step1', 'step2', 'step3'] as const;
 
@@ -32,7 +33,7 @@ export default function OnboardingScreen() {
         <Image
           source={mountainLogo}
           style={styles.logoImage}
-          resizeMode="contain"
+          resizeMode="cover"
           accessibilityLabel={t('appName')}
         />
       </View>
@@ -61,14 +62,14 @@ const styles = StyleSheet.create({
   logoBox: {
     width: 64,
     height: 64,
+    backgroundColor: SPLASH_BLACK,
     borderWidth: 2,
     borderColor: theme.grayLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     alignSelf: 'center',
     marginTop: 24,
   },
-  logoImage: { width: 60, height: 60 },
+  logoImage: { width: '100%', height: '100%' },
   brand: {
     fontSize: 22,
     fontWeight: '700',
