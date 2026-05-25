@@ -11,6 +11,7 @@ import { normalizeFolderScheduleId } from '@/lib/domain/folder-schedule';
 import type { AppData } from '@/lib/domain/types';
 
 import { migratePersistedWebAssets } from '@/lib/files/migrate-web-assets';
+import { ensureAppDataDerivatives } from '@/lib/files/regenerate-derivatives';
 import { upgradeLegacyPhotoQuality } from '@/lib/files/upgrade-legacy-assets';
 
 import { migrateToV4 } from '@/services/storage/migration';
@@ -223,12 +224,26 @@ export class LocalStorageProvider implements StorageProvider {
 
     let next = await migratePersistedWebAssets(data);
 
+    const derivatives = await ensureAppDataDerivatives(next);
+    next = derivatives.data;
+
     const quality = await upgradeLegacyPhotoQuality(next);
     next = quality.data;
 
+    next = {
+      ...next,
+      settings: {
+        ...next.settings,
+        lastDerivativeRegenAt: new Date().toISOString(),
+        lastDerivativeRegenFailed: derivatives.failed,
+      },
+    };
+
     const changed =
       before !== JSON.stringify(next.bundles) ||
+      derivatives.regenerated > 0 ||
       quality.upgraded > 0 ||
+      derivatives.failed > 0 ||
       (next.settings.assetQualityVersion ?? 0) !== (data.settings.assetQualityVersion ?? 0);
 
     if (changed) {

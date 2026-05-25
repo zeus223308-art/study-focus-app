@@ -44,6 +44,8 @@ export function normalizeAppSettings(settings: AppSettings, data: AppData): AppS
     lastAppVersion: merged.lastAppVersion ?? null,
     lastAutoRecoveryAt: merged.lastAutoRecoveryAt ?? null,
     cloudAccountEmail: merged.cloudAccountEmail ?? null,
+    lastDerivativeRegenFailed: merged.lastDerivativeRegenFailed ?? 0,
+    lastDerivativeRegenAt: merged.lastDerivativeRegenAt ?? null,
   };
 }
 

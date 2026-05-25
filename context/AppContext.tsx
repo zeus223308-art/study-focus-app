@@ -13,6 +13,7 @@ import { theme } from '@/constants/theme';
 import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
 import { todayKey } from '@/lib/domain/dates';
+import { ensureAppDataDerivatives } from '@/lib/files/regenerate-derivatives';
 import { upgradeLegacyPhotoQuality } from '@/lib/files/upgrade-legacy-assets';
 import { appendCaptureToData, appendPageToBundle } from '@/lib/domain/bundle-factory';
 import type {
@@ -88,6 +89,8 @@ type AppContextValue = {
   upgradePhotoQuality: (force?: boolean) => Promise<{ upgraded: number; unchanged: number }>;
   autoRecoveryNotice: AutoRecoverySource | null;
   dismissAutoRecoveryNotice: () => void;
+  derivativeRegenNotice: { failed: number } | null;
+  dismissDerivativeRegenNotice: () => void;
   movingBundleId: string | null;
   dragSourceSubjectId: string | null;
   dragHoverSubjectId: string | null;
@@ -111,6 +114,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [autoRecoveryNotice, setAutoRecoveryNotice] = useState<AutoRecoverySource | null>(null);
+  const [derivativeRegenNotice, setDerivativeRegenNotice] = useState<{ failed: number } | null>(
+    null
+  );
   const [movingBundleId, setMovingBundleId] = useState<string | null>(null);
   const [dragSourceSubjectId, setDragSourceSubjectId] = useState<string | null>(null);
   const [dragHoverSubjectId, setDragHoverSubjectId] = useState<string | null>(null);
@@ -163,29 +169,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [storage]
   );
 
-  const load = useCallback(async () => {
-    const { next, recoveryNotice } = await hydrateFromStorage();
+  const applyLoadedData = useCallback((next: AppData, recoveryNotice: AutoRecoverySource | null) => {
     if (recoveryNotice) setAutoRecoveryNotice(recoveryNotice);
+    const failed = next.settings.lastDerivativeRegenFailed ?? 0;
+    setDerivativeRegenNotice(failed > 0 ? { failed } : null);
     setData(next);
     initI18n(next.settings.language);
+  }, []);
+
+  const load = useCallback(async () => {
+    const { next, recoveryNotice } = await hydrateFromStorage();
+    applyLoadedData(next, recoveryNotice);
     setReady(true);
-  }, [hydrateFromStorage]);
+  }, [hydrateFromStorage, applyLoadedData]);
 
   const reloadAccountData = useCallback(async () => {
     skipPersistRef.current = true;
     try {
       const { next, recoveryNotice } = await hydrateFromStorage({ clearGuestFirst: true });
-      setAutoRecoveryNotice(recoveryNotice);
-      setData(next);
-      initI18n(next.settings.language);
+      applyLoadedData(next, recoveryNotice);
     } finally {
       skipPersistRef.current = false;
     }
-  }, [hydrateFromStorage]);
+  }, [hydrateFromStorage, applyLoadedData]);
 
   const dismissAutoRecoveryNotice = useCallback(() => {
     setAutoRecoveryNotice(null);
   }, []);
+
+  const dismissDerivativeRegenNotice = useCallback(() => {
+    setDerivativeRegenNotice(null);
+    setData((prev) => {
+      if (!prev) return prev;
+      const patched = {
+        ...prev,
+        settings: { ...prev.settings, lastDerivativeRegenFailed: 0 },
+      };
+      void storage.saveAppData(patched);
+      return patched;
+    });
+  }, [storage]);
 
   useEffect(() => {
     load();
@@ -487,12 +510,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async (force = false) => {
       const current = dataRef.current;
       if (!current) return { upgraded: 0, unchanged: 0 };
-      const result = await upgradeLegacyPhotoQuality(current, { force });
-      const activeTrash = filterActiveTrash(result.data.trash);
-      const next = { ...result.data, trash: activeTrash };
+      const upgraded = await upgradeLegacyPhotoQuality(current, { force });
+      const derivatives = await ensureAppDataDerivatives(upgraded.data);
+      const activeTrash = filterActiveTrash(derivatives.data.trash);
+      const next = {
+        ...derivatives.data,
+        trash: activeTrash,
+        settings: {
+          ...derivatives.data.settings,
+          lastDerivativeRegenAt: new Date().toISOString(),
+          lastDerivativeRegenFailed: derivatives.failed,
+        },
+      };
       await storage.saveAppData(next);
       persist(next);
-      return { upgraded: result.upgraded, unchanged: result.unchanged };
+      if (derivatives.failed > 0) {
+        setDerivativeRegenNotice({ failed: derivatives.failed });
+      }
+      return { upgraded: upgraded.upgraded, unchanged: upgraded.unchanged };
     },
     [storage, persist]
   );
@@ -605,6 +640,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       upgradePhotoQuality,
       autoRecoveryNotice,
       dismissAutoRecoveryNotice,
+      derivativeRegenNotice,
+      dismissDerivativeRegenNotice,
       movingBundleId,
       dragSourceSubjectId,
       dragHoverSubjectId,

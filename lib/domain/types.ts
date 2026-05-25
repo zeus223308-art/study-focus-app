@@ -152,6 +152,9 @@ export type AppSettings = {
   cloudAccountEmail: string | null;
   /** Last completed on-device photo derivative regeneration pass */
   assetQualityVersion?: number;
+  /** Thumbnail rebuild failures from last load/restore (for user notice). */
+  lastDerivativeRegenFailed?: number;
+  lastDerivativeRegenAt?: string | null;
 };
 
 export type AppData = {

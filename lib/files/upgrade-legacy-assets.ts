@@ -4,6 +4,10 @@ import type { AppData, CloudAsset, NotePage } from '@/lib/domain/types';
 import { resolveImageUri } from '@/lib/files/resolve-image-uri';
 import { ASSET_QUALITY_VERSION, THUMB_MAX_EDGE } from '@/lib/files/image-quality';
 import {
+  assetNeedsDerivativeRegeneration,
+  regenerateDerivativesFromMaster,
+} from '@/lib/files/regenerate-derivatives';
+import {
   createMiniThumbnail,
   persistOriginalCopy,
 } from '@/services/storage/asset-pipeline';
@@ -86,6 +90,14 @@ export async function upgradeCloudAsset(
   bundleId: string,
   pageId: string
 ): Promise<{ asset: CloudAsset; changed: boolean }> {
+  if (await assetNeedsDerivativeRegeneration(asset)) {
+    const regen = await regenerateDerivativesFromMaster(asset, bundleId, pageId);
+    if (regen.changed) return { asset: regen.asset, changed: true };
+    if (!regen.failed && !(await assetNeedsQualityUpgrade(asset))) {
+      return { asset: regen.asset, changed: false };
+    }
+  }
+
   if (!(await assetNeedsQualityUpgrade(asset))) {
     return { asset, changed: false };
   }

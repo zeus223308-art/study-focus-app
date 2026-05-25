@@ -30,7 +30,14 @@ function shouldShowFloatingCamera(segments: string[]): boolean {
 
 function RootNavigator() {
   const { t } = useTranslation();
-  const { data, ready, autoRecoveryNotice, dismissAutoRecoveryNotice } = useApp();
+  const {
+    data,
+    ready,
+    autoRecoveryNotice,
+    dismissAutoRecoveryNotice,
+    derivativeRegenNotice,
+    dismissDerivativeRegenNotice,
+  } = useApp();
   const router = useRouter();
   const segments = useSegments();
   const [brandDone, setBrandDone] = useState(false);
@@ -58,6 +65,15 @@ function RootNavigator() {
           source={autoRecoveryNotice}
           message={t('settings.autoRecoveryDone')}
           onDismiss={dismissAutoRecoveryNotice}
+        />
+      ) : null}
+      {!autoRecoveryNotice && derivativeRegenNotice ? (
+        <RecoveryBanner
+          source="local"
+          message={t('settings.derivativeRegenFailed', {
+            count: derivativeRegenNotice.failed,
+          })}
+          onDismiss={dismissDerivativeRegenNotice}
         />
       ) : null}
       <GoogleOAuthReturnHandler />
