@@ -23,7 +23,9 @@ export function GoogleOAuthReturnHandler() {
       if (result.type === 'success') {
         await reloadAccountData();
         updateSettings({ cloudBackupEnabled: true });
-        showMessage(t('settings.cloud'), t('settings.cloudWebLoginSuccess'));
+        if (result.email) {
+          showMessage(t('settings.cloud'), t('settings.cloudWebLoginSuccess'));
+        }
         router.replace('/(tabs)/settings');
         return;
       }

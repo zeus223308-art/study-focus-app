@@ -38,6 +38,8 @@ export function hasGoogleOAuthCallbackInUrl(): boolean {
 }
 
 /** Full-page OAuth redirect — parse hash, save session, strip URL. */
+const OAUTH_HANDLED_KEY = 'memorysherpa_google_oauth_handled';
+
 export async function consumeGoogleOAuthCallbackFromUrl(): Promise<GoogleOAuthCallbackResult | null> {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return null;
 
@@ -60,10 +62,18 @@ export async function consumeGoogleOAuthCallbackFromUrl(): Promise<GoogleOAuthCa
     return { type: 'error', message: 'Missing access token' };
   }
 
+  if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(OAUTH_HANDLED_KEY)) {
+    cleanGoogleOAuthUrl();
+    return { type: 'success', email: null };
+  }
+
   const session = await buildSessionFromToken(accessToken, tokenResponse.expiresIn ?? 3600, {
     refreshToken: tokenResponse.refreshToken,
   });
   await saveGoogleDriveSession(session);
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(OAUTH_HANDLED_KEY, '1');
+  }
   cleanGoogleOAuthUrl();
 
   return { type: 'success', email: session.email };

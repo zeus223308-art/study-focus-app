@@ -7,6 +7,7 @@ import {
   GoogleOAuthInAppBrowserBlock,
   useInAppBrowserBlocked,
 } from '@/components/settings/GoogleOAuthInAppBrowserBlock';
+import { subscribeGoogleDriveSession } from '@/lib/cloud/google-drive-auth-events';
 import { theme } from '@/constants/theme';
 import { ensureGoogleDriveSession } from '@/services/cloud/google-session';
 
@@ -19,7 +20,11 @@ export function MobileWebLoginBanner() {
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-    void ensureGoogleDriveSession().then((s) => setHasSession(Boolean(s?.accessToken)));
+    const refresh = () => {
+      void ensureGoogleDriveSession().then((s) => setHasSession(Boolean(s?.accessToken)));
+    };
+    refresh();
+    return subscribeGoogleDriveSession(refresh);
   }, []);
 
   if (Platform.OS !== 'web' || hasSession === null || hasSession) return null;

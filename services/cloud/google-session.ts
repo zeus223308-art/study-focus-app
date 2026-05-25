@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
+import { notifyGoogleDriveSessionChanged } from '@/lib/cloud/google-drive-auth-events';
 import {
   GOOGLE_TOKEN_STORAGE_KEY,
   type GoogleDriveSession,
@@ -71,10 +72,15 @@ export async function loadGoogleDriveSession(): Promise<GoogleDriveSession | nul
 
 export async function saveGoogleDriveSession(session: GoogleDriveSession): Promise<void> {
   await AsyncStorage.setItem(GOOGLE_TOKEN_STORAGE_KEY, JSON.stringify(session));
+  notifyGoogleDriveSessionChanged();
 }
 
 export async function clearGoogleDriveSession(): Promise<void> {
   await AsyncStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY);
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.removeItem('memorysherpa_google_oauth_handled');
+  }
+  notifyGoogleDriveSessionChanged();
 }
 
 export async function getValidAccessToken(): Promise<string | null> {

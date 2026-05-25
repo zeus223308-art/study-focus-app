@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { subscribeGoogleDriveSession } from '@/lib/cloud/google-drive-auth-events';
 import { consumeGoogleOAuthCallbackFromUrl } from '@/services/cloud/google-oauth-callback';
 import { getGoogleRedirectUri } from '@/services/cloud/google-auth';
 import {
@@ -105,6 +106,8 @@ export function useGoogleDriveAuth() {
     };
   }, [reloadClientId]);
 
+  useEffect(() => subscribeGoogleDriveSession(() => void reloadSession()), [reloadSession]);
+
   useEffect(() => {
     if (response?.type !== 'success') return;
     const accessToken = response.authentication?.accessToken;
@@ -121,6 +124,13 @@ export function useGoogleDriveAuth() {
     if (!configured) {
       throw new Error('Google Drive is not configured');
     }
+
+    const already = await ensureGoogleDriveSession();
+    if (already?.accessToken) {
+      setSession(already);
+      return already;
+    }
+
     if (Platform.OS !== 'web' && (await hasStoredGoogleRefreshToken())) {
       const restored = await ensureGoogleDriveSession();
       if (restored) {
