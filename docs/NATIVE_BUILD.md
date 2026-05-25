@@ -30,7 +30,11 @@ npx eas build -p android --profile preview
 npx expo run:android
 ```
 
-## 3. iOS (기기 없어도 빌드는 가능)
+## 3. iOS Google 로그인 (테스터)
+
+iPhone에서 Drive 로그인 400 오류 → **[GOOGLE_OAUTH_IOS.md](./GOOGLE_OAUTH_IOS.md)** (iOS OAuth 클라이언트 + EAS secret + 재빌드).
+
+## 4. iOS (기기 없어도 빌드는 가능)
 
 ### A) 실제 iPhone (나중에 기기 생기면)
 
@@ -49,13 +53,13 @@ npm run build:ios:sim
 
 `.app` / 시뮬레이터 빌드를 Mac에서 받아 실행합니다.
 
-## 4. Android + iOS 동시에
+## 5. Android + iOS 동시에
 
 ```bash
 npm run build:native:preview
 ```
 
-## 5. OCR 테스트
+## 6. OCR 테스트
 
 - **Expo Go 불가** — 위 개발 빌드 또는 APK/IPA 필요
 - 촬영 → 번들 화면 **「인식된 글자」** / **다시 인식**

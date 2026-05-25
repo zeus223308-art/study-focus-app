@@ -54,7 +54,7 @@ GitHub Pages 배포 시 **Repository secrets**에 `EXPO_PUBLIC_GOOGLE_WEB_CLIENT
 
 1. **OAuth 동의 화면 → 테스트 사용자**에 테스터 Gmail 추가 (앱 빌드에 쓰는 Client ID와 **같은 프로젝트**).
 2. **Android OAuth 클라이언트**: 패키지 `com.memorysherpa.app`, 릴리스 SHA-1 (`eas credentials -p android`).
-3. **iOS OAuth 클라이언트**: 번들 ID `com.memorysherpa.app`.
+3. **iOS OAuth 클라이언트**: 번들 ID `com.memorysherpa.app` — 상세: [docs/GOOGLE_OAUTH_IOS.md](docs/GOOGLE_OAUTH_IOS.md).
 4. `.env` / EAS secrets에 `EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID`, `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` 설정 후 **앱 재빌드**.
 
 Web 클라이언트만 쓸 때는 Settings에 표시되는 **모바일 redirect URI**를 Web 클라이언트의 Authorized redirect URIs에 추가하세요.

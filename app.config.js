@@ -1,11 +1,26 @@
+function googleIosReversedClientScheme(clientId) {
+  if (!clientId || !clientId.includes('.apps.googleusercontent.com') || clientId.length <= 20) {
+    return null;
+  }
+  const prefix = clientId.replace(/\.apps\.googleusercontent\.com$/i, '');
+  return `com.googleusercontent.apps.${prefix}`;
+}
+
 /** @type {import('expo/config').ConfigContext} */
 module.exports = ({ config }) => {
   /** GitHub Pages: /repo-name — leave empty for local dev & Vercel root deploy */
   const basePath = (process.env.EXPO_PUBLIC_BASE_PATH ?? '').replace(/\/$/, '');
 
+  const baseScheme = config.scheme ?? 'memorysherpa';
+  const schemes = new Set([typeof baseScheme === 'string' ? baseScheme : baseScheme[0]]);
+  const iosScheme = googleIosReversedClientScheme(
+    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? ''
+  );
+  if (iosScheme) schemes.add(iosScheme);
+
   return {
     ...config,
-    experiments: {
+    scheme: schemes.size === 1 ? [...schemes][0] : [...schemes],    experiments: {
       ...config.experiments,
       baseUrl: basePath,
     },
