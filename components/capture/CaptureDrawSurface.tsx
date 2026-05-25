@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
 import { captureDisplayRect } from '@/lib/files/bake-capture-ink';
-import { clampCropSelection, imageContainRect, initialCropSelection, type CropSelection } from '@/lib/files/interactive-crop';
+import {
+  clampCropSelection,
+  imageDisplayRect,
+  initialCropSelection,
+  type CropSelection,
+} from '@/lib/files/interactive-crop';
 import { selectionMatchesLayout } from '@/lib/files/rotate-capture-edit';
 import type { InkStroke, InkToolId, NoteLayer } from '@/lib/domain/types';
 
@@ -47,8 +52,12 @@ export function CaptureDrawSurface({
 }: Props) {
   const [layout, setLayout] = useState({ w: 0, h: 0 });
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
+  const didInitRef = useRef(false);
+  const appliedSeedRef = useRef(false);
 
   useEffect(() => {
+    didInitRef.current = false;
+    appliedSeedRef.current = false;
     Image.getSize(
       uri,
       (w, h) => setImageSize({ w, h }),
@@ -60,23 +69,24 @@ export function CaptureDrawSurface({
     if (imageSize.w < 2 || imageSize.h < 2 || layout.w < 8 || layout.h < 8) return;
     if (
       seedSelection &&
+      !appliedSeedRef.current &&
       selectionMatchesLayout(seedSelection, imageSize.w, imageSize.h, layout.w, layout.h)
     ) {
+      appliedSeedRef.current = true;
+      didInitRef.current = true;
       onSelectionChange?.(clampCropSelection(seedSelection));
       onSeedApplied?.();
       return;
     }
-    onSelectionChange?.(initialCropSelection(imageSize.w, imageSize.h, layout.w, layout.h));
+    if (!didInitRef.current) {
+      didInitRef.current = true;
+      onSelectionChange?.(initialCropSelection(imageSize.w, imageSize.h, layout.w, layout.h));
+    }
   }, [imageSize.h, imageSize.w, layout.h, layout.w, onSeedApplied, onSelectionChange, seedSelection]);
 
   const imageRect = useMemo(() => {
     if (!selection) return null;
-    return imageContainRect(
-      selection.imageWidth,
-      selection.imageHeight,
-      selection.viewportWidth,
-      selection.viewportHeight
-    );
+    return imageDisplayRect(selection);
   }, [selection]);
 
   const displayRect = useMemo(() => {

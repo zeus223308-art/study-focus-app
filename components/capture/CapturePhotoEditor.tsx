@@ -23,13 +23,10 @@ import {
   bakeStrokesOntoImageUri,
   captureDisplayRect,
   mapStrokesToCroppedImage,
+  mapStrokesToFullImage,
 } from '@/lib/files/bake-capture-ink';
 import type { CropSelection } from '@/lib/files/interactive-crop';
 import { cropRegionFromSelection, exportCropSelection } from '@/lib/files/interactive-crop';
-import {
-  rotateCropSelectionCW90,
-  rotateStrokesCW90,
-} from '@/lib/files/rotate-capture-edit';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 
@@ -97,25 +94,36 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
     const display = selection ? captureDisplayRect(selection) : null;
     setBusy(true);
     try {
+      let uri = workingUri;
+      if (selection && display && strokes.length > 0) {
+        const baked = mapStrokesToFullImage(strokes, selection, display);
+        if (baked.length > 0) {
+          if (Platform.OS === 'web') {
+            uri = await bakeStrokesOntoImageUri(
+              uri,
+              baked,
+              selection.imageWidth,
+              selection.imageHeight
+            );
+          } else {
+            try {
+              uri = await bakeNative(uri, baked, selection.imageWidth, selection.imageHeight);
+            } catch {
+              /* keep unbaked */
+            }
+          }
+        }
+      }
+
       const result = await ImageManipulator.manipulateAsync(
-        workingUri,
+        uri,
         [{ rotate: 90 }],
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
-      const nextStrokes =
-        display && strokes.length > 0
-          ? rotateStrokesCW90(strokes, display.width)
-          : strokes;
-      const nextSelection = selection ? rotateCropSelectionCW90(selection) : null;
 
-      setStrokes(nextStrokes);
-      if (nextSelection) {
-        setSeedSelection(nextSelection);
-        applyCropSelection(nextSelection);
-      } else {
-        setSeedSelection(null);
-        applyCropSelection(null);
-      }
+      setStrokes([]);
+      setSeedSelection(null);
+      applyCropSelection(null);
       setWorkingUri(result.uri);
     } finally {
       setBusy(false);

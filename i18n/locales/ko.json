@@ -103,7 +103,7 @@
     "drawInkHint": "펜·형광펜·지우개는 파일 뷰어와 동일합니다",
     "editorUndo": "되돌리기",
     "kakaoCropHint": "사진을 드래그 · ±로 확대/축소",
-    "cropDragRegionHint": "모서리·변·가운데를 드래그해 자르기 영역을 조절하세요",
+    "cropDragRegionHint": "사진을 드래그해 위치를 맞추고, 테두리·모서리로 자르기 영역을 조절하세요",
     "editHint": "사진 위치를 맞춘 뒤 완료를 누르세요",
     "cropDone": "완료",
     "rotate": "회전",

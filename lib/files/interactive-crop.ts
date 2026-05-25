@@ -8,6 +8,9 @@ export type CropSelection = {
   imageHeight: number;
   viewportWidth: number;
   viewportHeight: number;
+  /** Pan offset from the default centered contain position. */
+  imageOffsetX?: number;
+  imageOffsetY?: number;
   crop: CropRect;
 };
 
@@ -34,6 +37,50 @@ export function imageContainRect(
   };
 }
 
+export function imageDisplayRect(selection: CropSelection): CropRect & { scale: number } {
+  const base = imageContainRect(
+    selection.imageWidth,
+    selection.imageHeight,
+    selection.viewportWidth,
+    selection.viewportHeight
+  );
+  return {
+    ...base,
+    left: base.left + (selection.imageOffsetX ?? 0),
+    top: base.top + (selection.imageOffsetY ?? 0),
+  };
+}
+
+function clampImageOffset(selection: CropSelection): CropSelection {
+  const base = imageContainRect(
+    selection.imageWidth,
+    selection.imageHeight,
+    selection.viewportWidth,
+    selection.viewportHeight
+  );
+  const { crop } = selection;
+  let ox = selection.imageOffsetX ?? 0;
+  let oy = selection.imageOffsetY ?? 0;
+
+  const minOx = crop.left + crop.width - base.left - base.width;
+  const maxOx = crop.left - base.left;
+  const minOy = crop.top + crop.height - base.top - base.height;
+  const maxOy = crop.top - base.top;
+
+  if (minOx <= maxOx) {
+    ox = Math.min(Math.max(minOx, ox), maxOx);
+  } else {
+    ox = (minOx + maxOx) / 2;
+  }
+  if (minOy <= maxOy) {
+    oy = Math.min(Math.max(minOy, oy), maxOy);
+  } else {
+    oy = (minOy + maxOy) / 2;
+  }
+
+  return { ...selection, imageOffsetX: ox, imageOffsetY: oy };
+}
+
 export function initialCropSelection(
   imageWidth: number,
   imageHeight: number,
@@ -58,21 +105,17 @@ export function initialCropSelection(
 }
 
 export function clampCropSelection(selection: CropSelection): CropSelection {
-  const image = imageContainRect(
-    selection.imageWidth,
-    selection.imageHeight,
-    selection.viewportWidth,
-    selection.viewportHeight
-  );
+  const withPan = clampImageOffset(selection);
+  const image = imageDisplayRect(withPan);
 
   const maxLeft = image.left + image.width - MIN_CROP_SIZE;
   const maxTop = image.top + image.height - MIN_CROP_SIZE;
 
-  let left = Math.min(Math.max(image.left, selection.crop.left), maxLeft);
-  let top = Math.min(Math.max(image.top, selection.crop.top), maxTop);
+  let left = Math.min(Math.max(image.left, withPan.crop.left), maxLeft);
+  let top = Math.min(Math.max(image.top, withPan.crop.top), maxTop);
 
-  let width = Math.max(MIN_CROP_SIZE, selection.crop.width);
-  let height = Math.max(MIN_CROP_SIZE, selection.crop.height);
+  let width = Math.max(MIN_CROP_SIZE, withPan.crop.width);
+  let height = Math.max(MIN_CROP_SIZE, withPan.crop.height);
 
   if (left + width > image.left + image.width) width = image.left + image.width - left;
   if (top + height > image.top + image.height) height = image.top + image.height - top;
@@ -86,7 +129,7 @@ export function clampCropSelection(selection: CropSelection): CropSelection {
     top = Math.min(top, image.top + image.height - MIN_CROP_SIZE);
   }
 
-  return { ...selection, crop: { left, top, width, height } };
+  return clampImageOffset({ ...withPan, crop: { left, top, width, height } });
 }
 
 export function cropRegionFromSelection(selection: CropSelection): {
@@ -95,12 +138,7 @@ export function cropRegionFromSelection(selection: CropSelection): {
   width: number;
   height: number;
 } {
-  const image = imageContainRect(
-    selection.imageWidth,
-    selection.imageHeight,
-    selection.viewportWidth,
-    selection.viewportHeight
-  );
+  const image = imageDisplayRect(selection);
   const { crop } = selection;
   const scale = image.scale;
 

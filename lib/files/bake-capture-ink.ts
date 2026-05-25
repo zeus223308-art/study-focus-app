@@ -5,7 +5,7 @@ import type { InkPoint, InkStroke } from '@/lib/domain/types';
 
 import {
   cropRegionFromSelection,
-  imageContainRect,
+  imageDisplayRect,
   type CropSelection,
 } from './interactive-crop';
 
@@ -137,10 +137,27 @@ export function scaleStrokesToViewport(
 }
 
 export function captureDisplayRect(selection: CropSelection) {
-  return imageContainRect(
-    selection.imageWidth,
-    selection.imageHeight,
-    selection.viewportWidth,
-    selection.viewportHeight
-  );
+  return imageDisplayRect(selection);
+}
+
+/** Map overlay strokes to full image pixels (before crop). */
+export function mapStrokesToFullImage(
+  strokes: InkStroke[],
+  selection: CropSelection,
+  displayRect: { left: number; top: number; width: number; height: number }
+): InkStroke[] {
+  const image = imageDisplayRect(selection);
+  const scale = image.scale;
+  if (scale < 1e-6) return strokes;
+
+  return strokes
+    .filter((s) => s.tool !== 'eraser' && s.points.length >= 2)
+    .map((s) => ({
+      ...s,
+      width: s.width / scale,
+      points: s.points.map((p) => ({
+        x: Math.max(0, Math.min(selection.imageWidth, p.x / scale)),
+        y: Math.max(0, Math.min(selection.imageHeight, p.y / scale)),
+      })),
+    }));
 }

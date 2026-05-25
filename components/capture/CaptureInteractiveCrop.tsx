@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, LayoutChangeEvent, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Image, LayoutChangeEvent, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import {
   clampCropSelection,
-  imageContainRect,
+  imageDisplayRect,
   initialCropSelection,
   type CropRect,
   type CropSelection,
 } from '@/lib/files/interactive-crop';
 import { selectionMatchesLayout } from '@/lib/files/rotate-capture-edit';
+import { useDragHandlers } from '@/lib/ui/use-drag-handlers';
 
-type HandleId = 'move' | 'tl' | 'tr' | 'bl' | 'br' | 't' | 'b' | 'l' | 'r';
+type HandleId = 'move' | 'tl' | 'tr' | 'bl' | 'br' | 't' | 'b' | 'l' | 'r' | 'image';
 
-const HANDLE_HIT = 36;
-const EDGE_HIT = 22;
+const HANDLE_HIT = 44;
+const EDGE_HIT = 28;
 
 type Props = {
   uri: string;
@@ -99,7 +100,14 @@ export function CaptureInteractiveCrop({
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
   const [selection, setSelection] = useState<CropSelection | null>(null);
   const selectionRef = useRef<CropSelection | null>(null);
-  const dragRef = useRef<{ handle: HandleId; startCrop: CropRect } | null>(null);
+  const dragRef = useRef<{
+    handle: HandleId;
+    startCrop: CropRect;
+    startOffsetX: number;
+    startOffsetY: number;
+  } | null>(null);
+  const didInitRef = useRef(false);
+  const appliedSeedRef = useRef(false);
 
   const applySelection = useCallback(
     (next: CropSelection) => {
@@ -111,7 +119,109 @@ export function CaptureInteractiveCrop({
     [onSelectionChange]
   );
 
+  const onCropDrag = useCallback(
+    (handle: HandleId, dx: number, dy: number) => {
+      const drag = dragRef.current;
+      const current = selectionRef.current;
+      if (!drag || !current || drag.handle !== handle) return;
+
+      if (handle === 'image') {
+        applySelection({
+          ...current,
+          imageOffsetX: drag.startOffsetX + dx,
+          imageOffsetY: drag.startOffsetY + dy,
+        });
+        return;
+      }
+
+      const nextCrop = resizeCrop(drag.startCrop, handle, dx, dy);
+      applySelection({ ...current, crop: nextCrop });
+    },
+    [applySelection]
+  );
+
+  const endDrag = useCallback(() => {
+    dragRef.current = null;
+  }, []);
+
+  const grantDrag = useCallback((handle: HandleId) => {
+    if (!selectionRef.current) return;
+    const cur = selectionRef.current;
+    dragRef.current = {
+      handle,
+      startCrop: { ...cur.crop },
+      startOffsetX: cur.imageOffsetX ?? 0,
+      startOffsetY: cur.imageOffsetY ?? 0,
+    };
+  }, []);
+
+  const moveDrag = useDragHandlers({
+    onGrant: () => grantDrag('move'),
+    onDrag: (dx, dy) => onCropDrag('move', dx, dy),
+    onEnd: endDrag,
+  });
+  const tlDrag = useDragHandlers({
+    onGrant: () => grantDrag('tl'),
+    onDrag: (dx, dy) => onCropDrag('tl', dx, dy),
+    onEnd: endDrag,
+  });
+  const trDrag = useDragHandlers({
+    onGrant: () => grantDrag('tr'),
+    onDrag: (dx, dy) => onCropDrag('tr', dx, dy),
+    onEnd: endDrag,
+  });
+  const blDrag = useDragHandlers({
+    onGrant: () => grantDrag('bl'),
+    onDrag: (dx, dy) => onCropDrag('bl', dx, dy),
+    onEnd: endDrag,
+  });
+  const brDrag = useDragHandlers({
+    onGrant: () => grantDrag('br'),
+    onDrag: (dx, dy) => onCropDrag('br', dx, dy),
+    onEnd: endDrag,
+  });
+  const tDrag = useDragHandlers({
+    onGrant: () => grantDrag('t'),
+    onDrag: (dx, dy) => onCropDrag('t', dx, dy),
+    onEnd: endDrag,
+  });
+  const bDrag = useDragHandlers({
+    onGrant: () => grantDrag('b'),
+    onDrag: (dx, dy) => onCropDrag('b', dx, dy),
+    onEnd: endDrag,
+  });
+  const lDrag = useDragHandlers({
+    onGrant: () => grantDrag('l'),
+    onDrag: (dx, dy) => onCropDrag('l', dx, dy),
+    onEnd: endDrag,
+  });
+  const rDrag = useDragHandlers({
+    onGrant: () => grantDrag('r'),
+    onDrag: (dx, dy) => onCropDrag('r', dx, dy),
+    onEnd: endDrag,
+  });
+  const imageDrag = useDragHandlers({
+    onGrant: () => grantDrag('image'),
+    onDrag: (dx, dy) => onCropDrag('image', dx, dy),
+    onEnd: endDrag,
+  });
+
+  const wrapHandle = (handle: HandleId, drag: ReturnType<typeof useDragHandlers>, style: object) => {
+    const base = { style: [style, drag.webStyle], ...drag.panHandlers };
+    if (Platform.OS !== 'web' || !drag.onWebMouseDown) return base;
+    return {
+      ...base,
+      onMouseDown: (e: { preventDefault: () => void; pageX: number; pageY: number }) => {
+        e.preventDefault();
+        grantDrag(handle);
+        drag.onWebMouseDown?.(e.pageX, e.pageY);
+      },
+    };
+  };
+
   useEffect(() => {
+    didInitRef.current = false;
+    appliedSeedRef.current = false;
     Image.getSize(
       uri,
       (w, h) => setImageSize({ w, h }),
@@ -121,60 +231,29 @@ export function CaptureInteractiveCrop({
 
   useEffect(() => {
     if (imageSize.w < 2 || imageSize.h < 2 || layout.w < 8 || layout.h < 8) return;
+
     if (
       seedSelection &&
+      !appliedSeedRef.current &&
       selectionMatchesLayout(seedSelection, imageSize.w, imageSize.h, layout.w, layout.h)
     ) {
+      appliedSeedRef.current = true;
+      didInitRef.current = true;
       applySelection(seedSelection);
       onSeedApplied?.();
       return;
     }
-    applySelection(initialCropSelection(imageSize.w, imageSize.h, layout.w, layout.h));
+
+    if (!didInitRef.current) {
+      didInitRef.current = true;
+      applySelection(initialCropSelection(imageSize.w, imageSize.h, layout.w, layout.h));
+    }
   }, [applySelection, imageSize.h, imageSize.w, layout.h, layout.w, onSeedApplied, seedSelection]);
 
   const imageRect = useMemo(() => {
     if (!selection) return null;
-    return imageContainRect(
-      selection.imageWidth,
-      selection.imageHeight,
-      selection.viewportWidth,
-      selection.viewportHeight
-    );
+    return imageDisplayRect(selection);
   }, [selection]);
-
-  const makeResponder = useCallback(
-    (handle: HandleId) =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: () => {
-          if (!selectionRef.current) return;
-          dragRef.current = { handle, startCrop: { ...selectionRef.current.crop } };
-        },
-        onPanResponderMove: (_, gesture) => {
-          const drag = dragRef.current;
-          const current = selectionRef.current;
-          if (!drag || !current) return;
-          const nextCrop = resizeCrop(drag.startCrop, drag.handle, gesture.dx, gesture.dy);
-          applySelection({ ...current, crop: nextCrop });
-        },
-        onPanResponderRelease: () => {
-          dragRef.current = null;
-        },
-      }),
-    [applySelection]
-  );
-
-  const panResponders = useMemo((): Record<HandleId, ReturnType<typeof PanResponder.create>> => {
-    const handles: HandleId[] = ['move', 'tl', 'tr', 'bl', 'br', 't', 'b', 'l', 'r'];
-    return handles.reduce(
-      (acc, handle) => {
-        acc[handle] = makeResponder(handle);
-        return acc;
-      },
-      {} as Record<HandleId, ReturnType<typeof PanResponder.create>>
-    );
-  }, [makeResponder]);
 
   const crop = selection?.crop;
   const half = HANDLE_HIT / 2;
@@ -187,17 +266,19 @@ export function CaptureInteractiveCrop({
         setLayout({ w: width, h: height });
       }}>
       {imageRect ? (
-        <Image
-          source={{ uri }}
-          style={{
-            position: 'absolute',
-            left: imageRect.left,
-            top: imageRect.top,
-            width: imageRect.width,
-            height: imageRect.height,
-          }}
-          resizeMode="contain"
-        />
+        <View
+          {...wrapHandle('image', imageDrag, [
+            styles.imageTouch,
+            {
+              left: imageRect.left,
+              top: imageRect.top,
+              width: imageRect.width,
+              height: imageRect.height,
+            },
+          ])}
+        >
+          <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+        </View>
       ) : null}
 
       {crop ? (
@@ -220,97 +301,98 @@ export function CaptureInteractiveCrop({
           />
 
           <View
-            style={[
+            {...wrapHandle('move', moveDrag, [
               styles.frame,
               { left: crop.left, top: crop.top, width: crop.width, height: crop.height },
-            ]}
-            {...panResponders.move.panHandlers}
+            ])}
           />
           <CropGrid crop={crop} />
 
-          {/* edge handles */}
           <View
-            style={[
+            {...wrapHandle('t', tDrag, [
               styles.edgeHandle,
               {
-                left: crop.left + crop.width / 2 - 20,
+                left: crop.left + crop.width / 2 - 24,
                 top: crop.top - EDGE_HIT / 2,
-                width: 40,
+                width: 48,
                 height: EDGE_HIT,
               },
-            ]}
-            {...panResponders.t.panHandlers}
+            ])}
           />
           <View
-            style={[
+            {...wrapHandle('b', bDrag, [
               styles.edgeHandle,
               {
-                left: crop.left + crop.width / 2 - 20,
+                left: crop.left + crop.width / 2 - 24,
                 top: crop.top + crop.height - EDGE_HIT / 2,
-                width: 40,
+                width: 48,
                 height: EDGE_HIT,
               },
-            ]}
-            {...panResponders.b.panHandlers}
+            ])}
           />
           <View
-            style={[
+            {...wrapHandle('l', lDrag, [
               styles.edgeHandle,
               {
                 left: crop.left - EDGE_HIT / 2,
-                top: crop.top + crop.height / 2 - 20,
+                top: crop.top + crop.height / 2 - 24,
                 width: EDGE_HIT,
-                height: 40,
+                height: 48,
               },
-            ]}
-            {...panResponders.l.panHandlers}
+            ])}
           />
           <View
-            style={[
+            {...wrapHandle('r', rDrag, [
               styles.edgeHandle,
               {
                 left: crop.left + crop.width - EDGE_HIT / 2,
-                top: crop.top + crop.height / 2 - 20,
+                top: crop.top + crop.height / 2 - 24,
                 width: EDGE_HIT,
-                height: 40,
+                height: 48,
               },
-            ]}
-            {...panResponders.r.panHandlers}
+            ])}
           />
 
-          {/* corner handles */}
           <View
-            style={[styles.cornerHandle, { left: crop.left - half, top: crop.top - half }]}
-            {...panResponders.tl.panHandlers}
+            {...wrapHandle('tl', tlDrag, [
+              styles.cornerHandle,
+              { left: crop.left - half, top: crop.top - half },
+            ])}
           />
           <View
-            style={[styles.cornerHandle, { left: crop.left + crop.width - half, top: crop.top - half }]}
-            {...panResponders.tr.panHandlers}
+            {...wrapHandle('tr', trDrag, [
+              styles.cornerHandle,
+              { left: crop.left + crop.width - half, top: crop.top - half },
+            ])}
           />
           <View
-            style={[styles.cornerHandle, { left: crop.left - half, top: crop.top + crop.height - half }]}
-            {...panResponders.bl.panHandlers}
+            {...wrapHandle('bl', blDrag, [
+              styles.cornerHandle,
+              { left: crop.left - half, top: crop.top + crop.height - half },
+            ])}
           />
           <View
-            style={[
+            {...wrapHandle('br', brDrag, [
               styles.cornerHandle,
               { left: crop.left + crop.width - half, top: crop.top + crop.height - half },
-            ]}
-            {...panResponders.br.panHandlers}
+            ])}
           />
         </>
       ) : null}
 
-      <Text style={styles.hint}>{t('capture.cropDragRegionHint')}</Text>
+      <Text style={styles.hint} pointerEvents="none">
+        {t('capture.cropDragRegionHint')}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.blackPure, overflow: 'hidden' },
-  dim: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.6)' },
-  frame: { position: 'absolute', borderWidth: 2, borderColor: theme.white },
-  gridWrap: { position: 'absolute' },
+  imageTouch: { position: 'absolute', zIndex: 1 },
+  dim: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 2 },
+  frame: { position: 'absolute', borderWidth: 2, borderColor: theme.white, zIndex: 3 },
+  gridWrap: { position: 'absolute', zIndex: 3 },
   gridLine: { position: 'absolute', backgroundColor: 'rgba(255,255,255,0.35)' },
   cornerHandle: {
     position: 'absolute',
@@ -320,11 +402,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.white,
     borderWidth: 2,
     borderColor: theme.orange,
-    zIndex: 5,
+    zIndex: 6,
   },
   edgeHandle: {
     position: 'absolute',
-    zIndex: 4,
+    zIndex: 5,
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   hint: {
     position: 'absolute',
@@ -335,5 +418,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.85)',
     fontSize: 12,
     fontWeight: '600',
+    zIndex: 2,
   },
 });

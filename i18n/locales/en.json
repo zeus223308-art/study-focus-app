@@ -103,7 +103,7 @@
     "drawInkHint": "Pen, highlighter, and eraser work like in the file viewer",
     "editorUndo": "Undo",
     "kakaoCropHint": "Drag photo · use ± to zoom",
-    "cropDragRegionHint": "Drag corners, edges, or center to adjust the crop area",
+    "cropDragRegionHint": "Drag the photo to reposition; drag border or corners to resize crop",
     "editHint": "Adjust the photo, then tap Done",
     "cropDone": "Done",
     "rotate": "Rotate",
