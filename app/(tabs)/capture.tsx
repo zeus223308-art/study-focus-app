@@ -15,14 +15,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CaptureFramePicker } from '@/components/capture/CaptureFramePicker';
 import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
 import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { todayKey } from '@/lib/domain/dates';
-import type { CaptureFrameAspect } from '@/lib/domain/types';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { pickForImport } from '@/lib/import/pick-for-import';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
@@ -35,8 +33,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 export default function CaptureTabScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, captureFlashcardPair, updateSettings } = useApp();
-  const frameAspect = data.settings.captureFrameAspect ?? '4:3';
+  const { data, captureFlashcardPair } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [step, setStep] = useState<Step>('camera');
@@ -136,10 +133,6 @@ export default function CaptureTabScreen() {
     });
     if (!picked.ok || picked.files.length === 0) return;
     openEditor(picked.files[0].uri, frontUri ? 'back' : 'front');
-  };
-
-  const setFrameAspect = (aspect: CaptureFrameAspect) => {
-    updateSettings({ captureFrameAspect: aspect });
   };
 
   const save = async () => {
@@ -324,8 +317,6 @@ export default function CaptureTabScreen() {
         <CapturePhotoEditor
           uri={editUri}
           sideLabel={editSide === 'back' ? t('capture.backLabel') : t('capture.frontLabel')}
-          frameAspect={frameAspect}
-          onFrameAspectChange={setFrameAspect}
           onConfirm={onEditConfirm}
           onRetake={onEditRetake}
         />
@@ -342,8 +333,6 @@ export default function CaptureTabScreen() {
         </View>
         <View style={styles.permissionBody}>
           <Text style={styles.permissionText}>{t('capture.importWebHint')}</Text>
-          <Text style={styles.frameLabel}>{t('capture.frameLabel')}</Text>
-          <CaptureFramePicker value={frameAspect} onChange={setFrameAspect} variant="light" />
           <Button label={t('capture.importWeb')} onPress={pickWebImage} />
           {!hasSubjects ? (
             <>
