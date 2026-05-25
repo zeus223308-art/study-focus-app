@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
+import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
@@ -187,13 +188,13 @@ export default function CaptureTabScreen() {
         <Pressable style={styles.sheetBackdrop} onPress={dismissAnswerPrompt}>
           <Pressable style={[styles.sheet, { paddingBottom: sheetBottom }]} onPress={() => {}}>
             <Text style={styles.sheetTitle}>{t('capture.pairTitle')}</Text>
-            {frontUri ? <Image source={{ uri: frontUri }} style={styles.preview} /> : null}
+            {frontUri ? <ResolvedImage uri={frontUri} style={styles.preview} /> : null}
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
                 {frontUri ? (
                   <Pressable onPress={() => frontUri && openEditor(frontUri, 'front', 'answer-prompt')}>
-                    <Image source={{ uri: frontUri }} style={styles.pairThumb} />
+                    <ResolvedImage uri={frontUri} style={styles.pairThumb} />
                     <Text style={styles.editLink}>{t('capture.editPhoto')}</Text>
                   </Pressable>
                 ) : null}
@@ -243,7 +244,7 @@ export default function CaptureTabScreen() {
                 <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
                 {frontUri ? (
                   <Pressable onPress={() => openEditor(frontUri, 'front', 'save-sheet')}>
-                    <Image source={{ uri: frontUri }} style={styles.pairThumb} />
+                    <ResolvedImage uri={frontUri} style={styles.pairThumb} />
                   </Pressable>
                 ) : null}
               </View>
@@ -251,7 +252,7 @@ export default function CaptureTabScreen() {
                 <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
                 {backUri ? (
                   <Pressable onPress={() => openEditor(backUri, 'back', 'save-sheet')}>
-                    <Image source={{ uri: backUri }} style={styles.pairThumb} />
+                    <ResolvedImage uri={backUri} style={styles.pairThumb} />
                   </Pressable>
                 ) : (
                   <View style={styles.pairEmpty}>

@@ -1,5 +1,5 @@
 import * as ImageManipulator from 'expo-image-manipulator';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -27,9 +27,10 @@ import {
 } from '@/lib/files/bake-capture-ink';
 import type { CropSelection } from '@/lib/files/interactive-crop';
 import { cropRegionFromSelection, exportCropSelection } from '@/lib/files/interactive-crop';
-import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
+import { resolveImageUriForProcessing } from '@/hooks/useResolvedImageUri';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
+import { useResolvedImageUri } from '@/hooks/useResolvedImageUri';
 
 type EditorMode = 'crop' | 'draw';
 
@@ -45,6 +46,11 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
   const insets = useSafeAreaInsets();
   const layout = useFullscreenViewerLayout();
   const [workingUri, setWorkingUri] = useState(uri);
+  const displayUri = useResolvedImageUri(workingUri);
+
+  useEffect(() => {
+    setWorkingUri(uri);
+  }, [uri]);
   const [busy, setBusy] = useState(false);
   const [cropReady, setCropReady] = useState(false);
   const [mode, setMode] = useState<EditorMode>('crop');
@@ -95,20 +101,20 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
     const display = selection ? captureDisplayRect(selection) : null;
     setBusy(true);
     try {
-      let uri = workingUri;
+      let sourceUri = await resolveImageUriForProcessing(workingUri);
       if (selection && display && strokes.length > 0) {
         const baked = mapStrokesToFullImage(strokes, selection, display);
         if (baked.length > 0) {
           if (Platform.OS === 'web') {
-            uri = await bakeStrokesOntoImageUri(
-              uri,
+            sourceUri = await bakeStrokesOntoImageUri(
+              sourceUri,
               baked,
               selection.imageWidth,
               selection.imageHeight
             );
           } else {
             try {
-              uri = await bakeNative(uri, baked, selection.imageWidth, selection.imageHeight);
+              sourceUri = await bakeNative(sourceUri, baked, selection.imageWidth, selection.imageHeight);
             } catch {
               /* keep unbaked */
             }
@@ -117,7 +123,7 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
       }
 
       const result = await ImageManipulator.manipulateAsync(
-        uri,
+        sourceUri,
         [{ rotate: 90 }],
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
@@ -167,7 +173,8 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
     if (!selection) return;
     setBusy(true);
     try {
-      const croppedUri = await exportCropSelection(workingUri, selection);
+      const sourceUri = await resolveImageUriForProcessing(workingUri);
+      const croppedUri = await exportCropSelection(sourceUri, selection);
       const region = cropRegionFromSelection(selection);
       let finalUri = croppedUri;
 
@@ -197,7 +204,7 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
         }
       }
 
-      onConfirm({ uri: await stabilizeCaptureImageUri(finalUri) });
+      onConfirm({ uri: finalUri });
     } finally {
       setBusy(false);
     }
@@ -237,27 +244,31 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
       ) : null}
 
       <View style={styles.cropWrap}>
-        {mode === 'crop' ? (
-          <CaptureInteractiveCrop
-            key={workingUri}
-            uri={workingUri}
-            seedSelection={seedSelection}
-            onSeedApplied={() => setSeedSelection(null)}
-            onSelectionChange={applyCropSelection}
-          />
+        {displayUri ? (
+          mode === 'crop' ? (
+            <CaptureInteractiveCrop
+              key={workingUri}
+              uri={displayUri}
+              seedSelection={seedSelection}
+              onSeedApplied={() => setSeedSelection(null)}
+              onSelectionChange={applyCropSelection}
+            />
+          ) : (
+            <CaptureDrawSurface
+              key={workingUri}
+              uri={displayUri}
+              tool={tool}
+              strokeWidth={strokeWidth}
+              strokes={strokes}
+              onStrokesChange={setStrokes}
+              selection={cropSelection}
+              seedSelection={seedSelection}
+              onSeedApplied={() => setSeedSelection(null)}
+              onSelectionChange={applyCropSelection}
+            />
+          )
         ) : (
-          <CaptureDrawSurface
-            key={workingUri}
-            uri={workingUri}
-            tool={tool}
-            strokeWidth={strokeWidth}
-            strokes={strokes}
-            onStrokesChange={setStrokes}
-            selection={cropSelection}
-            seedSelection={seedSelection}
-            onSeedApplied={() => setSeedSelection(null)}
-            onSelectionChange={applyCropSelection}
-          />
+          <View style={styles.cropWrapLoading} />
         )}
         {busy ? (
           <View style={styles.busy}>
@@ -326,6 +337,7 @@ const styles = StyleSheet.create({
   undoBtn: { marginTop: 6, paddingVertical: 4, paddingHorizontal: 12 },
   undoText: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: '700' },
   cropWrap: { flex: 1, position: 'relative' },
+  cropWrapLoading: { flex: 1, backgroundColor: '#000' },
   busy: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
