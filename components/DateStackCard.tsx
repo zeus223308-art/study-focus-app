@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: theme.black,
+    backgroundColor: 'rgba(0,0,0,0.65)',
     borderRadius: 12,
     minWidth: 24,
     height: 24,

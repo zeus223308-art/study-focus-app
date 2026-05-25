@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   group: {
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,

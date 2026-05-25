@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primary: { backgroundColor: theme.orange },
-  secondary: { backgroundColor: theme.white, borderWidth: 1, borderColor: theme.grayLight },
+  secondary: { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.grayLight },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: theme.font.body, fontWeight: '700' },
   textPrimary: { color: theme.white },

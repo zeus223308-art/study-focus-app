@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.grayLight,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
   },
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   chipDanger: { borderColor: theme.orangeSoft },

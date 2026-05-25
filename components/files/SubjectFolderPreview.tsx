@@ -181,7 +181,7 @@ export function SubjectFolderPreview({
 
 const styles = StyleSheet.create({
   cardBase: {
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     overflow: 'hidden',
     ...Platform.select({
       web: { touchAction: 'pan-x', cursor: 'grab' } as object,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   openFabText: { fontSize: 14, fontWeight: '800', color: theme.orange },
   emptyCardBase: {
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,

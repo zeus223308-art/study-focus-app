@@ -36,7 +36,7 @@ export default function SearchScreen() {
       />
       <Pressable onPress={() => setExamOnly((e) => !e)} style={styles.filter}>
         <Text style={[styles.filterText, examOnly && styles.filterOn]}>
-          {examOnly ? '✓ ' : ''}{t('item.tagExam')}
+          {examOnly ? '??' : ''}{t('item.tagExam')}
         </Text>
       </Pressable>
       <FlatList
@@ -64,7 +64,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.beige, paddingHorizontal: 20 },
   input: {
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderRadius: 12,
     padding: 14,
     fontSize: 16,
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     padding: 12,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderRadius: 10,
     marginBottom: 8,
     alignItems: 'center',

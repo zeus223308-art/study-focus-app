@@ -15,7 +15,7 @@ import { HIGHLIGHTER_TOOLS, PEN_TOOLS } from '@/lib/domain/defaults';
 import type { InkPoint, InkStroke, InkToolId, NoteLayer } from '@/lib/domain/types';
 
 const TOOL_COLORS: Record<InkToolId, { color: string; width: number; opacity: number }> = {
-  'pen-black': { color: '#0D0D0D', width: 2, opacity: 1 },
+  'pen-black': { color: '#F0EDE8', width: 2, opacity: 1 },
   'pen-red': { color: '#DC2626', width: 2, opacity: 1 },
   'pen-blue': { color: '#2563EB', width: 2, opacity: 1 },
   'hi-yellow': { color: '#FFE600', width: 12, opacity: 0.45 },

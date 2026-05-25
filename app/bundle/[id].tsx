@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     color: theme.black,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.grayLight,
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
   pairRow: { flexDirection: 'row', gap: 12 },
   pairCol: { flex: 1, gap: 4 },
   pairLabel: { fontSize: 11, fontWeight: '700', color: theme.gray },
-  pairThumb: { width: '100%', height: 88, borderRadius: theme.radius.sm, backgroundColor: theme.white },
+  pairThumb: { width: '100%', height: 88, borderRadius: theme.radius.sm, backgroundColor: theme.surface },
   pairAdd: {
     height: 88,
     borderRadius: theme.radius.sm,
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
   toolRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginVertical: 12 },
   note: {
     minHeight: 80,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderRadius: theme.radius.md,
     padding: 14,
     borderWidth: 1,

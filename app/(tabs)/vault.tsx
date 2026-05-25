@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     borderColor: theme.black,
     borderRadius: theme.radius.sm,
     paddingVertical: PANEL_PAD,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     overflow: 'hidden',
   },
   carouselSlot: {
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   },
   addBox: {
     marginTop: 20,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     padding: 16,
     borderRadius: theme.radius.md,
     borderWidth: 1,

@@ -16,7 +16,7 @@ type Props = {
   onNo: () => void;
 };
 
-/** Toss-style bottom sheet — advance card to next review cycle? */
+/** Toss-style bottom sheet ??advance card to next review cycle? */
 export function ScheduleAdvanceSheet({
   visible,
   score,
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 24,

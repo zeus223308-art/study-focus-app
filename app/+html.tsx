@@ -43,7 +43,7 @@ const oauthPopupCloseScript = `
     document.open();
     document.write(
       '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>MemorySherpa</title></head>' +
-      '<body style="margin:0;font-family:system-ui,sans-serif;background:#F9F8F6;color:#0D0D0D;' +
+      '<body style="margin:0;font-family:system-ui,sans-serif;background:#141414;color:#F0EDE8;' +
       'display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;padding:24px">' +
       '<p>로그인 완료.<br>잠시 후 창이 닫힙니다.</p></body></html>'
     );
@@ -60,7 +60,7 @@ html, body, #root {
   padding: 0;
 }
 body {
-  background-color: #2A2826;
+  background-color: #0A0A0A;
   overflow-x: hidden;
 }
 `;

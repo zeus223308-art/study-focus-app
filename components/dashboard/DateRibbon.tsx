@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 6,
     borderRadius: theme.radius.md,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.grayLight,
     alignItems: 'center',

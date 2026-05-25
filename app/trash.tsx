@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   empty: { color: theme.gray, textAlign: 'center', marginTop: 40 },
   row: {
     flexDirection: 'row',
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderRadius: 12,
     padding: 12,
     marginBottom: 10,

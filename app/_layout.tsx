@@ -116,7 +116,7 @@ export default function RootLayout() {
   return (
     <AppProvider>
       <MobileWebFrame>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         <RootNavigator />
       </MobileWebFrame>
     </AppProvider>

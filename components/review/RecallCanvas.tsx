@@ -119,7 +119,7 @@ export function RecallCanvas({ strokes, onStrokesChange, tool, fullScreen }: Pro
           <Path
             key={s.id}
             d={pointsToPath(s.points)}
-            stroke="#0D0D0D"
+            stroke={theme.inkDefault}
             strokeWidth={s.width}
             fill="none"
             strokeLinecap="round"
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   wrap: {
     flex: 1,
     minHeight: 200,
-    backgroundColor: theme.white,
+    backgroundColor: theme.paper,
     borderRadius: theme.radius.md,
     borderWidth: 1,
     borderColor: theme.grayLight,

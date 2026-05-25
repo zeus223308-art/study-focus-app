@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'web' ? 10 : 12,
     fontSize: theme.font.bodySmall,
     color: theme.black,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
   saveBtn: {

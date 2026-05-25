@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderRadius: theme.radius.md,
     marginBottom: 12,
     overflow: 'hidden',

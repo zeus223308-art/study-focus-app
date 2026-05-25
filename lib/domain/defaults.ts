@@ -75,7 +75,7 @@ export const DEFAULT_DATA: AppData = {
 };
 
 export const PEN_TOOLS = [
-  { id: 'pen-black' as const, color: '#0D0D0D', width: 2, label: 'Black' },
+  { id: 'pen-black' as const, color: '#F0EDE8', width: 2, label: 'Black' },
   { id: 'pen-red' as const, color: '#DC2626', width: 2, label: 'Red' },
   { id: 'pen-blue' as const, color: '#2563EB', width: 2, label: 'Blue' },
 ];

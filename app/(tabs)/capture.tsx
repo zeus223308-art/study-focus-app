@@ -219,7 +219,7 @@ export default function CaptureTabScreen() {
                   <Image source={{ uri: backUri }} style={styles.pairThumb} />
                 ) : (
                   <View style={styles.pairEmpty}>
-                    <Text style={styles.pairEmptyText}>—</Text>
+                    <Text style={styles.pairEmptyText}>?</Text>
                   </View>
                 )}
               </View>
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderWidth: 4,
     borderColor: theme.orange,
     zIndex: 1,
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.grayLight,
     borderRadius: theme.radius.md,
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   pairRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   pairSlot: { flex: 1, gap: 6 },
   pairLabel: { fontSize: 11, fontWeight: '800', color: theme.gray },
-  pairThumb: { width: '100%', height: 100, borderRadius: theme.radius.sm, backgroundColor: theme.white },
+  pairThumb: { width: '100%', height: 100, borderRadius: theme.radius.sm, backgroundColor: theme.surface },
   pairEmpty: {
     height: 100,
     borderRadius: theme.radius.sm,
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
     borderColor: theme.grayLight,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
   },
   pairEmptyText: { color: theme.grayMuted, fontWeight: '700', fontSize: 24 },
   chipLabel: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray, marginTop: 16 },
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.grayLight,
     marginRight: 8,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
   },
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   chipText: { fontWeight: '700', color: theme.black },

@@ -60,7 +60,7 @@ export function ReviewCalendar({ items, folders, getSchedule, month = new Date()
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,

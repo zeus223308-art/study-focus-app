@@ -464,7 +464,7 @@ export default function ReviewSessionScreen() {
             {phase === 'pass' && !scheduleSheetVisible && (
               <Animated.View style={[styles.passOverlay, { opacity: passAnim }]}>
                 <Animated.View style={{ transform: [{ scale: passScale }] }}>
-                  <Text style={styles.passEmoji}>✓</Text>
+                  <Text style={styles.passEmoji}>🎉</Text>
                   <Text style={styles.passTitle}>{t('review.passTitle')}</Text>
                   <Text style={styles.passSub}>{t('review.passScore', { score: lastPassScore })}</Text>
                 </Animated.View>
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.grayLight,
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
   },
   durationChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   durationChipText: { fontWeight: '700', color: theme.black, fontSize: theme.font.caption },

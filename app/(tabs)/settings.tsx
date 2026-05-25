@@ -95,7 +95,7 @@ export default function SettingsScreen() {
               </View>
               {!isAddRow && (
                 <View style={[styles.check, isActive && styles.checkOn]}>
-                  {isActive && <Text style={styles.checkMark}>✓</Text>}
+                  {isActive && <Text style={styles.checkMark}>?</Text>}
                 </View>
               )}
             </Pressable>
@@ -126,7 +126,7 @@ export default function SettingsScreen() {
                   onPress={() => setLanguage(lang)}
                   style={[styles.langChip, language === lang && styles.langChipOn]}>
                   <Text style={language === lang ? styles.langOn : styles.langText}>
-                    {lang === 'ko' ? '한국어' : 'EN'}
+                    {lang === 'ko' ? '???' : 'EN'}
                   </Text>
                 </Pressable>
               ))}
@@ -144,7 +144,7 @@ export default function SettingsScreen() {
         </View>
         <SettingsRow
           label={t('settings.limits')}
-          value={`${photoCount} / ${settings.photoLimit} · ${freemium.usedMemos} / ${settings.memoLimit}`}
+          value={`${photoCount} / ${settings.photoLimit} ? ${freemium.usedMemos} / ${settings.memoLimit}`}
           last
         />
       </SettingsGroup>
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   },
   hint: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray, marginBottom: 8, marginLeft: 4 },
   patternGroup: {
-    backgroundColor: theme.white,
+    backgroundColor: theme.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.grayLight,
