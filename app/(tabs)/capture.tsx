@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -15,12 +15,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format, parseISO } from 'date-fns';
-
 import { Button } from '@/components/ui/Button';
+import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { buildRibbonDays, todayKey } from '@/lib/domain/dates';
+import { todayKey } from '@/lib/domain/dates';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { showMessage } from '@/lib/ui/confirm';
 
@@ -38,16 +37,9 @@ export default function CaptureTabScreen() {
   const [frontUri, setFrontUri] = useState<string | null>(null);
   const [backUri, setBackUri] = useState<string | null>(null);
   const [studyDate, setStudyDate] = useState(() => todayKey());
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [subjectId, setSubjectId] = useState(data.subjects[0]?.id ?? '');
   const insets = useSafeAreaInsets();
-
-  const dateOptions = useMemo(
-    () =>
-      buildRibbonDays(data.settings.firstLaunchDate).map((d) => format(d, 'yyyy-MM-dd')),
-    [data.settings.firstLaunchDate]
-  );
 
   const resetCamera = () => {
     setFrontUri(null);
@@ -139,7 +131,12 @@ export default function CaptureTabScreen() {
         <>
           <CameraView ref={cameraRef} style={styles.camera} facing="back" />
           <View style={[styles.dateOverlay, { top: insets.top + 72 }]}>
-            <Text style={styles.dateText}>{studyDate}</Text>
+            <StudyDateStepper
+              studyDate={studyDate}
+              onChange={setStudyDate}
+              firstLaunchDate={data.settings.firstLaunchDate}
+              variant="inline"
+            />
           </View>
           {!shootingBack && (
             <View style={[styles.guideBanner, { top: insets.top + 124 }]}>
@@ -196,17 +193,14 @@ export default function CaptureTabScreen() {
               </View>
             ) : null}
 
-            <Text style={styles.sheetTitle}>{t('capture.saveTodayTitle')}</Text>
-            <Pressable
-              style={styles.datePickerBtn}
-              onPress={saveState === 'saving' ? undefined : () => setDatePickerOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={t('capture.changeDate')}>
-              <View>
-                <Text style={styles.dateValue}>{studyDate}</Text>
-              </View>
-              <Text style={styles.dateChange}>{t('capture.changeDate')}</Text>
-            </Pressable>
+            <Text style={styles.sheetTitle}>{t('capture.pickDate')}</Text>
+            <View pointerEvents={saveState === 'saving' ? 'none' : 'auto'}>
+              <StudyDateStepper
+                studyDate={studyDate}
+                onChange={setStudyDate}
+                firstLaunchDate={data.settings.firstLaunchDate}
+              />
+            </View>
 
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
@@ -256,33 +250,6 @@ export default function CaptureTabScreen() {
         </View>
       </Modal>
 
-      <Modal visible={datePickerOpen} animationType="fade" transparent>
-        <Pressable style={styles.dateModalBackdrop} onPress={() => setDatePickerOpen(false)}>
-          <Pressable style={styles.dateModalSheet} onPress={(e) => e.stopPropagation()}>
-            <Text style={styles.dateModalTitle}>{t('capture.pickDate')}</Text>
-            <ScrollView style={styles.dateList} keyboardShouldPersistTaps="handled">
-              {dateOptions.map((d) => {
-                const selected = d === studyDate;
-                const label = format(parseISO(`${d}T12:00:00`), 'yyyy-MM-dd (EEE)');
-                return (
-                  <Pressable
-                    key={d}
-                    onPress={() => {
-                      setStudyDate(d);
-                      setDatePickerOpen(false);
-                    }}
-                    style={[styles.dateRow, selected && styles.dateRowOn]}>
-                    <Text style={[styles.dateRowText, selected && styles.dateRowTextOn]}>{label}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-            <Pressable onPress={() => setDatePickerOpen(false)} style={styles.dateModalClose}>
-              <Text style={styles.dateModalCloseText}>{t('common.cancel')}</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -304,14 +271,14 @@ const styles = StyleSheet.create({
   camera: { flex: 1 },
   dateOverlay: {
     position: 'absolute',
-    left: 20,
+    left: 16,
+    right: 16,
     backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: theme.radius.sm,
     zIndex: 1,
   },
-  dateText: { color: theme.white, fontSize: theme.font.body, fontWeight: '700' },
   guideBanner: {
     position: 'absolute',
     left: 20,
@@ -356,21 +323,6 @@ const styles = StyleSheet.create({
   },
   successTitle: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
   successBody: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray, marginTop: 4 },
-  datePickerBtn: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  dateValue: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
-  dateHint: { fontSize: theme.font.caption, color: theme.gray, marginTop: 4, fontWeight: '600' },
-  dateChange: { fontSize: theme.font.caption, fontWeight: '800', color: theme.orange },
   preview: { width: '100%', height: 160, borderRadius: theme.radius.md, marginTop: 16 },
   pairRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   pairSlot: { flex: 1, gap: 6 },
@@ -407,29 +359,4 @@ const styles = StyleSheet.create({
   skipText: { color: theme.gray, fontWeight: '600' },
   retake: { marginTop: 14, alignItems: 'center' },
   retakeText: { color: theme.gray, fontWeight: '600' },
-  dateModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  dateModalSheet: {
-    backgroundColor: theme.beige,
-    borderRadius: theme.radius.lg,
-    padding: 20,
-    maxHeight: '70%',
-  },
-  dateModalTitle: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black, marginBottom: 12 },
-  dateList: { maxHeight: 320 },
-  dateRow: {
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: theme.radius.sm,
-    marginBottom: 4,
-  },
-  dateRowOn: { backgroundColor: theme.orangeMuted },
-  dateRowText: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
-  dateRowTextOn: { fontWeight: '800', color: theme.orange },
-  dateModalClose: { marginTop: 12, alignItems: 'center', paddingVertical: 10 },
-  dateModalCloseText: { fontWeight: '700', color: theme.gray },
 });

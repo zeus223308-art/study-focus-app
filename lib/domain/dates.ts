@@ -64,3 +64,22 @@ export function buildRibbonDays(firstLaunchDate: string): Date[] {
 export function ribbonDayCount(firstLaunchDate: string): number {
   return buildRibbonDays(firstLaunchDate).length;
 }
+
+export function studyDateBounds(firstLaunchDate: string): { min: string; max: string } {
+  return { min: firstLaunchDate, max: todayKey() };
+}
+
+/** Move study date by N days, clamped to first-launch…today (no future). */
+export function shiftStudyDateKey(
+  studyDate: string,
+  deltaDays: number,
+  bounds: { min: string; max: string }
+): string {
+  const shifted = format(
+    startOfDay(addDays(parseISO(`${studyDate}T12:00:00`), deltaDays)),
+    'yyyy-MM-dd'
+  );
+  if (shifted < bounds.min) return bounds.min;
+  if (shifted > bounds.max) return bounds.max;
+  return shifted;
+}
