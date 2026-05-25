@@ -13,9 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FullscreenInkControls } from '@/components/annotation/FullscreenInkControls';
 import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink-flow';
-import { CaptureDrawSurface } from '@/components/capture/CaptureDrawSurface';
+import { CaptureEditSurface } from '@/components/capture/CaptureEditSurface';
 import { CaptureInkBakeHost, type InkBakeJob } from '@/components/capture/CaptureInkBakeHost';
-import { CaptureInteractiveCrop } from '@/components/capture/CaptureInteractiveCrop';
 import { theme } from '@/constants/theme';
 import { defaultWidthForTool } from '@/lib/domain/ink-sizes';
 import type { InkStroke, InkToolId } from '@/lib/domain/types';
@@ -245,31 +244,19 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
 
       <View style={styles.cropWrap}>
         {displayUri ? (
-          mode === 'crop' ? (
-            <CaptureInteractiveCrop
-              key={workingUri}
-              uri={displayUri}
-              seedSelection={cropSelection ?? seedSelection}
-              strokes={strokes}
-              onSeedApplied={() => {
-                if (seedSelection) setSeedSelection(null);
-              }}
-              onSelectionChange={applyCropSelection}
-            />
-          ) : (
-            <CaptureDrawSurface
-              key={workingUri}
-              uri={displayUri}
-              tool={tool}
-              strokeWidth={strokeWidth}
-              strokes={strokes}
-              onStrokesChange={setStrokes}
-              selection={cropSelection}
-              seedSelection={seedSelection}
-              onSeedApplied={() => setSeedSelection(null)}
-              onSelectionChange={applyCropSelection}
-            />
-          )
+          <CaptureEditSurface
+            key={workingUri}
+            uri={displayUri}
+            mode={mode}
+            selection={cropSelection}
+            onSelectionChange={applyCropSelection}
+            seedSelection={seedSelection}
+            onSeedApplied={() => setSeedSelection(null)}
+            strokes={strokes}
+            tool={tool}
+            strokeWidth={strokeWidth}
+            onStrokesChange={setStrokes}
+          />
         ) : (
           <View style={styles.cropWrapLoading} />
         )}
