@@ -2,9 +2,11 @@ import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { DockTabBar } from '@/components/DockTabBar';
+import { CaptureLeaveGuardProvider } from '@/components/capture/CaptureLeaveGuard';
 
 export default function TabLayout() {
   return (
+    <CaptureLeaveGuardProvider>
     <View style={styles.root}>
     <Tabs
       initialRouteName="index"
@@ -20,6 +22,7 @@ export default function TabLayout() {
       <Tabs.Screen name="settings" />
     </Tabs>
     </View>
+    </CaptureLeaveGuardProvider>
   );
 }
 

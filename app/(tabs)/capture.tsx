@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { useRouter, useNavigation } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,8 +16,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
 import { CapturePreviewImage } from '@/components/capture/CapturePreviewImage';
+import { useCaptureLeaveRegistration } from '@/components/capture/CaptureLeaveGuard';
 import { Button } from '@/components/ui/Button';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -32,17 +32,9 @@ type Step = 'camera' | 'edit' | 'answer-prompt' | 'save-sheet';
 type EditSide = 'front' | 'back';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
-type LeaveAction = {
-  type: string;
-  payload?: object;
-  source?: string;
-  target?: string;
-};
-
 export default function CaptureTabScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const navigation = useNavigation();
   const { data, captureFlashcardPair } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -59,27 +51,7 @@ export default function CaptureTabScreen() {
   const isWeb = Platform.OS === 'web';
   const hasSubjects = data.subjects.length > 0;
 
-  const [leavePrompt, setLeavePrompt] = useState<LeaveAction | null>(null);
-  const [leaveSaving, setLeaveSaving] = useState(false);
-  const leaveAfterSaveRef = useRef(false);
-
   const hasPendingCapture = step !== 'camera' || Boolean(frontUri || backUri);
-  const pendingRef = useRef(hasPendingCapture);
-  pendingRef.current = hasPendingCapture;
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e: { preventDefault: () => void; data: { action: LeaveAction } }) => {
-      if (leaveAfterSaveRef.current) {
-        leaveAfterSaveRef.current = false;
-        return;
-      }
-      if (!pendingRef.current) return;
-      e.preventDefault();
-      setLeavePrompt(e.data.action);
-    });
-    return unsubscribe;
-  }, [navigation]);
-
   useEffect(() => {
     if (!subjectId && data.subjects[0]) {
       setSubjectId(data.subjects[0].id);
@@ -95,6 +67,8 @@ export default function CaptureTabScreen() {
     setEditSide('front');
     setStep('camera');
   }, []);
+
+  useCaptureLeaveRegistration(hasPendingCapture, resetCamera);
 
   const openEditor = (uri: string, side: EditSide, returnStep?: Step) => {
     setEditUri(uri);
@@ -200,86 +174,6 @@ export default function CaptureTabScreen() {
       return false;
     }
   };
-
-  const saveDraft = useCallback(async (): Promise<boolean> => {
-    if (!frontUri) return false;
-    if (!hasSubjects) {
-      showMessage(t('capture.noSubjectsHint'));
-      return false;
-    }
-    const sid = subjectId || data.subjects[0]?.id;
-    if (!sid) return false;
-    if (saveState === 'saving' || saveState === 'saved') return true;
-
-    setSaveState('saving');
-    try {
-      const stableFront = await stabilizeCaptureImageUri(frontUri);
-      const stableBack = backUri ? await stabilizeCaptureImageUri(backUri) : null;
-      const id = await captureFlashcardPair(stableFront, stableBack, sid, studyDate);
-      if (!id) {
-        setSaveState('error');
-        showMessage(t('capture.saveFailed'));
-        return false;
-      }
-      resetCamera();
-      return true;
-    } catch {
-      setSaveState('error');
-      showMessage(t('capture.saveFailed'));
-      return false;
-    }
-  }, [
-    backUri,
-    captureFlashcardPair,
-    data.subjects,
-    frontUri,
-    hasSubjects,
-    resetCamera,
-    saveState,
-    studyDate,
-    subjectId,
-    t,
-  ]);
-
-  const dismissLeavePrompt = () => {
-    if (leaveSaving) return;
-    setLeavePrompt(null);
-  };
-
-  const confirmLeaveAndSave = async () => {
-    const action = leavePrompt;
-    if (!action || leaveSaving) return;
-
-    if (!frontUri) {
-      setLeavePrompt(null);
-      showMessage(t('capture.completeEditFirst'));
-      return;
-    }
-
-    setLeaveSaving(true);
-    try {
-      const ok = await saveDraft();
-      if (!ok) return;
-      leaveAfterSaveRef.current = true;
-      setLeavePrompt(null);
-      navigation.dispatch(action);
-    } finally {
-      setLeaveSaving(false);
-    }
-  };
-
-  const renderLeavePrompt = () => (
-    <ConfirmDialog
-      visible={leavePrompt != null}
-      title={t('capture.leaveSaveTitle')}
-      message={t('capture.leaveSaveMessage')}
-      cancelLabel={t('common.cancel')}
-      confirmLabel={t('capture.leaveSaveConfirm')}
-      confirmBusy={leaveSaving}
-      onCancel={dismissLeavePrompt}
-      onConfirm={() => void confirmLeaveAndSave()}
-    />
-  );
 
   const sheetBottom = Math.max(36, insets.bottom + 20);
   const saveBusy = saveState === 'saving' || saveState === 'saved';
@@ -439,7 +333,6 @@ export default function CaptureTabScreen() {
           onRetake={onEditRetake}
         />
         {renderModals()}
-        {renderLeavePrompt()}
       </>
     );
   }
@@ -470,7 +363,6 @@ export default function CaptureTabScreen() {
           />
         </View>
         {renderModals()}
-        {renderLeavePrompt()}
       </View>
     );
   }
@@ -487,7 +379,6 @@ export default function CaptureTabScreen() {
             onPress={() => safeRouterBack(router, '/(tabs)/vault')}
           />
         </View>
-        {renderLeavePrompt()}
       </View>
     );
   }
@@ -508,7 +399,6 @@ export default function CaptureTabScreen() {
       )}
 
       {renderModals()}
-      {renderLeavePrompt()}
     </View>
   );
 }

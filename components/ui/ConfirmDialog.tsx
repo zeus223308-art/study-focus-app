@@ -1,4 +1,4 @@
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 
@@ -25,7 +25,13 @@ export function ConfirmDialog({
   confirmBusy,
 }: Props) {
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onCancel}
+      statusBarTranslucent
+      presentationStyle="overFullScreen">
       <Pressable style={styles.backdrop} onPress={onCancel}>
         <Pressable style={styles.card} onPress={() => {}}>
           <Text style={styles.title}>{title}</Text>
@@ -57,6 +63,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 28,
+    zIndex: 99999,
+    ...Platform.select({
+      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
+      default: {},
+    }),
   },
   card: {
     width: '100%',
