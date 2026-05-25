@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import Animated, {
   Easing,
   runOnJS,
@@ -31,6 +32,10 @@ const T = {
 };
 
 export function SplashBrand({ onFinish }: Props) {
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
+
   const mountainOpacity = useSharedValue(0);
   const mountainScale = useSharedValue(0.88);
   const brandOpacity = useSharedValue(0);
