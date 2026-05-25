@@ -3,7 +3,8 @@ import { Image, LayoutChangeEvent, StyleSheet, View } from 'react-native';
 
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
 import { captureDisplayRect } from '@/lib/files/bake-capture-ink';
-import { imageContainRect, initialCropSelection, type CropSelection } from '@/lib/files/interactive-crop';
+import { clampCropSelection, imageContainRect, initialCropSelection, type CropSelection } from '@/lib/files/interactive-crop';
+import { selectionMatchesLayout } from '@/lib/files/rotate-capture-edit';
 import type { InkStroke, InkToolId, NoteLayer } from '@/lib/domain/types';
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
   strokes: InkStroke[];
   onStrokesChange: (strokes: InkStroke[]) => void;
   selection: CropSelection | null;
+  seedSelection?: CropSelection | null;
+  onSeedApplied?: () => void;
   onSelectionChange?: (selection: CropSelection | null) => void;
 };
 
@@ -38,6 +41,8 @@ export function CaptureDrawSurface({
   strokes,
   onStrokesChange,
   selection,
+  seedSelection,
+  onSeedApplied,
   onSelectionChange,
 }: Props) {
   const [layout, setLayout] = useState({ w: 0, h: 0 });
@@ -53,8 +58,16 @@ export function CaptureDrawSurface({
 
   useEffect(() => {
     if (imageSize.w < 2 || imageSize.h < 2 || layout.w < 8 || layout.h < 8) return;
+    if (
+      seedSelection &&
+      selectionMatchesLayout(seedSelection, imageSize.w, imageSize.h, layout.w, layout.h)
+    ) {
+      onSelectionChange?.(clampCropSelection(seedSelection));
+      onSeedApplied?.();
+      return;
+    }
     onSelectionChange?.(initialCropSelection(imageSize.w, imageSize.h, layout.w, layout.h));
-  }, [imageSize.h, imageSize.w, layout.h, layout.w, onSelectionChange]);
+  }, [imageSize.h, imageSize.w, layout.h, layout.w, onSeedApplied, onSelectionChange, seedSelection]);
 
   const imageRect = useMemo(() => {
     if (!selection) return null;

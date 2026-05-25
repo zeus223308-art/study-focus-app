@@ -26,6 +26,10 @@ import {
 } from '@/lib/files/bake-capture-ink';
 import type { CropSelection } from '@/lib/files/interactive-crop';
 import { cropRegionFromSelection, exportCropSelection } from '@/lib/files/interactive-crop';
+import {
+  rotateCropSelectionCW90,
+  rotateStrokesCW90,
+} from '@/lib/files/rotate-capture-edit';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 
@@ -51,6 +55,8 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
   const [penWidth, setPenWidth] = useState(defaultWidthForTool('pen-black'));
   const [highlighterWidth, setHighlighterWidth] = useState(defaultWidthForTool('hi-yellow'));
   const [eraserWidth, setEraserWidth] = useState(defaultWidthForTool('eraser'));
+  const [cropSelection, setCropSelection] = useState<CropSelection | null>(null);
+  const [seedSelection, setSeedSelection] = useState<CropSelection | null>(null);
   const cropSelectionRef = useRef<CropSelection | null>(null);
   const [bakeJob, setBakeJob] = useState<InkBakeJob | null>(null);
   const bakeResolveRef = useRef<((uri: string) => void) | null>(null);
@@ -80,7 +86,15 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
     flowApi,
   };
 
+  const applyCropSelection = useCallback((next: CropSelection | null) => {
+    cropSelectionRef.current = next;
+    setCropSelection(next);
+    setCropReady(Boolean(next));
+  }, []);
+
   const rotate = async () => {
+    const selection = cropSelectionRef.current;
+    const display = selection ? captureDisplayRect(selection) : null;
     setBusy(true);
     try {
       const result = await ImageManipulator.manipulateAsync(
@@ -88,10 +102,21 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
         [{ rotate: 90 }],
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
+      const nextStrokes =
+        display && strokes.length > 0
+          ? rotateStrokesCW90(strokes, display.width)
+          : strokes;
+      const nextSelection = selection ? rotateCropSelectionCW90(selection) : null;
+
+      setStrokes(nextStrokes);
+      if (nextSelection) {
+        setSeedSelection(nextSelection);
+        applyCropSelection(nextSelection);
+      } else {
+        setSeedSelection(null);
+        applyCropSelection(null);
+      }
       setWorkingUri(result.uri);
-      cropSelectionRef.current = null;
-      setCropReady(false);
-      setStrokes([]);
     } finally {
       setBusy(false);
     }
@@ -207,10 +232,9 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
           <CaptureInteractiveCrop
             key={workingUri}
             uri={workingUri}
-            onSelectionChange={(next) => {
-              cropSelectionRef.current = next;
-              setCropReady(Boolean(next));
-            }}
+            seedSelection={seedSelection}
+            onSeedApplied={() => setSeedSelection(null)}
+            onSelectionChange={applyCropSelection}
           />
         ) : (
           <CaptureDrawSurface
@@ -220,11 +244,10 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
             strokeWidth={strokeWidth}
             strokes={strokes}
             onStrokesChange={setStrokes}
-            selection={cropSelectionRef.current}
-            onSelectionChange={(next) => {
-              cropSelectionRef.current = next;
-              setCropReady(Boolean(next));
-            }}
+            selection={cropSelection}
+            seedSelection={seedSelection}
+            onSeedApplied={() => setSeedSelection(null)}
+            onSelectionChange={applyCropSelection}
           />
         )}
         {busy ? (

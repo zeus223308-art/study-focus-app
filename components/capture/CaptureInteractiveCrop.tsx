@@ -10,6 +10,7 @@ import {
   type CropRect,
   type CropSelection,
 } from '@/lib/files/interactive-crop';
+import { selectionMatchesLayout } from '@/lib/files/rotate-capture-edit';
 
 type HandleId = 'move' | 'tl' | 'tr' | 'bl' | 'br' | 't' | 'b' | 'l' | 'r';
 
@@ -18,6 +19,8 @@ const EDGE_HIT = 22;
 
 type Props = {
   uri: string;
+  seedSelection?: CropSelection | null;
+  onSeedApplied?: () => void;
   onSelectionChange?: (selection: CropSelection | null) => void;
 };
 
@@ -85,7 +88,12 @@ function CropGrid({ crop }: { crop: CropRect }) {
   );
 }
 
-export function CaptureInteractiveCrop({ uri, onSelectionChange }: Props) {
+export function CaptureInteractiveCrop({
+  uri,
+  seedSelection,
+  onSeedApplied,
+  onSelectionChange,
+}: Props) {
   const { t } = useTranslation();
   const [layout, setLayout] = useState({ w: 0, h: 0 });
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
@@ -113,8 +121,16 @@ export function CaptureInteractiveCrop({ uri, onSelectionChange }: Props) {
 
   useEffect(() => {
     if (imageSize.w < 2 || imageSize.h < 2 || layout.w < 8 || layout.h < 8) return;
+    if (
+      seedSelection &&
+      selectionMatchesLayout(seedSelection, imageSize.w, imageSize.h, layout.w, layout.h)
+    ) {
+      applySelection(seedSelection);
+      onSeedApplied?.();
+      return;
+    }
     applySelection(initialCropSelection(imageSize.w, imageSize.h, layout.w, layout.h));
-  }, [applySelection, imageSize.h, imageSize.w, layout.h, layout.w]);
+  }, [applySelection, imageSize.h, imageSize.w, layout.h, layout.w, onSeedApplied, seedSelection]);
 
   const imageRect = useMemo(() => {
     if (!selection) return null;
