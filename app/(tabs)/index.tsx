@@ -146,6 +146,7 @@ export default function DashboardScreen() {
             label={t('vault.addFolder')}
             variant="ghost"
             onPress={() => router.push('/(tabs)/vault')}
+            style={styles.emptyGhostBtn}
           />
         </View>
       ) : (
@@ -195,15 +196,23 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   ribbonBlock: { marginBottom: 4 },
-  emptyBlock: { marginVertical: 24, gap: 12, alignItems: 'center' },
+  emptyBlock: {
+    marginVertical: 24,
+    gap: 12,
+    width: '100%',
+    alignSelf: 'stretch',
+    alignItems: 'center',
+  },
   empty: {
     fontSize: theme.font.body,
     fontWeight: '600',
     color: theme.gray,
     textAlign: 'center',
     lineHeight: 22,
+    width: '100%',
   },
-  emptyBtn: { alignSelf: 'stretch', maxWidth: 280 },
+  emptyBtn: { alignSelf: 'center', minWidth: 240, maxWidth: 280 },
+  emptyGhostBtn: { alignSelf: 'center' },
   emptySchedule: {
     fontSize: theme.font.caption,
     fontWeight: '600',
