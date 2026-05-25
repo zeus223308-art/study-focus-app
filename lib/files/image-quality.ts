@@ -1,3 +1,6 @@
+/** Bump when on-device derivative regeneration rules change. */
+export const ASSET_QUALITY_VERSION = 2;
+
 /** Camera / picker — max JPEG quality (0–1). */
 export const IMAGE_CAPTURE_QUALITY = 1;
 

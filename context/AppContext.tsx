@@ -13,6 +13,7 @@ import { theme } from '@/constants/theme';
 import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
 import { todayKey } from '@/lib/domain/dates';
+import { upgradeLegacyPhotoQuality } from '@/lib/files/upgrade-legacy-assets';
 import { appendCaptureToData, appendPageToBundle } from '@/lib/domain/bundle-factory';
 import type {
   AppData,
@@ -83,6 +84,8 @@ type AppContextValue = {
   syncCloud: () => Promise<void>;
   restoreFromCloudBackup: () => Promise<boolean>;
   restoreLocalBackup: () => Promise<boolean>;
+  /** Rebuild thumbs/previews from stored masters (existing photos). */
+  upgradePhotoQuality: (force?: boolean) => Promise<{ upgraded: number; unchanged: number }>;
   autoRecoveryNotice: AutoRecoverySource | null;
   dismissAutoRecoveryNotice: () => void;
   movingBundleId: string | null;
@@ -480,6 +483,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return true;
   }, [storage, persist]);
 
+  const upgradePhotoQuality = useCallback(
+    async (force = false) => {
+      const current = dataRef.current;
+      if (!current) return { upgraded: 0, unchanged: 0 };
+      const result = await upgradeLegacyPhotoQuality(current, { force });
+      const activeTrash = filterActiveTrash(result.data.trash);
+      const next = { ...result.data, trash: activeTrash };
+      await storage.saveAppData(next);
+      persist(next);
+      return { upgraded: result.upgraded, unchanged: result.unchanged };
+    },
+    [storage, persist]
+  );
+
   const startMovingBundle = useCallback((bundleId: string, sourceSubjectId: string) => {
     setMovingBundleId(bundleId);
     setDragSourceSubjectId(sourceSubjectId);
@@ -585,6 +602,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       syncCloud,
       restoreFromCloudBackup,
       restoreLocalBackup,
+      upgradePhotoQuality,
       autoRecoveryNotice,
       dismissAutoRecoveryNotice,
       movingBundleId,
@@ -628,6 +646,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     syncCloud,
     restoreFromCloudBackup,
     restoreLocalBackup,
+    upgradePhotoQuality,
     movingBundleId,
     dragSourceSubjectId,
     dragHoverSubjectId,

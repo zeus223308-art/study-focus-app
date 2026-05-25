@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { CloudBackupSettings } from '@/components/settings/CloudBackupSettings';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsGroup';
@@ -17,12 +17,21 @@ import {
 import type { Language } from '@/lib/domain/types';
 import { scheduleDailyReviewReminder, cancelAllReminders } from '@/lib/notifications';
 import { isOcrAvailable } from '@/lib/review/ocr-extract';
+import { showMessage } from '@/lib/ui/confirm';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
-  const { data, updateSettings, toggleActiveSchedule, setSubjectSchedule, setPaywallVisible, freemium } =
-    useApp();
+  const {
+    data,
+    updateSettings,
+    toggleActiveSchedule,
+    setSubjectSchedule,
+    setPaywallVisible,
+    freemium,
+    upgradePhotoQuality,
+  } = useApp();
+  const [photoUpgradeBusy, setPhotoUpgradeBusy] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { settings, schedules, subjects } = data;
   const active = settings.activeScheduleIds;
@@ -143,6 +152,31 @@ export default function SettingsScreen() {
 
       <SettingsGroup title={t('settings.cloudSection')}>
         <CloudBackupSettings />
+        <SettingsRow
+          label={t('settings.upgradePhotoQuality')}
+          value={photoUpgradeBusy ? t('settings.upgradePhotoQualityBusy') : t('settings.upgradePhotoQualityHint')}
+          onPress={() => {
+            if (photoUpgradeBusy || photoCount === 0) return;
+            Alert.alert(t('settings.upgradePhotoQualityTitle'), t('settings.upgradePhotoQualityMessage'), [
+              { text: t('common.cancel'), style: 'cancel' },
+              {
+                text: t('settings.upgradePhotoQualityRun'),
+                onPress: async () => {
+                  setPhotoUpgradeBusy(true);
+                  try {
+                    const { upgraded, unchanged } = await upgradePhotoQuality(true);
+                    showMessage(
+                      t('settings.upgradePhotoQualityDone', { upgraded, unchanged })
+                    );
+                  } finally {
+                    setPhotoUpgradeBusy(false);
+                  }
+                },
+              },
+            ]);
+          }}
+          last
+        />
       </SettingsGroup>
 
       <SettingsGroup>

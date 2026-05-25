@@ -1,4 +1,5 @@
 import { theme } from '@/constants/theme';
+import { ASSET_QUALITY_VERSION } from '@/lib/files/image-quality';
 
 import { todayKey } from './dates';
 import type { AppData, ReviewSchedule, SubjectFolder } from './types';
@@ -69,6 +70,7 @@ export const DEFAULT_DATA: AppData = {
     lastAppVersion: null,
     lastAutoRecoveryAt: null,
     cloudAccountEmail: null,
+    assetQualityVersion: ASSET_QUALITY_VERSION,
   },
 };
 

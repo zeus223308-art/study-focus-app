@@ -150,6 +150,8 @@ export type AppSettings = {
   lastAutoRecoveryAt: string | null;
   /** Google account that owns this local partition (prevents cross-user restore) */
   cloudAccountEmail: string | null;
+  /** Last completed on-device photo derivative regeneration pass */
+  assetQualityVersion?: number;
 };
 
 export type AppData = {

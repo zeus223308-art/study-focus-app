@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 
 import type { AppData, CloudAsset, NotePage } from '@/lib/domain/types';
 import { migratePersistedWebAssets } from '@/lib/files/migrate-web-assets';
+import { upgradeLegacyPhotoQuality } from '@/lib/files/upgrade-legacy-assets';
 import { resolveImageUri } from '@/lib/files/resolve-image-uri';
 import {
   processPreviewImage,
@@ -209,6 +210,8 @@ export async function restoreBackupEnvelope(envelope: BackupEnvelope): Promise<A
 
   let data = envelope.appData;
   data = await migratePersistedWebAssets(data);
+  const quality = await upgradeLegacyPhotoQuality(data);
+  data = quality.data;
   return {
     ...data,
     settings: {
