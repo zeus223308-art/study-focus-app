@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import Animated, {
   Easing,
@@ -11,7 +11,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { LOGO_WHITE, MountainMLogo, SPLASH_BLACK } from '@/components/MountainMLogo';
+import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
+
+const mountainLogo = require('@/assets/images/mountain-m-logo.png');
 
 type Props = {
   onFinish: () => void;
@@ -33,11 +35,15 @@ const T = {
 
 export function SplashBrand({ onFinish }: Props) {
   useEffect(() => {
-    void SplashScreen.hideAsync();
+    // Hide native splash only after the PNG logo is on screen (avoids black flash on mobile).
+    const id = requestAnimationFrame(() => {
+      void SplashScreen.hideAsync();
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
-  const mountainOpacity = useSharedValue(0);
-  const mountainScale = useSharedValue(0.88);
+  const mountainOpacity = useSharedValue(1);
+  const mountainScale = useSharedValue(0.94);
   const brandOpacity = useSharedValue(0);
   const brandTranslateY = useSharedValue(10);
   const footerOpacity = useSharedValue(0);
@@ -96,7 +102,7 @@ export function SplashBrand({ onFinish }: Props) {
     <Animated.View style={[styles.root, screenStyle]}>
       <View style={styles.center}>
         <Animated.View style={[styles.mountainWrap, mountainStyle]}>
-          <MountainMLogo width={240} height={168} />
+          <Image source={mountainLogo} style={styles.mountainLogo} resizeMode="contain" accessibilityLabel="MemorySherpa logo" />
         </Animated.View>
 
         <Animated.View style={[styles.brandWrap, brandStyle]}>
@@ -127,6 +133,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  mountainLogo: {
+    width: 240,
+    height: 168,
   },
   brandWrap: {
     alignItems: 'center',

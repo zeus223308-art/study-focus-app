@@ -16,7 +16,11 @@ import { SplashBrand } from '@/components/SplashBrand';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/constants/theme';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+
+import { SPLASH_BLACK } from '@/components/MountainMLogo';
+
+const mountainLogo = require('../assets/images/mountain-m-logo.png');
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -102,6 +106,16 @@ function RootNavigator() {
 
 const styles = StyleSheet.create({
   appShell: { flex: 1 },
+  fontSplash: {
+    flex: 1,
+    backgroundColor: SPLASH_BLACK,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fontSplashLogo: {
+    width: 240,
+    height: 168,
+  },
 });
 
 export default function RootLayout() {
@@ -113,7 +127,13 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
-  if (!loaded) return null;
+  if (!loaded) {
+    return (
+      <View style={styles.fontSplash}>
+        <Image source={mountainLogo} style={styles.fontSplashLogo} resizeMode="contain" accessibilityLabel="MemorySherpa logo" />
+      </View>
+    );
+  }
 
   return (
     <AppProvider>
