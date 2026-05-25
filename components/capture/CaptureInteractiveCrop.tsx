@@ -149,9 +149,15 @@ export function CaptureInteractiveCrop({ uri, onSelectionChange }: Props) {
     [applySelection]
   );
 
-  const panResponders = useMemo(() => {
+  const panResponders = useMemo((): Record<HandleId, ReturnType<typeof PanResponder.create>> => {
     const handles: HandleId[] = ['move', 'tl', 'tr', 'bl', 'br', 't', 'b', 'l', 'r'];
-    return Object.fromEntries(handles.map((h) => [h, makeResponder(h)])) as HandleId[]);
+    return handles.reduce(
+      (acc, handle) => {
+        acc[handle] = makeResponder(handle);
+        return acc;
+      },
+      {} as Record<HandleId, ReturnType<typeof PanResponder.create>>
+    );
   }, [makeResponder]);
 
   const crop = selection?.crop;
