@@ -69,15 +69,11 @@ export function DockTabBar({ state, navigation }: BottomTabBarProps) {
                     confirmChoice({
                       title: t('capture.leaveSaveTitle'),
                       message: t('capture.leaveSaveMessage'),
-                      yesLabel: t('capture.leaveSaveYes'),
-                      noLabel: t('capture.leaveSaveNo'),
+                      yesLabel: t('capture.leaveSaveConfirm'),
+                      noLabel: t('common.cancel'),
                       onYes: async () => {
                         const ok = await handlers.saveDraft();
                         if (ok) navigate();
-                      },
-                      onNo: () => {
-                        handlers.discardDraft();
-                        navigate();
                       },
                     });
                     return;
