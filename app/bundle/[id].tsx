@@ -25,6 +25,8 @@ import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { attachAnswerToPage } from '@/lib/domain/attach-answer';
+import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
+import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { pickForImport } from '@/lib/import/pick-for-import';
 import {
   ERASER_WIDTHS,
@@ -147,7 +149,7 @@ export default function BundleScreen() {
     }
     setOcrBusy(true);
     try {
-      const frontUri = page.asset.originalLocalUri ?? page.asset.thumbnailUri;
+      const frontUri = getFullImageUri(page.asset);
       const front = frontUri ? await extractOcrFromImageUri(frontUri) : '';
       const ansUri = getAnswerImageUri(page);
       const back = ansUri ? await extractOcrFromImageUri(ansUri) : answerOcrDraft;
@@ -269,7 +271,7 @@ export default function BundleScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsMultipleSelection: false,
-      quality: 0.85,
+      quality: IMAGE_CAPTURE_QUALITY,
     });
     if (result.canceled || !result.assets[0]?.uri) return;
     const updated = await attachAnswerToPage(storage, page, bundle.id, result.assets[0].uri);
@@ -306,8 +308,8 @@ export default function BundleScreen() {
     }
   };
 
-  const backUri = page.answerAsset?.thumbnailUri ?? page.answerAsset?.originalLocalUri;
-  const frontFullUri = page.asset.originalLocalUri ?? page.asset.thumbnailUri;
+  const backUri = getFullImageUri(page.answerAsset);
+  const frontFullUri = getFullImageUri(page.asset);
 
   const subject = data.subjects.find((s) => s.id === bundle.subjectId);
 
@@ -359,7 +361,7 @@ export default function BundleScreen() {
             key={p.id}
             style={[styles.pageWrap, { width: pagerSize, height: pagerSize }]}>
             <ResolvedImage
-              uri={p.asset.thumbnailUri}
+              uri={getPreviewImageUri(p.asset) ?? getFullImageUri(p.asset)}
               style={[styles.page, { width: pagerSize, height: pagerSize }]}
               resizeMode="contain"
             />
@@ -387,7 +389,7 @@ export default function BundleScreen() {
         <View style={styles.pairRow}>
           <View style={styles.pairCol}>
             <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
-            <ResolvedImage uri={page.asset.thumbnailUri} style={styles.pairThumb} />
+            <ResolvedImage uri={getPreviewImageUri(page.asset)} style={styles.pairThumb} />
           </View>
           <View style={styles.pairCol}>
             <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
@@ -572,7 +574,7 @@ export default function BundleScreen() {
 
       <PhotoFullscreenModal
         visible={photoFullscreen}
-        frontUri={frontFullUri}
+        frontUri={frontFullUri ?? page.asset.thumbnailUri ?? ''}
         backUri={backUri}
         onClose={() => setPhotoFullscreen(false)}
         layer={activeLayer ?? null}

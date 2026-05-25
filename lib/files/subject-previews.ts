@@ -18,7 +18,7 @@ export function getSubjectFrontPreviews(data: AppData, subjectId: string): Subje
   for (const bundle of bundles) {
     for (const page of bundle.pages) {
       const thumbnailUri =
-        page.asset.thumbnailUri ?? page.asset.originalLocalUri ?? page.asset.localMiniUri;
+        page.asset.localMiniUri ?? page.asset.originalLocalUri ?? page.asset.thumbnailUri;
       if (!thumbnailUri) continue;
       items.push({
         bundleId: bundle.id,
@@ -41,7 +41,7 @@ export function getBundlesFrontPreviews(bundles: AppData['bundles']): SubjectPre
     if (bundle.archived) continue;
     for (const page of bundle.pages) {
       const thumbnailUri =
-        page.asset.thumbnailUri ?? page.asset.originalLocalUri ?? page.asset.localMiniUri;
+        page.asset.localMiniUri ?? page.asset.originalLocalUri ?? page.asset.thumbnailUri;
       if (!thumbnailUri) continue;
       items.push({
         bundleId: bundle.id,

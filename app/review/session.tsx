@@ -26,6 +26,7 @@ import {
   buildCountdownSteps,
   RECALL_COUNTDOWN_OPTIONS,
 } from '@/lib/review/blackout';
+import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { resolveImageUri } from '@/lib/files/resolve-image-uri';
 import { getAnswerImageUri, OCR_PASS_THRESHOLD, scoreActiveRecall } from '@/lib/review/answer-text';
 import {
@@ -114,7 +115,7 @@ export default function ReviewSessionScreen() {
   const [slideRemainingSec, setSlideRemainingSec] = useState(0);
 
   const current = slides[index];
-  const frontUri = current?.page.asset.originalLocalUri ?? current?.page.asset.thumbnailUri;
+  const frontUri = getFullImageUri(current?.page.asset);
   const answerUri = current ? getAnswerImageUri(current.page) : null;
 
   useEffect(() => {

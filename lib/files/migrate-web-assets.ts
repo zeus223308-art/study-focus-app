@@ -39,7 +39,7 @@ async function migrateCloudAsset(
   role: WebAssetRole
 ): Promise<CloudAsset> {
   const thumbnailUri = await migrateAssetUri(asset.thumbnailUri, bundleId, pageId, role);
-  const localMiniUri = await migrateAssetUri(asset.localMiniUri, bundleId, pageId, role);
+  const localMiniUri = await migrateAssetUri(asset.localMiniUri, bundleId, pageId, 'mini');
   const originalLocalUri = asset.originalLocalUri
     ? await migrateAssetUri(asset.originalLocalUri, bundleId, pageId, 'master')
     : null;

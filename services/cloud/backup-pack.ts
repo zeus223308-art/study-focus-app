@@ -3,6 +3,11 @@ import { Platform } from 'react-native';
 
 import type { AppData, CloudAsset, NotePage } from '@/lib/domain/types';
 import { migratePersistedWebAssets } from '@/lib/files/migrate-web-assets';
+import { resolveImageUri } from '@/lib/files/resolve-image-uri';
+import {
+  processPreviewImage,
+  processThumbnailImage,
+} from '@/services/storage/asset-pipeline';
 import {
   parseWebStoredUri,
   putWebAsset,
@@ -86,6 +91,11 @@ async function readUriAsBase64(
   return uri;
 }
 
+async function uriForBackupEmbed(uri: string): Promise<string> {
+  const resolved = (await resolveImageUri(uri)) ?? uri;
+  return resolved;
+}
+
 async function packCloudAsset(
   asset: CloudAsset,
   bundleId: string,
@@ -93,11 +103,49 @@ async function packCloudAsset(
   role: WebAssetRole,
   assets: Record<string, string>
 ): Promise<CloudAsset> {
-  const thumbnailUri = await readUriAsBase64(asset.thumbnailUri, bundleId, pageId, role, assets);
-  const localMiniUri = await readUriAsBase64(asset.localMiniUri, bundleId, pageId, role, assets);
-  const originalLocalUri = asset.originalLocalUri
-    ? await readUriAsBase64(asset.originalLocalUri, bundleId, pageId, 'master', assets)
-    : null;
+  const masterSource = asset.originalLocalUri ?? asset.thumbnailUri;
+  const originalLocalUri = await readUriAsBase64(
+    await uriForBackupEmbed(masterSource),
+    bundleId,
+    pageId,
+    'master',
+    assets
+  );
+
+  let thumbUri = asset.thumbnailUri;
+  if (asset.originalLocalUri) {
+    try {
+      const generated = await processThumbnailImage(await uriForBackupEmbed(asset.originalLocalUri));
+      thumbUri = generated.uri;
+    } catch {
+      thumbUri = asset.thumbnailUri;
+    }
+  }
+
+  let miniUri = asset.localMiniUri;
+  if (asset.originalLocalUri) {
+    try {
+      const generated = await processPreviewImage(await uriForBackupEmbed(asset.originalLocalUri));
+      miniUri = generated.uri;
+    } catch {
+      miniUri = asset.localMiniUri ?? thumbUri;
+    }
+  }
+
+  const thumbnailUri = await readUriAsBase64(
+    await uriForBackupEmbed(thumbUri),
+    bundleId,
+    pageId,
+    role,
+    assets
+  );
+  const localMiniUri = await readUriAsBase64(
+    await uriForBackupEmbed(miniUri),
+    bundleId,
+    `${pageId}_mini`,
+    'mini',
+    assets
+  );
 
   return {
     ...asset,

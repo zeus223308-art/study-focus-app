@@ -7,6 +7,7 @@ import { ResolvedImage } from '@/components/ui/ResolvedImage';
 
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { searchBundles } from '@/lib/grouping/bundles';
 
 export default function SearchScreen() {
@@ -43,7 +44,7 @@ export default function SearchScreen() {
         data={results}
         keyExtractor={(b) => b.id}
         renderItem={({ item: bundle }) => {
-          const cover = bundle.pages[0]?.asset.thumbnailUri;
+          const cover = getPreviewImageUri(bundle.pages[0]?.asset);
           return (
             <Pressable
               style={styles.row}

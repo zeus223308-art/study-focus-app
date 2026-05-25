@@ -2,6 +2,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
 
+import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
+
 export type PickedFile = {
   uri: string;
   mimeType: string | null;
@@ -62,7 +64,7 @@ export async function pickFromPhotoAlbum(): Promise<PickImportResult> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsMultipleSelection: true,
-    quality: 0.85,
+    quality: IMAGE_CAPTURE_QUALITY,
     selectionLimit: 0,
     ...(Platform.OS === 'ios'
       ? { presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN }

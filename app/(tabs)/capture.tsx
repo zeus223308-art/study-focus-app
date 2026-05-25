@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { buildRibbonDays, todayKey } from '@/lib/domain/dates';
+import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { showMessage } from '@/lib/ui/confirm';
 
 type Step = 'camera' | 'answer-prompt' | 'save-sheet';
@@ -58,7 +59,7 @@ export default function CaptureTabScreen() {
   };
 
   const takePhoto = async () => {
-    const photo = await cameraRef.current?.takePictureAsync({ quality: 0.85 });
+    const photo = await cameraRef.current?.takePictureAsync({ quality: IMAGE_CAPTURE_QUALITY });
     if (!photo?.uri) return;
 
     if (shootingBack) {

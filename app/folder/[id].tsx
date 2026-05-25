@@ -22,6 +22,7 @@ import { useApp } from '@/context/AppContext';
 import { bundleDisplayTitle } from '@/lib/domain/bundle-title';
 import { listSubjectProblems } from '@/lib/grouping/bundles';
 import { pickForImport } from '@/lib/import/pick-for-import';
+import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -163,7 +164,7 @@ export default function FolderScreen() {
               <BundleGalleryCard
                 bundleId={item.bundleId}
                 sourceSubjectId={subject.id}
-                thumbnailUri={item.page.asset.thumbnailUri}
+                thumbnailUri={getPreviewImageUri(item.page.asset) ?? ''}
                 titleLabel={title}
                 dateLabel={item.bundle.studyDate}
                 countLabel={t('folder.problemLabel', { n: index + 1 })}

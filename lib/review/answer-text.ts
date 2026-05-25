@@ -11,7 +11,7 @@ export function getAnswerTextForGrading(page: NotePage): string {
 export function getAnswerImageUri(page: NotePage): string | null {
   const a = page.answerAsset;
   if (!a) return null;
-  return a.originalLocalUri ?? a.thumbnailUri ?? null;
+  return a.originalLocalUri ?? a.localMiniUri ?? a.thumbnailUri ?? null;
 }
 
 export function strokesInkWeight(strokes: InkStroke[]): number {

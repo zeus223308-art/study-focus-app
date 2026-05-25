@@ -5,6 +5,7 @@ import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { canRestoreFromBackup } from '@/lib/trash/lifecycle';
 
 export default function TrashScreen() {
@@ -19,7 +20,7 @@ export default function TrashScreen() {
         <Text style={styles.empty}>{t('trash.empty')}</Text>
       ) : (
         data.trash.map((entry) => {
-          const cover = entry.bundleSnapshot.pages[0]?.asset.thumbnailUri;
+          const cover = getPreviewImageUri(entry.bundleSnapshot.pages[0]?.asset);
           return (
             <View key={entry.id} style={styles.row}>
               {cover ? (

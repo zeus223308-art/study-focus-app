@@ -2,26 +2,54 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 
 import { resolveImageUri } from '@/lib/files/resolve-image-uri';
+import {
+  MASTER_JPEG_QUALITY,
+  MASTER_MAX_EDGE,
+  PREVIEW_JPEG_QUALITY,
+  PREVIEW_MAX_EDGE,
+  THUMB_JPEG_QUALITY,
+  THUMB_MAX_EDGE,
+} from '@/lib/files/image-quality';
 import type { CloudAsset, CloudSyncStatus } from '@/lib/domain/types';
 import { persistUriToWebStore } from '@/services/storage/web-asset-store';
 
 import type { ThumbnailResult } from './types';
 
-const THUMB_MAX_WIDTH = 480;
-const THUMB_QUALITY = 0.72;
 const isWeb = Platform.OS === 'web';
 
-async function resizeToJpeg(sourceUri: string): Promise<{
-  uri: string;
-  width?: number;
-  height?: number;
-}> {
+async function normalizeJpeg(
+  sourceUri: string,
+  maxEdge: number,
+  quality: number
+): Promise<{ uri: string; width?: number; height?: number }> {
   const inputUri = (await resolveImageUri(sourceUri)) ?? sourceUri;
-  return ImageManipulator.manipulateAsync(
-    inputUri,
-    [{ resize: { width: THUMB_MAX_WIDTH } }],
-    { compress: THUMB_QUALITY, format: ImageManipulator.SaveFormat.JPEG }
-  );
+  const probe = await ImageManipulator.manipulateAsync(inputUri, [], {
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+  const longEdge = Math.max(probe.width ?? 0, probe.height ?? 0);
+  const actions =
+    longEdge > maxEdge
+      ? probe.width && probe.height && probe.width >= probe.height
+        ? [{ resize: { width: maxEdge } }]
+        : [{ resize: { height: maxEdge } }]
+      : [];
+
+  return ImageManipulator.manipulateAsync(inputUri, actions, {
+    compress: quality,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+}
+
+export async function processMasterImage(sourceUri: string) {
+  return normalizeJpeg(sourceUri, MASTER_MAX_EDGE, MASTER_JPEG_QUALITY);
+}
+
+export async function processThumbnailImage(sourceUri: string) {
+  return normalizeJpeg(sourceUri, THUMB_MAX_EDGE, THUMB_JPEG_QUALITY);
+}
+
+export async function processPreviewImage(sourceUri: string) {
+  return normalizeJpeg(sourceUri, PREVIEW_MAX_EDGE, PREVIEW_JPEG_QUALITY);
 }
 
 export async function ensureDir(_path: string): Promise<void> {
@@ -44,15 +72,17 @@ export async function createMiniThumbnail(
   bundleId: string,
   pageId: string
 ): Promise<ThumbnailResult> {
-  const manipulated = await resizeToJpeg(sourceUri);
+  const thumb = await processThumbnailImage(sourceUri);
+  const preview = await processPreviewImage(sourceUri);
 
   if (isWeb) {
-    const stored = await persistUriToWebStore(manipulated.uri, bundleId, pageId, 'thumb');
+    const thumbnailUri = await persistUriToWebStore(thumb.uri, bundleId, pageId, 'thumb');
+    const localMiniUri = await persistUriToWebStore(preview.uri, bundleId, pageId, 'mini');
     return {
-      thumbnailUri: stored,
-      localMiniUri: stored,
-      width: manipulated.width ?? THUMB_MAX_WIDTH,
-      height: manipulated.height ?? THUMB_MAX_WIDTH,
+      thumbnailUri,
+      localMiniUri,
+      width: thumb.width ?? THUMB_MAX_EDGE,
+      height: thumb.height ?? THUMB_MAX_EDGE,
     };
   }
 
@@ -60,16 +90,16 @@ export async function createMiniThumbnail(
   await ensureDir(dir);
   const FileSystem = await import('expo-file-system/legacy');
   const thumbnailUri = `${dir}${pageId}_thumb.jpg`;
-  const localMiniUri = `${dir}${pageId}_mini.jpg`;
+  const localMiniUri = `${dir}${pageId}_preview.jpg`;
 
-  await FileSystem.copyAsync({ from: manipulated.uri, to: thumbnailUri });
-  await FileSystem.copyAsync({ from: manipulated.uri, to: localMiniUri });
+  await FileSystem.copyAsync({ from: thumb.uri, to: thumbnailUri });
+  await FileSystem.copyAsync({ from: preview.uri, to: localMiniUri });
 
   return {
     thumbnailUri,
     localMiniUri,
-    width: manipulated.width ?? THUMB_MAX_WIDTH,
-    height: manipulated.height ?? THUMB_MAX_WIDTH,
+    width: thumb.width ?? THUMB_MAX_EDGE,
+    height: thumb.height ?? THUMB_MAX_EDGE,
   };
 }
 
@@ -94,19 +124,16 @@ export async function persistOriginalCopy(
   bundleId: string,
   pageId: string
 ): Promise<string> {
+  const master = await processMasterImage(sourceUri);
+
   if (isWeb) {
-    const inputUri = (await resolveImageUri(sourceUri)) ?? sourceUri;
-    const full = await ImageManipulator.manipulateAsync(inputUri, [], {
-      compress: 0.9,
-      format: ImageManipulator.SaveFormat.JPEG,
-    });
-    return persistUriToWebStore(full.uri, bundleId, pageId, 'master');
+    return persistUriToWebStore(master.uri, bundleId, pageId, 'master');
   }
 
   const dir = bundleAssetDir(bundleId);
   await ensureDir(dir);
   const FileSystem = await import('expo-file-system/legacy');
   const dest = `${dir}${pageId}_master.jpg`;
-  await FileSystem.copyAsync({ from: sourceUri, to: dest });
+  await FileSystem.copyAsync({ from: master.uri, to: dest });
   return dest;
 }
