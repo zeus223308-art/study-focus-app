@@ -194,6 +194,8 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
+    "langKo": "한국어",
+    "langEn": "English",
     "notifications": "Reminders",
     "reviewPattern": "Review Pattern",
     "reviewPatternHint": "Max 2",

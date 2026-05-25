@@ -126,7 +126,7 @@ export default function SettingsScreen() {
                   onPress={() => setLanguage(lang)}
                   style={[styles.langChip, language === lang && styles.langChipOn]}>
                   <Text style={language === lang ? styles.langOn : styles.langText}>
-                    {lang === 'ko' ? '???' : 'EN'}
+                    {lang === 'ko' ? t('settings.langKo') : t('settings.langEn')}
                   </Text>
                 </Pressable>
               ))}
