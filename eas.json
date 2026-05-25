@@ -7,7 +7,8 @@
     "base": {
       "env": {
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "820545480441-e5moht7d7hm82290hnadabcuah3linpe.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "820545480441-lp6vh4qfs49842tnjqk6apptt0tmt8ha.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "820545480441-lp6vh4qfs49842tnjqk6apptt0tmt8ha.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "820545480441-ctobn1bbi2k9juitu6nn9iuiktqci5vc.apps.googleusercontent.com"
       }
     },
     "development": {
