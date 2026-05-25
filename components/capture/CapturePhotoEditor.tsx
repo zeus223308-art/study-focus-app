@@ -11,10 +11,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CaptureInteractiveCrop } from '@/components/capture/CaptureInteractiveCrop';
-import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
-import type { CropSelection } from '@/lib/files/interactive-crop';
-import { exportCropSelection } from '@/lib/files/interactive-crop';
+import type { CropTransform } from '@/lib/files/interactive-crop';
+import { exportCropTransform } from '@/lib/files/interactive-crop';
 
 type Props = {
   uri: string;
@@ -29,7 +28,7 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
   const [workingUri, setWorkingUri] = useState(uri);
   const [busy, setBusy] = useState(false);
   const [cropReady, setCropReady] = useState(false);
-  const cropSelectionRef = useRef<CropSelection | null>(null);
+  const cropTransformRef = useRef<CropTransform | null>(null);
 
   const rotate = async () => {
     setBusy(true);
@@ -40,7 +39,7 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
         { compress: 1, format: ImageManipulator.SaveFormat.JPEG }
       );
       setWorkingUri(result.uri);
-      cropSelectionRef.current = null;
+      cropTransformRef.current = null;
       setCropReady(false);
     } finally {
       setBusy(false);
@@ -48,11 +47,11 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
   };
 
   const confirm = async () => {
-    const selection = cropSelectionRef.current;
-    if (!selection) return;
+    const transform = cropTransformRef.current;
+    if (!transform) return;
     setBusy(true);
     try {
-      const finalUri = await exportCropSelection(workingUri, selection);
+      const finalUri = await exportCropTransform(workingUri, transform);
       onConfirm(finalUri);
     } finally {
       setBusy(false);
@@ -61,41 +60,46 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
 
   return (
     <View style={styles.root}>
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.sideLabel}>
-          {sideLabel} · {t('capture.cropTitle')}
+      <View style={[styles.topBar, { paddingTop: insets.top + 6, paddingBottom: 10 }]}>
+        <Pressable onPress={busy ? undefined : onRetake} hitSlop={12} style={styles.topAction}>
+          <Text style={styles.cancelText}>{t('capture.editorCancel')}</Text>
+        </Pressable>
+        <Text style={styles.topTitle} numberOfLines={1}>
+          {sideLabel}
         </Text>
-        <Text style={styles.hint}>{t('capture.editHint')}</Text>
+        <Pressable
+          onPress={busy || !cropReady ? undefined : confirm}
+          hitSlop={12}
+          style={styles.topAction}>
+          <Text style={[styles.doneText, (busy || !cropReady) && styles.doneDisabled]}>
+            {t('capture.editorDone')}
+          </Text>
+        </Pressable>
       </View>
 
       <View style={styles.cropWrap}>
         <CaptureInteractiveCrop
           key={workingUri}
           uri={workingUri}
-          onSelectionChange={(next) => {
-            cropSelectionRef.current = next;
+          onTransformChange={(next) => {
+            cropTransformRef.current = next;
             setCropReady(Boolean(next));
           }}
         />
         {busy ? (
           <View style={styles.busy}>
-            <ActivityIndicator color={theme.orange} size="large" />
+            <ActivityIndicator color={theme.white} size="large" />
           </View>
         ) : null}
       </View>
 
-      <View style={[styles.toolbar, { paddingBottom: Math.max(20, insets.bottom + 12) }]}>
-        <View style={styles.toolRow}>
-          <Pressable onPress={rotate} disabled={busy} style={styles.toolBtn}>
-            <Text style={styles.toolBtnText}>{t('capture.rotate')}</Text>
-          </Pressable>
-        </View>
-        <Button
-          label={t('capture.cropDone')}
-          onPress={confirm}
-          disabled={busy || !cropReady}
-        />
-        <Button label={t('capture.retake')} variant="ghost" onPress={onRetake} disabled={busy} />
+      <View style={[styles.toolBar, { paddingBottom: Math.max(14, insets.bottom + 8) }]}>
+        <Pressable style={[styles.toolItem, styles.toolActive]} disabled>
+          <Text style={[styles.toolLabel, styles.toolLabelActive]}>{t('capture.toolCrop')}</Text>
+        </Pressable>
+        <Pressable style={styles.toolItem} onPress={busy ? undefined : rotate} disabled={busy}>
+          <Text style={styles.toolLabel}>{t('capture.toolRotate')}</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -103,33 +107,43 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.blackPure },
-  topBar: { paddingHorizontal: 20, paddingBottom: 8 },
-  sideLabel: { color: theme.white, fontSize: theme.font.heading, fontWeight: '800' },
-  hint: { color: theme.grayMuted, fontSize: theme.font.caption, marginTop: 4 },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.12)',
+  },
+  topAction: { minWidth: 56, paddingVertical: 6 },
+  topTitle: {
+    flex: 1,
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+  },
+  cancelText: { color: theme.white, fontSize: 16, fontWeight: '600' },
+  doneText: { color: theme.orange, fontSize: 16, fontWeight: '800', textAlign: 'right' },
+  doneDisabled: { opacity: 0.4 },
   cropWrap: { flex: 1, position: 'relative' },
   busy: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  toolbar: {
-    backgroundColor: theme.beige,
-    borderTopLeftRadius: theme.radius.lg,
-    borderTopRightRadius: theme.radius.lg,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    gap: 10,
+  toolBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 28,
+    paddingTop: 14,
+    backgroundColor: '#141414',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
-  toolRow: { flexDirection: 'row', gap: 10 },
-  toolBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: theme.radius.sm,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    alignItems: 'center',
-    backgroundColor: theme.surface,
-  },
-  toolBtnText: { fontWeight: '700', color: theme.black, fontSize: theme.font.caption },
+  toolItem: { alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4 },
+  toolActive: { borderBottomWidth: 2, borderBottomColor: theme.orange },
+  toolLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: '600' },
+  toolLabelActive: { color: theme.white },
 });
