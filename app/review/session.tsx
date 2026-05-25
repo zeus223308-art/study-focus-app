@@ -7,6 +7,7 @@ import {
   Image,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Switch,
   Text,
@@ -21,14 +22,23 @@ import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { InkStroke, NoteBundle, NotePage } from '@/lib/domain/types';
-import { BLACKOUT_COUNTDOWN } from '@/lib/review/blackout';
+import {
+  buildCountdownSteps,
+  RECALL_COUNTDOWN_OPTIONS,
+} from '@/lib/review/blackout';
 import { resolveImageUri } from '@/lib/files/resolve-image-uri';
 import { getAnswerImageUri, OCR_PASS_THRESHOLD, scoreActiveRecall } from '@/lib/review/answer-text';
-import { slideshowMsForSide } from '@/lib/domain/slideshow-timing';
+import {
+  ANSWER_SLIDESHOW_SECONDS,
+  FRONT_SLIDESHOW_SECONDS,
+  formatAnswerSlideshowLabel,
+  slideshowMsForSide,
+} from '@/lib/domain/slideshow-timing';
 import { advanceAfterReview, getNextReviewDate } from '@/lib/spacing/engine';
 
 const HINT_PEEK_MS = 8000;
 const AD_LOCK_MS = 5000;
+const RECALL_IMAGE_OPACITY = 0.32;
 
 type SlideSide = 'front' | 'back';
 type Slide = { bundle: NoteBundle; page: NotePage; side: SlideSide };
@@ -99,6 +109,9 @@ export default function ReviewSessionScreen() {
   const frontFade = useRef(new Animated.Value(1)).current;
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
+  const [recallCountdownSec, setRecallCountdownSec] = useState(3);
+  const [sessionSlideSec, setSessionSlideSec] = useState<number | null>(null);
+  const [slideRemainingSec, setSlideRemainingSec] = useState(0);
 
   const current = slides[index];
   const frontUri = current?.page.asset.originalLocalUri ?? current?.page.asset.thumbnailUri;
@@ -155,11 +168,13 @@ export default function ReviewSessionScreen() {
     resetSlide();
   }, [index, resetSlide]);
 
-  useEffect(() => {
-    if (!auto || !current || phase !== 'front') return;
-    const timer = setTimeout(() => advance(), slideshowMsForSide(current.page, current.side));
-    return () => clearTimeout(timer);
-  }, [index, auto, current, phase]);
+  const effectiveSlideMs = useCallback(
+    (page: NotePage, side: SlideSide) => {
+      if (sessionSlideSec != null) return sessionSlideSec * 1000;
+      return slideshowMsForSide(page, side);
+    },
+    [sessionSlideSec]
+  );
 
   useEffect(() => {
     if (!current) return;
@@ -181,23 +196,27 @@ export default function ReviewSessionScreen() {
     }
   }, [current?.page.id, current?.side]);
 
+  const enterRecallPhase = () => {
+    setPhase('blackout');
+    frontFade.setValue(RECALL_IMAGE_OPACITY);
+  };
+
   const startCountdown = () => {
     if (!useBlackout) {
-      setPhase('blackout');
-      frontFade.setValue(0);
+      enterRecallPhase();
       return;
     }
+    const steps = buildCountdownSteps(recallCountdownSec);
     setPhase('countdown');
     let step = 0;
-    setCountdown(BLACKOUT_COUNTDOWN[0]);
+    setCountdown(steps[0]);
     const tick = setInterval(() => {
       step += 1;
-      if (step < BLACKOUT_COUNTDOWN.length) {
-        setCountdown(BLACKOUT_COUNTDOWN[step]);
+      if (step < steps.length) {
+        setCountdown(steps[step]);
       } else {
         setCountdown(null);
-        setPhase('blackout');
-        frontFade.setValue(0);
+        enterRecallPhase();
         clearInterval(tick);
       }
     }, 1000);
@@ -210,6 +229,26 @@ export default function ReviewSessionScreen() {
       router.back();
     }
   }, [index, slides.length, router]);
+
+  useEffect(() => {
+    if (!auto || !current || phase !== 'front') {
+      setSlideRemainingSec(0);
+      return;
+    }
+    const ms = effectiveSlideMs(current.page, current.side);
+    const totalSec = Math.max(1, Math.ceil(ms / 1000));
+    setSlideRemainingSec(totalSec);
+    const started = Date.now();
+    const tick = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - started) / 1000);
+      setSlideRemainingSec(Math.max(0, totalSec - elapsed));
+    }, 200);
+    const timer = setTimeout(() => advance(), ms);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(tick);
+    };
+  }, [index, auto, current, phase, effectiveSlideMs, advance]);
 
   const nextReviewDateLabel = useMemo(() => {
     if (!current) return null;
@@ -268,7 +307,7 @@ export default function ReviewSessionScreen() {
       setTimeout(() => {
         setAdVisible(false);
         setAdLocked(false);
-        setPhase('blackout');
+        enterRecallPhase();
       }, AD_LOCK_MS);
     }
   };
@@ -281,8 +320,7 @@ export default function ReviewSessionScreen() {
       setAdVisible(false);
       setPhase('peek');
       setTimeout(() => {
-        setPhase('blackout');
-        frontFade.setValue(0);
+        enterRecallPhase();
       }, peekMs);
     }, 2000);
   };
@@ -298,6 +336,10 @@ export default function ReviewSessionScreen() {
   const showingBack = current.side === 'back' && Boolean(answerUri);
   const displayUri = showingBack ? resolvedAnswerUri : resolvedFrontUri;
   const sideBadge = showingBack ? t('capture.backLabel') : t('review.frontLabel');
+  const timerDisplaySec =
+    countdown !== null ? countdown : auto && phase === 'front' ? slideRemainingSec : null;
+  const slideSecOptions =
+    current.side === 'back' ? ANSWER_SLIDESHOW_SECONDS : FRONT_SLIDESHOW_SECONDS;
 
   return (
     <View style={[styles.root, recallMode && styles.rootRecall]}>
@@ -307,38 +349,56 @@ export default function ReviewSessionScreen() {
           { paddingTop: insets.top + 8 },
           recallMode && styles.topBarRecall,
         ]}>
-        {!auto ? (
-          isPro ? (
-            <View style={styles.premiumToggle}>
-              <Text style={[styles.premiumLabel, recallMode && styles.topBarDarkText]}>
-                {t('review.answerToggle')}
-              </Text>
-              <Switch
-                value={premiumReveal}
-                onValueChange={setPremiumReveal}
-                trackColor={{ false: theme.grayLight, true: theme.orange }}
-                thumbColor={theme.white}
-              />
-            </View>
+        <View style={styles.topBarLeft}>
+          {!auto ? (
+            isPro ? (
+              <View style={styles.premiumToggle}>
+                <Text style={[styles.premiumLabel, recallMode && styles.topBarDarkText]}>
+                  {t('review.answerToggle')}
+                </Text>
+                <Switch
+                  value={premiumReveal}
+                  onValueChange={setPremiumReveal}
+                  trackColor={{ false: theme.grayLight, true: theme.orange }}
+                  thumbColor={theme.white}
+                />
+              </View>
+            ) : (
+              <View style={styles.premiumLocked}>
+                <Text style={[styles.premiumLockedText, recallMode && styles.topBarDarkMuted]}>
+                  {t('review.answerPremium')}
+                </Text>
+              </View>
+            )
           ) : (
-            <View style={styles.premiumLocked}>
-              <Text style={[styles.premiumLockedText, recallMode && styles.topBarDarkMuted]}>
-                {t('review.answerPremium')}
+            <Text style={[styles.slideshowProgress, recallMode && styles.topBarDarkText]}>
+              {index + 1} / {slides.length}
+            </Text>
+          )}
+        </View>
+        <View style={styles.topBarRight}>
+          {timerDisplaySec !== null && timerDisplaySec > 0 ? (
+            <View style={[styles.timerBadge, recallMode && styles.timerBadgeRecall]}>
+              <Text style={[styles.timerBadgeText, recallMode && styles.topBarDarkText]}>
+                {timerDisplaySec}
               </Text>
             </View>
-          )
-        ) : (
-          <Text style={[styles.slideshowProgress, recallMode && styles.topBarDarkText]}>
-            {index + 1} / {slides.length}
-          </Text>
-        )}
-        <Pressable style={styles.close} onPress={() => router.back()} hitSlop={12}>
-          <Text style={[styles.closeText, recallMode && styles.topBarDarkText]}>✕</Text>
-        </Pressable>
+          ) : null}
+          <Pressable style={styles.close} onPress={() => router.back()} hitSlop={12}>
+            <Text style={[styles.closeText, recallMode && styles.topBarDarkText]}>✕</Text>
+          </Pressable>
+        </View>
       </View>
 
       {recallMode ? (
         <View style={styles.recallFull}>
+          {resolvedFrontUri ? (
+            <Image
+              source={{ uri: resolvedFrontUri }}
+              style={styles.recallBgImage}
+              resizeMode="contain"
+            />
+          ) : null}
           <Text style={styles.recallTitle}>{t('review.scratchTitle')}</Text>
           <RecallToolbar
             tool={recallTool}
@@ -400,12 +460,6 @@ export default function ReviewSessionScreen() {
               </View>
             )}
 
-            {countdown !== null && (
-              <View style={styles.countdown}>
-                <Text style={styles.countdownText}>{countdown}</Text>
-              </View>
-            )}
-
             {phase === 'pass' && !scheduleSheetVisible && (
               <Animated.View style={[styles.passOverlay, { opacity: passAnim }]}>
                 <Animated.View style={{ transform: [{ scale: passScale }] }}>
@@ -424,7 +478,29 @@ export default function ReviewSessionScreen() {
             {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
           </Text>
           {useBlackout ? (
-            <Button label={t('review.startCountdown')} onPress={startCountdown} />
+            <>
+              <Text style={styles.durationLabel}>{t('review.countdownDuration')}</Text>
+              <View style={styles.durationRow}>
+                {RECALL_COUNTDOWN_OPTIONS.map((sec) => (
+                  <Pressable
+                    key={sec}
+                    onPress={() => setRecallCountdownSec(sec)}
+                    style={[
+                      styles.durationChip,
+                      recallCountdownSec === sec && styles.durationChipOn,
+                    ]}>
+                    <Text
+                      style={[
+                        styles.durationChipText,
+                        recallCountdownSec === sec && styles.durationChipTextOn,
+                      ]}>
+                      {t('review.timerSec', { sec })}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Button label={t('review.startCountdown')} onPress={startCountdown} />
+            </>
           ) : (
             <Button
               label={t('review.complete')}
@@ -435,6 +511,46 @@ export default function ReviewSessionScreen() {
             />
           )}
         </View>
+          )}
+
+          {phase === 'front' && auto && (
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
+              <Text style={styles.durationLabel}>{t('review.slideDuration')}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.durationRow}>
+                  <Pressable
+                    onPress={() => setSessionSlideSec(null)}
+                    style={[styles.durationChip, sessionSlideSec === null && styles.durationChipOn]}>
+                    <Text
+                      style={[
+                        styles.durationChipText,
+                        sessionSlideSec === null && styles.durationChipTextOn,
+                      ]}>
+                      {t('common.default')}
+                    </Text>
+                  </Pressable>
+                  {slideSecOptions.map((sec) => (
+                    <Pressable
+                      key={sec}
+                      onPress={() => setSessionSlideSec(sec)}
+                      style={[
+                        styles.durationChip,
+                        sessionSlideSec === sec && styles.durationChipOn,
+                      ]}>
+                      <Text
+                        style={[
+                          styles.durationChipText,
+                          sessionSlideSec === sec && styles.durationChipTextOn,
+                        ]}>
+                        {current.side === 'back'
+                          ? formatAnswerSlideshowLabel(sec)
+                          : t('review.timerSec', { sec })}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
           )}
         </>
       )}
@@ -494,11 +610,28 @@ const styles = StyleSheet.create({
   },
   topBarDarkText: { color: theme.black },
   topBarDarkMuted: { color: theme.gray },
+  topBarLeft: { flex: 1, minWidth: 0 },
+  topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   premiumToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   premiumLabel: { color: theme.white, fontSize: theme.font.caption, fontWeight: '700' },
   premiumLocked: { flex: 1 },
   premiumLockedText: { color: theme.grayMuted, fontSize: 11, fontWeight: '600' },
   slideshowProgress: { color: theme.white, fontSize: theme.font.caption, fontWeight: '700' },
+  timerBadge: {
+    minWidth: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,107,0,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: theme.white,
+  },
+  timerBadgeRecall: {
+    backgroundColor: theme.orangeMuted,
+    borderColor: theme.orange,
+  },
+  timerBadgeText: { color: theme.white, fontSize: 22, fontWeight: '900' },
   close: { padding: 4 },
   closeText: { color: theme.white, fontSize: 22 },
   stage: { flex: 1, position: 'relative' },
@@ -521,7 +654,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20,
     gap: 10,
+    position: 'relative',
+    overflow: 'hidden',
   },
+  recallBgImage: {
+    ...StyleSheet.absoluteFill,
+    opacity: RECALL_IMAGE_OPACITY,
+  },
+  durationLabel: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.gray,
+    marginTop: 4,
+  },
+  durationRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+  },
+  durationChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    backgroundColor: theme.white,
+  },
+  durationChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
+  durationChipText: { fontWeight: '700', color: theme.black, fontSize: theme.font.caption },
+  durationChipTextOn: { color: theme.white },
   recallActions: { gap: 8, paddingTop: 4 },
   peekOverlay: { ...StyleSheet.absoluteFill, backgroundColor: theme.beige },
   peekHint: {
@@ -533,14 +695,13 @@ const styles = StyleSheet.create({
     color: theme.orange,
     fontWeight: '800',
   },
-  countdown: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.55)',
+  recallTitle: {
+    fontSize: theme.font.caption,
+    fontWeight: '800',
+    color: theme.gray,
+    marginTop: 4,
+    zIndex: 1,
   },
-  countdownText: { fontSize: 96, fontWeight: '200', color: theme.white },
-  recallTitle: { fontSize: theme.font.caption, fontWeight: '800', color: theme.gray, marginTop: 4 },
   warn: { fontSize: 11, color: theme.orange, fontWeight: '600' },
   hintLink: { color: theme.orange, fontWeight: '700', textAlign: 'center', marginTop: 4 },
   hintDisabled: { opacity: 0.4 },

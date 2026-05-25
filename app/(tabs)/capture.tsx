@@ -1,11 +1,13 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Alert,
+  ActivityIndicator,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,13 +15,16 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { buildRibbonDays, todayKey } from '@/lib/domain/dates';
+import { showMessage } from '@/lib/ui/confirm';
 
 type Step = 'camera' | 'answer-prompt' | 'save-sheet';
+type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 export default function CaptureTabScreen() {
   const { t } = useTranslation();
@@ -31,14 +36,24 @@ export default function CaptureTabScreen() {
   const [shootingBack, setShootingBack] = useState(false);
   const [frontUri, setFrontUri] = useState<string | null>(null);
   const [backUri, setBackUri] = useState<string | null>(null);
-  const [studyDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [studyDate, setStudyDate] = useState(() => todayKey());
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>('idle');
   const [subjectId, setSubjectId] = useState(data.subjects[0]?.id ?? '');
   const insets = useSafeAreaInsets();
+
+  const dateOptions = useMemo(
+    () =>
+      buildRibbonDays(data.settings.firstLaunchDate).map((d) => format(d, 'yyyy-MM-dd')),
+    [data.settings.firstLaunchDate]
+  );
 
   const resetCamera = () => {
     setFrontUri(null);
     setBackUri(null);
     setShootingBack(false);
+    setSaveState('idle');
+    setStudyDate(todayKey());
     setStep('camera');
   };
 
@@ -63,22 +78,33 @@ export default function CaptureTabScreen() {
   };
 
   const skipBackAndSave = () => {
+    setSaveState('idle');
     setStep('save-sheet');
   };
 
   const save = async () => {
-    if (!frontUri || !subjectId) return;
-    const id = await captureFlashcardPair(frontUri, backUri, subjectId, studyDate);
-    if (id) {
-      Alert.alert('', t('capture.saved'), [
-        {
-          text: 'OK',
-          onPress: () => {
-            resetCamera();
-            router.push('/(tabs)/vault');
-          },
-        },
-      ]);
+    if (!frontUri || !subjectId || saveState === 'saving') return;
+    setSaveState('saving');
+    try {
+      const id = await captureFlashcardPair(frontUri, backUri, subjectId, studyDate);
+      if (!id) {
+        setSaveState('error');
+        showMessage(t('capture.saveFailed'));
+        return;
+      }
+
+      setSaveState('saved');
+      if (Platform.OS !== 'web') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+
+      setTimeout(() => {
+        resetCamera();
+        router.push('/(tabs)/vault');
+      }, 1400);
+    } catch {
+      setSaveState('error');
+      showMessage(t('capture.saveFailed'));
     }
   };
 
@@ -94,6 +120,12 @@ export default function CaptureTabScreen() {
   }
 
   const cameraLabel = shootingBack ? t('capture.backShutter') : t('capture.frontShutter');
+  const saveLabel =
+    saveState === 'saving'
+      ? t('capture.saving')
+      : saveState === 'saved'
+        ? t('capture.saved')
+        : t('common.save');
 
   return (
     <View style={styles.flex}>
@@ -106,7 +138,7 @@ export default function CaptureTabScreen() {
         <>
           <CameraView ref={cameraRef} style={styles.camera} facing="back" />
           <View style={[styles.dateOverlay, { top: insets.top + 72 }]}>
-            <Text style={styles.dateText}>{format(new Date(), 'yyyy-MM-dd')}</Text>
+            <Text style={styles.dateText}>{studyDate}</Text>
           </View>
           {!shootingBack && (
             <View style={[styles.guideBanner, { top: insets.top + 124 }]}>
@@ -158,8 +190,26 @@ export default function CaptureTabScreen() {
       <Modal visible={step === 'save-sheet'} animationType="slide" transparent>
         <View style={styles.sheetBackdrop}>
           <View style={[styles.sheet, { paddingBottom: Math.max(36, insets.bottom + 20) }]}>
+            {saveState === 'saved' ? (
+              <View style={styles.successBanner}>
+                <Text style={styles.successTitle}>✓ {t('capture.saved')}</Text>
+                <Text style={styles.successBody}>{t('capture.savedHint')}</Text>
+              </View>
+            ) : null}
+
             <Text style={styles.sheetTitle}>{t('capture.saveTodayTitle')}</Text>
-            <Text style={styles.sheetBody}>{studyDate}</Text>
+            <Pressable
+              style={styles.datePickerBtn}
+              onPress={saveState === 'saving' ? undefined : () => setDatePickerOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t('capture.changeDate')}>
+              <View>
+                <Text style={styles.dateValue}>{studyDate}</Text>
+                <Text style={styles.dateHint}>{t('capture.tapToChangeDate')}</Text>
+              </View>
+              <Text style={styles.dateChange}>{t('capture.changeDate')}</Text>
+            </Pressable>
+
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
@@ -189,12 +239,51 @@ export default function CaptureTabScreen() {
                 </Pressable>
               ))}
             </ScrollView>
-            <Button label={t('common.save')} onPress={save} />
-            <Pressable onPress={resetCamera} style={styles.retake}>
+            <Button
+              label={saveLabel}
+              onPress={save}
+              disabled={saveState === 'saving' || saveState === 'saved'}
+              style={saveState === 'saved' ? styles.saveBtnDone : undefined}
+            />
+            {saveState === 'saving' ? (
+              <ActivityIndicator color={theme.orange} style={styles.saveSpinner} />
+            ) : null}
+            <Pressable
+              onPress={saveState === 'saving' ? undefined : resetCamera}
+              style={styles.retake}
+              disabled={saveState === 'saving'}>
               <Text style={styles.retakeText}>{t('capture.retake')}</Text>
             </Pressable>
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={datePickerOpen} animationType="fade" transparent>
+        <Pressable style={styles.dateModalBackdrop} onPress={() => setDatePickerOpen(false)}>
+          <Pressable style={styles.dateModalSheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.dateModalTitle}>{t('capture.pickDate')}</Text>
+            <ScrollView style={styles.dateList} keyboardShouldPersistTaps="handled">
+              {dateOptions.map((d) => {
+                const selected = d === studyDate;
+                const label = format(parseISO(`${d}T12:00:00`), 'yyyy-MM-dd (EEE)');
+                return (
+                  <Pressable
+                    key={d}
+                    onPress={() => {
+                      setStudyDate(d);
+                      setDatePickerOpen(false);
+                    }}
+                    style={[styles.dateRow, selected && styles.dateRowOn]}>
+                    <Text style={[styles.dateRowText, selected && styles.dateRowTextOn]}>{label}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            <Pressable onPress={() => setDatePickerOpen(false)} style={styles.dateModalClose}>
+              <Text style={styles.dateModalCloseText}>{t('common.cancel')}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -259,6 +348,31 @@ const styles = StyleSheet.create({
   },
   sheetTitle: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
   sheetBody: { fontSize: theme.font.body, color: theme.gray, marginTop: 8, lineHeight: 22 },
+  successBanner: {
+    backgroundColor: theme.orangeMuted,
+    borderWidth: 1,
+    borderColor: theme.orange,
+    borderRadius: theme.radius.md,
+    padding: 14,
+    marginBottom: 16,
+  },
+  successTitle: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
+  successBody: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray, marginTop: 4 },
+  datePickerBtn: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.white,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  dateValue: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
+  dateHint: { fontSize: theme.font.caption, color: theme.gray, marginTop: 4, fontWeight: '600' },
+  dateChange: { fontSize: theme.font.caption, fontWeight: '800', color: theme.orange },
   preview: { width: '100%', height: 160, borderRadius: theme.radius.md, marginTop: 16 },
   pairRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   pairSlot: { flex: 1, gap: 6 },
@@ -289,8 +403,35 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   chipText: { fontWeight: '700', color: theme.black },
   chipTextOn: { color: theme.white },
+  saveBtnDone: { opacity: 0.85 },
+  saveSpinner: { marginTop: 8 },
   skip: { marginTop: 12, alignItems: 'center' },
   skipText: { color: theme.gray, fontWeight: '600' },
   retake: { marginTop: 14, alignItems: 'center' },
   retakeText: { color: theme.gray, fontWeight: '600' },
+  dateModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  dateModalSheet: {
+    backgroundColor: theme.beige,
+    borderRadius: theme.radius.lg,
+    padding: 20,
+    maxHeight: '70%',
+  },
+  dateModalTitle: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black, marginBottom: 12 },
+  dateList: { maxHeight: 320 },
+  dateRow: {
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.sm,
+    marginBottom: 4,
+  },
+  dateRowOn: { backgroundColor: theme.orangeMuted },
+  dateRowText: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
+  dateRowTextOn: { fontWeight: '800', color: theme.orange },
+  dateModalClose: { marginTop: 12, alignItems: 'center', paddingVertical: 10 },
+  dateModalCloseText: { fontWeight: '700', color: theme.gray },
 });

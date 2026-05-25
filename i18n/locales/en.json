@@ -46,7 +46,12 @@
     "no": "Pick date",
     "pickSubject": "Choose subject",
     "pickDate": "Pick date",
+    "changeDate": "Change date",
+    "tapToChangeDate": "Tap to change the study date",
+    "saving": "Saving…",
     "saved": "Saved",
+    "savedHint": "Saved to Files. Opening vault…",
+    "saveFailed": "Could not save. Please try again.",
     "frontGuide": "Capture the question (front)",
     "backGuide": "Capture the answer & solution (back)",
     "frontShutter": "Capture front",
@@ -165,7 +170,10 @@
     "answerToggle": "Show answer",
     "answerPremium": "Reveal answer · Premium",
     "noBackPhoto": "No back photo — grading may be less accurate",
-    "pairIncomplete": "back missing"
+    "pairIncomplete": "back missing",
+    "countdownDuration": "Countdown before recall",
+    "slideDuration": "Slide timer",
+    "timerSec": "{{sec}}s"
   },
   "trash": {
     "title": "Trash",
@@ -260,6 +268,7 @@
     "back": "Back",
     "cancel": "Cancel",
     "save": "Save",
-    "done": "Done"
+    "done": "Done",
+    "default": "Default"
   }
 }

@@ -46,7 +46,12 @@
     "no": "날짜 선택",
     "pickSubject": "과목을 선택하세요",
     "pickDate": "날짜 선택",
+    "changeDate": "날짜 변경",
+    "tapToChangeDate": "탭하여 날짜를 바꿀 수 있어요",
+    "saving": "저장 중…",
     "saved": "저장되었습니다",
+    "savedHint": "파일에 저장되었습니다. 잠시 후 이동합니다.",
+    "saveFailed": "저장에 실패했습니다. 다시 시도해 주세요.",
     "frontGuide": "문제(앞면) 사진을 찍어 주세요",
     "backGuide": "답·풀이(뒷면) 사진을 찍어 주세요",
     "frontShutter": "앞면 촬영",
@@ -165,7 +170,10 @@
     "answerToggle": "해답 보기",
     "answerPremium": "해답 바로 보기 · Premium",
     "noBackPhoto": "뒷면(정답) 사진이 없어 채점 정확도가 낮을 수 있습니다",
-    "pairIncomplete": "뒷면 미등록"
+    "pairIncomplete": "뒷면 미등록",
+    "countdownDuration": "풀기 전 카운트다운",
+    "slideDuration": "슬라이드 시간",
+    "timerSec": "{{sec}}초"
   },
   "trash": {
     "title": "휴지통",
@@ -260,6 +268,7 @@
     "back": "뒤로",
     "cancel": "취소",
     "save": "저장",
-    "done": "완료"
+    "done": "완료",
+    "default": "기본"
   }
 }
