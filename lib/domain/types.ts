@@ -45,10 +45,16 @@ export type InkStroke = {
   createdAt: string;
 };
 
+/** `normalized` = stroke points are 0..1 relative to the page image. */
+export type InkStrokeSpace = 'viewport' | 'normalized';
+
 export type NoteLayer = {
   id: string;
   studyDate: string;
   visible: boolean;
+  /** When true, strokes are shown but not editable in the viewer. */
+  locked?: boolean;
+  strokeSpace?: InkStrokeSpace;
   strokes: InkStroke[];
   scratchpadOffsetY: number;
   scratchpadHeight: number;

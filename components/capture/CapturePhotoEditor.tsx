@@ -1,8 +1,9 @@
 import * as ImageManipulator from 'expo-image-manipulator';
-import { useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -10,25 +11,74 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FullscreenInkControls } from '@/components/annotation/FullscreenInkControls';
+import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink-flow';
+import { CaptureDrawSurface } from '@/components/capture/CaptureDrawSurface';
+import { CaptureInkBakeHost, type InkBakeJob } from '@/components/capture/CaptureInkBakeHost';
 import { CaptureInteractiveCrop } from '@/components/capture/CaptureInteractiveCrop';
 import { theme } from '@/constants/theme';
+import { defaultWidthForTool } from '@/lib/domain/ink-sizes';
+import type { InkStroke, InkToolId } from '@/lib/domain/types';
+import {
+  bakeStrokesOntoImageUri,
+  captureDisplayRect,
+  mapStrokesToCroppedImage,
+} from '@/lib/files/bake-capture-ink';
 import type { CropSelection } from '@/lib/files/interactive-crop';
-import { exportCropSelection } from '@/lib/files/interactive-crop';
+import { cropRegionFromSelection, exportCropSelection } from '@/lib/files/interactive-crop';
+import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
+import { isHighlighterTool } from '@/lib/domain/ink-sizes';
+
+type EditorMode = 'crop' | 'draw';
 
 type Props = {
   uri: string;
   sideLabel: string;
-  onConfirm: (uri: string) => void;
+  onConfirm: (result: { uri: string }) => void;
   onRetake: () => void;
 };
 
 export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const layout = useFullscreenViewerLayout();
   const [workingUri, setWorkingUri] = useState(uri);
   const [busy, setBusy] = useState(false);
   const [cropReady, setCropReady] = useState(false);
+  const [mode, setMode] = useState<EditorMode>('crop');
+  const [strokes, setStrokes] = useState<InkStroke[]>([]);
+  const [tool, setTool] = useState<InkToolId>('pen-black');
+  const [penWidth, setPenWidth] = useState(defaultWidthForTool('pen-black'));
+  const [highlighterWidth, setHighlighterWidth] = useState(defaultWidthForTool('hi-yellow'));
+  const [eraserWidth, setEraserWidth] = useState(defaultWidthForTool('eraser'));
   const cropSelectionRef = useRef<CropSelection | null>(null);
+  const [bakeJob, setBakeJob] = useState<InkBakeJob | null>(null);
+  const bakeResolveRef = useRef<((uri: string) => void) | null>(null);
+  const bakeRejectRef = useRef<(() => void) | null>(null);
+
+  const flowApi = useFullscreenInkFlow({
+    visible: mode === 'draw',
+    tool,
+    onToolChange: setTool,
+    onPenWidthChange: setPenWidth,
+    onHighlighterWidthChange: setHighlighterWidth,
+    onEraserWidthChange: setEraserWidth,
+  });
+
+  const strokeWidth = useMemo(() => {
+    if (tool === 'eraser') return eraserWidth;
+    if (isHighlighterTool(tool)) return highlighterWidth;
+    return penWidth;
+  }, [tool, penWidth, highlighterWidth, eraserWidth]);
+
+  const inkProps = {
+    tool,
+    penWidth,
+    highlighterWidth,
+    eraserWidth,
+    layout,
+    flowApi,
+  };
 
   const rotate = async () => {
     setBusy(true);
@@ -41,25 +91,89 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
       setWorkingUri(result.uri);
       cropSelectionRef.current = null;
       setCropReady(false);
+      setStrokes([]);
     } finally {
       setBusy(false);
     }
   };
+
+  const undoStroke = () => {
+    setStrokes((prev) => prev.slice(0, -1));
+  };
+
+  const bakeNative = useCallback(
+    (uri: string, mapped: InkStroke[], width: number, height: number) =>
+      new Promise<string>((resolve, reject) => {
+        bakeResolveRef.current = resolve;
+        bakeRejectRef.current = reject;
+        setBakeJob({ uri, strokes: mapped, width, height });
+      }),
+    []
+  );
+
+  const onBakeComplete = useCallback(
+    (uri: string) => {
+      bakeResolveRef.current?.(uri);
+      bakeResolveRef.current = null;
+      bakeRejectRef.current = null;
+      setBakeJob(null);
+    },
+    []
+  );
+
+  const onBakeError = useCallback(() => {
+    bakeRejectRef.current?.();
+    bakeResolveRef.current = null;
+    bakeRejectRef.current = null;
+    setBakeJob(null);
+  }, []);
 
   const confirm = async () => {
     const selection = cropSelectionRef.current;
     if (!selection) return;
     setBusy(true);
     try {
-      const finalUri = await exportCropSelection(workingUri, selection);
-      onConfirm(finalUri);
+      const croppedUri = await exportCropSelection(workingUri, selection);
+      const region = cropRegionFromSelection(selection);
+      let finalUri = croppedUri;
+
+      if (strokes.length > 0) {
+        const display = captureDisplayRect(selection);
+        const mapped = mapStrokesToCroppedImage(strokes, selection, {
+          left: display.left,
+          top: display.top,
+          width: display.width,
+          height: display.height,
+        });
+        if (mapped.length > 0) {
+          if (Platform.OS === 'web') {
+            finalUri = await bakeStrokesOntoImageUri(
+              croppedUri,
+              mapped,
+              region.width,
+              region.height
+            );
+          } else {
+            try {
+              finalUri = await bakeNative(croppedUri, mapped, region.width, region.height);
+            } catch {
+              finalUri = croppedUri;
+            }
+          }
+        }
+      }
+
+      onConfirm({ uri: finalUri });
     } finally {
       setBusy(false);
     }
   };
 
+  const canUndo = strokes.length > 0;
+
   return (
     <View style={styles.root}>
+      <CaptureInkBakeHost job={bakeJob} onComplete={onBakeComplete} onError={onBakeError} />
       <View style={[styles.topBar, { paddingTop: insets.top + 6, paddingBottom: 10 }]}>
         <Pressable onPress={busy ? undefined : onRetake} hitSlop={12} style={styles.topAction}>
           <Text style={styles.cancelText}>{t('capture.editorCancel')}</Text>
@@ -77,15 +191,42 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
         </Pressable>
       </View>
 
+      {mode === 'draw' ? (
+        <View style={styles.inkBar}>
+          <FullscreenInkControls {...inkProps} />
+          {canUndo ? (
+            <Pressable onPress={undoStroke} style={styles.undoBtn}>
+              <Text style={styles.undoText}>{t('capture.editorUndo')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
       <View style={styles.cropWrap}>
-        <CaptureInteractiveCrop
-          key={workingUri}
-          uri={workingUri}
-          onSelectionChange={(next) => {
-            cropSelectionRef.current = next;
-            setCropReady(Boolean(next));
-          }}
-        />
+        {mode === 'crop' ? (
+          <CaptureInteractiveCrop
+            key={workingUri}
+            uri={workingUri}
+            onSelectionChange={(next) => {
+              cropSelectionRef.current = next;
+              setCropReady(Boolean(next));
+            }}
+          />
+        ) : (
+          <CaptureDrawSurface
+            key={workingUri}
+            uri={workingUri}
+            tool={tool}
+            strokeWidth={strokeWidth}
+            strokes={strokes}
+            onStrokesChange={setStrokes}
+            selection={cropSelectionRef.current}
+            onSelectionChange={(next) => {
+              cropSelectionRef.current = next;
+              setCropReady(Boolean(next));
+            }}
+          />
+        )}
         {busy ? (
           <View style={styles.busy}>
             <ActivityIndicator color={theme.white} size="large" />
@@ -93,9 +234,26 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
         ) : null}
       </View>
 
+      {mode === 'crop' ? (
+        <Text style={styles.hint}>{t('capture.cropDragRegionHint')}</Text>
+      ) : (
+        <Text style={styles.hint}>{t('capture.drawInkHint')}</Text>
+      )}
+
       <View style={[styles.toolBar, { paddingBottom: Math.max(14, insets.bottom + 8) }]}>
-        <Pressable style={[styles.toolItem, styles.toolActive]} disabled>
-          <Text style={[styles.toolLabel, styles.toolLabelActive]}>{t('capture.toolCrop')}</Text>
+        <Pressable
+          style={[styles.toolItem, mode === 'crop' && styles.toolActive]}
+          onPress={() => setMode('crop')}>
+          <Text style={[styles.toolLabel, mode === 'crop' && styles.toolLabelActive]}>
+            {t('capture.toolCrop')}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.toolItem, mode === 'draw' && styles.toolActive]}
+          onPress={() => setMode('draw')}>
+          <Text style={[styles.toolLabel, mode === 'draw' && styles.toolLabelActive]}>
+            {t('capture.toolDraw')}
+          </Text>
         </Pressable>
         <Pressable style={styles.toolItem} onPress={busy ? undefined : rotate} disabled={busy}>
           <Text style={styles.toolLabel}>{t('capture.toolRotate')}</Text>
@@ -126,6 +284,15 @@ const styles = StyleSheet.create({
   cancelText: { color: theme.white, fontSize: 16, fontWeight: '600' },
   doneText: { color: theme.orange, fontSize: 16, fontWeight: '800', textAlign: 'right' },
   doneDisabled: { opacity: 0.4 },
+  inkBar: {
+    alignItems: 'center',
+    paddingTop: 8,
+    paddingBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  undoBtn: { marginTop: 6, paddingVertical: 4, paddingHorizontal: 12 },
+  undoText: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontWeight: '700' },
   cropWrap: { flex: 1, position: 'relative' },
   busy: {
     ...StyleSheet.absoluteFill,
@@ -133,10 +300,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
+  hint: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 12,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
   toolBar: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 28,
+    gap: 22,
     paddingTop: 14,
     backgroundColor: '#141414',
     borderTopWidth: StyleSheet.hairlineWidth,

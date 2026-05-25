@@ -19,13 +19,18 @@
       "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "공부 내용을 촬영해 파일에 저장합니다.",
-        "NSPhotoLibraryUsageDescription": "촬영한 사진을 앱에 저장합니다."
+        "NSPhotoLibraryUsageDescription": "촬영한 사진을 앱에 저장합니다.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.memorysherpa.app",
       "versionCode": 1,
-      "permissions": ["CAMERA", "RECEIVE_BOOT_COMPLETED", "VIBRATE"],
+      "permissions": [
+        "CAMERA",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -74,6 +79,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e510b05a-c4fd-4a0e-a151-daea3dd2d49c"
+      }
     }
   }
 }

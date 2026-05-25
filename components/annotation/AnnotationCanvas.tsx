@@ -11,28 +11,11 @@ import {
 import Svg, { Path } from 'react-native-svg';
 
 import { theme } from '@/constants/theme';
-import { HIGHLIGHTER_TOOLS, PEN_TOOLS } from '@/lib/domain/defaults';
+import { INK_STROKE_STYLES } from '@/lib/domain/ink-stroke-style';
+import { scaleStrokesToViewport } from '@/lib/files/bake-capture-ink';
 import type { InkPoint, InkStroke, InkToolId, NoteLayer } from '@/lib/domain/types';
 
-const TOOL_COLORS: Record<InkToolId, { color: string; width: number; opacity: number }> = {
-  'pen-black': { color: '#F0EDE8', width: 2, opacity: 1 },
-  'pen-red': { color: '#DC2626', width: 2, opacity: 1 },
-  'pen-blue': { color: '#2563EB', width: 2, opacity: 1 },
-  'hi-yellow': { color: '#FFE600', width: 12, opacity: 0.45 },
-  'hi-green': { color: '#4ADE80', width: 12, opacity: 0.4 },
-  'hi-pink': { color: '#F472B6', width: 12, opacity: 0.4 },
-  eraser: { color: theme.grayLight, width: 24, opacity: 0.35 },
-};
-
-for (const p of PEN_TOOLS) {
-  TOOL_COLORS[p.id].color = p.color;
-  TOOL_COLORS[p.id].width = p.width;
-}
-for (const h of HIGHLIGHTER_TOOLS) {
-  TOOL_COLORS[h.id].color = h.color;
-  TOOL_COLORS[h.id].width = h.width;
-  TOOL_COLORS[h.id].opacity = h.opacity ?? TOOL_COLORS[h.id].opacity;
-}
+const TOOL_COLORS = INK_STROKE_STYLES;
 
 function pointsToPath(points: InkPoint[]): string {
   if (points.length === 0) return '';
@@ -113,10 +96,13 @@ export function AnnotationCanvas({
     bump((n) => n + 1);
   }, [onStrokesChange]);
 
+  const lockedRef = useRef(layer.locked);
+  lockedRef.current = layer.locked;
+
   const pan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => visibleRef.current,
-      onMoveShouldSetPanResponder: () => visibleRef.current,
+      onStartShouldSetPanResponder: () => visibleRef.current && !lockedRef.current,
+      onMoveShouldSetPanResponder: () => visibleRef.current && !lockedRef.current,
       onPanResponderGrant: (evt: GestureResponderEvent) => {
         const activeTool = toolRef.current;
         const { locationX: x, locationY: y } = evt.nativeEvent;
@@ -148,9 +134,20 @@ export function AnnotationCanvas({
   const eraserPreview =
     currentRef.current?.tool === 'eraser' ? currentRef.current : null;
 
+  const scaledStrokes = scaleStrokesToViewport(
+    strokesRef.current,
+    size.w,
+    size.h,
+    layer.strokeSpace
+  );
+  const scaledCurrent =
+    currentRef.current && currentRef.current.tool !== 'eraser'
+      ? scaleStrokesToViewport([currentRef.current], size.w, size.h, layer.strokeSpace)[0]
+      : null;
+
   const display = [
-    ...strokesRef.current.filter((s) => s.tool !== 'eraser'),
-    ...(currentRef.current && currentRef.current.tool !== 'eraser' ? [currentRef.current] : []),
+    ...scaledStrokes.filter((s) => s.tool !== 'eraser'),
+    ...(scaledCurrent ? [scaledCurrent] : []),
   ];
 
   return (

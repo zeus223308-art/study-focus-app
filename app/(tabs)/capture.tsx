@@ -72,7 +72,7 @@ export default function CaptureTabScreen() {
     setStep('edit');
   };
 
-  const onEditConfirm = (uri: string) => {
+  const onEditConfirm = ({ uri }: { uri: string }) => {
     if (editSide === 'front') setFrontUri(uri);
     else setBackUri(uri);
     setEditUri(null);
