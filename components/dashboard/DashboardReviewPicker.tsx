@@ -50,8 +50,6 @@ export function DashboardReviewPicker({
           </Text>
         </Pressable>
       </View>
-      <Text style={styles.hint}>{t('dashboard.pickSubjectsHint')}</Text>
-
       {rows.map((row, ri) => (
         <View
           key={ri}

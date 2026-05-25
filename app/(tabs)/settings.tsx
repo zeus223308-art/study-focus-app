@@ -68,7 +68,6 @@ export default function SettingsScreen() {
       <ScreenHeader title={t('settings.title')} showSettings={false} />
 
       <Text style={styles.sectionTitle}>{t('settings.reviewPattern')}</Text>
-      <Text style={styles.hint}>{t('settings.reviewPatternHint')}</Text>
       <View style={styles.patternGroup}>
         {schedules.map((s, i) => {
           const isAddRow = s.id === SCHEDULE_ADD_ID;

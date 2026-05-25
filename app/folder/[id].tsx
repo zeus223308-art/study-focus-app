@@ -141,7 +141,6 @@ export default function FolderScreen() {
             tintColor={theme.orange}
           />
           <Text style={styles.addTitle}>{t('folder.addProblem')}</Text>
-          <Text style={styles.addHint}>{t('folder.addProblemHint')}</Text>
         </>
       )}
     </Pressable>
@@ -213,7 +212,7 @@ const styles = StyleSheet.create({
   empty: { textAlign: 'center', color: theme.gray, marginTop: 24, marginBottom: 8 },
   footerAdd: { marginTop: 8 },
   addZone: {
-    minHeight: 120,
+    minHeight: 72,
     borderRadius: theme.radius.md,
     borderWidth: 2,
     borderStyle: 'dashed',
@@ -230,11 +229,5 @@ const styles = StyleSheet.create({
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.orange,
-  },
-  addHint: {
-    fontSize: theme.font.caption,
-    color: theme.gray,
-    textAlign: 'center',
-    lineHeight: 18,
   },
 });

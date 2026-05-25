@@ -276,7 +276,6 @@ export function CloudBackupSettings() {
       ) : null}
 
       <Text style={styles.hint}>{t('settings.cloudHint')}</Text>
-      <Text style={styles.hint}>{t('settings.cloudBackupMasterOnly')}</Text>
       {!session ? (
         <Text style={styles.devHint} selectable>
           redirect: {redirectUri}

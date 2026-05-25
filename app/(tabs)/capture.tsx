@@ -163,7 +163,6 @@ export default function CaptureTabScreen() {
         <View style={styles.sheetBackdrop}>
           <View style={[styles.sheet, { paddingBottom: Math.max(36, insets.bottom + 20) }]}>
             <Text style={styles.sheetTitle}>{t('capture.pairTitle')}</Text>
-            <Text style={styles.sheetBody}>{t('capture.pairBody')}</Text>
             {frontUri && <Image source={{ uri: frontUri }} style={styles.preview} />}
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
@@ -194,7 +193,6 @@ export default function CaptureTabScreen() {
             {saveState === 'saved' ? (
               <View style={styles.successBanner}>
                 <Text style={styles.successTitle}>✓ {t('capture.saved')}</Text>
-                <Text style={styles.successBody}>{t('capture.savedHint')}</Text>
               </View>
             ) : null}
 
@@ -206,7 +204,6 @@ export default function CaptureTabScreen() {
               accessibilityLabel={t('capture.changeDate')}>
               <View>
                 <Text style={styles.dateValue}>{studyDate}</Text>
-                <Text style={styles.dateHint}>{t('capture.tapToChangeDate')}</Text>
               </View>
               <Text style={styles.dateChange}>{t('capture.changeDate')}</Text>
             </Pressable>
