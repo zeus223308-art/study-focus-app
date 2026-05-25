@@ -51,6 +51,7 @@
     "export:web": "expo export --platform web",
     "serve:web": "npx --yes serve dist -s -l 4173",
     "setup:google-oauth": "node scripts/setup-google-oauth.mjs",
+    "setup:google-native": "node scripts/setup-google-oauth-native.mjs",
     "prebuild:clean": "expo prebuild --clean",
     "build:android:apk": "eas build -p android --profile preview --non-interactive",
     "build:ios:device": "eas build -p ios --profile preview --non-interactive",
