@@ -22,6 +22,7 @@ import { useApp, useLanguage } from '@/context/AppContext';
 import { groupSubjectProblemsByDate, listSubjectProblems } from '@/lib/grouping/bundles';
 import { pickForImport } from '@/lib/import/pick-for-import';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
+import { NotFoundView } from '@/components/ui/NotFoundView';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const ALBUM_GAP = 8;
@@ -123,7 +124,13 @@ export default function FolderScreen() {
     }
   };
 
-  if (!subject) return null;
+  if (!subject) {
+    return (
+      <Screen>
+        <NotFoundView backFallback="/(tabs)/vault" />
+      </Screen>
+    );
+  }
 
   const addProblemZone = (
     <Pressable
@@ -169,7 +176,10 @@ export default function FolderScreen() {
           ]}
           showsVerticalScrollIndicator={false}>
           {dateSections.length === 0 ? (
-            <Text style={styles.empty}>{t('folder.empty')}</Text>
+            <View style={styles.emptyBlock}>
+              <Text style={styles.empty}>{t('folder.empty')}</Text>
+              {addProblemZone}
+            </View>
           ) : (
             dateSections.map((section) => (
               <DateAlbumSection
@@ -209,7 +219,8 @@ const styles = StyleSheet.create({
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   scroll: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 },
   scrollEmpty: { flexGrow: 1, justifyContent: 'center' },
-  empty: { textAlign: 'center', color: theme.gray, marginTop: 24, marginBottom: 8 },
+  emptyBlock: { marginTop: 24, marginBottom: 8, gap: 16 },
+  empty: { textAlign: 'center', color: theme.gray },
   footerAdd: { marginTop: 8 },
   addZone: {
     minHeight: 72,

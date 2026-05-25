@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SymbolView } from 'expo-symbols';
 import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { CloudBackupSettings } from '@/components/settings/CloudBackupSettings';
@@ -49,13 +50,19 @@ export default function SettingsScreen() {
       scheduleDailyReviewReminder(
         settings.notificationHour,
         settings.notificationMinute,
-        "You have Today's Reviews waiting.",
-        "Today's review"
+        t('settings.notificationTitle'),
+        t('settings.notificationBody')
       );
     } else {
       cancelAllReminders();
     }
-  }, [settings.notificationsEnabled, settings.notificationHour, i18n.language]);
+  }, [
+    settings.notificationsEnabled,
+    settings.notificationHour,
+    settings.notificationMinute,
+    i18n.language,
+    t,
+  ]);
 
   const folderIntervalLabel = (scheduleId: string) =>
     folderScheduleLabel(scheduleId, language, {
@@ -95,7 +102,13 @@ export default function SettingsScreen() {
               </View>
               {!isAddRow && (
                 <View style={[styles.check, isActive && styles.checkOn]}>
-                  {isActive && <Text style={styles.checkMark}>?</Text>}
+                  {isActive ? (
+                    <SymbolView
+                      name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                      size={14}
+                      tintColor={theme.white}
+                    />
+                  ) : null}
                 </View>
               )}
             </Pressable>
@@ -143,8 +156,19 @@ export default function SettingsScreen() {
           />
         </View>
         <SettingsRow
-          label={t('settings.limits')}
-          value={`${photoCount} / ${settings.photoLimit} ? ${freemium.usedMemos} / ${settings.memoLimit}`}
+          label={t('settings.limitPhotos')}
+          value={t('settings.limitPhotosValue', {
+            used: photoCount,
+            max: settings.photoLimit,
+          })}
+          last={false}
+        />
+        <SettingsRow
+          label={t('settings.limitMemos')}
+          value={t('settings.limitMemosValue', {
+            used: freemium.usedMemos,
+            max: settings.memoLimit,
+          })}
           last
         />
       </SettingsGroup>
@@ -231,7 +255,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkOn: { backgroundColor: theme.orange, borderColor: theme.orange },
-  checkMark: { color: theme.white, fontSize: 12, fontWeight: '700' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

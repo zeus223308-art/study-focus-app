@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { GoogleAuthBootstrap } from '@/components/GoogleAuthBootstrap';
 import { RecoveryBanner } from '@/components/RecoveryBanner';
 import { FloatingCameraButton } from '@/components/FloatingCameraButton';
+import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { GoogleOAuthReturnHandler } from '@/components/settings/GoogleOAuthReturnHandler';
 import { MobileWebFrame } from '@/components/MobileWebFrame';
 import { SplashBrand } from '@/components/SplashBrand';
@@ -94,6 +95,7 @@ function RootNavigator() {
         <Stack.Screen name="search" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
       {showCamera && <FloatingCameraButton />}
+      <PaywallGate />
     </View>
   );
 }

@@ -1,4 +1,5 @@
 import { Modal, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
@@ -13,12 +14,14 @@ type Props = {
 };
 
 export function PaywallSheet({ visible, reason, used, max, onClose }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const title = reason === 'images' ? '사진 한도에 도달했어요' : '메모 한도에 도달했어요';
+  const title =
+    reason === 'images' ? t('paywall.imagesTitle') : t('paywall.memosTitle');
   const body =
     reason === 'images'
-      ? `무료 플랜은 사진 ${max}장까지 저장할 수 있어요. (현재 ${used}장)`
-      : `무료 플랜은 메모 ${max}개까지 저장할 수 있어요. (현재 ${used}개)`;
+      ? t('paywall.imagesBody', { used, max })
+      : t('paywall.memosBody', { used, max });
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -27,9 +30,9 @@ export function PaywallSheet({ visible, reason, used, max, onClose }: Props) {
           <View style={styles.accentBar} />
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
-          <Text style={styles.pro}>Pro로 무제한 저장 · 클라우드 백업 · 해답 숨기기 해제</Text>
-          <Button label="Pro 시작하기" onPress={onClose} style={{ marginTop: 20 }} />
-          <Button label="나중에" variant="ghost" onPress={onClose} style={{ marginTop: 8 }} />
+          <Text style={styles.pro}>{t('paywall.proBenefits')}</Text>
+          <Button label={t('paywall.gotIt')} onPress={onClose} style={{ marginTop: 20 }} />
+          <Button label={t('paywall.later')} variant="ghost" onPress={onClose} style={{ marginTop: 8 }} />
         </View>
       </View>
     </Modal>

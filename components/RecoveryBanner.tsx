@@ -19,7 +19,7 @@ export function RecoveryBanner({ source, message, onDismiss }: Props) {
         {source === 'drive' ? t('settings.autoRecoveryFromDrive') : t('settings.autoRecoveryFromLocal')}
       </Text>
       <Pressable onPress={onDismiss} hitSlop={8}>
-        <Text style={styles.dismiss}>✕</Text>
+        <Text style={styles.dismiss}>{t('common.close')}</Text>
       </Pressable>
     </View>
   );

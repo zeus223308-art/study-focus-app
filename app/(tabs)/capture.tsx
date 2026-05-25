@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -15,68 +15,135 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CaptureFramePicker } from '@/components/capture/CaptureFramePicker';
+import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
 import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { todayKey } from '@/lib/domain/dates';
+import type { CaptureFrameAspect } from '@/lib/domain/types';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
+import { pickForImport } from '@/lib/import/pick-for-import';
+import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { showMessage } from '@/lib/ui/confirm';
 
-type Step = 'camera' | 'answer-prompt' | 'save-sheet';
+type Step = 'camera' | 'edit' | 'answer-prompt' | 'save-sheet';
+type EditSide = 'front' | 'back';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
 export default function CaptureTabScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, captureFlashcardPair } = useApp();
+  const { data, captureFlashcardPair, updateSettings } = useApp();
+  const frameAspect = data.settings.captureFrameAspect ?? '4:3';
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [step, setStep] = useState<Step>('camera');
-  const [shootingBack, setShootingBack] = useState(false);
+  const [editUri, setEditUri] = useState<string | null>(null);
+  const [editSide, setEditSide] = useState<EditSide>('front');
+  const [afterEditStep, setAfterEditStep] = useState<Step>('answer-prompt');
   const [frontUri, setFrontUri] = useState<string | null>(null);
   const [backUri, setBackUri] = useState<string | null>(null);
   const [studyDate, setStudyDate] = useState(() => todayKey());
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [subjectId, setSubjectId] = useState(data.subjects[0]?.id ?? '');
   const insets = useSafeAreaInsets();
+  const isWeb = Platform.OS === 'web';
+  const hasSubjects = data.subjects.length > 0;
+
+  useEffect(() => {
+    if (!subjectId && data.subjects[0]) {
+      setSubjectId(data.subjects[0].id);
+    }
+  }, [data.subjects, subjectId]);
 
   const resetCamera = () => {
+    setEditUri(null);
     setFrontUri(null);
     setBackUri(null);
-    setShootingBack(false);
     setSaveState('idle');
     setStudyDate(todayKey());
+    setEditSide('front');
+    setStep('camera');
+  };
+
+  const openEditor = (uri: string, side: EditSide, returnStep?: Step) => {
+    setEditUri(uri);
+    setEditSide(side);
+    setAfterEditStep(returnStep ?? (side === 'back' ? 'save-sheet' : 'answer-prompt'));
+    setStep('edit');
+  };
+
+  const onEditConfirm = (uri: string) => {
+    if (editSide === 'front') setFrontUri(uri);
+    else setBackUri(uri);
+    setEditUri(null);
+    setStep(afterEditStep);
+  };
+
+  const onEditRetake = () => {
+    setEditUri(null);
     setStep('camera');
   };
 
   const takePhoto = async () => {
     const photo = await cameraRef.current?.takePictureAsync({ quality: IMAGE_CAPTURE_QUALITY });
     if (!photo?.uri) return;
-
-    if (shootingBack) {
-      setBackUri(photo.uri);
-      setShootingBack(false);
-      setStep('save-sheet');
-      return;
-    }
-
-    setFrontUri(photo.uri);
-    setStep('answer-prompt');
+    openEditor(photo.uri, editSide);
   };
 
-  const startBackCapture = () => {
-    setShootingBack(true);
+  const startBackCapture = async () => {
+    if (isWeb) {
+      const picked = await pickForImport({
+        title: t('capture.importWeb'),
+        album: t('folder.importAlbum'),
+        files: t('folder.importFiles'),
+        cancel: t('common.cancel'),
+        unsupportedOnly: t('folder.importUnsupportedOnly'),
+      });
+      if (!picked.ok || picked.files.length === 0) return;
+      openEditor(picked.files[0].uri, 'back');
+      return;
+    }
+    setEditSide('back');
     setStep('camera');
   };
 
-  const skipBackAndSave = () => {
+  const goToSaveSheet = () => {
     setSaveState('idle');
     setStep('save-sheet');
   };
 
+  const dismissAnswerPrompt = () => {
+    if (editSide === 'back') return;
+    setFrontUri(null);
+    resetCamera();
+  };
+
+  const dismissSaveSheet = () => {
+    if (saveState === 'saving' || saveState === 'saved') return;
+    setStep('answer-prompt');
+  };
+
+  const pickWebImage = async () => {
+    const picked = await pickForImport({
+      title: t('capture.importWeb'),
+      album: t('folder.importAlbum'),
+      files: t('folder.importFiles'),
+      cancel: t('common.cancel'),
+      unsupportedOnly: t('folder.importUnsupportedOnly'),
+    });
+    if (!picked.ok || picked.files.length === 0) return;
+    openEditor(picked.files[0].uri, frontUri ? 'back' : 'front');
+  };
+
+  const setFrameAspect = (aspect: CaptureFrameAspect) => {
+    updateSettings({ captureFrameAspect: aspect });
+  };
+
   const save = async () => {
-    if (!frontUri || !subjectId || saveState === 'saving') return;
+    if (!frontUri || !subjectId || saveState === 'saving' || saveState === 'saved') return;
     setSaveState('saving');
     try {
       const id = await captureFlashcardPair(frontUri, backUri, subjectId, studyDate);
@@ -91,28 +158,22 @@ export default function CaptureTabScreen() {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
 
+      const savedSubjectId = subjectId;
       setTimeout(() => {
         resetCamera();
-        router.push('/(tabs)/vault');
-      }, 1400);
+        router.replace({
+          pathname: '/folder/[id]',
+          params: { id: savedSubjectId },
+        });
+      }, 900);
     } catch {
       setSaveState('error');
       showMessage(t('capture.saveFailed'));
     }
   };
 
-  if (!permission?.granted) {
-    return (
-      <View style={styles.permission}>
-        <View style={styles.permissionBody}>
-          <Text style={styles.permissionText}>{t('capture.permissionHint')}</Text>
-          <Button label={t('capture.allowCamera')} onPress={requestPermission} />
-        </View>
-      </View>
-    );
-  }
-
-  const cameraLabel = shootingBack ? t('capture.backShutter') : t('capture.frontShutter');
+  const sheetBottom = Math.max(36, insets.bottom + 20);
+  const saveBusy = saveState === 'saving' || saveState === 'saved';
   const saveLabel =
     saveState === 'saving'
       ? t('capture.saving')
@@ -120,76 +181,55 @@ export default function CaptureTabScreen() {
         ? t('capture.saved')
         : t('common.save');
 
-  return (
-    <View style={styles.flex}>
-      <View style={[styles.tabHeader, { paddingTop: insets.top + 12 }]}>
-        <Text style={styles.tabTitle}>{t('tabs.capture')}</Text>
-        {shootingBack && <Text style={styles.modeTag}>{t('capture.backMode')}</Text>}
-      </View>
-
-      {step === 'camera' && (
-        <>
-          <CameraView ref={cameraRef} style={styles.camera} facing="back" />
-          <View style={[styles.dateOverlay, { top: insets.top + 72 }]}>
-            <StudyDateStepper
-              studyDate={studyDate}
-              onChange={setStudyDate}
-              firstLaunchDate={data.settings.firstLaunchDate}
-              variant="inline"
-            />
-          </View>
-          {!shootingBack && (
-            <View style={[styles.guideBanner, { top: insets.top + 124 }]}>
-              <Text style={styles.guideText}>{t('capture.frontGuide')}</Text>
-            </View>
-          )}
-          {shootingBack && (
-            <View style={[styles.guideBanner, { top: insets.top + 124 }]}>
-              <Text style={styles.guideText}>{t('capture.backGuide')}</Text>
-            </View>
-          )}
-          <Pressable
-            style={[styles.shutter, { bottom: insets.bottom + 88 }]}
-            onPress={takePhoto}
-            accessibilityLabel={cameraLabel}
-          />
-        </>
-      )}
-
-      <Modal visible={step === 'answer-prompt'} animationType="slide" transparent>
-        <View style={styles.sheetBackdrop}>
-          <View style={[styles.sheet, { paddingBottom: Math.max(36, insets.bottom + 20) }]}>
+  const renderModals = () => (
+    <>
+      <Modal
+        visible={step === 'answer-prompt'}
+        animationType="slide"
+        transparent
+        onRequestClose={dismissAnswerPrompt}>
+        <Pressable style={styles.sheetBackdrop} onPress={dismissAnswerPrompt}>
+          <Pressable style={[styles.sheet, { paddingBottom: sheetBottom }]} onPress={() => {}}>
             <Text style={styles.sheetTitle}>{t('capture.pairTitle')}</Text>
-            {frontUri && <Image source={{ uri: frontUri }} style={styles.preview} />}
+            {frontUri ? <Image source={{ uri: frontUri }} style={styles.preview} /> : null}
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
-                {frontUri && <Image source={{ uri: frontUri }} style={styles.pairThumb} />}
+                {frontUri ? (
+                  <Pressable onPress={() => frontUri && openEditor(frontUri, 'front', 'answer-prompt')}>
+                    <Image source={{ uri: frontUri }} style={styles.pairThumb} />
+                    <Text style={styles.editLink}>{t('capture.editPhoto')}</Text>
+                  </Pressable>
+                ) : null}
               </View>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
                 <View style={styles.pairEmpty}>
-                  <Text style={styles.pairEmptyText}>?</Text>
+                  <Text style={styles.pairEmptyText}>—</Text>
                 </View>
               </View>
             </View>
-            <Button label={t('capture.captureBack')} onPress={startBackCapture} />
-            <Pressable onPress={skipBackAndSave} style={styles.skip}>
-              <Text style={styles.skipText}>{t('capture.skipBack')}</Text>
-            </Pressable>
+            <Button label={t('capture.saveFrontOnly')} onPress={goToSaveSheet} />
+            <Button label={t('capture.captureBack')} variant="ghost" onPress={startBackCapture} />
             <Pressable onPress={resetCamera} style={styles.retake}>
               <Text style={styles.retakeText}>{t('capture.retake')}</Text>
             </Pressable>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
-      <Modal visible={step === 'save-sheet'} animationType="slide" transparent>
-        <View style={styles.sheetBackdrop}>
-          <View style={[styles.sheet, { paddingBottom: Math.max(36, insets.bottom + 20) }]}>
+      <Modal
+        visible={step === 'save-sheet'}
+        animationType="slide"
+        transparent
+        onRequestClose={dismissSaveSheet}>
+        <Pressable style={styles.sheetBackdrop} onPress={dismissSaveSheet}>
+          <Pressable style={[styles.sheet, { paddingBottom: sheetBottom }]} onPress={() => {}}>
             {saveState === 'saved' ? (
               <View style={styles.successBanner}>
-                <Text style={styles.successTitle}>✓ {t('capture.saved')}</Text>
+                <Text style={styles.successTitle}>
+                  {t('common.check')} {t('capture.saved')}
+                </Text>
               </View>
             ) : null}
 
@@ -205,51 +245,159 @@ export default function CaptureTabScreen() {
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
-                {frontUri && <Image source={{ uri: frontUri }} style={styles.pairThumb} />}
+                {frontUri ? (
+                  <Pressable onPress={() => openEditor(frontUri, 'front', 'save-sheet')}>
+                    <Image source={{ uri: frontUri }} style={styles.pairThumb} />
+                  </Pressable>
+                ) : null}
               </View>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
                 {backUri ? (
-                  <Image source={{ uri: backUri }} style={styles.pairThumb} />
+                  <Pressable onPress={() => openEditor(backUri, 'back', 'save-sheet')}>
+                    <Image source={{ uri: backUri }} style={styles.pairThumb} />
+                  </Pressable>
                 ) : (
                   <View style={styles.pairEmpty}>
-                    <Text style={styles.pairEmptyText}>?</Text>
+                    <Text style={styles.pairEmptyText}>—</Text>
                   </View>
                 )}
               </View>
             </View>
-            <Text style={styles.chipLabel}>{t('capture.pickSubject')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
-              {data.subjects.map((s) => (
-                <Pressable
-                  key={s.id}
-                  onPress={() => setSubjectId(s.id)}
-                  style={[styles.chip, subjectId === s.id && styles.chipOn]}>
-                  <Text style={[styles.chipText, subjectId === s.id && styles.chipTextOn]}>
-                    {s.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-            <Button
-              label={saveLabel}
-              onPress={save}
-              disabled={saveState === 'saving' || saveState === 'saved'}
-              style={saveState === 'saved' ? styles.saveBtnDone : undefined}
-            />
+
+            {!hasSubjects ? (
+              <View style={styles.noSubjectsBlock}>
+                <Text style={styles.noSubjectsHint}>{t('capture.noSubjectsHint')}</Text>
+                <Button
+                  label={t('capture.goToVault')}
+                  onPress={() => {
+                    dismissSaveSheet();
+                    router.push('/(tabs)/vault');
+                  }}
+                />
+              </View>
+            ) : (
+              <>
+                <Text style={styles.chipLabel}>{t('capture.pickSubject')}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
+                  {data.subjects.map((s) => (
+                    <Pressable
+                      key={s.id}
+                      onPress={() => setSubjectId(s.id)}
+                      style={[styles.chip, subjectId === s.id && styles.chipOn]}>
+                      <Text style={[styles.chipText, subjectId === s.id && styles.chipTextOn]}>
+                        {s.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+                <Button
+                  label={saveLabel}
+                  onPress={save}
+                  disabled={saveBusy || !subjectId}
+                  style={saveState === 'saved' ? styles.saveBtnDone : undefined}
+                />
+              </>
+            )}
+
             {saveState === 'saving' ? (
               <ActivityIndicator color={theme.orange} style={styles.saveSpinner} />
             ) : null}
+            {!backUri && hasSubjects && !saveBusy ? (
+              <Button label={t('capture.captureBack')} variant="ghost" onPress={startBackCapture} />
+            ) : null}
             <Pressable
-              onPress={saveState === 'saving' ? undefined : resetCamera}
+              onPress={saveBusy ? undefined : resetCamera}
               style={styles.retake}
-              disabled={saveState === 'saving'}>
+              disabled={saveBusy}>
               <Text style={styles.retakeText}>{t('capture.retake')}</Text>
             </Pressable>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
+    </>
+  );
 
+  if (step === 'edit' && editUri) {
+    return (
+      <>
+        <CapturePhotoEditor
+          uri={editUri}
+          sideLabel={editSide === 'back' ? t('capture.backLabel') : t('capture.frontLabel')}
+          frameAspect={frameAspect}
+          onFrameAspectChange={setFrameAspect}
+          onConfirm={onEditConfirm}
+          onRetake={onEditRetake}
+        />
+        {renderModals()}
+      </>
+    );
+  }
+
+  if (isWeb) {
+    return (
+      <View style={styles.permission}>
+        <View style={[styles.tabHeader, { paddingTop: insets.top + 12 }]}>
+          <Text style={styles.tabTitleWeb}>{t('tabs.capture')}</Text>
+        </View>
+        <View style={styles.permissionBody}>
+          <Text style={styles.permissionText}>{t('capture.importWebHint')}</Text>
+          <Text style={styles.frameLabel}>{t('capture.frameLabel')}</Text>
+          <CaptureFramePicker value={frameAspect} onChange={setFrameAspect} variant="light" />
+          <Button label={t('capture.importWeb')} onPress={pickWebImage} />
+          {!hasSubjects ? (
+            <>
+              <Text style={styles.noSubjectsHint}>{t('capture.noSubjectsHint')}</Text>
+              <Button
+                label={t('capture.goToVault')}
+                variant="ghost"
+                onPress={() => router.push('/(tabs)/vault')}
+              />
+            </>
+          ) : null}
+          <Button
+            label={t('capture.goBack')}
+            variant="ghost"
+            onPress={() => safeRouterBack(router, '/(tabs)/vault')}
+          />
+        </View>
+        {renderModals()}
+      </View>
+    );
+  }
+
+  if (!permission?.granted) {
+    return (
+      <View style={styles.permission}>
+        <View style={styles.permissionBody}>
+          <Text style={styles.permissionText}>{t('capture.permissionHint')}</Text>
+          <Button label={t('capture.allowCamera')} onPress={requestPermission} />
+          <Button
+            label={t('capture.goBack')}
+            variant="ghost"
+            onPress={() => safeRouterBack(router, '/(tabs)/vault')}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  const cameraLabel = editSide === 'back' ? t('capture.backShutter') : t('capture.frontShutter');
+
+  return (
+    <View style={styles.flex}>
+      {step === 'camera' && (
+        <>
+          <CameraView ref={cameraRef} style={styles.camera} facing="back" />
+          <Pressable
+            style={[styles.shutter, { bottom: insets.bottom + 40 }]}
+            onPress={takePhoto}
+            accessibilityLabel={cameraLabel}
+          />
+        </>
+      )}
+
+      {renderModals()}
     </View>
   );
 }
@@ -257,38 +405,24 @@ export default function CaptureTabScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: theme.blackPure },
   tabHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 2,
     paddingHorizontal: 20,
     paddingBottom: 8,
-    backgroundColor: 'rgba(0,0,0,0.35)',
   },
-  tabTitle: { fontSize: theme.font.heading, fontWeight: '800', color: theme.white },
-  modeTag: { color: theme.orange, fontWeight: '800', fontSize: theme.font.caption, marginTop: 4 },
+  tabTitleWeb: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
+  noSubjectsHint: {
+    fontSize: theme.font.caption,
+    color: theme.gray,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  noSubjectsBlock: { marginTop: 12, gap: 10 },
   camera: { flex: 1 },
-  dateOverlay: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: theme.radius.sm,
-    zIndex: 1,
+  frameLabel: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.gray,
+    textAlign: 'center',
   },
-  guideBanner: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(255,107,0,0.92)',
-    padding: 14,
-    borderRadius: theme.radius.md,
-    zIndex: 1,
-  },
-  guideText: { color: theme.white, fontWeight: '700', textAlign: 'center', lineHeight: 20 },
   shutter: {
     position: 'absolute',
     left: '50%',
@@ -299,7 +433,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
     borderWidth: 4,
     borderColor: theme.orange,
-    zIndex: 1,
+    zIndex: 2,
   },
   permission: { flex: 1, backgroundColor: theme.beige },
   permissionBody: { flex: 1, justifyContent: 'center', padding: 24, gap: 16 },
@@ -312,7 +446,6 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   sheetTitle: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
-  sheetBody: { fontSize: theme.font.body, color: theme.gray, marginTop: 8, lineHeight: 22 },
   successBanner: {
     backgroundColor: theme.orangeMuted,
     borderWidth: 1,
@@ -322,12 +455,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   successTitle: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
-  successBody: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray, marginTop: 4 },
   preview: { width: '100%', height: 160, borderRadius: theme.radius.md, marginTop: 16 },
   pairRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   pairSlot: { flex: 1, gap: 6 },
   pairLabel: { fontSize: 11, fontWeight: '800', color: theme.gray },
   pairThumb: { width: '100%', height: 100, borderRadius: theme.radius.sm, backgroundColor: theme.surface },
+  editLink: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.orange,
+    textAlign: 'center',
+    marginTop: 4,
+  },
   pairEmpty: {
     height: 100,
     borderRadius: theme.radius.sm,
@@ -355,8 +494,6 @@ const styles = StyleSheet.create({
   chipTextOn: { color: theme.white },
   saveBtnDone: { opacity: 0.85 },
   saveSpinner: { marginTop: 8 },
-  skip: { marginTop: 12, alignItems: 'center' },
-  skipText: { color: theme.gray, fontWeight: '600' },
   retake: { marginTop: 14, alignItems: 'center' },
   retakeText: { color: theme.gray, fontWeight: '600' },
 });

@@ -1,5 +1,8 @@
 export type Language = 'ko' | 'en';
 
+/** Visible crop guide + save crop for camera / import */
+export type CaptureFrameAspect = '4:3' | '3:4' | '1:1' | '16:9' | 'full';
+
 export type SubscriptionTier = 'free' | 'pro';
 
 export type ReviewScheduleMode = 'everyNDays' | 'customIntervals';
@@ -155,6 +158,7 @@ export type AppSettings = {
   /** Thumbnail rebuild failures from last load/restore (for user notice). */
   lastDerivativeRegenFailed?: number;
   lastDerivativeRegenAt?: string | null;
+  captureFrameAspect?: CaptureFrameAspect;
 };
 
 export type AppData = {

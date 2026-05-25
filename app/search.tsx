@@ -5,6 +5,7 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
@@ -26,6 +27,12 @@ export default function SearchScreen() {
         styles.root,
         { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
       ]}>
+      <ScreenHeader
+        title={t('item.search')}
+        showBack
+        backFallback="/(tabs)/vault"
+        showSettings={false}
+      />
       <TextInput
         style={styles.input}
         placeholder={t('item.search')}
@@ -36,7 +43,8 @@ export default function SearchScreen() {
       />
       <Pressable onPress={() => setExamOnly((e) => !e)} style={styles.filter}>
         <Text style={[styles.filterText, examOnly && styles.filterOn]}>
-          {examOnly ? '✓ ' : ''}{t('item.tagExam')}
+          {examOnly ? `${t('common.check')} ` : ''}
+          {t('item.tagExam')}
         </Text>
       </Pressable>
       <FlatList

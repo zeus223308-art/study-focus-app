@@ -46,6 +46,7 @@ export function normalizeAppSettings(settings: AppSettings, data: AppData): AppS
     cloudAccountEmail: merged.cloudAccountEmail ?? null,
     lastDerivativeRegenFailed: merged.lastDerivativeRegenFailed ?? 0,
     lastDerivativeRegenAt: merged.lastDerivativeRegenAt ?? null,
+    captureFrameAspect: merged.captureFrameAspect ?? '4:3',
   };
 }
 

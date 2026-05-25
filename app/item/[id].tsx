@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 
 import { useApp } from '@/context/AppContext';
+import { safeRouterBack } from '@/lib/navigation/safe-back';
 
 /** Legacy route — redirects to bundle viewer */
 export default function ItemRedirectScreen() {
@@ -16,7 +17,7 @@ export default function ItemRedirectScreen() {
     if (bundle) {
       router.replace({ pathname: '/bundle/[id]', params: { id: bundle.id } });
     } else {
-      router.back();
+      safeRouterBack(router, '/(tabs)/vault');
     }
   }, [id, data.bundles, router]);
 

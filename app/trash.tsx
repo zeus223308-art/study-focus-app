@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -14,7 +15,12 @@ export default function TrashScreen() {
 
   return (
     <Screen scroll>
-      <Text style={styles.title}>{t('trash.title')}</Text>
+      <ScreenHeader
+        title={t('trash.title')}
+        showBack
+        backFallback="/(tabs)/vault"
+        showSettings={false}
+      />
       <Text style={styles.hint}>{t('trash.autoDeleteHint')}</Text>
       {data.trash.length === 0 ? (
         <Text style={styles.empty}>{t('trash.empty')}</Text>

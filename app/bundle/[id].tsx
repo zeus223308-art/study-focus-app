@@ -1,6 +1,6 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -20,6 +20,7 @@ import { InkToolBar } from '@/components/annotation/InkToolBar';
 import { Button } from '@/components/ui/Button';
 import { PhotoFullscreenModal } from '@/components/ui/PhotoFullscreenModal';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
+import { NotFoundView } from '@/components/ui/NotFoundView';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
@@ -127,7 +128,13 @@ export default function BundleScreen() {
     setPageIndex((i) => Math.min(i, Math.max(0, bundle.pages.length - 1)));
   }, [bundle?.id, bundle?.pages.length]);
 
-  if (!bundle || !page) return null;
+  if (!bundle || !page) {
+    return (
+      <Screen>
+        <NotFoundView backFallback="/(tabs)/vault" />
+      </Screen>
+    );
+  }
 
   const folderBack: { pathname: '/folder/[id]'; params: { id: string } } = {
     pathname: '/folder/[id]',
@@ -141,6 +148,22 @@ export default function BundleScreen() {
       ),
     });
   };
+
+  const persistEditsRef = useRef<() => void>(() => {});
+  persistEditsRef.current = () => {
+    updateBundle(bundle.id, {
+      pages: bundle.pages.map((p) =>
+        p.id === page.id ? { ...p, textNote: note, updatedAt: new Date().toISOString() } : p
+      ),
+    });
+    saveOcrFields(ocrTextDraft, answerOcrDraft);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => persistEditsRef.current();
+    }, [bundle.id, page.id])
+  );
 
   const rerunOcr = async () => {
     if (!ocrEnabled) {
@@ -365,7 +388,7 @@ export default function BundleScreen() {
               style={[styles.page, { width: pagerSize, height: pagerSize }]}
               resizeMode="contain"
             />
-            {activeLayer && layersVisible && (
+            {p.id === page.id && activeLayer && layersVisible && (
               <AnnotationCanvas
                 layer={activeLayer}
                 tool={tool}

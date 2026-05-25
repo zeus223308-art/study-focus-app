@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import {
   FlatList,
@@ -42,6 +43,7 @@ export function SubjectFolderPreview({
   subjectTag,
   onInteraction,
 }: Props) {
+  const { t } = useTranslation();
   const cardHeight = variant === 'dashboard' ? DASHBOARD_HEIGHT : VAULT_HEIGHT;
   const [cardWidth, setCardWidth] = useState(0);
   const [index, setIndex] = useState(0);
@@ -173,7 +175,7 @@ export function SubjectFolderPreview({
           onOpen();
         }}
         hitSlop={8}>
-        <Text style={styles.openFabText}>→</Text>
+        <Text style={styles.openFabText}>{t('common.arrowRight')}</Text>
       </Pressable>
     </View>
   );

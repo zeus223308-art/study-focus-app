@@ -1,0 +1,23 @@
+---
+description: After code changes, commit and push to main so GitHub Actions deploys the web app
+alwaysApply: true
+---
+
+# Auto commit, push, and deploy
+
+When you finish a batch of **code or i18n changes** in this repo (not question-only replies):
+
+1. Run `git status` and `git diff --stat` to see what changed.
+2. If there are meaningful changes, **commit and push** without waiting for the user to ask.
+3. Do **not** commit secrets (`.env`, credentials). Never change git config.
+4. Use a clear commit message: one-line summary + short body if needed.
+5. Push to `origin main` (or the current branch that triggers deploy).
+
+Deploy: pushing to `main` runs `.github/workflows/deploy-web.yml` → GitHub Pages at `/study-focus-app`.
+
+Skip commit/push only when:
+- The user explicitly says not to commit yet, or
+- There are no file changes, or
+- Changes are exploratory and the user is still deciding.
+
+After push, briefly tell the user the commit hash and that Deploy Web will run on GitHub Actions.

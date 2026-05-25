@@ -16,6 +16,7 @@
     "pickSubjectsHint": "",
     "dueToday": "Due {{count}}",
     "noSubjects": "No photos to review",
+    "addPhotos": "Add photos",
     "selectAll": "Select all",
     "deselectAll": "Clear",
     "startReviewHint": "Pick a subject",
@@ -23,6 +24,19 @@
     "studyPlease": "Review ready",
     "dueCount": "{{count}} pending",
     "calendarHint": "Calendar",
+    "calendarTitle": "Month calendar",
+    "calendarSub": "Tap a day to update the review list below",
+    "ribbonCaption": "Date scroll",
+    "weekday": {
+      "sun": "S",
+      "mon": "M",
+      "tue": "T",
+      "wed": "W",
+      "thu": "T",
+      "fri": "F",
+      "sat": "S"
+    },
+    "noReviewPages": "No review photos in selected subjects",
     "totalPages": "Total {{count}}",
     "previewEmpty": "Nothing due"
   },
@@ -65,7 +79,27 @@
     "frontLabel": "Front",
     "backLabel": "Answer",
     "captureBack": "Capture back",
-    "skipBack": "Skip back"
+    "skipBack": "Skip back",
+    "saveFrontOnly": "Save without back",
+    "editPhoto": "Edit",
+    "editHint": "Rotate or fit frame, then continue",
+    "rotate": "Rotate 90°",
+    "applyFrame": "Fit frame",
+    "usePhoto": "Use photo",
+    "noSubjectsHint": "Create a subject in Files first.",
+    "goToVault": "Go to Files",
+    "goBack": "Go back",
+    "importWeb": "Choose photos",
+    "importWebHint": "On web, pick images from your device.",
+    "cancelSheet": "Close",
+    "frameLabel": "Capture area",
+    "frame": {
+      "4:3": "4:3",
+      "3:4": "3:4",
+      "1:1": "1:1",
+      "16:9": "16:9",
+      "full": "Full"
+    }
   },
   "folder": {
     "import": "Import photos",
@@ -173,6 +207,8 @@
     "advanceNextDate": "Next: {{date}}",
     "advanceYes": "Yes",
     "advanceNo": "Again today",
+    "emptySession": "No photos to review",
+    "skipAd": "Skip",
     "answerToggle": "Answer",
     "answerPremium": "Answer · Premium",
     "noBackPhoto": "No back photo",
@@ -197,6 +233,8 @@
     "langKo": "한국어",
     "langEn": "English",
     "notifications": "Reminders",
+    "notificationTitle": "Today's review",
+    "notificationBody": "You have reviews waiting.",
     "reviewPattern": "Review Pattern",
     "reviewPatternHint": "Max 2",
     "filesSection": "Files",
@@ -205,6 +243,10 @@
     "onboarding": "Setup guide",
     "limits": "Limits",
     "photos": "Photos {{used}} / {{max}}",
+    "limitPhotos": "Photos",
+    "limitMemos": "Memos",
+    "limitPhotosValue": "{{used}} / {{max}}",
+    "limitMemosValue": "{{used}} / {{max}}",
     "cloud": "Google Drive",
     "cloudSection": "Google Drive",
     "cloudSoon": "Soon",
@@ -279,13 +321,27 @@
     "step1": "Save photos in Files",
     "step2": "Review Pattern → Today's review",
     "step3": "Archive skips review",
-    "start": "Start"
+    "start": "Start",
+    "skip": "Skip"
+  },
+  "paywall": {
+    "imagesTitle": "Photo limit reached",
+    "memosTitle": "Memo limit reached",
+    "imagesBody": "Free plan allows up to {{max}} photos ({{used}} used).",
+    "memosBody": "Free plan allows up to {{max}} memos ({{used}} used).",
+    "proBenefits": "Pro: unlimited saves · cloud backup · hide answers",
+    "gotIt": "OK",
+    "later": "Later"
   },
   "common": {
     "back": "Back",
     "cancel": "Cancel",
     "save": "Save",
     "done": "Done",
-    "default": "Default"
+    "default": "Default",
+    "check": "✓",
+    "close": "✕",
+    "arrowRight": "→",
+    "notFound": "Not found"
   }
 }

@@ -39,7 +39,10 @@ export default function OnboardingScreen() {
         ))}
       </View>
       {!isLast ? (
-        <Button label={t('review.next')} onPress={() => setStep((s) => s + 1)} />
+        <>
+          <Button label={t('review.next')} onPress={() => setStep((s) => s + 1)} />
+          <Button label={t('onboarding.skip')} variant="ghost" onPress={finish} style={{ marginTop: 8 }} />
+        </>
       ) : (
         <Button label={t('onboarding.start')} onPress={finish} />
       )}

@@ -71,6 +71,7 @@ export const DEFAULT_DATA: AppData = {
     lastAutoRecoveryAt: null,
     cloudAccountEmail: null,
     assetQualityVersion: ASSET_QUALITY_VERSION,
+    captureFrameAspect: '4:3',
   },
 };
 

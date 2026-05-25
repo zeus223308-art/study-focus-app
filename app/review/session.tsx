@@ -19,7 +19,9 @@ import { RecallCanvas, type RecallTool } from '@/components/review/RecallCanvas'
 import { RecallToolbar } from '@/components/review/RecallToolbar';
 import { ScheduleAdvanceSheet } from '@/components/review/ScheduleAdvanceSheet';
 import { Button } from '@/components/ui/Button';
+import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
+import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { useApp } from '@/context/AppContext';
 import type { InkStroke, NoteBundle, NotePage } from '@/lib/domain/types';
 import {
@@ -113,6 +115,15 @@ export default function ReviewSessionScreen() {
   const [recallCountdownSec, setRecallCountdownSec] = useState(3);
   const [sessionSlideSec, setSessionSlideSec] = useState<number | null>(null);
   const [slideRemainingSec, setSlideRemainingSec] = useState(0);
+  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const adTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+      if (adTimerRef.current) clearTimeout(adTimerRef.current);
+    };
+  }, []);
 
   const current = slides[index];
   const frontUri = getFullImageUri(current?.page.asset);
@@ -207,27 +218,37 @@ export default function ReviewSessionScreen() {
       enterRecallPhase();
       return;
     }
+    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
     const steps = buildCountdownSteps(recallCountdownSec);
     setPhase('countdown');
     let step = 0;
     setCountdown(steps[0]);
-    const tick = setInterval(() => {
+    countdownTimerRef.current = setInterval(() => {
       step += 1;
       if (step < steps.length) {
         setCountdown(steps[step]);
       } else {
         setCountdown(null);
         enterRecallPhase();
-        clearInterval(tick);
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
       }
     }, 1000);
+  };
+
+  const dismissFailAd = () => {
+    if (adTimerRef.current) clearTimeout(adTimerRef.current);
+    adTimerRef.current = null;
+    setAdVisible(false);
+    setAdLocked(false);
+    enterRecallPhase();
   };
 
   const advance = useCallback(() => {
     if (index < slides.length - 1) {
       setIndex((i) => i + 1);
     } else {
-      router.back();
+      safeRouterBack(router, '/(tabs)');
     }
   }, [index, slides.length, router]);
 
@@ -305,10 +326,9 @@ export default function ReviewSessionScreen() {
       setPhase('fail');
       setAdLocked(true);
       setAdVisible(true);
-      setTimeout(() => {
-        setAdVisible(false);
-        setAdLocked(false);
-        enterRecallPhase();
+      if (adTimerRef.current) clearTimeout(adTimerRef.current);
+      adTimerRef.current = setTimeout(() => {
+        dismissFailAd();
       }, AD_LOCK_MS);
     }
   };
@@ -326,9 +346,22 @@ export default function ReviewSessionScreen() {
     }, 2000);
   };
 
+  if (slides.length === 0) {
+    return (
+      <Screen style={styles.emptyRoot}>
+        <Text style={styles.emptyTitle}>{t('review.emptySession')}</Text>
+        <Button label={t('common.back')} onPress={() => safeRouterBack(router, '/(tabs)')} />
+      </Screen>
+    );
+  }
+
   if (!current) {
-    router.back();
-    return null;
+    return (
+      <Screen style={styles.emptyRoot}>
+        <Text style={styles.emptyTitle}>{t('review.emptySession')}</Text>
+        <Button label={t('common.back')} onPress={() => safeRouterBack(router, '/(tabs)')} />
+      </Screen>
+    );
   }
 
   const showAnswerOverlay = isPro && premiumReveal && answerUri && !auto;
@@ -385,8 +418,11 @@ export default function ReviewSessionScreen() {
               </Text>
             </View>
           ) : null}
-          <Pressable style={styles.close} onPress={() => router.back()} hitSlop={12}>
-            <Text style={[styles.closeText, recallMode && styles.topBarDarkText]}>✕</Text>
+          <Pressable
+            style={styles.close}
+            onPress={() => safeRouterBack(router, '/(tabs)')}
+            hitSlop={12}>
+            <Text style={[styles.closeText, recallMode && styles.topBarDarkText]}>{t('common.close')}</Text>
           </Pressable>
         </View>
       </View>
@@ -556,10 +592,13 @@ export default function ReviewSessionScreen() {
         </>
       )}
 
-      <Modal visible={adVisible} transparent animationType="fade">
+      <Modal visible={adVisible} transparent animationType="fade" onRequestClose={dismissFailAd}>
         <View style={styles.ad}>
           <Text style={styles.adTitle}>{t('review.adTitle')}</Text>
           <Text style={styles.adSub}>{t('review.adWait')}</Text>
+          <Pressable onPress={dismissFailAd} style={styles.adSkip}>
+            <Text style={styles.adSkipText}>{t('review.skipAd')}</Text>
+          </Pressable>
         </View>
       </Modal>
 
@@ -726,6 +765,16 @@ const styles = StyleSheet.create({
   },
   adTitle: { color: theme.white, fontSize: 22, fontWeight: '800' },
   adSub: { color: theme.grayMuted, marginTop: 12, textAlign: 'center' },
+  adSkip: { marginTop: 20, paddingVertical: 10, paddingHorizontal: 20 },
+  adSkipText: { color: theme.white, fontWeight: '700', fontSize: theme.font.body },
+  emptyRoot: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
+  emptyTitle: {
+    fontSize: theme.font.body,
+    fontWeight: '600',
+    color: theme.gray,
+    textAlign: 'center',
+    paddingHorizontal: 24,
+  },
   hintBtn: { color: theme.orange, fontWeight: '800', marginTop: 24, fontSize: 18 },
   cancel: { color: theme.white, marginTop: 16 },
 });

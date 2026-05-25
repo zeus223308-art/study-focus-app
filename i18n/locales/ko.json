@@ -1,35 +1,49 @@
 {
   "appName": "MemorySherpa",
-  "splashTagline": "Conquer your memory",
+  "splashTagline": "기억을 정복하세요",
   "tabs": {
     "dashboard": "대시보드",
     "reviewShort": "P",
     "vault": "파일",
-    "capture": "Camera",
+    "capture": "촬영",
     "settings": "설정"
   },
   "dashboard": {
-    "title": "Today's review",
+    "title": "오늘 복습",
     "empty": "오늘 복습 없음",
     "emptyDate": "{{date}} · 복습 없음",
     "pickSubjects": "과목 선택",
     "pickSubjectsHint": "",
     "dueToday": "오늘 {{count}}장",
     "noSubjects": "복습할 사진 없음",
+    "addPhotos": "사진 추가",
     "selectAll": "전체 선택",
     "deselectAll": "선택 해제",
     "startReviewHint": "과목 선택 필요",
     "startReview": "복습 시작",
     "studyPlease": "오늘 복습 있음",
     "dueCount": "{{count}}개 대기",
-    "calendarHint": "Calendar",
-    "totalPages": "Total {{count}}장",
+    "calendarHint": "달력",
+    "calendarTitle": "월간 달력",
+    "calendarSub": "날짜를 누르면 아래 복습 목록이 바뀝니다",
+    "ribbonCaption": "날짜 스크롤",
+    "weekday": {
+      "sun": "일",
+      "mon": "월",
+      "tue": "화",
+      "wed": "수",
+      "thu": "목",
+      "fri": "금",
+      "sat": "토"
+    },
+    "noReviewPages": "선택한 과목에 복습할 사진이 없습니다",
+    "totalPages": "총 {{count}}장",
     "previewEmpty": "복습 없음"
   },
   "vault": {
     "title": "파일",
     "addFolder": "폴더 추가",
-    "totalPages": "Total {{count}}장",
+    "totalPages": "총 {{count}}장",
     "swipeHint": "밀어서 더 보기",
     "previewEmpty": "사진 없음",
     "photos": "{{count}}장"
@@ -65,7 +79,27 @@
     "frontLabel": "문제",
     "backLabel": "정답",
     "captureBack": "뒷면 촬영",
-    "skipBack": "뒷면 건너뛰기"
+    "skipBack": "뒷면 건너뛰기",
+    "saveFrontOnly": "뒷면 없이 저장",
+    "editPhoto": "편집",
+    "editHint": "회전·영역 조정 후 사용",
+    "rotate": "90° 회전",
+    "applyFrame": "영역 맞추기",
+    "usePhoto": "이 사진 사용",
+    "noSubjectsHint": "파일 탭에서 과목을 먼저 만드세요.",
+    "goToVault": "파일로 이동",
+    "goBack": "돌아가기",
+    "importWeb": "사진 선택",
+    "importWebHint": "웹에서는 파일에서 사진을 선택합니다.",
+    "cancelSheet": "닫기",
+    "frameLabel": "촬영 영역",
+    "frame": {
+      "4:3": "4:3",
+      "3:4": "3:4",
+      "1:1": "1:1",
+      "16:9": "16:9",
+      "full": "전체"
+    }
   },
   "folder": {
     "import": "사진 불러오기",
@@ -173,6 +207,8 @@
     "advanceNextDate": "다음: {{date}}",
     "advanceYes": "예",
     "advanceNo": "오늘 더",
+    "emptySession": "복습할 사진이 없습니다",
+    "skipAd": "건너뛰기",
     "answerToggle": "해답",
     "answerPremium": "해답 · Premium",
     "noBackPhoto": "뒷면 없음",
@@ -192,12 +228,14 @@
     "everyTwoDays": "1-3-7-14-30"
   },
   "settings": {
-    "title": "Settings",
+    "title": "설정",
     "language": "언어",
     "langKo": "한국어",
     "langEn": "English",
     "notifications": "복습 알림",
-    "reviewPattern": "Review Pattern",
+    "notificationTitle": "오늘 복습이 있습니다",
+    "notificationBody": "대기 중인 복습을 확인하세요",
+    "reviewPattern": "복습 패턴",
     "reviewPatternHint": "최대 2개",
     "filesSection": "파일",
     "premium": "Premium",
@@ -205,6 +243,10 @@
     "onboarding": "설정 가이드",
     "limits": "저장 한도",
     "photos": "사진 {{used}} / {{max}}",
+    "limitPhotos": "사진",
+    "limitMemos": "메모",
+    "limitPhotosValue": "{{used}} / {{max}}장",
+    "limitMemosValue": "{{used}} / {{max}}개",
     "cloud": "Google Drive",
     "cloudSection": "Google Drive",
     "cloudSoon": "준비 중",
@@ -277,15 +319,29 @@
   "onboarding": {
     "welcome": "MemorySherpa",
     "step1": "파일에 사진 저장",
-    "step2": "Review Pattern → Today's review",
+    "step2": "복습 패턴 → 오늘 복습",
     "step3": "아카이브 = 복습 제외",
-    "start": "시작"
+    "start": "시작",
+    "skip": "건너뛰기"
+  },
+  "paywall": {
+    "imagesTitle": "사진 한도에 도달했어요",
+    "memosTitle": "메모 한도에 도달했어요",
+    "imagesBody": "무료 플랜은 사진 {{max}}장까지 저장할 수 있어요. (현재 {{used}}장)",
+    "memosBody": "무료 플랜은 메모 {{max}}개까지 저장할 수 있어요. (현재 {{used}}개)",
+    "proBenefits": "Pro: 무제한 저장 · 클라우드 백업 · 해답 숨기기",
+    "gotIt": "확인",
+    "later": "나중에"
   },
   "common": {
     "back": "뒤로",
     "cancel": "취소",
     "save": "저장",
     "done": "완료",
-    "default": "기본"
+    "default": "기본",
+    "check": "✓",
+    "close": "✕",
+    "arrowRight": "→",
+    "notFound": "찾을 수 없습니다"
   }
 }

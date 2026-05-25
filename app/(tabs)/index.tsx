@@ -7,14 +7,17 @@ import {
   DashboardReviewPicker,
   type DashboardSubjectEntry,
 } from '@/components/dashboard/DashboardReviewPicker';
+import { DashboardCalendar } from '@/components/dashboard/DashboardCalendar';
 import { DateRibbon } from '@/components/dashboard/DateRibbon';
-import { PaywallSheet } from '@/components/paywall/PaywallSheet';
 import { SpringPressable } from '@/components/ui/SpringPressable';
+import { Button } from '@/components/ui/Button';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getBundlesFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
+import { showMessage } from '@/lib/ui/confirm';
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
@@ -26,9 +29,6 @@ export default function DashboardScreen() {
     localToday,
     selectedDate,
     setSelectedDate,
-    freemium,
-    paywallVisible,
-    setPaywallVisible,
   } = useApp();
 
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<string>>(new Set());
@@ -90,6 +90,13 @@ export default function DashboardScreen() {
   const openReview = () => {
     if (!canStart) return;
     const ids = Array.from(selectedSubjectIds);
+    const hasPages = data.bundles.some(
+      (b) => !b.archived && ids.includes(b.subjectId) && b.pages.length > 0
+    );
+    if (!hasPages) {
+      showMessage('', t('dashboard.noReviewPages'));
+      return;
+    }
     router.push({
       pathname: '/review/session',
       params: {
@@ -101,6 +108,19 @@ export default function DashboardScreen() {
 
   return (
     <Screen scroll nestedScrollEnabled>
+      <ScreenHeader title={t('dashboard.title')} showSettings />
+
+      <View style={styles.calendarSection}>
+        <DashboardCalendar
+          marks={ribbonMarks}
+          selectedDate={selectedDate}
+          localToday={localToday}
+          firstLaunchDate={data.settings.firstLaunchDate}
+          onSelectDate={setSelectedDate}
+        />
+      </View>
+
+      <Text style={styles.ribbonCaption}>{t('dashboard.ribbonCaption')}</Text>
       <View style={styles.ribbonBlock}>
         <DateRibbon
           marks={ribbonMarks}
@@ -112,7 +132,19 @@ export default function DashboardScreen() {
       </View>
 
       {subjectEntries.length === 0 ? (
-        <Text style={styles.empty}>{t('dashboard.noSubjects')}</Text>
+        <View style={styles.emptyBlock}>
+          <Text style={styles.empty}>{t('dashboard.noSubjects')}</Text>
+          <Button
+            label={t('dashboard.addPhotos')}
+            onPress={() => router.push('/(tabs)/capture')}
+            style={styles.emptyBtn}
+          />
+          <Button
+            label={t('vault.addFolder')}
+            variant="ghost"
+            onPress={() => router.push('/(tabs)/vault')}
+          />
+        </View>
       ) : (
         <>
           {dueSelected.length === 0 ? (
@@ -146,27 +178,29 @@ export default function DashboardScreen() {
         <Text style={styles.startHint}>{t('dashboard.startReviewHint')}</Text>
       ) : null}
 
-      <PaywallSheet
-        visible={paywallVisible}
-        reason={freemium.reason ?? 'images'}
-        used={freemium.reason === 'memos' ? freemium.usedMemos : freemium.usedImages}
-        max={freemium.reason === 'memos' ? data.settings.memoLimit : data.settings.photoLimit}
-        onClose={() => setPaywallVisible(false)}
-      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  calendarSection: { marginBottom: 8 },
+  ribbonCaption: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.graySecondary,
+    marginBottom: 6,
+    marginLeft: 4,
+  },
   ribbonBlock: { marginBottom: 4 },
+  emptyBlock: { marginVertical: 24, gap: 12, alignItems: 'center' },
   empty: {
     fontSize: theme.font.body,
     fontWeight: '600',
     color: theme.gray,
-    marginVertical: 24,
     textAlign: 'center',
     lineHeight: 22,
   },
+  emptyBtn: { alignSelf: 'stretch', maxWidth: 280 },
   emptySchedule: {
     fontSize: theme.font.caption,
     fontWeight: '600',
