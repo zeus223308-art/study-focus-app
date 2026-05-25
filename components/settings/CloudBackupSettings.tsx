@@ -116,7 +116,18 @@ export function CloudBackupSettings() {
     } finally {
       setBusy(false);
     }
-  }, [authPreparing, configured, devSetup, reloadAccountData, reloadSession, router, signIn, t, updateSettings]);
+  }, [
+    authPreparing,
+    configured,
+    devSetup,
+    inAppBrowserBlocked,
+    reloadAccountData,
+    reloadSession,
+    router,
+    signIn,
+    t,
+    updateSettings,
+  ]);
 
   const handleRestoreDrive = useCallback(() => {
     if (!session) {
