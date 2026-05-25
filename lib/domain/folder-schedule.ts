@@ -1,12 +1,12 @@
 import type { Language } from './types';
 
 export const SCHEDULE_DAILY_ID = 'sched_daily';
-/** Row 1 — 이틀에 한 번 */
+/** Row 1 — 1-3-7-14-30 간격 복습 */
 export const SCHEDULE_EVERY_TWO_DAYS_ID = 'sched_135714';
 /** Row 3 — Premium +추가 (not used for folder toggle) */
 export const SCHEDULE_ADD_ID = 'sched_2days';
 
-/** Folder list only supports 매일 ↔ 이틀에 한번. */
+/** Folder list only supports 매일 ↔ 1-3-7-14-30. */
 export function normalizeFolderScheduleId(scheduleId: string): string {
   if (scheduleId === SCHEDULE_DAILY_ID) return SCHEDULE_DAILY_ID;
   if (scheduleId === SCHEDULE_ADD_ID) return SCHEDULE_EVERY_TWO_DAYS_ID;

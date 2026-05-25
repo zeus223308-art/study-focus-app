@@ -6,10 +6,10 @@ import type { AppData, ReviewSchedule, SubjectFolder } from './types';
 export const DEFAULT_SCHEDULES: ReviewSchedule[] = [
   {
     id: 'sched_135714',
-    name: '이틀에 한 번',
-    nameEn: 'Every 2 days',
-    mode: 'everyNDays',
-    everyNDays: 2,
+    name: '1-3-7-14-30',
+    nameEn: '1-3-7-14-30',
+    mode: 'customIntervals',
+    customIntervals: [1, 3, 7, 14, 30],
     tier: 'standard',
   },
   {

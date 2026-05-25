@@ -183,7 +183,7 @@
   },
   "schedule": {
     "daily": "Daily",
-    "everyTwoDays": "Every 2 days"
+    "everyTwoDays": "1-3-7-14-30"
   },
   "settings": {
     "title": "Settings",
