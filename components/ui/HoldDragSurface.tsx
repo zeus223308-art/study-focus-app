@@ -17,7 +17,7 @@ const TAP_SLOP_PX = 14;
 /** Gap between first tap release and second touch for delete (ms). */
 const DELETE_PAIR_MS = 420;
 /** Defer open slightly so a quick second touch can start delete instead. */
-const OPEN_DEFER_MS = 280;
+const OPEN_DEFER_MS = 120;
 
 type Props = {
   enabled: boolean;

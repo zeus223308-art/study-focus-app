@@ -15,7 +15,7 @@ export { HOLD_DRAG_MS };
 const MOVE_CANCEL_PX = 10;
 const TAP_SLOP_PX = 16;
 const DELETE_PAIR_MS = 420;
-const OPEN_DEFER_MS = 280;
+const OPEN_DEFER_MS = 120;
 
 type Props = {
   enabled: boolean;

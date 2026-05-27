@@ -108,7 +108,7 @@ export function SubjectFolderTile({
             isActive && styles.dragSurfaceLifted,
             reorderHover && styles.dragSurfaceHover,
           ]}>
-          <View ref={cardRef} collapsable={false} pointerEvents="none">
+          <View ref={cardRef} collapsable={false} pointerEvents="box-none">
             <SubjectFolderPreview
               variant="vault"
               items={previewItems}
@@ -116,6 +116,7 @@ export function SubjectFolderTile({
               emptyHint={t('vault.previewEmpty')}
               passthroughGestures
               onOpen={openFolder}
+              onLongPress={handleLift}
               onGestureLock={onPreviewGestureLock}
             />
           </View>

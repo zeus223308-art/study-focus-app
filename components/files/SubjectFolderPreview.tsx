@@ -113,14 +113,29 @@ export function SubjectFolderPreview({
   };
 
   if (items.length === 0) {
-    const EmptyWrap = passthroughGestures ? View : Pressable;
+    if (passthroughGestures) {
+      return (
+        <Pressable
+          style={emptyStyle}
+          onPress={onOpen}
+          onLongPress={onLongPress}
+          delayLongPress={500}>
+          {subjectTag ? (
+            <View style={styles.subjectTag}>
+              <Text style={styles.subjectTagText}>{subjectTag}</Text>
+            </View>
+          ) : null}
+          <Text style={styles.emptyHint}>{emptyHint}</Text>
+          <Text style={styles.total}>{totalLabel}</Text>
+        </Pressable>
+      );
+    }
     return (
-      <EmptyWrap
+      <Pressable
         style={emptyStyle}
-        pointerEvents={passthroughGestures ? 'none' : 'auto'}
-        {...(!passthroughGestures
-          ? { onPress: onOpen, onLongPress, delayLongPress: 450 }
-          : {})}>
+        onPress={onOpen}
+        onLongPress={onLongPress}
+        delayLongPress={450}>
         {subjectTag ? (
           <View style={styles.subjectTag}>
             <Text style={styles.subjectTagText}>{subjectTag}</Text>
@@ -128,7 +143,7 @@ export function SubjectFolderPreview({
         ) : null}
         <Text style={styles.emptyHint}>{emptyHint}</Text>
         <Text style={styles.total}>{totalLabel}</Text>
-      </EmptyWrap>
+      </Pressable>
     );
   }
 
