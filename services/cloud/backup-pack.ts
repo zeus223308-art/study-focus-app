@@ -17,7 +17,7 @@ import {
 } from '@/lib/files/hydrate-backup-assets';
 
 import { migratePersistedWebAssets } from '@/lib/files/migrate-web-assets';
-
+import { repairAppDataAssets } from '@/lib/files/repair-loaded-assets';
 import { ensureAppDataDerivatives } from '@/lib/files/regenerate-derivatives';
 
 import { upgradeLegacyPhotoQuality } from '@/lib/files/upgrade-legacy-assets';
@@ -536,7 +536,7 @@ export async function restoreBackupEnvelope(envelope: BackupEnvelope): Promise<A
 
   data = await migratePersistedWebAssets(data);
 
-
+  data = await repairAppDataAssets(data);
 
   const derivatives = await ensureAppDataDerivatives(data);
 

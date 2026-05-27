@@ -64,7 +64,7 @@ export default function TrashScreen() {
                     return (
                       <View key={page.id} style={styles.thumbSlot}>
                         {cover ? (
-                          <ResolvedImage uri={cover} style={styles.thumb} />
+                          <ResolvedImage uri={cover} asset={page.asset} style={styles.thumb} />
                         ) : (
                           <View style={[styles.thumb, styles.thumbEmpty]} />
                         )}

@@ -6,6 +6,7 @@ import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import type { CloudAsset } from '@/lib/domain/types';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -15,6 +16,7 @@ type Props = {
   itemDragKey: string;
   sourceSubjectId: string;
   thumbnailUri: string;
+  asset: CloudAsset;
   countLabel?: string;
   cellWidth: number;
   onOpen: () => void;
@@ -36,6 +38,7 @@ export function AlbumPhotoTile({
   bundleId,
   itemDragKey,
   thumbnailUri,
+  asset,
   countLabel,
   cellWidth,
   onOpen,
@@ -84,7 +87,7 @@ export function AlbumPhotoTile({
         <Pressable
           onPress={handlePress}
           style={[styles.tile, tileHighlighted && styles.tileSelected]}>
-          <ResolvedImage uri={thumbnailUri} style={styles.image} resizeMode="cover" />
+          <ResolvedImage uri={thumbnailUri} asset={asset} style={styles.image} resizeMode="cover" />
           <View style={[styles.pickBadge, pickSelected && styles.pickBadgeOn]}>
             {pickSelected ? (
               <SymbolView
@@ -118,7 +121,7 @@ export function AlbumPhotoTile({
           itemHover && styles.tileHover,
         ]}>
         <View pointerEvents="none" style={styles.tileContent}>
-          <ResolvedImage uri={thumbnailUri} style={styles.image} resizeMode="cover" />
+          <ResolvedImage uri={thumbnailUri} asset={asset} style={styles.image} resizeMode="cover" />
           {showLifted ? (
             <View style={styles.dragBadge}>
               <SymbolView

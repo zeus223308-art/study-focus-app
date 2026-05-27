@@ -90,7 +90,7 @@ export async function upgradeCloudAsset(
   bundleId: string,
   pageId: string
 ): Promise<{ asset: CloudAsset; changed: boolean }> {
-  if (await assetNeedsDerivativeRegeneration(asset)) {
+  if (await assetNeedsDerivativeRegeneration(asset, bundleId, pageId)) {
     const regen = await regenerateDerivativesFromMaster(asset, bundleId, pageId);
     if (regen.changed) return { asset: regen.asset, changed: true };
     if (!regen.failed && !(await assetNeedsQualityUpgrade(asset))) {

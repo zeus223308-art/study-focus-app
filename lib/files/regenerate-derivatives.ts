@@ -2,11 +2,11 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 
 import type { AppData, CloudAsset, NotePage } from '@/lib/domain/types';
-import { nativeUriExists } from '@/lib/files/hydrate-backup-assets';
-import { resolveImageUri } from '@/lib/files/resolve-image-uri';
+import { uriIsReadable } from '@/lib/files/asset-uri-utils';
+import { isStaleWebBlobUri, resolveImageUri } from '@/lib/files/resolve-image-uri';
 import { THUMB_MAX_EDGE } from '@/lib/files/image-quality';
 import { createMiniThumbnail } from '@/services/storage/asset-pipeline';
-import { getWebAssetBlobByKey, parseWebStoredUri } from '@/services/storage/web-asset-store';
+import { parseWebStoredUri, toWebStoredUri, webAssetKey } from '@/services/storage/web-asset-store';
 
 export type DerivativeRegenResult = {
   data: AppData;
@@ -27,28 +27,22 @@ async function probeLongEdge(uri: string): Promise<number> {
   }
 }
 
-async function uriIsReadable(uri: string | null | undefined): Promise<boolean> {
-  if (!uri) return false;
-  const key = parseWebStoredUri(uri);
-  if (key) {
-    if (Platform.OS === 'web') {
-      const blob = await getWebAssetBlobByKey(key);
-      return blob != null;
-    }
-    return false;
-  }
-  if (uri.startsWith('file:')) return nativeUriExists(uri);
-  if (uri.startsWith('data:') || uri.startsWith('http') || uri.startsWith('blob:')) {
-    const edge = await probeLongEdge(uri);
-    return edge > 0;
-  }
-  return false;
-}
+async function resolveMasterUri(
+  asset: CloudAsset,
+  bundleId: string,
+  pageId: string
+): Promise<string | null> {
+  const canonical = toWebStoredUri(webAssetKey(bundleId, pageId, 'master'));
+  if (await uriIsReadable(canonical)) return canonical;
 
-async function resolveMasterUri(asset: CloudAsset): Promise<string | null> {
-  if (asset.originalLocalUri && (await uriIsReadable(asset.originalLocalUri))) {
+  if (
+    asset.originalLocalUri &&
+    !isStaleWebBlobUri(asset.originalLocalUri) &&
+    (await uriIsReadable(asset.originalLocalUri))
+  ) {
     return asset.originalLocalUri;
   }
+
   for (const uri of [asset.localMiniUri, asset.thumbnailUri]) {
     if (uri && (await uriIsReadable(uri))) {
       const edge = await probeLongEdge(uri);
@@ -58,8 +52,12 @@ async function resolveMasterUri(asset: CloudAsset): Promise<string | null> {
   return null;
 }
 
-export async function assetNeedsDerivativeRegeneration(asset: CloudAsset): Promise<boolean> {
-  const master = await resolveMasterUri(asset);
+export async function assetNeedsDerivativeRegeneration(
+  asset: CloudAsset,
+  bundleId: string,
+  pageId: string
+): Promise<boolean> {
+  const master = await resolveMasterUri(asset, bundleId, pageId);
   if (!master) return false;
 
   const masterEdge = await probeLongEdge(master);
@@ -84,12 +82,12 @@ export async function regenerateDerivativesFromMaster(
   pageId: string
 ): Promise<{ asset: CloudAsset; changed: boolean; failed: boolean }> {
   try {
-    const master = await resolveMasterUri(asset);
+    const master = await resolveMasterUri(asset, bundleId, pageId);
     if (!master) {
       return { asset, changed: false, failed: false };
     }
 
-    if (!(await assetNeedsDerivativeRegeneration(asset))) {
+    if (!(await assetNeedsDerivativeRegeneration(asset, bundleId, pageId))) {
       return { asset, changed: false, failed: false };
     }
 

@@ -426,12 +426,20 @@ export default function BundleScreen() {
         <View style={styles.pairRow}>
           <View style={styles.pairCol}>
             <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
-            <ResolvedImage uri={getPreviewImageUri(page.asset)} style={styles.pairThumb} />
+            <ResolvedImage
+              uri={getPreviewImageUri(page.asset)}
+              asset={page.asset}
+              style={styles.pairThumb}
+            />
           </View>
           <View style={styles.pairCol}>
             <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
             {backUri ? (
-              <ResolvedImage uri={backUri} style={styles.pairThumb} />
+              <ResolvedImage
+                uri={backUri}
+                asset={page.answerAsset ?? undefined}
+                style={styles.pairThumb}
+              />
             ) : (
               <Pressable style={styles.pairAdd} onPress={addBackPhoto}>
                 <Text style={styles.pairAddText}>{t('item.addBackPhoto')}</Text>

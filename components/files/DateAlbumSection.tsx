@@ -93,6 +93,7 @@ export function DateAlbumSection({
               itemDragKey={key}
               sourceSubjectId={subjectId}
               thumbnailUri={getPreviewImageUri(item.page.asset) ?? ''}
+              asset={item.page.asset}
               countLabel={countLabel}
               cellWidth={cellWidth}
               onOpen={() => onOpen(item.bundleId, item.pageId)}
