@@ -13,9 +13,11 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
+import en from '@/i18n/locales/en.json';
 
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
-const SPLASH_TAGLINE = 'Conquer your memory';
+/** Brand tagline — always English on splash (web + native). */
+const SPLASH_TAGLINE = en.splashTagline;
 
 type Props = {
   onFinish: () => void;
