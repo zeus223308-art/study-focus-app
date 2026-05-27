@@ -18,7 +18,10 @@ export default function TrashScreen() {
   const { t } = useTranslation();
   const { data, restoreSubjectTrash } = useApp();
 
-  const groups = useMemo(() => groupTrashBySubject(data.trash), [data.trash]);
+  const groups = useMemo(
+    () => groupTrashBySubject(data.trash, new Date(), data.subjects),
+    [data.trash, data.subjects]
+  );
 
   return (
     <Screen scroll>

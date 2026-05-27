@@ -38,8 +38,14 @@ export function trashEntriesForSubject(
   );
 }
 
-export function subjectNameFromTrashEntry(entry: TrashLifecycle): string {
-  return entry.subjectSnapshot?.name ?? entry.bundleSnapshot.subjectId;
+export function subjectNameFromTrashEntry(
+  entry: TrashLifecycle,
+  subjects?: { id: string; name: string }[]
+): string {
+  if (entry.subjectSnapshot?.name) return entry.subjectSnapshot.name;
+  const sid = entry.bundleSnapshot.subjectId;
+  const subject = subjects?.find((s) => s.id === sid);
+  return subject?.name ?? sid;
 }
 
 export function subjectIdFromTrashEntry(entry: TrashLifecycle): string {

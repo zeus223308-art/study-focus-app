@@ -93,8 +93,25 @@ export function shouldHardDeleteFromCloud(entry: TrashLifecycle, now = new Date(
   return isBefore(parseISO(entry.cloudHardDeleteAt), now);
 }
 
+function normalizeTrashEntry(entry: TrashLifecycle): TrashLifecycle {
+  const deletedAt = entry.deletedAt ?? new Date().toISOString();
+  const expires =
+    entry.backupExpiresAt ??
+    entry.uiExpiresAt ??
+    addDays(parseISO(deletedAt), TRASH_BACKUP_DAYS).toISOString();
+  return {
+    ...entry,
+    deletedAt,
+    uiExpiresAt: entry.uiExpiresAt ?? expires,
+    backupExpiresAt: expires,
+    cloudHardDeleteAt: entry.cloudHardDeleteAt ?? expires,
+  };
+}
+
 export function filterActiveTrash(entries: TrashLifecycle[], now = new Date()): TrashLifecycle[] {
-  return entries.filter((e) => isVisibleInTrashUI(e, now));
+  return entries
+    .map(normalizeTrashEntry)
+    .filter((e) => isVisibleInTrashUI(e, now));
 }
 
 export function filterRestorableTrash(entries: TrashLifecycle[], now = new Date()): TrashLifecycle[] {

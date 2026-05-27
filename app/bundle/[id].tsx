@@ -194,7 +194,7 @@ export default function BundleScreen() {
       confirmLabel: t('item.deletePhoto'),
       onConfirm: () => {
         deletePage(bundle.id, page.id);
-        if (isLast) safeRouterBack(router, folderBack);
+        safeRouterBack(router, folderBack);
       },
     });
   };

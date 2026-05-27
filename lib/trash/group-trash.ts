@@ -13,14 +13,15 @@ export type SubjectTrashGroup = {
 
 export function groupTrashBySubject(
   entries: TrashLifecycle[],
-  now = new Date()
+  now = new Date(),
+  subjects?: { id: string; name: string }[]
 ): SubjectTrashGroup[] {
   const visible = filterActiveTrash(entries, now);
   const map = new Map<string, SubjectTrashGroup>();
 
   for (const entry of visible) {
     const subjectId = subjectIdFromTrashEntry(entry);
-    const subjectName = subjectNameFromTrashEntry(entry);
+    const subjectName = subjectNameFromTrashEntry(entry, subjects);
     let group = map.get(subjectId);
     if (!group) {
       group = {

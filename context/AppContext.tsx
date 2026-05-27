@@ -52,6 +52,7 @@ import {
   filterActiveTrash,
   isTrashEntryWithPhotos,
 } from '@/lib/trash/lifecycle';
+import { bundleSnapshotForTrashedPage } from '@/lib/trash/page-trash';
 import { buildTrashEntriesForDeletedSubjects, trashEntriesForSubject } from '@/lib/trash/subject-trash';
 import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/google-session';
 import {
@@ -380,8 +381,15 @@ export function AppProvider({
   }, [data, ready, storage]);
 
   const persist = useCallback((next: AppData) => {
-    dataRef.current = next;
-    setData(next);
+    const stamped = {
+      ...next,
+      settings: {
+        ...next.settings,
+        lastSavedAt: new Date().toISOString(),
+      },
+    };
+    dataRef.current = stamped;
+    setData(stamped);
   }, []);
 
   const getSchedule = useCallback(
@@ -681,7 +689,7 @@ export function AppProvider({
       return {
         ...prev,
         bundles: prev.bundles.filter((b) => b.id !== id),
-        trash: [createTrashLifecycle(bundle), ...prev.trash],
+        trash: [createTrashLifecycle(bundle), ...(prev.trash ?? [])],
       };
     });
   }, []);
@@ -689,18 +697,36 @@ export function AppProvider({
   const deletePage = useCallback((bundleId: string, pageId: string) => {
     setData((prev) => {
       if (!prev) return prev;
+      const bundle = prev.bundles.find((b) => b.id === bundleId);
+      if (!bundle) return prev;
+      if (!bundle.pages.some((p) => p.id === pageId)) return prev;
+
       const { data: next, bundleRemoved, removedBundle } = removePageFromData(
         prev,
         bundleId,
         pageId
       );
-      if (bundleRemoved && removedBundle) {
-        return {
-          ...next,
-          trash: [createTrashLifecycle(removedBundle), ...next.trash],
-        };
-      }
-      return next;
+
+      const snapshot =
+        removedBundle ?? bundleSnapshotForTrashedPage(bundle, pageId);
+      if (!snapshot) return next;
+
+      const subject = prev.subjects.find((s) => s.id === bundle.subjectId);
+      const itemKey = `${bundleId}:${pageId}`;
+      const subjects = next.subjects.map((s) =>
+        s.id === bundle.subjectId
+          ? { ...s, itemOrder: s.itemOrder?.filter((k) => k !== itemKey) }
+          : s
+      );
+
+      return {
+        ...next,
+        subjects,
+        trash: [
+          createTrashLifecycle(snapshot, new Date(), { subjectSnapshot: subject }),
+          ...(next.trash ?? []),
+        ],
+      };
     });
   }, []);
 
