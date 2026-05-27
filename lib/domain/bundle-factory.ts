@@ -115,7 +115,13 @@ export async function appendCaptureToData(
 ): Promise<{ data: AppData; bundleId: string }> {
   const studyDate = params.studyDate ?? format(startOfDay(new Date()), 'yyyy-MM-dd');
   const subject = data.subjects.find((s) => s.id === params.subjectId);
-  const scheduleId = subject?.reviewScheduleId ?? data.schedules[0].id;
+  if (!subject) {
+    throw new Error(`appendCaptureToData: unknown subject ${params.subjectId}`);
+  }
+  const scheduleId = subject.reviewScheduleId || data.schedules[0]?.id;
+  if (!scheduleId) {
+    throw new Error('appendCaptureToData: no review schedule');
+  }
 
   /** One capture/import = one problem card (new bundle), not merged into same-day stack. */
   const bundleId = `bundle_${params.subjectId}_${studyDate}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -143,8 +149,15 @@ export async function appendCaptureToData(
     updatedAt: now,
   };
 
+  const itemKey = `${bundleId}:${page.id}`;
+  const subjects = data.subjects.map((s) => {
+    if (s.id !== params.subjectId) return s;
+    if (s.itemOrder?.includes(itemKey)) return s;
+    return { ...s, itemOrder: [...(s.itemOrder ?? []), itemKey] };
+  });
+
   return {
-    data: { ...data, bundles: [bundle, ...data.bundles] },
+    data: { ...data, subjects, bundles: [bundle, ...data.bundles] },
     bundleId,
   };
 }

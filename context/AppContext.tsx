@@ -74,6 +74,9 @@ type AppContextValue = {
   localToday: string;
   selectedDate: string;
   setSelectedDate: (d: string) => void;
+  /** Last-opened subject folder: default capture subject + study date (ribbon). */
+  activeFolderCapture: { subjectId: string; studyDate: string } | null;
+  setActiveFolderCapture: (ctx: { subjectId: string; studyDate: string } | null) => void;
   dueSelected: NoteBundle[];
   freemium: FreemiumCheck;
   paywallVisible: boolean;
@@ -198,6 +201,10 @@ export function AppProvider({
   const [data, setData] = useState<AppData | null>(null);
   const localToday = useLocalCalendarDay();
   const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [activeFolderCapture, setActiveFolderCapture] = useState<{
+    subjectId: string;
+    studyDate: string;
+  } | null>(null);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [autoRecoveryNotice, setAutoRecoveryNotice] = useState<AutoRecoverySource | null>(null);
   const [derivativeRegenNotice, setDerivativeRegenNotice] = useState<{ failed: number } | null>(
@@ -456,14 +463,18 @@ export function AppProvider({
           }
           break;
         }
-        const result = await appendCaptureToData(storage, prev, {
-          imageUri: imageUris[i]!,
-          answerImageUri: null,
-          subjectId,
-          studyDate,
-        });
-        prev = result.data;
-        saved += 1;
+        try {
+          const result = await appendCaptureToData(storage, prev, {
+            imageUri: imageUris[i]!,
+            answerImageUri: null,
+            subjectId,
+            studyDate,
+          });
+          prev = result.data;
+          saved += 1;
+        } catch {
+          break;
+        }
       }
 
       if (saved > 0) persist(prev);
@@ -1228,6 +1239,8 @@ export function AppProvider({
       ribbonMarks,
       selectedDate,
       setSelectedDate,
+      activeFolderCapture,
+      setActiveFolderCapture,
       dueSelected,
       freemium,
       paywallVisible,
@@ -1304,6 +1317,7 @@ export function AppProvider({
     localToday,
     ribbonMarks,
     selectedDate,
+    activeFolderCapture,
     dueSelected,
     freemium,
     paywallVisible,

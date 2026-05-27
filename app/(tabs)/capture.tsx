@@ -35,7 +35,7 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 export default function CaptureTabScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, captureFlashcardPair } = useApp();
+  const { data, captureFlashcardPair, activeFolderCapture } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [step, setStep] = useState<Step>('camera');
@@ -44,19 +44,25 @@ export default function CaptureTabScreen() {
   const [afterEditStep, setAfterEditStep] = useState<Step>('answer-prompt');
   const [frontUri, setFrontUri] = useState<string | null>(null);
   const [backUri, setBackUri] = useState<string | null>(null);
-  const [studyDate, setStudyDate] = useState(() => todayKey());
+  const [studyDate, setStudyDate] = useState(
+    () => activeFolderCapture?.studyDate ?? todayKey()
+  );
   const [saveState, setSaveState] = useState<SaveState>('idle');
-  const [subjectId, setSubjectId] = useState(data.subjects[0]?.id ?? '');
+  const [subjectId, setSubjectId] = useState(
+    () => activeFolderCapture?.subjectId ?? data.subjects[0]?.id ?? ''
+  );
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
   const hasSubjects = data.subjects.length > 0;
 
   const hasPendingCapture = step !== 'camera' || Boolean(frontUri || backUri);
   useEffect(() => {
-    if (!subjectId && data.subjects[0]) {
-      setSubjectId(data.subjects[0].id);
-    }
-  }, [data.subjects, subjectId]);
+    if (!activeFolderCapture?.subjectId) return;
+    const exists = data.subjects.some((s) => s.id === activeFolderCapture.subjectId);
+    if (!exists) return;
+    setSubjectId(activeFolderCapture.subjectId);
+    setStudyDate(activeFolderCapture.studyDate);
+  }, [activeFolderCapture, data.subjects]);
 
   const resetCamera = useCallback(() => {
     setEditUri(null);
@@ -160,11 +166,12 @@ export default function CaptureTabScreen() {
       }
 
       const savedSubjectId = subjectId;
+      const savedStudyDate = studyDate;
       setTimeout(() => {
         resetCamera();
         router.replace({
           pathname: '/folder/[id]',
-          params: { id: savedSubjectId },
+          params: { id: savedSubjectId, studyDate: savedStudyDate },
         });
       }, 900);
       return true;

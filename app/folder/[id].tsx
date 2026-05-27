@@ -56,7 +56,10 @@ function keysToPageRefs(keys: Set<string>): PageRef[] {
 }
 
 export default function FolderScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, studyDate: studyDateParam } = useLocalSearchParams<{
+    id: string;
+    studyDate?: string;
+  }>();
   const { t } = useTranslation();
   const router = useRouter();
   const { language } = useLanguage();
@@ -75,6 +78,7 @@ export default function FolderScreen() {
     moveProblemsToNewSubject,
     moveProblemsToSubject,
     setPaywallVisible,
+    setActiveFolderCapture,
   } = useApp();
   const [albumFilterDate, setAlbumFilterDate] = useState(localToday);
   const [importing, setImporting] = useState(false);
@@ -98,8 +102,17 @@ export default function FolderScreen() {
     [data.bundles, id, subject?.itemOrder]
   );
   useEffect(() => {
+    if (typeof studyDateParam === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(studyDateParam)) {
+      setAlbumFilterDate(studyDateParam);
+      return;
+    }
     setAlbumFilterDate(localToday);
-  }, [id, localToday]);
+  }, [id, localToday, studyDateParam]);
+
+  useEffect(() => {
+    if (!subject?.id) return;
+    setActiveFolderCapture({ subjectId: subject.id, studyDate: albumFilterDate });
+  }, [subject?.id, albumFilterDate, setActiveFolderCapture]);
 
   const subjectRibbonMarks = useMemo(
     () => buildSubjectStudyDateMarks(problems, data.settings.firstLaunchDate),
@@ -192,7 +205,7 @@ export default function FolderScreen() {
       const { saved, skippedDueToLimit } = await importPhotosToSubject(
         subject.id,
         picked.files.map((f) => f.uri),
-        localToday
+        albumFilterDate
       );
       if (saved > 0 && skippedDueToLimit > 0) {
         showMessage(
