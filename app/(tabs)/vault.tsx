@@ -96,8 +96,6 @@ export default function FilesScreen() {
     startSubjectReorder(id);
   };
 
-  const showReorderEdgeHint = subjectPages.length > 1;
-
   const onSubjectReorderMove = (pageX: number, pageY: number) => {
     setGhost({ x: pageX, y: pageY, visible: true });
     updateSubjectReorderHover(pageX, pageY);
@@ -121,11 +119,6 @@ export default function FilesScreen() {
     <Screen scroll scrollEnabled={screenScrollEnabled} nestedScrollEnabled>
       {movingBundleId ? (
         <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
-      ) : reorderingSubjectId ? (
-        <Text style={styles.moveBanner}>
-          {t('folder.reorderHint')}
-          {showReorderEdgeHint ? `\n${t('vault.reorderEdgeHint')}` : ''}
-        </Text>
       ) : null}
 
       <ScreenHeader
