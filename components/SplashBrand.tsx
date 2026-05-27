@@ -26,10 +26,8 @@ const T = {
   mountainIn: 750,
   mountainHold: 500,
   mountainOut: 850,
-  brandIn: 650,
-  brandHold: 300,
-  footerIn: 550,
-  footerHold: 500,
+  taglineIn: 650,
+  taglineHold: 800,
   allOut: 600,
 };
 
@@ -44,17 +42,15 @@ export function SplashBrand({ onFinish }: Props) {
 
   const mountainOpacity = useSharedValue(1);
   const mountainScale = useSharedValue(0.94);
-  const brandOpacity = useSharedValue(0);
-  const brandTranslateY = useSharedValue(10);
+  const taglineOpacity = useSharedValue(0);
+  const taglineTranslateY = useSharedValue(14);
   const footerOpacity = useSharedValue(0);
-  const footerTranslateY = useSharedValue(14);
   const screenOpacity = useSharedValue(1);
 
   useEffect(() => {
     const tMountainOut = T.mountainIn + T.mountainHold;
-    const tBrandIn = tMountainOut + T.mountainOut;
-    const tFooterIn = tBrandIn + T.brandIn + T.brandHold;
-    const tAllOut = tFooterIn + T.footerIn + T.footerHold;
+    const tTaglineIn = tMountainOut + T.mountainOut;
+    const tAllOut = tTaglineIn + T.taglineIn + T.taglineHold;
 
     mountainOpacity.value = withSequence(
       withTiming(1, { duration: T.mountainIn, easing: EASE_OUT }),
@@ -65,11 +61,10 @@ export function SplashBrand({ onFinish }: Props) {
       withDelay(T.mountainHold, withTiming(1.02, { duration: T.mountainOut, easing: EASE }))
     );
 
-    brandOpacity.value = withDelay(tBrandIn, withTiming(1, { duration: T.brandIn, easing: EASE_OUT }));
-    brandTranslateY.value = withDelay(tBrandIn, withTiming(0, { duration: T.brandIn, easing: EASE_OUT }));
+    taglineOpacity.value = withDelay(tTaglineIn, withTiming(1, { duration: T.taglineIn, easing: EASE_OUT }));
+    taglineTranslateY.value = withDelay(tTaglineIn, withTiming(0, { duration: T.taglineIn, easing: EASE_OUT }));
 
-    footerOpacity.value = withDelay(tFooterIn, withTiming(1, { duration: T.footerIn, easing: EASE_OUT }));
-    footerTranslateY.value = withDelay(tFooterIn, withTiming(0, { duration: T.footerIn, easing: EASE_OUT }));
+    footerOpacity.value = withDelay(tTaglineIn, withTiming(1, { duration: T.taglineIn, easing: EASE_OUT }));
 
     screenOpacity.value = withDelay(
       tAllOut,
@@ -77,21 +72,20 @@ export function SplashBrand({ onFinish }: Props) {
         if (finished) runOnJS(onFinish)();
       })
     );
-  }, [onFinish, mountainOpacity, mountainScale, brandOpacity, brandTranslateY, footerOpacity, footerTranslateY, screenOpacity]);
+  }, [onFinish, mountainOpacity, mountainScale, taglineOpacity, taglineTranslateY, footerOpacity, screenOpacity]);
 
   const mountainStyle = useAnimatedStyle(() => ({
     opacity: mountainOpacity.value,
     transform: [{ scale: mountainScale.value }],
   }));
 
-  const brandStyle = useAnimatedStyle(() => ({
-    opacity: brandOpacity.value,
-    transform: [{ translateY: brandTranslateY.value }],
+  const taglineStyle = useAnimatedStyle(() => ({
+    opacity: taglineOpacity.value,
+    transform: [{ translateY: taglineTranslateY.value }],
   }));
 
   const footerStyle = useAnimatedStyle(() => ({
     opacity: footerOpacity.value,
-    transform: [{ translateY: footerTranslateY.value }],
   }));
 
   const screenStyle = useAnimatedStyle(() => ({
@@ -105,13 +99,12 @@ export function SplashBrand({ onFinish }: Props) {
           <Image source={mountainLogo} style={styles.mountainLogo} resizeMode="contain" accessibilityLabel="MemorySherpa logo" />
         </Animated.View>
 
-        <Animated.View style={[styles.brandWrap, brandStyle]}>
-          <Text style={styles.brand}>Memory Sherpa</Text>
+        <Animated.View style={[styles.taglineWrap, taglineStyle]}>
+          <Text style={styles.tagline}>Conquer your memory</Text>
         </Animated.View>
       </View>
 
       <Animated.View style={[styles.footer, footerStyle]}>
-        <Text style={styles.tagline}>Conquer your memory</Text>
         <Text style={styles.copy}>© MemorySherpa</Text>
       </Animated.View>
     </Animated.View>
@@ -138,15 +131,17 @@ const styles = StyleSheet.create({
     width: 240,
     height: 168,
   },
-  brandWrap: {
+  taglineWrap: {
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  brand: {
-    fontSize: 30,
-    fontWeight: '600',
+  tagline: {
+    fontSize: 22,
+    fontStyle: 'italic',
+    fontWeight: '400',
     color: LOGO_WHITE,
-    letterSpacing: 2,
+    letterSpacing: 0.4,
+    textAlign: 'center',
   },
   footer: {
     position: 'absolute',
@@ -155,14 +150,6 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     paddingHorizontal: 24,
-  },
-  tagline: {
-    fontSize: 20,
-    fontStyle: 'italic',
-    fontWeight: '400',
-    color: LOGO_WHITE,
-    letterSpacing: 0.4,
-    marginBottom: 14,
   },
   copy: {
     fontSize: 11,
