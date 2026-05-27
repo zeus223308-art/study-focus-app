@@ -1,8 +1,9 @@
-import { useCallback, useRef } from 'react';
-import { Alert, Platform, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { Alert, Platform, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { SubjectDropTarget } from '@/components/files/SubjectDropTarget';
+import { SubjectFolderName } from '@/components/files/SubjectFolderName';
 import { SubjectFolderPreview } from '@/components/files/SubjectFolderPreview';
 import { SubjectReorderTarget } from '@/components/files/SubjectReorderTarget';
 import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
@@ -45,12 +46,12 @@ export function SubjectFolderTile({
     reorderingSubjectId,
     reorderHoverSubjectId,
     registerSubjectReorderZone,
-    cancelMovingBundle,
   } = useApp();
   const cardRef = useRef<View>(null);
+  const [nameEditing, setNameEditing] = useState(false);
   const isActive = reorderingSubjectId === subjectId;
   const reorderHover = reorderHoverSubjectId === subjectId && !isActive;
-  const dragEnabled = !movingBundleId && Boolean(onReorderDragMove);
+  const dragEnabled = !movingBundleId && Boolean(onReorderDragMove) && !nameEditing;
 
   const tryDropHere = () => {
     if (!movingBundleId || subjectId === dragSourceSubjectId) return;
@@ -60,7 +61,7 @@ export function SubjectFolderTile({
     });
   };
 
-  const handlePress = useCallback(() => {
+  const openFolder = useCallback(() => {
     if (movingBundleId) {
       tryDropHere();
       return;
@@ -87,12 +88,19 @@ export function SubjectFolderTile({
         register={registerSubjectReorderZone}
         hover={reorderHover}
         lifted={isActive}>
+        <SubjectFolderName
+          subjectId={subjectId}
+          name={name}
+          lifted={isActive}
+          disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
+          onEditingChange={setNameEditing}
+        />
         <HoldDragSurface
           enabled={dragEnabled}
           onLift={handleLift}
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
-          onPress={handlePress}
+          onPress={openFolder}
           onDeleteHold={onDeleteHold}
           onGestureActiveChange={onPreviewGestureLock}
           style={[
@@ -101,16 +109,13 @@ export function SubjectFolderTile({
             reorderHover && styles.dragSurfaceHover,
           ]}>
           <View ref={cardRef} collapsable={false} pointerEvents="none">
-            <Text style={[styles.name, isActive && styles.nameLifted]} numberOfLines={1}>
-              {name}
-            </Text>
             <SubjectFolderPreview
               variant="vault"
               items={previewItems}
               totalLabel={totalLabel}
               emptyHint={t('vault.previewEmpty')}
               passthroughGestures
-              onOpen={handlePress}
+              onOpen={openFolder}
               onGestureLock={onPreviewGestureLock}
             />
           </View>
@@ -142,16 +147,5 @@ const styles = StyleSheet.create({
     borderColor: theme.orange,
     backgroundColor: theme.orangeMuted,
     ...theme.cardShadow,
-  },
-  name: {
-    marginBottom: 8,
-    marginLeft: 2,
-    marginRight: 2,
-    fontSize: theme.font.body,
-    fontWeight: '800',
-    color: theme.black,
-  },
-  nameLifted: {
-    color: theme.orange,
   },
 });
