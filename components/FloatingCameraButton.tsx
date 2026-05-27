@@ -52,14 +52,14 @@ export function FloatingCameraButton() {
     (bounds: Bounds) => {
       const target = clampPosition(
         bounds.width - BTN_SIZE - EDGE_MARGIN - insets.right,
-        (bounds.height - BTN_SIZE) / 2,
+        insets.top + EDGE_MARGIN,
         bounds
       );
       x.value = target.x;
       y.value = target.y;
       setReady(true);
     },
-    [insets.right, x, y]
+    [insets.right, insets.top, x, y]
   );
 
   const applyPosition = useCallback(
