@@ -26,10 +26,25 @@ import type {
   SubjectFolder,
 } from '@/lib/domain/types';
 import { mergeBundlesIntoTarget } from '@/lib/domain/merge-bundles';
+import { mergeSubjectsIntoTarget } from '@/lib/domain/merge-subjects';
 import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
 import { removePageFromData } from '@/lib/domain/remove-page';
 import { splitPageToNewBundle as splitPageToNewBundleData } from '@/lib/domain/split-page';
-import { mergeItemOrder, reorderItemKeys, reorderSubjectFolders } from '@/lib/domain/reorder';
+import {
+  mergeItemOrder,
+  reorderItemKeys,
+  reorderSubjectFolders,
+  reorderSubjectToGap,
+} from '@/lib/domain/reorder';
+import {
+  resolveSubjectMergeTargetId,
+  resolveSubjectReorderGapKey,
+} from '@/lib/ui/subject-reorder-hit';
+import {
+  isSubjectDragDeleteIntent,
+  shouldShowVaultTrashPopup,
+  type DragLiftPoint,
+} from '@/lib/ui/subject-drag-delete';
 import { listSubjectProblems } from '@/lib/grouping/bundles';
 import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
 import { isDueToday, advanceAfterReview, resetReviewCycle, maintainReviewCycle } from '@/lib/spacing/engine';
@@ -86,15 +101,35 @@ type AppContextValue = {
   moveBundleToTrash: (id: string) => void;
   deletePage: (bundleId: string, pageId: string) => void;
   mergeBundlesWithTitle: (sourceBundleId: string, targetBundleId: string, title: string) => void;
+  mergeSubjectsWithName: (sourceSubjectId: string, targetSubjectId: string, name: string) => void;
   splitPageToNewBundle: (
     bundleId: string,
     pageId: string,
     title: string,
     targetSubjectId: string
   ) => void;
-  pendingMerge: { sourceBundleId: string; targetBundleId: string } | null;
-  consumePendingMerge: () => { sourceBundleId: string; targetBundleId: string } | null;
+  pendingMerge:
+    | { kind: 'bundle'; sourceBundleId: string; targetBundleId: string }
+    | { kind: 'subject'; sourceSubjectId: string; targetSubjectId: string }
+    | null;
+  consumePendingMerge: () =>
+    | { kind: 'bundle'; sourceBundleId: string; targetBundleId: string }
+    | { kind: 'subject'; sourceSubjectId: string; targetSubjectId: string }
+    | null;
   clearPendingMerge: () => void;
+  mergeDraggingSubjectId: string | null;
+  startMergeBundleDrag: (
+    bundleId: string,
+    pageId: string,
+    subjectId: string,
+    itemKey: string
+  ) => void;
+  startMergeSubjectDrag: (subjectId: string) => void;
+  finishSubjectMergeDrag: (
+    pageX: number,
+    pageY: number,
+    moved: boolean
+  ) => 'merge' | 'cancelled';
   restoreTrash: (trashId: string) => void;
   applyLayerCycleChoice: (bundleId: string, choice: LayerCycleChoice) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
@@ -120,7 +155,7 @@ type AppContextValue = {
   bumpSubjectReorderMeasure: () => void;
   startItemDrag: (bundleId: string, pageId: string, subjectId: string, itemKey: string) => void;
   startMovingBundle: (bundleId: string, sourceSubjectId: string) => void;
-  startSubjectReorder: (subjectId: string) => void;
+  startSubjectReorder: (subjectId: string, lift?: DragLiftPoint) => void;
   cancelMovingBundle: () => void;
   registerSubjectDropZone: (
     subjectId: string,
@@ -134,6 +169,20 @@ type AppContextValue = {
     subjectId: string,
     rect: { x: number; y: number; width: number; height: number } | null
   ) => void;
+  registerSubjectReorderGapZone: (
+    gapKey: string,
+    rect: { x: number; y: number; width: number; height: number } | null
+  ) => void;
+  registerSubjectMergeZone: (
+    subjectId: string,
+    rect: { x: number; y: number; width: number; height: number } | null
+  ) => void;
+  reorderHoverGapKey: string | null;
+  reorderHoverTrash: boolean;
+  /** Pulling down — show trash sheet before release zone. */
+  reorderTrashHint: boolean;
+  /** Trash popup while dragging a vault folder (overlay above tabs). */
+  vaultTrashSheet: { visible: boolean; ready: boolean };
   updateDragHover: (pageX: number, pageY: number) => void;
   updateSubjectReorderHover: (pageX: number, pageY: number) => void;
   finishItemDrag: (
@@ -141,7 +190,11 @@ type AppContextValue = {
     pageY: number,
     moved: boolean
   ) => 'reordered' | 'moved' | 'merge' | 'cancelled';
-  finishSubjectReorder: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'cancelled';
+  finishSubjectReorder: (
+    pageX: number,
+    pageY: number,
+    moved: boolean
+  ) => 'reordered' | 'trashed' | 'cancelled';
   finishBundleDrop: (pageX: number, pageY: number) => string | null;
   reorderSubjects: (activeId: string, overId: string) => void;
   /** Tap target folder while reordering (works without drag). */
@@ -176,10 +229,17 @@ export function AppProvider({
   const [dragHoverItemKey, setDragHoverItemKey] = useState<string | null>(null);
   const [reorderingSubjectId, setReorderingSubjectId] = useState<string | null>(null);
   const [reorderHoverSubjectId, setReorderHoverSubjectId] = useState<string | null>(null);
-  const [pendingMerge, setPendingMerge] = useState<{
-    sourceBundleId: string;
-    targetBundleId: string;
-  } | null>(null);
+  const [reorderHoverGapKey, setReorderHoverGapKey] = useState<string | null>(null);
+  const [reorderHoverTrash, setReorderHoverTrash] = useState(false);
+  const [reorderTrashHint, setReorderTrashHint] = useState(false);
+  const [vaultTrashSheet, setVaultTrashSheet] = useState({ visible: false, ready: false });
+  const [pendingMerge, setPendingMerge] = useState<
+    | { kind: 'bundle'; sourceBundleId: string; targetBundleId: string }
+    | { kind: 'subject'; sourceSubjectId: string; targetSubjectId: string }
+    | null
+  >(null);
+  const [mergeDragMode, setMergeDragMode] = useState<'bundle' | 'subject' | null>(null);
+  const [mergeDraggingSubjectId, setMergeDraggingSubjectId] = useState<string | null>(null);
   const [subjectReorderMeasureTick, setSubjectReorderMeasureTick] = useState(0);
   const dropZonesRef = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(
     new Map()
@@ -190,6 +250,14 @@ export function AppProvider({
   const subjectReorderZonesRef = useRef<
     Map<string, { x: number; y: number; width: number; height: number }>
   >(new Map());
+  const subjectReorderGapZonesRef = useRef<
+    Map<string, { x: number; y: number; width: number; height: number }>
+  >(new Map());
+  const subjectMergeZonesRef = useRef<
+    Map<string, { x: number; y: number; width: number; height: number }>
+  >(new Map());
+  const reorderingSubjectIdRef = useRef<string | null>(null);
+  const subjectDragLiftRef = useRef<DragLiftPoint | null>(null);
   const prevLocalTodayRef = useRef(localToday);
   const dataRef = useRef<AppData | null>(null);
   const skipPersistRef = useRef(false);
@@ -556,7 +624,10 @@ export function AppProvider({
   const clearPendingMerge = useCallback(() => setPendingMerge(null), []);
 
   const consumePendingMerge = useCallback(() => {
-    let next: { sourceBundleId: string; targetBundleId: string } | null = null;
+    let next:
+      | { kind: 'bundle'; sourceBundleId: string; targetBundleId: string }
+      | { kind: 'subject'; sourceSubjectId: string; targetSubjectId: string }
+      | null = null;
     setPendingMerge((prev) => {
       next = prev;
       return null;
@@ -571,6 +642,20 @@ export function AppProvider({
         return mergeBundlesIntoTarget(prev, sourceBundleId, targetBundleId, title);
       });
       setPendingMerge(null);
+      setMergeDragMode(null);
+    },
+    []
+  );
+
+  const mergeSubjectsWithName = useCallback(
+    (sourceSubjectId: string, targetSubjectId: string, name: string) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        return mergeSubjectsIntoTarget(prev, sourceSubjectId, targetSubjectId, name);
+      });
+      setPendingMerge(null);
+      setMergeDragMode(null);
+      setMergeDraggingSubjectId(null);
     },
     []
   );
@@ -681,28 +766,80 @@ export function AppProvider({
 
   const startItemDrag = useCallback(
     (bundleId: string, _pageId: string, subjectId: string, itemKey: string) => {
+      setMergeDragMode(null);
+      setMergeDraggingSubjectId(null);
       setMovingBundleId(bundleId);
       setDraggingItemKey(itemKey);
       setDragSourceSubjectId(subjectId);
       setDragHoverSubjectId(null);
       setDragHoverItemKey(null);
+      reorderingSubjectIdRef.current = null;
       setReorderingSubjectId(null);
       setReorderHoverSubjectId(null);
+      setReorderHoverGapKey(null);
     },
     []
   );
 
-  const startSubjectReorder = useCallback((subjectId: string) => {
-    setReorderingSubjectId(subjectId);
-    setReorderHoverSubjectId(null);
+  const startMergeBundleDrag = useCallback(
+    (bundleId: string, _pageId: string, subjectId: string, itemKey: string) => {
+      setMergeDragMode('bundle');
+      setMergeDraggingSubjectId(null);
+      setMovingBundleId(bundleId);
+      setDraggingItemKey(itemKey);
+      setDragSourceSubjectId(subjectId);
+      setDragHoverSubjectId(null);
+      setDragHoverItemKey(null);
+      reorderingSubjectIdRef.current = null;
+      setReorderingSubjectId(null);
+      setReorderHoverSubjectId(null);
+      setReorderHoverGapKey(null);
+    },
+    []
+  );
+
+  const startMergeSubjectDrag = useCallback((subjectId: string) => {
+    setMergeDragMode('subject');
+    setMergeDraggingSubjectId(subjectId);
     setMovingBundleId(null);
     setDraggingItemKey(null);
-    setDragSourceSubjectId(null);
+    setDragSourceSubjectId(subjectId);
     setDragHoverSubjectId(null);
     setDragHoverItemKey(null);
-  }, []);
+    reorderingSubjectIdRef.current = null;
+    setReorderingSubjectId(null);
+    setReorderHoverSubjectId(null);
+    setReorderHoverGapKey(null);
+    bumpSubjectReorderMeasure();
+    requestAnimationFrame(() => bumpSubjectReorderMeasure());
+  }, [bumpSubjectReorderMeasure]);
+
+  const startSubjectReorder = useCallback(
+    (subjectId: string, lift?: DragLiftPoint) => {
+      reorderingSubjectIdRef.current = subjectId;
+      subjectDragLiftRef.current = lift ?? null;
+      setReorderingSubjectId(subjectId);
+      setReorderHoverSubjectId(null);
+      setReorderHoverGapKey(null);
+      setReorderHoverTrash(false);
+      setReorderTrashHint(false);
+      setVaultTrashSheet({ visible: false, ready: false });
+      setMovingBundleId(null);
+      setDraggingItemKey(null);
+      setDragSourceSubjectId(null);
+      setDragHoverSubjectId(null);
+      setDragHoverItemKey(null);
+      bumpSubjectReorderMeasure();
+      requestAnimationFrame(() => bumpSubjectReorderMeasure());
+    },
+    [bumpSubjectReorderMeasure]
+  );
 
   const cancelMovingBundle = useCallback(() => {
+    reorderingSubjectIdRef.current = null;
+    subjectDragLiftRef.current = null;
+    setReorderTrashHint(false);
+    setVaultTrashSheet({ visible: false, ready: false });
     setMovingBundleId(null);
     setDraggingItemKey(null);
     setDragSourceSubjectId(null);
@@ -710,6 +847,11 @@ export function AppProvider({
     setDragHoverItemKey(null);
     setReorderingSubjectId(null);
     setReorderHoverSubjectId(null);
+    setReorderHoverGapKey(null);
+    setReorderHoverTrash(false);
+    setReorderTrashHint(false);
+    setMergeDragMode(null);
+    setMergeDraggingSubjectId(null);
   }, []);
 
   const registerItemDropZone = useCallback(
@@ -724,6 +866,22 @@ export function AppProvider({
     (subjectId: string, rect: { x: number; y: number; width: number; height: number } | null) => {
       if (rect) subjectReorderZonesRef.current.set(subjectId, rect);
       else subjectReorderZonesRef.current.delete(subjectId);
+    },
+    []
+  );
+
+  const registerSubjectReorderGapZone = useCallback(
+    (gapKey: string, rect: { x: number; y: number; width: number; height: number } | null) => {
+      if (rect) subjectReorderGapZonesRef.current.set(gapKey, rect);
+      else subjectReorderGapZonesRef.current.delete(gapKey);
+    },
+    []
+  );
+
+  const registerSubjectMergeZone = useCallback(
+    (subjectId: string, rect: { x: number; y: number; width: number; height: number } | null) => {
+      if (rect) subjectMergeZonesRef.current.set(subjectId, rect);
+      else subjectMergeZonesRef.current.delete(subjectId);
     },
     []
   );
@@ -744,6 +902,13 @@ export function AppProvider({
     },
     []
   );
+
+  const getSortedSubjectIds = useCallback((): string[] => {
+    if (!data) return [];
+    return [...data.subjects]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((s) => s.id);
+  }, [data]);
 
   const reorderSubjects = useCallback((activeId: string, overId: string) => {
     setData((prev) => {
@@ -778,29 +943,125 @@ export function AppProvider({
 
   const updateSubjectReorderHover = useCallback(
     (pageX: number, pageY: number) => {
-      if (!reorderingSubjectId) return;
-      const found = hitTestZones(pageX, pageY, subjectReorderZonesRef.current);
-      const next = found && found !== reorderingSubjectId ? found : null;
-      setReorderHoverSubjectId((prev) => (prev === next ? prev : next));
+      const sortedIds = getSortedSubjectIds();
+      if (mergeDraggingSubjectId) {
+        const next =
+          resolveSubjectMergeTargetId(
+            pageX,
+            pageY,
+            subjectMergeZonesRef.current,
+            sortedIds,
+            mergeDraggingSubjectId
+          ) ?? null;
+        setReorderHoverSubjectId((prev) => (prev === next ? prev : next));
+        setReorderHoverGapKey((prev) => (prev === null ? prev : null));
+        return;
+      }
+      if (!reorderingSubjectIdRef.current) return;
+      if (!subjectDragLiftRef.current) {
+        subjectDragLiftRef.current = { x: pageX, y: pageY };
+      }
+      const lift = subjectDragLiftRef.current;
+      const showPopup = shouldShowVaultTrashPopup(pageY, lift);
+      const onTrash = isSubjectDragDeleteIntent(pageX, pageY, lift);
+      setReorderTrashHint((prev) => (prev === showPopup ? prev : showPopup));
+      setReorderHoverTrash((prev) => (prev === onTrash ? prev : onTrash));
+      setVaultTrashSheet((prev) =>
+        prev.visible === showPopup && prev.ready === onTrash
+          ? prev
+          : { visible: showPopup, ready: onTrash }
+      );
+      if (onTrash) {
+        setReorderHoverGapKey((prev) => (prev === null ? prev : null));
+        return;
+      }
+      const gap = resolveSubjectReorderGapKey(
+        pageX,
+        pageY,
+        subjectReorderGapZonesRef.current,
+        subjectMergeZonesRef.current,
+        sortedIds
+      );
+      setReorderHoverGapKey((prev) => (prev === gap ? prev : gap));
+      setReorderHoverSubjectId((prev) => (prev === null ? prev : null));
     },
-    [hitTestZones, reorderingSubjectId]
+    [getSortedSubjectIds, mergeDraggingSubjectId]
   );
 
-  const finishSubjectReorder = useCallback(
-    (pageX: number, pageY: number, _moved: boolean): 'reordered' | 'cancelled' => {
-      if (!reorderingSubjectId) return 'cancelled';
-      const hover =
-        hitTestZones(pageX, pageY, subjectReorderZonesRef.current) ?? reorderHoverSubjectId;
-      const activeId = reorderingSubjectId;
-      if (hover && hover !== activeId) {
-        reorderSubjects(activeId, hover);
+  const finishSubjectMergeDrag = useCallback(
+    (pageX: number, pageY: number, moved: boolean): 'merge' | 'cancelled' => {
+      if (!mergeDraggingSubjectId) {
         cancelMovingBundle();
-        return 'reordered';
+        return 'cancelled';
+      }
+      const sortedIds = getSortedSubjectIds();
+      const hover =
+        resolveSubjectMergeTargetId(
+          pageX,
+          pageY,
+          subjectMergeZonesRef.current,
+          sortedIds,
+          mergeDraggingSubjectId
+        ) ?? reorderHoverSubjectId;
+      if (!moved && !hover) {
+        cancelMovingBundle();
+        return 'cancelled';
+      }
+      const sourceId = mergeDraggingSubjectId;
+      if (hover && hover !== sourceId) {
+        setPendingMerge({
+          kind: 'subject',
+          sourceSubjectId: sourceId,
+          targetSubjectId: hover,
+        });
+        cancelMovingBundle();
+        return 'merge';
       }
       cancelMovingBundle();
       return 'cancelled';
     },
-    [cancelMovingBundle, hitTestZones, reorderHoverSubjectId, reorderSubjects, reorderingSubjectId]
+    [cancelMovingBundle, getSortedSubjectIds, mergeDraggingSubjectId, reorderHoverSubjectId]
+  );
+
+  const finishSubjectReorder = useCallback(
+    (pageX: number, pageY: number, _moved: boolean): 'reordered' | 'trashed' | 'cancelled' => {
+      const activeId = reorderingSubjectIdRef.current;
+      if (!activeId) return 'cancelled';
+      const onTrash = isSubjectDragDeleteIntent(
+        pageX,
+        pageY,
+        subjectDragLiftRef.current
+      );
+      if (onTrash) {
+        cancelMovingBundle();
+        return 'trashed';
+      }
+      const gapKey =
+        resolveSubjectReorderGapKey(
+          pageX,
+          pageY,
+          subjectReorderGapZonesRef.current,
+          subjectMergeZonesRef.current,
+          getSortedSubjectIds()
+        ) ?? reorderHoverGapKey;
+      if (gapKey?.startsWith('gap:')) {
+        const gapIndex = Number.parseInt(gapKey.slice(4), 10);
+        if (!Number.isNaN(gapIndex)) {
+          setData((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              subjects: reorderSubjectToGap(prev.subjects, activeId, gapIndex),
+            };
+          });
+          cancelMovingBundle();
+          return 'reordered';
+        }
+      }
+      cancelMovingBundle();
+      return 'cancelled';
+    },
+    [cancelMovingBundle, getSortedSubjectIds, reorderHoverGapKey]
   );
 
   const dropSubjectReorderOn = useCallback(
@@ -831,25 +1092,33 @@ export function AppProvider({
         return 'cancelled';
       }
 
-      if (!moved) {
+      const hoverItem =
+        hitTestZones(pageX, pageY, itemDropZonesRef.current) ?? dragHoverItemKey;
+      if (!moved && mergeDragMode !== 'bundle') {
+        cancelMovingBundle();
+        return 'cancelled';
+      }
+      if (!moved && mergeDragMode === 'bundle' && !hoverItem) {
+        cancelMovingBundle();
         return 'cancelled';
       }
 
-      const hoverItem =
-        hitTestZones(pageX, pageY, itemDropZonesRef.current) ?? dragHoverItemKey;
       if (hoverItem && draggingItemKey && hoverItem !== draggingItemKey) {
         const targetBundleId = hoverItem.split(':')[0]!;
-        if (targetBundleId !== movingBundleId) {
+        if (targetBundleId !== movingBundleId && mergeDragMode === 'bundle') {
           setPendingMerge({
+            kind: 'bundle',
             sourceBundleId: movingBundleId,
             targetBundleId,
           });
           cancelMovingBundle();
           return 'merge';
         }
-        reorderSubjectItems(dragSourceSubjectId, draggingItemKey, hoverItem);
-        cancelMovingBundle();
-        return 'reordered';
+        if (targetBundleId === movingBundleId) {
+          reorderSubjectItems(dragSourceSubjectId, draggingItemKey, hoverItem);
+          cancelMovingBundle();
+          return 'reordered';
+        }
       }
 
       let target: string | null = null;
@@ -864,7 +1133,12 @@ export function AppProvider({
           break;
         }
       }
-      if (target && target !== dragSourceSubjectId && data) {
+      if (
+        target &&
+        target !== dragSourceSubjectId &&
+        data &&
+        mergeDragMode !== 'bundle'
+      ) {
         const next = moveBundleToSubjectData(data, movingBundleId, target);
         persist(next);
         cancelMovingBundle();
@@ -881,6 +1155,7 @@ export function AppProvider({
       dragSourceSubjectId,
       draggingItemKey,
       hitTestZones,
+      mergeDragMode,
       movingBundleId,
       persist,
       reorderSubjectItems,
@@ -982,10 +1257,15 @@ export function AppProvider({
       moveBundleToTrash,
       deletePage,
       mergeBundlesWithTitle,
+      mergeSubjectsWithName,
       splitPageToNewBundle,
       pendingMerge,
       consumePendingMerge,
       clearPendingMerge,
+      mergeDraggingSubjectId,
+      startMergeBundleDrag,
+      startMergeSubjectDrag,
+      finishSubjectMergeDrag,
       restoreTrash,
       applyLayerCycleChoice,
       updateSettings,
@@ -1005,6 +1285,10 @@ export function AppProvider({
       dragHoverItemKey,
       reorderingSubjectId,
       reorderHoverSubjectId,
+      reorderHoverGapKey,
+      reorderHoverTrash,
+      reorderTrashHint,
+      vaultTrashSheet,
       subjectReorderMeasureTick,
       bumpSubjectReorderMeasure,
       startItemDrag,
@@ -1014,6 +1298,8 @@ export function AppProvider({
       registerSubjectDropZone,
       registerItemDropZone,
       registerSubjectReorderZone,
+      registerSubjectReorderGapZone,
+      registerSubjectMergeZone,
       updateDragHover,
       updateSubjectReorderHover,
       finishItemDrag,
@@ -1070,6 +1356,13 @@ export function AppProvider({
     dragHoverItemKey,
     reorderingSubjectId,
     reorderHoverSubjectId,
+    reorderHoverGapKey,
+    reorderHoverTrash,
+    reorderTrashHint,
+    vaultTrashSheet,
+    pendingMerge,
+    mergeDraggingSubjectId,
+    mergeDragMode,
     subjectReorderMeasureTick,
     bumpSubjectReorderMeasure,
     startItemDrag,

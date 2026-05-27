@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
+import { SubjectReorderGap } from '@/components/files/SubjectReorderGap';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
@@ -28,7 +29,7 @@ type Props = {
   totalLabelFor: (subjectId: string) => string;
   previewItemsFor: (subjectId: string) => SubjectPreviewItem[];
   onSubjectPress: (subjectId: string) => void;
-  onSubjectLift: (subjectId: string) => void;
+  onSubjectLift: (subjectId: string, subjectName: string, pageX: number, pageY: number) => void;
   onSubjectReorderMove: (pageX: number, pageY: number) => void;
   onSubjectReorderEnd: (
     subjectId: string,
@@ -39,7 +40,6 @@ type Props = {
   ) => void;
   emptyLabel?: string;
   onFolderGestureLock?: (locked: boolean) => void;
-  onSubjectDeleteHold?: (subjectId: string, subjectName: string) => void;
 };
 
 export function SubjectFilesCarousel({
@@ -54,7 +54,6 @@ export function SubjectFilesCarousel({
   onSubjectReorderEnd,
   emptyLabel,
   onFolderGestureLock,
-  onSubjectDeleteHold,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const scrollDomRef = useRef<HTMLElement | null>(null);
@@ -67,6 +66,7 @@ export function SubjectFilesCarousel({
   const [listScrollEnabled, setListScrollEnabled] = useState(true);
 
   const { reorderingSubjectId, bumpSubjectReorderMeasure } = useApp();
+  const scrollLocked = Boolean(reorderingSubjectId);
 
   const subjects = useMemo(() => pages.flat(), [pages]);
 
@@ -87,9 +87,16 @@ export function SubjectFilesCarousel({
     const dom = scrollDomRef.current;
     if (dom) {
       dom.style.overflowX = listScrollEnabled ? 'auto' : 'hidden';
-      dom.style.touchAction = reorderingSubjectId ? 'none' : 'pan-x';
+      dom.style.touchAction =
+        reorderingSubjectId ? 'none' : 'pan-x';
     }
-  }, [listScrollEnabled, pageWidth, reorderingSubjectId, slotWidth, subjects.length]);
+  }, [
+    listScrollEnabled,
+    pageWidth,
+    reorderingSubjectId,
+    slotWidth,
+    subjects.length,
+  ]);
 
   useEffect(() => {
     updateMaxScroll();
@@ -98,7 +105,9 @@ export function SubjectFilesCarousel({
   const setPreviewGestureLock = useCallback(
     (locked: boolean) => {
       onFolderGestureLock?.(locked);
-      setListScrollEnabled(subjects.length > 1 && !locked && !reorderingSubjectId);
+      setListScrollEnabled(
+        subjects.length > 1 && !locked && !reorderingSubjectId
+      );
     },
     [onFolderGestureLock, reorderingSubjectId, subjects.length]
   );
@@ -170,14 +179,15 @@ export function SubjectFilesCarousel({
   useEffect(() => () => stopAutoScroll(), [stopAutoScroll]);
 
   useEffect(() => {
-    if (!reorderingSubjectId) {
+    const dragId = reorderingSubjectId;
+    if (!dragId) {
       stopAutoScroll();
       setListScrollEnabled(subjects.length > 1);
       return;
     }
     measurePanelBounds();
     setListScrollEnabled(false);
-    const idx = subjects.findIndex((s) => s.id === reorderingSubjectId);
+    const idx = subjects.findIndex((s) => s.id === dragId);
     if (idx >= 0) {
       scrollToX(Math.max(0, idx * slotWidth - PANEL_PAD));
     }
@@ -203,7 +213,8 @@ export function SubjectFilesCarousel({
 
   if (pageWidth <= 0 || tileWidth <= 0) return null;
 
-  const carouselMode = reorderingSubjectId ? 'reorder' : 'scroll';
+  const carouselMode =
+    reorderingSubjectId ? 'reorder' : 'scroll';
 
   return (
     <View
@@ -214,36 +225,40 @@ export function SubjectFilesCarousel({
       <ScrollView
         ref={bindScrollDom}
         horizontal
-        scrollEnabled={listScrollEnabled}
+        scrollEnabled={listScrollEnabled && !scrollLocked}
         nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        style={styles.scroller}
+        style={[styles.scroller, scrollLocked && styles.scrollerDragLock]}
         contentContainerStyle={styles.row}>
-        {subjects.map((subject) => (
-          <View key={subject.id} style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
-            <SubjectFolderTile
-              subjectId={subject.id}
-              name={subject.name}
-              totalLabel={totalLabelFor(subject.id)}
-              previewItems={previewItemsFor(subject.id)}
-              onPreviewGestureLock={setPreviewGestureLock}
-              onPress={() => onSubjectPress(subject.id)}
-              onLiftForReorder={() => onSubjectLift(subject.id)}
-              onReorderDragMove={handleReorderDragMove}
-              onReorderDragEnd={(moved, pageX, pageY) => {
-                stopAutoScroll();
-                onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
-              }}
-              onDeleteHold={
-                onSubjectDeleteHold
-                  ? () => onSubjectDeleteHold(subject.id, subject.name)
-                  : undefined
-              }
-            />
+        {subjects.map((subject, index) => (
+          <View key={subject.id} style={styles.rowSlot}>
+            <SubjectReorderGap gapIndex={index} width={TILE_GAP} />
+            <View style={[styles.tileSlot, { width: tileWidth }]}>
+              <SubjectFolderTile
+                subjectId={subject.id}
+                name={subject.name}
+                totalLabel={totalLabelFor(subject.id)}
+                previewItems={previewItemsFor(subject.id)}
+                onPreviewGestureLock={setPreviewGestureLock}
+                onPress={() => onSubjectPress(subject.id)}
+                onLiftForReorder={(pageX, pageY) => {
+                  setListScrollEnabled(false);
+                  onSubjectLift(subject.id, subject.name, pageX, pageY);
+                }}
+                onReorderDragMove={handleReorderDragMove}
+                onReorderDragEnd={(moved, pageX, pageY) => {
+                  stopAutoScroll();
+                  onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
+                }}
+              />
+            </View>
           </View>
         ))}
+        {subjects.length > 0 ? (
+          <SubjectReorderGap gapIndex={subjects.length} width={TILE_GAP} />
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -261,10 +276,20 @@ const styles = StyleSheet.create({
     WebkitOverflowScrolling: 'touch',
     touchAction: 'pan-x',
   } as ViewStyle,
+  scrollerDragLock: {
+    touchAction: 'none',
+    overflow: 'hidden',
+  } as ViewStyle,
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: PANEL_PAD,
+  },
+  rowSlot: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    flexGrow: 0,
+    flexShrink: 0,
   },
   tileSlot: {
     flexGrow: 0,

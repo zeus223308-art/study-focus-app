@@ -1,5 +1,28 @@
 import type { SubjectFolder } from './types';
 
+export function subjectReorderGapKey(gapIndex: number): string {
+  return `gap:${gapIndex}`;
+}
+
+/** Insert dragged subject before gap index (0 = start, length = end). */
+export function reorderSubjectToGap(
+  subjects: SubjectFolder[],
+  activeId: string,
+  gapIndex: number
+): SubjectFolder[] {
+  const sorted = [...subjects].sort((a, b) => a.sortOrder - b.sortOrder);
+  const fromIdx = sorted.findIndex((s) => s.id === activeId);
+  if (fromIdx < 0) return subjects;
+
+  const clampedGap = Math.max(0, Math.min(gapIndex, sorted.length));
+  const next = [...sorted];
+  const [removed] = next.splice(fromIdx, 1);
+  let insertAt = clampedGap;
+  if (fromIdx < clampedGap) insertAt -= 1;
+  next.splice(insertAt, 0, removed!);
+  return next.map((s, i) => ({ ...s, sortOrder: i }));
+}
+
 export function reorderSubjectFolders(
   subjects: SubjectFolder[],
   activeId: string,

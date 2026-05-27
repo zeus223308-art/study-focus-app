@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { SubjectDropTarget } from '@/components/files/SubjectDropTarget';
 import { SubjectFolderName } from '@/components/files/SubjectFolderName';
 import { SubjectFolderPreview } from '@/components/files/SubjectFolderPreview';
-import { SubjectReorderTarget } from '@/components/files/SubjectReorderTarget';
-import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
+import { SubjectMergeTarget } from '@/components/files/SubjectMergeTarget';
+import { VaultFolderDragGesture } from '@/components/files/VaultFolderDragGesture';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
@@ -19,10 +19,9 @@ type Props = {
   totalLabel: string;
   previewItems: SubjectPreviewItem[];
   onPress: () => void;
-  onLiftForReorder: () => void;
+  onLiftForReorder: (pageX: number, pageY: number) => void;
   onReorderDragMove?: (pageX: number, pageY: number) => void;
   onReorderDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
-  onDeleteHold?: () => void;
   onPreviewGestureLock: (locked: boolean) => void;
 };
 
@@ -35,7 +34,6 @@ export function SubjectFolderTile({
   onLiftForReorder,
   onReorderDragMove,
   onReorderDragEnd,
-  onDeleteHold,
   onPreviewGestureLock,
 }: Props) {
   const { t } = useTranslation();
@@ -44,13 +42,11 @@ export function SubjectFolderTile({
     dragSourceSubjectId,
     finishBundleDrop,
     reorderingSubjectId,
-    reorderHoverSubjectId,
-    registerSubjectReorderZone,
+    registerSubjectMergeZone,
   } = useApp();
   const cardRef = useRef<View>(null);
   const [nameEditing, setNameEditing] = useState(false);
   const isActive = reorderingSubjectId === subjectId;
-  const reorderHover = reorderHoverSubjectId === subjectId && !isActive;
   const dragEnabled = !movingBundleId && Boolean(onReorderDragMove) && !nameEditing;
 
   const tryDropHere = () => {
@@ -70,9 +66,12 @@ export function SubjectFolderTile({
     onPress();
   }, [movingBundleId, onPress, reorderingSubjectId]);
 
-  const handleLift = useCallback(() => {
-    onLiftForReorder();
-  }, [onLiftForReorder]);
+  const handleLift = useCallback(
+    (pageX: number, pageY: number) => {
+      onLiftForReorder(pageX, pageY);
+    },
+    [onLiftForReorder]
+  );
 
   const handleDragEnd = useCallback(
     (moved: boolean, pageX: number, pageY: number) => {
@@ -83,31 +82,29 @@ export function SubjectFolderTile({
 
   return (
     <SubjectDropTarget subjectId={subjectId} style={styles.wrap}>
-      <SubjectReorderTarget
+      <SubjectMergeTarget
         subjectId={subjectId}
-        register={registerSubjectReorderZone}
-        hover={reorderHover}
-        lifted={isActive}>
+        register={registerSubjectMergeZone}
+          lifted={isActive}
+        style={styles.tileBody}>
         <SubjectFolderName
           subjectId={subjectId}
           name={name}
           lifted={isActive}
-          disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
+          disabled={
+            Boolean(movingBundleId) ||
+            Boolean(reorderingSubjectId)
+          }
+          onOpen={openFolder}
           onEditingChange={setNameEditing}
         />
-        <HoldDragSurface
+        <VaultFolderDragGesture
           enabled={dragEnabled}
           onLift={handleLift}
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
-          onPress={openFolder}
-          onDeleteHold={onDeleteHold}
           onGestureActiveChange={onPreviewGestureLock}
-          style={[
-            styles.dragSurface,
-            isActive && styles.dragSurfaceLifted,
-            reorderHover && styles.dragSurfaceHover,
-          ]}>
+          style={[styles.dragSurface, isActive && styles.dragSurfaceLifted]}>
           <View ref={cardRef} collapsable={false} pointerEvents="box-none">
             <SubjectFolderPreview
               variant="vault"
@@ -115,13 +112,11 @@ export function SubjectFolderTile({
               totalLabel={totalLabel}
               emptyHint={t('vault.previewEmpty')}
               passthroughGestures
-              onOpen={openFolder}
-              onLongPress={handleLift}
               onGestureLock={onPreviewGestureLock}
             />
           </View>
-        </HoldDragSurface>
-      </SubjectReorderTarget>
+        </VaultFolderDragGesture>
+      </SubjectMergeTarget>
     </SubjectDropTarget>
   );
 }
@@ -130,6 +125,9 @@ const styles = StyleSheet.create({
   wrap: {
     width: '100%',
     minWidth: 0,
+  },
+  tileBody: {
+    width: '100%',
   },
   dragSurface: {
     width: '100%',

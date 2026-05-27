@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
   StyleSheet,
@@ -8,7 +7,9 @@ import {
   View,
   type ListRenderItemInfo,
 } from 'react-native';
+import { FlatList } from 'react-native-gesture-handler';
 import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
+import { SubjectReorderGap } from '@/components/files/SubjectReorderGap';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
@@ -27,7 +28,7 @@ type Props = {
   totalLabelFor: (subjectId: string) => string;
   previewItemsFor: (subjectId: string) => SubjectPreviewItem[];
   onSubjectPress: (subjectId: string) => void;
-  onSubjectLift: (subjectId: string) => void;
+  onSubjectLift: (subjectId: string, subjectName: string, pageX: number, pageY: number) => void;
   onSubjectReorderMove: (pageX: number, pageY: number) => void;
   onSubjectReorderEnd: (
     subjectId: string,
@@ -38,7 +39,6 @@ type Props = {
   ) => void;
   emptyLabel?: string;
   onFolderGestureLock?: (locked: boolean) => void;
-  onSubjectDeleteHold?: (subjectId: string, subjectName: string) => void;
 };
 
 export function SubjectFilesCarousel({
@@ -53,7 +53,6 @@ export function SubjectFilesCarousel({
   onSubjectReorderEnd,
   emptyLabel,
   onFolderGestureLock,
-  onSubjectDeleteHold,
 }: Props) {
   const listRef = useRef<FlatList<SubjectFolder>>(null);
   const panelRef = useRef<View>(null);
@@ -86,7 +85,8 @@ export function SubjectFilesCarousel({
   const setPreviewGestureLock = useCallback(
     (locked: boolean) => {
       onFolderGestureLock?.(locked);
-      const canScroll = subjects.length > 1 && !locked && !reorderingSubjectId;
+      const canScroll =
+        subjects.length > 1 && !locked && !reorderingSubjectId;
       setListScrollEnabled(canScroll);
     },
     [onFolderGestureLock, reorderingSubjectId, subjects.length]
@@ -154,14 +154,15 @@ export function SubjectFilesCarousel({
   useEffect(() => () => stopAutoScroll(), [stopAutoScroll]);
 
   useEffect(() => {
-    if (!reorderingSubjectId) {
+    const dragId = reorderingSubjectId;
+    if (!dragId) {
       stopAutoScroll();
       setListScrollEnabled(subjects.length > 1);
       return;
     }
     measurePanelBounds();
     setListScrollEnabled(false);
-    const idx = subjects.findIndex((s) => s.id === reorderingSubjectId);
+    const idx = subjects.findIndex((s) => s.id === dragId);
     if (idx >= 0) {
       scrollToX(Math.max(0, idx * slotWidth - PANEL_PAD));
     }
@@ -181,29 +182,35 @@ export function SubjectFilesCarousel({
     if (reorderingSubjectId) bumpSubjectReorderMeasure();
   };
 
-  const renderItem = ({ item: subject }: ListRenderItemInfo<SubjectFolder>) => (
-    <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
-      <SubjectFolderTile
+  const renderItem = ({ item: subject, index }: ListRenderItemInfo<SubjectFolder>) => (
+    <View style={styles.rowSlot}>
+      <SubjectReorderGap gapIndex={index} width={TILE_GAP} />
+      <View style={[styles.tileSlot, { width: tileWidth }]}>
+        <SubjectFolderTile
         subjectId={subject.id}
         name={subject.name}
         totalLabel={totalLabelFor(subject.id)}
         previewItems={previewItemsFor(subject.id)}
         onPreviewGestureLock={setPreviewGestureLock}
         onPress={() => onSubjectPress(subject.id)}
-        onLiftForReorder={() => onSubjectLift(subject.id)}
+        onLiftForReorder={(pageX, pageY) => {
+          setListScrollEnabled(false);
+          onSubjectLift(subject.id, subject.name, pageX, pageY);
+        }}
         onReorderDragMove={handleReorderDragMove}
         onReorderDragEnd={(moved, pageX, pageY) => {
           stopAutoScroll();
           onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
         }}
-        onDeleteHold={
-          onSubjectDeleteHold
-            ? () => onSubjectDeleteHold(subject.id, subject.name)
-            : undefined
-        }
       />
+      </View>
     </View>
   );
+
+  const listFooter =
+    subjects.length > 0 ? (
+      <SubjectReorderGap gapIndex={subjects.length} width={TILE_GAP} />
+    ) : null;
 
   if (subjects.length === 0) {
     return emptyLabel ? <Text style={styles.empty}>{emptyLabel}</Text> : null;
@@ -217,11 +224,13 @@ export function SubjectFilesCarousel({
         ref={listRef}
         data={subjects}
         horizontal
+        removeClippedSubviews={false}
         scrollEnabled={listScrollEnabled}
         nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        ListFooterComponent={() => listFooter}
         scrollEventThrottle={16}
         onScroll={onScroll}
         contentContainerStyle={styles.listContent}
@@ -241,6 +250,12 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: PANEL_PAD,
+  },
+  rowSlot: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    flexGrow: 0,
+    flexShrink: 0,
   },
   tileSlot: {
     flexGrow: 0,

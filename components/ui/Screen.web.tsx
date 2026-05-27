@@ -11,6 +11,8 @@ type Props = {
   children: ReactNode;
   scroll?: boolean;
   scrollEnabled?: boolean;
+  /** Locks vertical pan on the page (vault folder drag). */
+  lockVerticalPan?: boolean;
   style?: ViewStyle;
   padded?: boolean;
   nestedScrollEnabled?: boolean;
@@ -18,7 +20,7 @@ type Props = {
 
 /** Web: RN ScrollView (gesture-handler ScrollView breaks nested touch on mobile Safari). */
 export const Screen = forwardRef<ScrollView, Props>(function Screen(
-  { children, scroll, scrollEnabled = true, style, padded = true },
+  { children, scroll, scrollEnabled = true, lockVerticalPan = false, style, padded = true },
   ref
 ) {
   const insets = useSafeAreaInsets();
@@ -50,7 +52,7 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
     return (
       <ScrollView
         ref={ref}
-        style={styles.root}
+        style={[styles.root, lockVerticalPan && styles.rootLocked]}
         scrollEnabled={scrollEnabled}
         contentContainerStyle={{ paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD }}
         showsVerticalScrollIndicator={false}
@@ -67,5 +69,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.beige,
     WebkitOverflowScrolling: 'touch',
+  } as ViewStyle,
+  rootLocked: {
+    touchAction: 'pan-x',
+    overflow: 'hidden',
   } as ViewStyle,
 });

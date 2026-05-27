@@ -22,7 +22,7 @@ type Props = {
   items: SubjectPreviewItem[];
   totalLabel: string;
   emptyHint: string;
-  onOpen: () => void;
+  onOpen?: () => void;
   onGestureLock: (locked: boolean) => void;
   onLongPress?: () => void;
   /** Parent handles long-press drag; avoid stealing touches. */
@@ -104,7 +104,7 @@ export function SubjectFolderPreview({
         onPress={() => {
           if (!didSwipeRef.current) {
             onInteraction?.();
-            onOpen();
+            onOpen?.();
           }
         }}>
         <ResolvedImage uri={item.thumbnailUri} style={styles.image} resizeMode="cover" />
@@ -115,11 +115,7 @@ export function SubjectFolderPreview({
   if (items.length === 0) {
     if (passthroughGestures) {
       return (
-        <Pressable
-          style={emptyStyle}
-          onPress={onOpen}
-          onLongPress={onLongPress}
-          delayLongPress={500}>
+        <View style={emptyStyle} pointerEvents="none">
           {subjectTag ? (
             <View style={styles.subjectTag}>
               <Text style={styles.subjectTagText}>{subjectTag}</Text>
@@ -127,7 +123,7 @@ export function SubjectFolderPreview({
           ) : null}
           <Text style={styles.emptyHint}>{emptyHint}</Text>
           <Text style={styles.total}>{totalLabel}</Text>
-        </Pressable>
+        </View>
       );
     }
     return (
@@ -242,7 +238,7 @@ export function SubjectFolderPreview({
         style={styles.openFab}
         onPress={() => {
           onInteraction?.();
-          onOpen();
+          onOpen?.();
         }}
         hitSlop={8}>
         <Text style={styles.openFabText}>{t('common.arrowRight')}</Text>

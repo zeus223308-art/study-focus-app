@@ -12,13 +12,14 @@ import { RecoveryBanner } from '@/components/RecoveryBanner';
 import { FloatingCameraButton } from '@/components/FloatingCameraButton';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { GoogleOAuthReturnHandler } from '@/components/settings/GoogleOAuthReturnHandler';
+import { VaultTrashOverlay } from '@/components/files/VaultTrashOverlay';
 import { ChoiceConfirmHost } from '@/components/ui/ChoiceConfirmHost';
 import { MobileWebFrame } from '@/components/MobileWebFrame';
 import { SplashBrand } from '@/components/SplashBrand';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/constants/theme';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SPLASH_BLACK } from '@/components/MountainMLogo';
@@ -103,10 +104,13 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
 
 function AppRoot({ splashDone }: { splashDone: boolean }) {
   return (
-    <MobileWebFrame>
-      <StatusBar style="light" />
-      <RootNavigator splashDone={splashDone} />
-    </MobileWebFrame>
+    <>
+      <MobileWebFrame>
+        <StatusBar style="light" />
+        <RootNavigator splashDone={splashDone} />
+      </MobileWebFrame>
+      {Platform.OS !== 'web' ? <VaultTrashOverlay /> : null}
+    </>
   );
 }
 

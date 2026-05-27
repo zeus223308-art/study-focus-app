@@ -62,8 +62,12 @@
     "reorderEdgeHint": "Drag to the screen edge to reveal more folders",
     "previewEmpty": "No photos",
     "photos": "{{count}} photos",
+    "dragSubjectHint": "Drop between cards to reorder. To delete, drag down toward the bottom.",
+    "dragTrashKeepPull": "Keep pulling down to Trash",
+    "dragTrashRelease": "Release to confirm delete",
     "deleteFolderTitle": "Delete this folder?",
-    "deleteFolderMessage": "\"{{name}}\" and all its photos will move to Trash."
+    "deleteFolderMessage": "“{{name}}” and all its photos will move to Trash.",
+    "movedToTrash": "Moved “{{name}}” to Trash"
   },
   "capture": {
     "title": "Capture",
@@ -170,6 +174,8 @@
     "mergeConfirmMessage": "Combines the stacks into one. You can merge across subjects.",
     "mergeTitlePrompt": "Enter a title",
     "mergeTitlePlaceholder": "Merged file name",
+    "mergeSubjectNamePrompt": "Enter subject name",
+    "mergeSubjectNamePlaceholder": "Merged subject name",
     "merged": "Merged",
     "sendToNewFolder": "Send to new folder",
     "splitTitlePrompt": "Create new file",
