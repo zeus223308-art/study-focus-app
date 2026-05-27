@@ -73,6 +73,23 @@ export async function getWebAssetBlobByKey(key: string): Promise<Blob | null> {
   return getWebAssetBlob(key);
 }
 
+/** List stored asset keys (web only), optionally filtered by prefix e.g. `bundle_abc/`. */
+export async function listWebAssetKeysWithPrefix(prefix = ''): Promise<string[]> {
+  if (!isWeb()) return [];
+  const db = await openDb();
+  const keys = await new Promise<string[]>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).getAllKeys();
+    req.onsuccess = () => {
+      const all = (req.result as IDBValidKey[]).map(String);
+      resolve(prefix ? all.filter((k) => k.startsWith(prefix)) : all);
+    };
+    req.onerror = () => reject(req.error ?? new Error('IndexedDB keys failed'));
+  });
+  db.close();
+  return keys;
+}
+
 export async function getWebAssetObjectUrl(key: string): Promise<string | null> {
   if (!isWeb()) return null;
   const hit = objectUrlCache.get(key);

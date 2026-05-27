@@ -2,11 +2,10 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 
 import type { AppData, CloudAsset, NotePage } from '@/lib/domain/types';
-import { uriIsReadable } from '@/lib/files/asset-uri-utils';
+import { ensureCanonicalMasterUri, uriIsReadable } from '@/lib/files/asset-uri-utils';
 import { isStaleWebBlobUri, resolveImageUri } from '@/lib/files/resolve-image-uri';
 import { THUMB_MAX_EDGE } from '@/lib/files/image-quality';
 import { createMiniThumbnail } from '@/services/storage/asset-pipeline';
-import { parseWebStoredUri, toWebStoredUri, webAssetKey } from '@/services/storage/web-asset-store';
 
 export type DerivativeRegenResult = {
   data: AppData;
@@ -32,8 +31,8 @@ async function resolveMasterUri(
   bundleId: string,
   pageId: string
 ): Promise<string | null> {
-  const canonical = toWebStoredUri(webAssetKey(bundleId, pageId, 'master'));
-  if (await uriIsReadable(canonical)) return canonical;
+  const ensured = await ensureCanonicalMasterUri(asset, bundleId, pageId, 'master');
+  if (ensured) return ensured;
 
   if (
     asset.originalLocalUri &&
@@ -46,7 +45,7 @@ async function resolveMasterUri(
   for (const uri of [asset.localMiniUri, asset.thumbnailUri]) {
     if (uri && (await uriIsReadable(uri))) {
       const edge = await probeLongEdge(uri);
-      if (edge > THUMB_MAX_EDGE * 0.9) return uri;
+      if (edge > THUMB_MAX_EDGE * 0.5) return uri;
     }
   }
   return null;
