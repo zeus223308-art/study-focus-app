@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
+  Dimensions,
   Image,
   Modal,
   Pressable,
@@ -15,8 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { RecallCanvas, type RecallTool } from '@/components/review/RecallCanvas';
-import { RecallToolbar } from '@/components/review/RecallToolbar';
+import { RecallWorkCard, type ScratchTextBox } from '@/components/review/RecallWorkCard';
 import { ScheduleAdvanceSheet } from '@/components/review/ScheduleAdvanceSheet';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
@@ -41,11 +41,9 @@ import { advanceAfterReview, getNextReviewDate } from '@/lib/spacing/engine';
 
 const HINT_PEEK_MS = 8000;
 const AD_LOCK_MS = 5000;
-const RECALL_IMAGE_OPACITY = 0.32;
-
 type SlideSide = 'front' | 'back';
 type Slide = { bundle: NoteBundle; page: NotePage; side: SlideSide };
-type Phase = 'front' | 'countdown' | 'blackout' | 'peek' | 'pass' | 'fail';
+type Phase = 'front' | 'countdown' | 'recall-work' | 'peek' | 'pass' | 'fail';
 
 export default function ReviewSessionScreen() {
   const { t } = useTranslation();
@@ -100,7 +98,7 @@ export default function ReviewSessionScreen() {
   const [phase, setPhase] = useState<Phase>('front');
   const [countdown, setCountdown] = useState<number | null>(null);
   const [recallStrokes, setRecallStrokes] = useState<InkStroke[]>([]);
-  const [recallTool, setRecallTool] = useState<RecallTool>('pen-black');
+  const [textBoxes, setTextBoxes] = useState<ScratchTextBox[]>([]);
   const [adLocked, setAdLocked] = useState(false);
   const [adVisible, setAdVisible] = useState(false);
   const [hintOffer, setHintOffer] = useState(false);
@@ -110,6 +108,9 @@ export default function ReviewSessionScreen() {
   const [passAnim] = useState(() => new Animated.Value(0));
   const passScale = useRef(new Animated.Value(0.7)).current;
   const frontFade = useRef(new Animated.Value(1)).current;
+  const problemShift = useRef(new Animated.Value(0)).current;
+  const workCardW = Math.min(360, Dimensions.get('window').width - 32);
+  const workCardH = Math.round(workCardW * 1.12);
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
   const [recallCountdownSec, setRecallCountdownSec] = useState(3);
@@ -157,14 +158,14 @@ export default function ReviewSessionScreen() {
     };
   }, [answerUri, current?.page.id]);
   const auto = params.slideshow === '1';
-  const useBlackout = params.blackout !== '0';
   const isPro = data.settings.tier === 'pro';
 
   const resetSlide = useCallback(() => {
     setPhase('front');
     setCountdown(null);
     setRecallStrokes([]);
-    setRecallTool('pen-black');
+    setTextBoxes([]);
+    problemShift.setValue(0);
     setAdLocked(false);
     setAdVisible(false);
     setHintOffer(false);
@@ -209,15 +210,16 @@ export default function ReviewSessionScreen() {
   }, [current?.page.id, current?.side]);
 
   const enterRecallPhase = () => {
-    setPhase('blackout');
-    frontFade.setValue(RECALL_IMAGE_OPACITY);
+    setPhase('recall-work');
+    problemShift.setValue(0);
+    Animated.timing(problemShift, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
   };
 
   const startCountdown = () => {
-    if (!useBlackout) {
-      enterRecallPhase();
-      return;
-    }
     if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
     const steps = buildCountdownSteps(recallCountdownSec);
     setPhase('countdown');
@@ -366,12 +368,17 @@ export default function ReviewSessionScreen() {
 
   const showAnswerOverlay = isPro && premiumReveal && answerUri && !auto;
   const hasAnswer = Boolean(answerUri);
-  const recallMode = phase === 'blackout' && !showAnswerOverlay;
+  const recallMode =
+    (phase === 'recall-work' || phase === 'countdown') && !showAnswerOverlay;
+  const problemLiftY = problemShift.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -Math.round(workCardH * 0.14)],
+  });
   const showingBack = current.side === 'back' && Boolean(answerUri);
   const displayUri = showingBack ? resolvedAnswerUri : resolvedFrontUri;
   const sideBadge = showingBack ? t('capture.backLabel') : t('review.frontLabel');
   const timerDisplaySec =
-    countdown !== null ? countdown : auto && phase === 'front' ? slideRemainingSec : null;
+    phase === 'countdown' ? null : auto && phase === 'front' ? slideRemainingSec : null;
   const slideSecOptions =
     current.side === 'back' ? ANSWER_SLIDESHOW_SECONDS : FRONT_SLIDESHOW_SECONDS;
 
@@ -429,42 +436,50 @@ export default function ReviewSessionScreen() {
 
       {recallMode ? (
         <View style={styles.recallFull}>
-          {resolvedFrontUri ? (
-            <Image
-              source={{ uri: resolvedFrontUri }}
-              style={styles.recallBgImage}
-              resizeMode="contain"
-            />
-          ) : null}
-          <Text style={styles.recallTitle}>{t('review.scratchTitle')}</Text>
-          <RecallToolbar
-            tool={recallTool}
-            canEdit={recallStrokes.length > 0}
-            penLabel={t('review.toolPen')}
-            eraserLabel={t('review.toolEraser')}
-            undoLabel={t('review.undo')}
-            clearLabel={t('review.clearAll')}
-            onToolChange={setRecallTool}
-            onUndo={() => setRecallStrokes((s) => s.slice(0, -1))}
-            onClear={() => setRecallStrokes([])}
-          />
-          <RecallCanvas
-            strokes={recallStrokes}
-            onStrokesChange={setRecallStrokes}
-            tool={recallTool}
-            fullScreen
-          />
-          {!hasAnswer && <Text style={styles.warn}>{t('review.noBackPhoto')}</Text>}
-          <View style={styles.recallActions}>
-            <Button label={t('review.submitRecall')} onPress={submitRecall} disabled={adLocked} />
-            {!isPro && (
-              <Pressable onPress={() => setHintOffer(true)} disabled={!hasAnswer}>
-                <Text style={[styles.hintLink, !hasAnswer && styles.hintDisabled]}>
-                  {t('review.hintAd')}
-                </Text>
-              </Pressable>
+          <Animated.View
+            style={[
+              styles.problemStage,
+              { width: workCardW, height: workCardH, transform: [{ translateY: problemLiftY }] },
+            ]}>
+            {resolvedFrontUri ? (
+              <Image
+                source={{ uri: resolvedFrontUri }}
+                style={{ width: workCardW, height: workCardH }}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={[styles.imageMissing, { width: workCardW, height: workCardH }]} />
             )}
-          </View>
+            {phase === 'countdown' && countdown !== null ? (
+              <View style={styles.countdownOnImage}>
+                <Text style={styles.countdownOnImageText}>{countdown}</Text>
+              </View>
+            ) : null}
+          </Animated.View>
+
+          {phase === 'recall-work' ? (
+            <>
+              <RecallWorkCard
+                width={workCardW}
+                height={workCardH}
+                strokes={recallStrokes}
+                onStrokesChange={setRecallStrokes}
+                textBoxes={textBoxes}
+                onTextBoxesChange={setTextBoxes}
+              />
+              {!hasAnswer ? <Text style={styles.warn}>{t('review.noBackPhoto')}</Text> : null}
+              <View style={styles.recallActions}>
+                <Button label={t('review.submitRecall')} onPress={submitRecall} disabled={adLocked} />
+                {!isPro ? (
+                  <Pressable onPress={() => setHintOffer(true)} disabled={!hasAnswer}>
+                    <Text style={[styles.hintLink, !hasAnswer && styles.hintDisabled]}>
+                      {t('review.hintAd')}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </>
+          ) : null}
         </View>
       ) : (
         <>
@@ -514,39 +529,27 @@ export default function ReviewSessionScreen() {
             {index + 1} / {slides.length}
             {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
           </Text>
-          {useBlackout ? (
-            <>
-              <Text style={styles.durationLabel}>{t('review.countdownDuration')}</Text>
-              <View style={styles.durationRow}>
-                {RECALL_COUNTDOWN_OPTIONS.map((sec) => (
-                  <Pressable
-                    key={sec}
-                    onPress={() => setRecallCountdownSec(sec)}
-                    style={[
-                      styles.durationChip,
-                      recallCountdownSec === sec && styles.durationChipOn,
-                    ]}>
-                    <Text
-                      style={[
-                        styles.durationChipText,
-                        recallCountdownSec === sec && styles.durationChipTextOn,
-                      ]}>
-                      {t('review.timerSec', { sec })}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-              <Button label={t('review.startCountdown')} onPress={startCountdown} />
-            </>
-          ) : (
-            <Button
-              label={t('review.complete')}
-              onPress={() => {
-                completeReview(current.bundle.id);
-                advance();
-              }}
-            />
-          )}
+          <Text style={styles.durationLabel}>{t('review.countdownDuration')}</Text>
+          <View style={styles.durationRow}>
+            {RECALL_COUNTDOWN_OPTIONS.map((sec) => (
+              <Pressable
+                key={sec}
+                onPress={() => setRecallCountdownSec(sec)}
+                style={[
+                  styles.durationChip,
+                  recallCountdownSec === sec && styles.durationChipOn,
+                ]}>
+                <Text
+                  style={[
+                    styles.durationChipText,
+                    recallCountdownSec === sec && styles.durationChipTextOn,
+                  ]}>
+                  {t('review.timerSec', { sec })}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Button label={t('review.startCountdown')} onPress={startCountdown} />
         </View>
           )}
 
@@ -697,9 +700,31 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  recallBgImage: {
-    ...StyleSheet.absoluteFill,
-    opacity: RECALL_IMAGE_OPACITY,
+  problemStage: {
+    alignSelf: 'center',
+    position: 'relative',
+    backgroundColor: theme.white,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    overflow: 'hidden',
+  },
+  countdownOnImage: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    minWidth: 44,
+    minHeight: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,107,0,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  countdownOnImageText: {
+    color: theme.white,
+    fontWeight: '900',
+    fontSize: 22,
   },
   durationLabel: {
     fontSize: theme.font.caption,

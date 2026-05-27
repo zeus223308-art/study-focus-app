@@ -15,18 +15,21 @@ import {
 } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
-import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
-import { InkToolBar } from '@/components/annotation/InkToolBar';
+import { FullscreenInkControls } from '@/components/annotation/FullscreenInkControls';
+import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink-flow';
+import { BundlePhotoBlock } from '@/components/bundle/BundlePhotoBlock';
+import { PhotoCropModal } from '@/components/bundle/PhotoCropModal';
+import { PhotoInkToolbar, type PhotoInkToolKind } from '@/components/bundle/PhotoInkToolbar';
+import { ProblemPhotoModal } from '@/components/bundle/ProblemPhotoModal';
 import { Button } from '@/components/ui/Button';
-import { PhotoFullscreenModal } from '@/components/ui/PhotoFullscreenModal';
-import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { attachAnswerToPage } from '@/lib/domain/attach-answer';
-import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
+import { replacePageAnswerPhoto, replacePageFrontPhoto } from '@/lib/files/replace-page-photo';
+import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { pickForImport } from '@/lib/import/pick-for-import';
 import {
@@ -43,9 +46,9 @@ import {
 import type { InkToolId, NoteLayer } from '@/lib/domain/types';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
-import { extractOcrFromImageUri, isOcrAvailable } from '@/lib/review/ocr-extract';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { reportImportPhotosResult } from '@/lib/ui/import-result-feedback';
+import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 function newLayer(studyDate: string): NoteLayer {
@@ -85,21 +88,22 @@ export default function BundleScreen() {
   }, [bundle?.id, pageId]);
   const [pageIndex, setPageIndex] = useState(initialPageIndex);
   const [importingMore, setImportingMore] = useState(false);
-  const [note, setNote] = useState('');
-  const [ocrTextDraft, setOcrTextDraft] = useState('');
-  const [answerOcrDraft, setAnswerOcrDraft] = useState('');
-  const [ocrBusy, setOcrBusy] = useState(false);
-  const ocrEnabled = Platform.OS !== 'web' && isOcrAvailable();
   const [tool, setTool] = useState<InkToolId>('pen-black');
   const [penWidth, setPenWidth] = useState<number>(PEN_WIDTHS[1]);
   const [highlighterWidth, setHighlighterWidth] = useState<number>(HIGHLIGHTER_WIDTHS[1]);
   const [eraserWidth, setEraserWidth] = useState<number>(ERASER_WIDTHS[1]);
-  const [photoFullscreen, setPhotoFullscreen] = useState(false);
-  const [layersVisible, setLayersVisible] = useState(true);
+  const [problemModalOpen, setProblemModalOpen] = useState(false);
+  const [editAnswer, setEditAnswer] = useState(false);
+  const [answerInkKind, setAnswerInkKind] = useState<PhotoInkToolKind>('pen');
+  const [cropOpen, setCropOpen] = useState(false);
+  const [cropUri, setCropUri] = useState('');
+  const [cropSide, setCropSide] = useState<'front' | 'back'>('front');
   const [undoStack, setUndoStack] = useState<NoteLayer['strokes'][]>([]);
   const [redoStack, setRedoStack] = useState<NoteLayer['strokes'][]>([]);
   const viewport = useViewportLayout();
-  const pagerSize = viewport.pagerSize;
+  const viewerLayout = useFullscreenViewerLayout();
+  const photoW = Math.min(viewport.contentMaxWidth - viewport.horizontalPadding * 2, 480);
+  const photoH = Math.round(photoW * 1.12);
 
   const page = bundle?.pages[pageIndex] ?? bundle?.pages[0];
   const strokeWidth = useMemo(() => {
@@ -117,12 +121,6 @@ export default function BundleScreen() {
     setPageIndex(initialPageIndex);
   }, [initialPageIndex]);
 
-  useEffect(() => {
-    if (!page) return;
-    setNote(page.textNote);
-    setOcrTextDraft(page.ocrText);
-    setAnswerOcrDraft(page.answerOcrText);
-  }, [page?.id]);
 
   useEffect(() => {
     if (!bundle) return;
@@ -130,23 +128,7 @@ export default function BundleScreen() {
   }, [bundle?.id, bundle?.pages.length]);
 
   const persistEditsRef = useRef<() => void>(() => {});
-  persistEditsRef.current = () => {
-    if (!bundle || !page) return;
-    const now = new Date().toISOString();
-    updateBundle(bundle.id, {
-      pages: bundle.pages.map((p) =>
-        p.id === page.id
-          ? {
-              ...p,
-              textNote: note,
-              ocrText: ocrTextDraft,
-              answerOcrText: answerOcrDraft,
-              updatedAt: now,
-            }
-          : p
-      ),
-    });
-  };
+  persistEditsRef.current = () => {};
 
   useFocusEffect(
     useCallback(() => {
@@ -167,32 +149,23 @@ export default function BundleScreen() {
     params: { id: bundle.subjectId },
   };
 
-  const saveOcrFields = (ocrText: string, answerOcrText: string) => {
-    updateBundle(bundle.id, {
-      pages: bundle.pages.map((p) =>
-        p.id === page.id ? { ...p, ocrText, answerOcrText, updatedAt: new Date().toISOString() } : p
-      ),
-    });
+  const openCrop = (side: 'front' | 'back') => {
+    const uri =
+      side === 'front' ? getFullImageUri(page.asset) : getFullImageUri(page.answerAsset);
+    if (!uri) return;
+    setCropSide(side);
+    setCropUri(uri);
+    setCropOpen(true);
   };
 
-  const rerunOcr = async () => {
-    if (!ocrEnabled) {
-      showMessage(t('item.ocrUnavailable'));
-      return;
-    }
-    setOcrBusy(true);
-    try {
-      const frontUri = getFullImageUri(page.asset);
-      const front = frontUri ? await extractOcrFromImageUri(frontUri) : '';
-      const ansUri = getAnswerImageUri(page);
-      const back = ansUri ? await extractOcrFromImageUri(ansUri) : answerOcrDraft;
-      setOcrTextDraft(front);
-      setAnswerOcrDraft(back);
-      saveOcrFields(front, back);
-      if (!front && !back) showMessage(t('item.ocrNoText'));
-    } finally {
-      setOcrBusy(false);
-    }
+  const onCropDone = async (uri: string) => {
+    const updated =
+      cropSide === 'front'
+        ? await replacePageFrontPhoto(storage, page, bundle.id, uri)
+        : await replacePageAnswerPhoto(storage, page, bundle.id, uri);
+    updateBundle(bundle.id, {
+      pages: bundle.pages.map((p) => (p.id === page.id ? updated : p)),
+    });
   };
 
   const confirmDeleteCurrentPage = () => {
@@ -298,6 +271,37 @@ export default function BundleScreen() {
     if (!activeLayer) addLayer();
   };
 
+  const answerInkFlow = useFullscreenInkFlow({
+    visible: editAnswer,
+    tool,
+    onToolChange: setTool,
+    onPenWidthChange: setPenWidth,
+    onHighlighterWidthChange: setHighlighterWidth,
+    onEraserWidthChange: setEraserWidth,
+    onBeforeInkUse: ensureLayer,
+  });
+
+  const onSelectAnswerInk = (kind: PhotoInkToolKind) => {
+    setAnswerInkKind(kind);
+    if (kind === 'crop') {
+      openCrop(page.answerAsset ? 'back' : 'front');
+      return;
+    }
+    if (kind === 'eraser') {
+      ensureLayer();
+      setTool('eraser');
+      answerInkFlow.openKind('eraser');
+      return;
+    }
+    if (kind === 'highlighter') {
+      ensureLayer();
+      answerInkFlow.openKind('highlighter');
+      return;
+    }
+    ensureLayer();
+    answerInkFlow.openKind('pen');
+  };
+
   const addBackPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -345,9 +349,6 @@ export default function BundleScreen() {
     }
   };
 
-  const backUri = getFullImageUri(page.answerAsset);
-  const frontFullUri = getFullImageUri(page.asset);
-
   const subject = data.subjects.find((s) => s.id === bundle.subjectId);
 
   return (
@@ -369,153 +370,73 @@ export default function BundleScreen() {
         <Text style={styles.studyDateLine}>{bundle.studyDate}</Text>
       </View>
 
-      <View style={styles.pagerSection}>
-        <Pressable
-          style={styles.fullscreenBtn}
-          onPress={() => setPhotoFullscreen(true)}
-          hitSlop={8}
-          accessibilityLabel={t('item.viewFullscreen')}>
-          <SymbolView
-            name={{
-              ios: 'arrow.up.left.and.arrow.down.right',
-              android: 'fullscreen',
-              web: 'fullscreen',
-            }}
-            size={18}
-            tintColor={theme.orange}
+      {editAnswer ? (
+        <>
+          <PhotoInkToolbar
+            activeKind={answerInkKind}
+            tool={tool}
+            onSelectKind={onSelectAnswerInk}
           />
-        </Pressable>
-        <ScrollView
-          horizontal
-          pagingEnabled
-          style={[styles.pager, { height: pagerSize }]}
-          onMomentumScrollEnd={(e) => {
-            const i = Math.round(e.nativeEvent.contentOffset.x / pagerSize);
-            setPageIndex(i);
-          }}>
-        {bundle.pages.map((p) => (
-          <View
-            key={p.id}
-            style={[styles.pageWrap, { width: pagerSize, height: pagerSize }]}>
-            <ResolvedImage
-              uri={getPreviewImageUri(p.asset) ?? getFullImageUri(p.asset)}
-              style={[styles.page, { width: pagerSize, height: pagerSize }]}
-              resizeMode="contain"
+          {answerInkFlow.flow !== null && (
+            <FullscreenInkControls
+              tool={tool}
+              penWidth={penWidth}
+              highlighterWidth={highlighterWidth}
+              eraserWidth={eraserWidth}
+              layout={viewerLayout}
+              flowApi={answerInkFlow}
+              pickerOnly
             />
-            {p.id === page.id && activeLayer && layersVisible && (
-              <AnnotationCanvas
-                layer={activeLayer}
-                tool={tool}
-                strokeWidth={strokeWidth}
-                visible
-                onStrokesChange={updateLayerStrokes}
-                height={pagerSize}
-                style={styles.annotationOverlay}
-              />
-            )}
+          )}
+          <View style={styles.toolRow}>
+            <Pressable onPress={undo}>
+              <Text style={styles.link}>Undo</Text>
+            </Pressable>
+            <Pressable onPress={redo}>
+              <Text style={styles.link}>Redo</Text>
+            </Pressable>
+            <Pressable onPress={() => setEditAnswer(false)}>
+              <Text style={styles.link}>{t('common.done')}</Text>
+            </Pressable>
           </View>
-        ))}
-        </ScrollView>
-      </View>
-      <Text style={styles.pageIndicator}>
-        {pageIndex + 1} / {bundle.pages.length}
-      </Text>
+        </>
+      ) : null}
 
-      <View style={styles.pairSection}>
-        <Text style={styles.pairTitle}>{t('item.flashcardPair')}</Text>
-        <View style={styles.pairRow}>
-          <View style={styles.pairCol}>
-            <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
-            <ResolvedImage
-              uri={getPreviewImageUri(page.asset)}
-              asset={page.asset}
-              style={styles.pairThumb}
-            />
-          </View>
-          <View style={styles.pairCol}>
-            <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
-            {backUri ? (
-              <ResolvedImage
-                uri={backUri}
-                asset={page.answerAsset ?? undefined}
-                style={styles.pairThumb}
-              />
-            ) : (
-              <Pressable style={styles.pairAdd} onPress={addBackPhoto}>
-                <Text style={styles.pairAddText}>{t('item.addBackPhoto')}</Text>
-              </Pressable>
-            )}
-          </View>
-        </View>
-      </View>
+      <BundlePhotoBlock
+        label={t('item.problemSection')}
+        asset={page.asset}
+        width={photoW}
+        height={photoH}
+        onPress={() => {
+          setEditAnswer(false);
+          setProblemModalOpen(true);
+        }}
+      />
+
+      <BundlePhotoBlock
+        label={t('item.answerSection')}
+        asset={page.answerAsset}
+        width={photoW}
+        height={photoH}
+        onPress={() => {
+          if (!page.answerAsset) return;
+          setProblemModalOpen(false);
+          setEditAnswer(true);
+        }}
+        inkEnabled={editAnswer && Boolean(page.answerAsset)}
+        layer={activeLayer ?? undefined}
+        tool={tool}
+        strokeWidth={strokeWidth}
+        onStrokesChange={updateLayerStrokes}
+        placeholder={t('item.addBackPhoto')}
+        onAddPress={addBackPhoto}
+      />
 
       <Pressable onPress={importMorePhotos} disabled={importingMore} style={styles.addProblemRow}>
         <Text style={[styles.link, importingMore && styles.linkDisabled]}>
-          {importingMore ? t('folder.importing') : t('folder.addProblem')}
+          {importingMore ? t('folder.importing') : t('folder.importPhotos')}
         </Text>
       </Pressable>
-
-      <InkToolBar
-        tool={tool}
-        penWidth={penWidth}
-        highlighterWidth={highlighterWidth}
-        eraserWidth={eraserWidth}
-        onBeforeToolChange={ensureLayer}
-        onToolChange={setTool}
-        onPenWidthChange={setPenWidth}
-        onHighlighterWidthChange={setHighlighterWidth}
-        onEraserWidthChange={setEraserWidth}
-      />
-      <View style={styles.toolRow}>
-        <Pressable onPress={undo}><Text style={styles.link}>Undo</Text></Pressable>
-        <Pressable onPress={redo}><Text style={styles.link}>Redo</Text></Pressable>
-        <Text style={styles.label}>{t('item.layers')}</Text>
-        <Switch value={layersVisible} onValueChange={setLayersVisible} trackColor={{ true: theme.orange }} />
-      </View>
-
-      <TextInput
-        style={styles.note}
-        multiline
-        value={note || page.textNote}
-        onChangeText={setNote}
-        onBlur={() =>
-          updateBundle(bundle.id, {
-            pages: bundle.pages.map((p) => (p.id === page.id ? { ...p, textNote: note } : p)),
-          })
-        }
-        placeholder={t('item.note')}
-        placeholderTextColor={theme.gray}
-      />
-
-      {ocrEnabled ? (
-        <View style={styles.ocrBlock}>
-          <Pressable onPress={rerunOcr} disabled={ocrBusy} style={styles.ocrRerun}>
-            <Text style={[styles.link, ocrBusy && styles.linkDisabled]}>
-              {ocrBusy ? t('item.ocrRerunning') : t('item.ocrRerun')}
-            </Text>
-          </Pressable>
-          <TextInput
-            style={styles.note}
-            multiline
-            value={ocrTextDraft}
-            onChangeText={setOcrTextDraft}
-            onBlur={() => saveOcrFields(ocrTextDraft, answerOcrDraft)}
-            placeholder={t('item.ocrText')}
-            placeholderTextColor={theme.gray}
-          />
-          {page.answerAsset ? (
-            <TextInput
-              style={styles.note}
-              multiline
-              value={answerOcrDraft}
-              onChangeText={setAnswerOcrDraft}
-              onBlur={() => saveOcrFields(ocrTextDraft, answerOcrDraft)}
-              placeholder={t('item.ocrAnswerText')}
-              placeholderTextColor={theme.gray}
-            />
-          ) : null}
-        </View>
-      ) : null}
 
       <View style={styles.timingBlock}>
         <Text style={styles.label}>{t('item.slideshowFront')}</Text>
@@ -564,10 +485,6 @@ export default function BundleScreen() {
         </ScrollView>
       </View>
 
-      <Pressable onPress={onAddLayer}>
-        <Text style={styles.link}>{t('item.addLayer')}</Text>
-      </Pressable>
-
       <Button
         label={t('item.slideshow')}
         onPress={() =>
@@ -583,7 +500,7 @@ export default function BundleScreen() {
         onPress={() =>
           router.push({
             pathname: '/review/session',
-            params: { bundleId: bundle.id, blackout: '1' },
+            params: { bundleId: bundle.id },
           })
         }
         style={{ marginTop: 8 }}
@@ -617,13 +534,11 @@ export default function BundleScreen() {
         }}
       />
 
-      <PhotoFullscreenModal
-        visible={photoFullscreen}
-        frontUri={frontFullUri ?? page.asset.thumbnailUri ?? ''}
-        backUri={backUri}
-        onClose={() => setPhotoFullscreen(false)}
+      <ProblemPhotoModal
+        visible={problemModalOpen}
+        frontAsset={page.asset}
+        backAsset={page.answerAsset}
         layer={activeLayer ?? null}
-        onStrokesChange={updateLayerStrokes}
         tool={tool}
         penWidth={penWidth}
         highlighterWidth={highlighterWidth}
@@ -632,7 +547,18 @@ export default function BundleScreen() {
         onPenWidthChange={setPenWidth}
         onHighlighterWidthChange={setHighlighterWidth}
         onEraserWidthChange={setEraserWidth}
+        onStrokesChange={updateLayerStrokes}
         onBeforeInkUse={ensureLayer}
+        onClose={() => setProblemModalOpen(false)}
+        onCropRequest={(side) => openCrop(side)}
+      />
+
+      <PhotoCropModal
+        visible={cropOpen}
+        uri={cropUri}
+        sideLabel={cropSide === 'front' ? t('item.problemSection') : t('item.answerSection')}
+        onConfirm={onCropDone}
+        onClose={() => setCropOpen(false)}
       />
     </Screen>
   );
