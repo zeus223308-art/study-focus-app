@@ -94,6 +94,7 @@ export function SubjectFolderTile({
           lifted={isActive}
           disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
           onEditingChange={setNameEditing}
+          onLongPressMenu={onHoldMenu}
         />
         <HoldDragSurface
           enabled={dragEnabled}

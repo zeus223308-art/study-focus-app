@@ -115,11 +115,7 @@ export function SubjectFolderPreview({
   if (items.length === 0) {
     if (passthroughGestures) {
       return (
-        <Pressable
-          style={emptyStyle}
-          onPress={onOpen}
-          onLongPress={onLongPress}
-          delayLongPress={500}>
+        <View style={emptyStyle} pointerEvents="none">
           {subjectTag ? (
             <View style={styles.subjectTag}>
               <Text style={styles.subjectTagText}>{subjectTag}</Text>
@@ -127,7 +123,7 @@ export function SubjectFolderPreview({
           ) : null}
           <Text style={styles.emptyHint}>{emptyHint}</Text>
           <Text style={styles.total}>{totalLabel}</Text>
-        </Pressable>
+        </View>
       );
     }
     return (

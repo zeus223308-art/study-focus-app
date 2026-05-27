@@ -19,6 +19,8 @@ type Props = {
   lifted?: boolean;
   disabled?: boolean;
   onEditingChange?: (editing: boolean) => void;
+  /** Long-press on subject name (Files tab menu). */
+  onLongPressMenu?: () => void;
 };
 
 export function SubjectFolderName({
@@ -27,6 +29,7 @@ export function SubjectFolderName({
   lifted,
   disabled,
   onEditingChange,
+  onLongPressMenu,
 }: Props) {
   const { renameSubject } = useApp();
   const lastTapRef = useRef(0);
@@ -95,6 +98,8 @@ export function SubjectFolderName({
   return (
     <Pressable
       onPress={handlePress}
+      onLongPress={onLongPressMenu}
+      delayLongPress={500}
       disabled={disabled}
       hitSlop={8}
       style={styles.nameRow}

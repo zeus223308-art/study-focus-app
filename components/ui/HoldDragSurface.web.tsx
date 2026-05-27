@@ -291,10 +291,32 @@ export function HoldDragSurface({
         if (timerRef.current) finish(pt.pageX, pt.pageY);
       };
 
+      const onMouseDown = (ev: MouseEvent) => {
+        if (!enabledRef.current || ev.button !== 0) return;
+        startPending(ev.clientX, ev.clientY);
+      };
+
+      const onMouseMove = (ev: MouseEvent) => {
+        if (phaseRef.current === 'lifted') return;
+        movePending(ev.clientX, ev.clientY);
+      };
+
+      const onMouseUp = (ev: MouseEvent) => {
+        if (phaseRef.current === 'lifted') {
+          finish(ev.clientX, ev.clientY);
+          return;
+        }
+        if (timerRef.current) finish(ev.clientX, ev.clientY);
+      };
+
       el.addEventListener('touchstart', onTouchStart, { passive: true });
       el.addEventListener('touchmove', onTouchMove, { passive: false });
       el.addEventListener('touchend', onTouchEnd, { passive: true });
       el.addEventListener('touchcancel', onTouchEnd, { passive: true });
+      el.addEventListener('mousedown', onMouseDown);
+      el.addEventListener('mousemove', onMouseMove);
+      el.addEventListener('mouseup', onMouseUp);
+      el.addEventListener('mouseleave', onMouseUp);
 
       el.style.touchAction = phaseRef.current === 'lifted' ? 'none' : 'manipulation';
       el.style.webkitUserSelect = 'none';
@@ -307,6 +329,10 @@ export function HoldDragSurface({
         el.removeEventListener('touchmove', onTouchMove);
         el.removeEventListener('touchend', onTouchEnd);
         el.removeEventListener('touchcancel', onTouchEnd);
+        el.removeEventListener('mousedown', onMouseDown);
+        el.removeEventListener('mousemove', onMouseMove);
+        el.removeEventListener('mouseup', onMouseUp);
+        el.removeEventListener('mouseleave', onMouseUp);
       };
     },
     [clearTimer, finish, movePending, startPending]
