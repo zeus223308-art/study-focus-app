@@ -1,4 +1,4 @@
-import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ReviewPatternPickerCard } from '@/components/settings/ReviewPatternPickerCard';
@@ -41,14 +41,22 @@ export function ReviewPatternHelpModal({
       presentationStyle="overFullScreen">
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('appUsageGuide.close')} />
-        <View style={[styles.sheet, { width: cardWidth }]}>
-          <ReviewPatternPickerCard
-            schedules={schedules}
-            activeScheduleIds={activeScheduleIds}
-            language={language}
-            onToggleSchedule={onToggleSchedule}
-            onAddPattern={onAddPattern}
-          />
+        <View style={[styles.sheet, { width: cardWidth, maxHeight: viewport.height - 80 }]}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            nestedScrollEnabled>
+            <Text style={styles.intro}>{t('settings.reviewPatternIntro')}</Text>
+            <ReviewPatternPickerCard
+              schedules={schedules}
+              activeScheduleIds={activeScheduleIds}
+              language={language}
+              onToggleSchedule={onToggleSchedule}
+              onAddPattern={onAddPattern}
+            />
+          </ScrollView>
           <Button label={t('appUsageGuide.close')} onPress={onClose} style={styles.closeBtn} />
         </View>
       </View>
@@ -71,6 +79,24 @@ const styles = StyleSheet.create({
   sheet: {
     zIndex: 1,
     maxWidth: '100%',
+  },
+  scroll: {
+    flexGrow: 0,
+  },
+  scrollContent: {
+    gap: 12,
+    paddingBottom: 4,
+  },
+  intro: {
+    fontSize: theme.font.bodySmall,
+    lineHeight: 22,
+    color: theme.black,
+    fontWeight: '500',
+    backgroundColor: theme.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    padding: 16,
   },
   closeBtn: {
     marginTop: 16,
