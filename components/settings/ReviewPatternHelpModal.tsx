@@ -30,6 +30,7 @@ export function ReviewPatternHelpModal({
   const viewport = useViewportLayout();
   const pad = viewport.isPhone ? 20 : viewport.horizontalPadding;
   const cardWidth = Math.min(viewport.width - pad * 2, viewport.contentMaxWidth);
+  const introLines = t('settings.reviewPatternIntroLines', { returnObjects: true }) as string[];
 
   return (
     <Modal
@@ -48,7 +49,13 @@ export function ReviewPatternHelpModal({
             showsVerticalScrollIndicator={false}
             bounces={false}
             nestedScrollEnabled>
-            <Text style={styles.intro}>{t('settings.reviewPatternIntro')}</Text>
+            <View style={styles.intro}>
+              {introLines.map((line, index) => (
+                <Text key={index} style={[styles.introLine, index > 0 && styles.introLineGap]}>
+                  {line}
+                </Text>
+              ))}
+            </View>
             <ReviewPatternPickerCard
               schedules={schedules}
               activeScheduleIds={activeScheduleIds}
@@ -88,15 +95,20 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   intro: {
-    fontSize: theme.font.bodySmall,
-    lineHeight: 22,
-    color: theme.black,
-    fontWeight: '500',
     backgroundColor: theme.surface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.grayLight,
-    padding: 16,
+    padding: 14,
+  },
+  introLine: {
+    fontSize: theme.font.caption,
+    lineHeight: 18,
+    color: theme.black,
+    fontWeight: '500',
+  },
+  introLineGap: {
+    marginTop: 8,
   },
   closeBtn: {
     marginTop: 16,

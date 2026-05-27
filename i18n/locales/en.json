@@ -266,7 +266,11 @@
     "reviewPattern": "Review Pattern",
     "reviewPatternHint": "Max 2",
     "reviewPatternHelp": "Review pattern picker",
-    "reviewPatternIntro": "Pattern 1 is based on Hermann Ebbinghaus's forgetting curve. Forgetting speed varies by person and subject, so intervals should be tuned to review when something feels vaguely familiar. If you recall it instantly or have forgotten too much, adjust the spacing.",
+    "reviewPatternIntroLines": [
+      "Pattern 1 is based on Hermann Ebbinghaus's forgetting curve.",
+      "Forgetting speed varies by person and subject, so intervals should be tuned to review when something feels vaguely familiar.",
+      "If you recall it instantly or have forgotten too much, adjust the spacing."
+    ],
     "premium": "Premium",
     "addPattern": "+ Add",
     "appUsageGuide": "How to use the app",
