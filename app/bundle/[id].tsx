@@ -45,6 +45,7 @@ import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
 import { extractOcrFromImageUri, isOcrAvailable } from '@/lib/review/ocr-extract';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
+import { reportImportPhotosResult } from '@/lib/ui/import-result-feedback';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 function newLayer(studyDate: string): NoteLayer {
@@ -329,23 +330,15 @@ export default function BundleScreen() {
 
     setImportingMore(true);
     try {
-      const { saved, skippedDueToLimit, failed } = await importPhotosToSubject(
+      const result = await importPhotosToSubject(
         bundle.subjectId,
         picked.files.map((f) => f.uri),
         bundle.studyDate
       );
-      if (saved > 0 && skippedDueToLimit > 0) {
-        showMessage(
-          '',
-          t('folder.importPartialLimit', { saved, skipped: skippedDueToLimit })
-        );
+      if (result.saved > 0) {
         router.replace({ pathname: '/folder/[id]', params: { id: bundle.subjectId } });
-      } else if (saved > 0) {
-        router.replace({ pathname: '/folder/[id]', params: { id: bundle.subjectId } });
-      } else if (skippedDueToLimit > 0) {
-        showMessage('', t('folder.importLimitReached'));
-      } else if (failed) {
-        showMessage('', t('folder.importFailed'));
+      } else {
+        reportImportPhotosResult(result, t);
       }
     } finally {
       setImportingMore(false);

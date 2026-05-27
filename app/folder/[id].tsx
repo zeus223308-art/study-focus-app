@@ -38,6 +38,7 @@ import type { SubjectProblemItem } from '@/lib/grouping/bundles';
 import { pickForImport } from '@/lib/import/pick-for-import';
 import { remainingPhotoSlots } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
+import { reportImportPhotosResult } from '@/lib/ui/import-result-feedback';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { ALBUM_TILE_GAP, useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -205,21 +206,12 @@ export default function FolderScreen() {
 
     setImporting(true);
     try {
-      const { saved, skippedDueToLimit, failed } = await importPhotosToSubject(
+      const result = await importPhotosToSubject(
         subject.id,
         picked.files.map((f) => f.uri),
         albumFilterDate
       );
-      if (saved > 0 && skippedDueToLimit > 0) {
-        showMessage(
-          '',
-          t('folder.importPartialLimit', { saved, skipped: skippedDueToLimit })
-        );
-      } else if (skippedDueToLimit > 0) {
-        showMessage('', t('folder.importLimitReached'));
-      } else if (failed) {
-        showMessage('', t('folder.importFailed'));
-      }
+      reportImportPhotosResult(result, t);
     } finally {
       setImporting(false);
     }
