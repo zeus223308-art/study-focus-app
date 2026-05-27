@@ -9,6 +9,7 @@ import {
   type ListRenderItemInfo,
 } from 'react-native';
 import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
+import { SubjectReorderInsertLine } from '@/components/files/SubjectReorderInsertLine';
 import { VaultAddFolderTile } from '@/components/files/VaultAddFolderTile';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -67,7 +68,7 @@ export function SubjectFilesCarousel({
   onToggleSubjectDelete,
 }: Props) {
   const listRef = useRef<FlatList<SubjectFolder>>(null);
-  const panelRef = useRef<View>(null);
+  const panelRef = useRef<View | null>(null);
   const scrollXRef = useRef(0);
   const panelBoundsRef = useRef({ left: 0, right: 0 });
   const dragPageXRef = useRef(0);
@@ -235,6 +236,7 @@ export function SubjectFilesCarousel({
 
   return (
     <View ref={panelRef} onLayout={measurePanelBounds} style={styles.wrap}>
+      <SubjectReorderInsertLine panelRef={panelRef} />
       <FlatList
         ref={listRef}
         data={subjects}
@@ -261,6 +263,7 @@ export function SubjectFilesCarousel({
 const styles = StyleSheet.create({
   wrap: {
     width: '100%',
+    position: 'relative',
   },
   listContent: {
     paddingHorizontal: PANEL_PAD,

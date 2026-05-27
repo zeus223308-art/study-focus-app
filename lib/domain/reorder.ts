@@ -1,5 +1,22 @@
 import type { SubjectFolder } from './types';
 
+export function insertSubjectFolderAt(
+  subjects: SubjectFolder[],
+  activeId: string,
+  insertIndex: number
+): SubjectFolder[] {
+  const sorted = [...subjects].sort((a, b) => a.sortOrder - b.sortOrder);
+  const fromIdx = sorted.findIndex((s) => s.id === activeId);
+  if (fromIdx < 0) return subjects;
+
+  let targetIdx = Math.max(0, Math.min(insertIndex, sorted.length));
+  const next = [...sorted];
+  const [removed] = next.splice(fromIdx, 1);
+  if (fromIdx < targetIdx) targetIdx -= 1;
+  next.splice(targetIdx, 0, removed!);
+  return next.map((s, i) => ({ ...s, sortOrder: i }));
+}
+
 export function reorderSubjectFolders(
   subjects: SubjectFolder[],
   activeId: string,

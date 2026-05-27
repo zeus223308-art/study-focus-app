@@ -71,7 +71,13 @@
     "deleteSubjectsConfirmTitle": "Delete selected subjects?",
     "deleteSubjectsConfirmMessage": "{{count}} subject(s) and all photos will move to Trash.",
     "movedToTrashTitle": "Moved to Trash.",
-    "movedToTrashMessage": "If not restored within 3 days, they will be permanently deleted."
+    "movedToTrashMessage": "If not restored within 3 days, they will be permanently deleted.",
+    "reorderDragHint": "Drop between subjects to reorder · on a subject to merge",
+    "mergeSubjectsTitle": "Merged subject name",
+    "mergeSubjectsHint": "Photos from both subjects will be combined into one.",
+    "mergeSubjectsPlaceholder": "Subject name",
+    "mergeSubjectsConfirm": "Merge",
+    "mergeSubjectsDone": "Merged into \"{{name}}\"."
   },
   "capture": {
     "title": "Capture",

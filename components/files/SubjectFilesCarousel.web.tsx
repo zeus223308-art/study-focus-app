@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
+import { SubjectReorderInsertLine } from '@/components/files/SubjectReorderInsertLine';
 import { VaultAddFolderTile } from '@/components/files/VaultAddFolderTile';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -69,7 +70,7 @@ export function SubjectFilesCarousel({
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const scrollDomRef = useRef<HTMLElement | null>(null);
-  const panelRef = useRef<View>(null);
+  const panelRef = useRef<View | null>(null);
   const scrollXRef = useRef(0);
   const panelBoundsRef = useRef({ left: 0, right: 0 });
   const dragPageXRef = useRef(0);
@@ -221,6 +222,7 @@ export function SubjectFilesCarousel({
       onLayout={measurePanelBounds}
       style={styles.wrap}
       {...({ 'data-subject-carousel': carouselMode } as object)}>
+      <SubjectReorderInsertLine panelRef={panelRef} />
       <ScrollView
         ref={bindScrollDom}
         horizontal
@@ -277,6 +279,7 @@ const styles = StyleSheet.create({
   wrap: {
     width: '100%',
     overflow: 'hidden',
+    position: 'relative',
   },
   scroller: {
     width: '100%',

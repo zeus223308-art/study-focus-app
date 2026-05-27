@@ -52,6 +52,8 @@ const styles = StyleSheet.create({
   hover: {
     borderRadius: theme.radius.sm,
     backgroundColor: theme.orangeMuted,
+    borderWidth: 2,
+    borderColor: theme.orange,
   },
   lifted: {
     opacity: 0.55,

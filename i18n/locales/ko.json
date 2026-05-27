@@ -71,7 +71,13 @@
     "deleteSubjectsConfirmTitle": "선택한 과목을 삭제할까요?",
     "deleteSubjectsConfirmMessage": "{{count}}개 과목과 모든 사진이 휴지통으로 이동합니다.",
     "movedToTrashTitle": "휴지통으로 이동되었습니다.",
-    "movedToTrashMessage": "3일 이내 복원을 하지 않을 시 영구적으로 삭제 됩니다."
+    "movedToTrashMessage": "3일 이내 복원을 하지 않을 시 영구적으로 삭제 됩니다.",
+    "reorderDragHint": "과목 사이에 놓으면 순서 변경 · 다른 과목 위에 놓으면 합치기",
+    "mergeSubjectsTitle": "합칠 과목 이름",
+    "mergeSubjectsHint": "두 과목의 사진이 하나의 과목으로 합쳐집니다.",
+    "mergeSubjectsPlaceholder": "과목 이름",
+    "mergeSubjectsConfirm": "합치기",
+    "mergeSubjectsDone": "\"{{name}}\"(으)로 합쳤습니다."
   },
   "capture": {
     "title": "촬영",

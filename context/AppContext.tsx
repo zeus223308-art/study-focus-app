@@ -17,7 +17,17 @@ import { todayKey } from '@/lib/domain/dates';
 import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
 import { movePageToSubject } from '@/lib/domain/move-page-to-subject';
 import { removePageFromData } from '@/lib/domain/remove-page';
-import { mergeItemOrder, reorderItemKeys, reorderSubjectFolders } from '@/lib/domain/reorder';
+import {
+  defaultMergedSubjectName,
+  mergeSubjectFoldersInData,
+} from '@/lib/domain/merge-subjects';
+import {
+  insertSubjectFolderAt,
+  mergeItemOrder,
+  reorderItemKeys,
+  reorderSubjectFolders,
+} from '@/lib/domain/reorder';
+import { hitTestSubjectReorderDrag } from '@/lib/domain/subject-reorder-hit';
 import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
 import type {
   AppData,
@@ -113,7 +123,17 @@ type AppContextValue = {
   dragHoverSubjectId: string | null;
   dragHoverItemKey: string | null;
   reorderingSubjectId: string | null;
+  /** Drop on another subject tile → merge (orange highlight). */
   reorderHoverSubjectId: string | null;
+  /** Window X for vertical insert line between subjects. */
+  reorderInsertLineX: number | null;
+  pendingSubjectMerge: {
+    sourceId: string;
+    targetId: string;
+    defaultName: string;
+  } | null;
+  confirmSubjectMerge: (mergedName: string) => void;
+  cancelSubjectMerge: () => void;
   /** Bumps when carousel scrolls during reorder so drop zones re-measure. */
   subjectReorderMeasureTick: number;
   bumpSubjectReorderMeasure: () => void;
@@ -136,7 +156,11 @@ type AppContextValue = {
   updateDragHover: (pageX: number, pageY: number) => void;
   updateSubjectReorderHover: (pageX: number, pageY: number) => void;
   finishItemDrag: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'moved' | 'cancelled';
-  finishSubjectReorder: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'cancelled';
+  finishSubjectReorder: (
+    pageX: number,
+    pageY: number,
+    moved: boolean
+  ) => 'reordered' | 'merge' | 'cancelled';
   finishBundleDrop: (pageX: number, pageY: number) => string | null;
   reorderSubjects: (activeId: string, overId: string) => void;
   /** Tap target folder while reordering (works without drag). */
@@ -171,6 +195,12 @@ export function AppProvider({
   const [dragHoverItemKey, setDragHoverItemKey] = useState<string | null>(null);
   const [reorderingSubjectId, setReorderingSubjectId] = useState<string | null>(null);
   const [reorderHoverSubjectId, setReorderHoverSubjectId] = useState<string | null>(null);
+  const [reorderInsertLineX, setReorderInsertLineX] = useState<number | null>(null);
+  const [pendingSubjectMerge, setPendingSubjectMerge] = useState<{
+    sourceId: string;
+    targetId: string;
+    defaultName: string;
+  } | null>(null);
   const [subjectReorderMeasureTick, setSubjectReorderMeasureTick] = useState(0);
   const dropZonesRef = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(
     new Map()
@@ -750,6 +780,7 @@ export function AppProvider({
       setDragHoverItemKey(null);
       setReorderingSubjectId(null);
       setReorderHoverSubjectId(null);
+      setReorderInsertLineX(null);
     },
     []
   );
@@ -757,6 +788,8 @@ export function AppProvider({
   const startSubjectReorder = useCallback((subjectId: string) => {
     setReorderingSubjectId(subjectId);
     setReorderHoverSubjectId(null);
+    setReorderInsertLineX(null);
+    setPendingSubjectMerge(null);
     setMovingBundleId(null);
     setDraggingItemKey(null);
     setDragSourceSubjectId(null);
@@ -772,6 +805,13 @@ export function AppProvider({
     setDragHoverItemKey(null);
     setReorderingSubjectId(null);
     setReorderHoverSubjectId(null);
+    setReorderInsertLineX(null);
+  }, []);
+
+  const sortedSubjectIds = useCallback((): string[] => {
+    const d = dataRef.current;
+    if (!d) return [];
+    return [...d.subjects].sort((a, b) => a.sortOrder - b.sortOrder).map((s) => s.id);
   }, []);
 
   const registerItemDropZone = useCallback(
@@ -817,6 +857,41 @@ export function AppProvider({
     });
   }, []);
 
+  const insertSubjectAt = useCallback((activeId: string, insertIndex: number) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        subjects: insertSubjectFolderAt(prev.subjects, activeId, insertIndex),
+      };
+    });
+  }, []);
+
+  const confirmSubjectMerge = useCallback((mergedName: string) => {
+    setPendingSubjectMerge((pending) => {
+      if (pending) {
+        setData((prev) => {
+          if (!prev) return prev;
+          const next = mergeSubjectFoldersInData(
+            prev,
+            pending.targetId,
+            pending.sourceId,
+            mergedName
+          );
+          return next ?? prev;
+        });
+      }
+      return null;
+    });
+    setReorderingSubjectId(null);
+    setReorderHoverSubjectId(null);
+    setReorderInsertLineX(null);
+  }, []);
+
+  const cancelSubjectMerge = useCallback(() => {
+    setPendingSubjectMerge(null);
+  }, []);
+
   const reorderSubjectItems = useCallback(
     (subjectId: string, activeKey: string, overKey: string) => {
       setData((prev) => {
@@ -841,28 +916,67 @@ export function AppProvider({
   const updateSubjectReorderHover = useCallback(
     (pageX: number, pageY: number) => {
       if (!reorderingSubjectId) return;
-      const found = hitTestZones(pageX, pageY, subjectReorderZonesRef.current);
-      const next = found && found !== reorderingSubjectId ? found : null;
-      setReorderHoverSubjectId((prev) => (prev === next ? prev : next));
+      const hit = hitTestSubjectReorderDrag(
+        pageX,
+        pageY,
+        subjectReorderZonesRef.current,
+        reorderingSubjectId,
+        sortedSubjectIds()
+      );
+      const mergeId = hit?.kind === 'merge' ? hit.targetId : null;
+      const lineX = hit?.kind === 'insert' ? hit.lineX : null;
+      setReorderHoverSubjectId((prev) => (prev === mergeId ? prev : mergeId));
+      setReorderInsertLineX((prev) => (prev === lineX ? prev : lineX));
     },
-    [hitTestZones, reorderingSubjectId]
+    [reorderingSubjectId, sortedSubjectIds]
   );
 
   const finishSubjectReorder = useCallback(
-    (pageX: number, pageY: number, _moved: boolean): 'reordered' | 'cancelled' => {
+    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'merge' | 'cancelled' => {
       if (!reorderingSubjectId) return 'cancelled';
-      const hover =
-        hitTestZones(pageX, pageY, subjectReorderZonesRef.current) ?? reorderHoverSubjectId;
+      if (!moved) {
+        cancelMovingBundle();
+        return 'cancelled';
+      }
+
       const activeId = reorderingSubjectId;
-      if (hover && hover !== activeId) {
-        reorderSubjects(activeId, hover);
+      const hit = hitTestSubjectReorderDrag(
+        pageX,
+        pageY,
+        subjectReorderZonesRef.current,
+        activeId,
+        sortedSubjectIds()
+      );
+
+      if (hit?.kind === 'merge') {
+        const d = dataRef.current;
+        const target = d?.subjects.find((s) => s.id === hit.targetId);
+        const source = d?.subjects.find((s) => s.id === activeId);
+        if (target && source) {
+          setPendingSubjectMerge({
+            sourceId: activeId,
+            targetId: hit.targetId,
+            defaultName: defaultMergedSubjectName(target.name, source.name),
+          });
+        }
+        setReorderingSubjectId(null);
+        setReorderHoverSubjectId(null);
+        setReorderInsertLineX(null);
+        setMovingBundleId(null);
+        setDraggingItemKey(null);
+        return 'merge';
+      }
+
+      if (hit?.kind === 'insert') {
+        insertSubjectAt(activeId, hit.index);
         cancelMovingBundle();
         return 'reordered';
       }
+
       cancelMovingBundle();
       return 'cancelled';
     },
-    [cancelMovingBundle, hitTestZones, reorderHoverSubjectId, reorderSubjects, reorderingSubjectId]
+    [cancelMovingBundle, insertSubjectAt, sortedSubjectIds, reorderingSubjectId]
   );
 
   const dropSubjectReorderOn = useCallback(
@@ -1060,6 +1174,10 @@ export function AppProvider({
       dragHoverItemKey,
       reorderingSubjectId,
       reorderHoverSubjectId,
+      reorderInsertLineX,
+      pendingSubjectMerge,
+      confirmSubjectMerge,
+      cancelSubjectMerge,
       subjectReorderMeasureTick,
       bumpSubjectReorderMeasure,
       startItemDrag,
@@ -1124,6 +1242,10 @@ export function AppProvider({
     dragHoverItemKey,
     reorderingSubjectId,
     reorderHoverSubjectId,
+    reorderInsertLineX,
+    pendingSubjectMerge,
+    confirmSubjectMerge,
+    cancelSubjectMerge,
     subjectReorderMeasureTick,
     bumpSubjectReorderMeasure,
     startItemDrag,

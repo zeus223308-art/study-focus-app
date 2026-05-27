@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
+import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
@@ -32,6 +33,9 @@ export default function FilesScreen() {
     startSubjectReorder,
     updateSubjectReorderHover,
     finishSubjectReorder,
+    pendingSubjectMerge,
+    confirmSubjectMerge,
+    cancelSubjectMerge,
   } = useApp();
   const { width: windowWidth } = useWindowDimensions();
   const viewport = useViewportLayout();
@@ -42,6 +46,13 @@ export default function FilesScreen() {
   const [folderTouchActive, setFolderTouchActive] = useState(false);
   const [subjectDeleteMode, setSubjectDeleteMode] = useState(false);
   const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(() => new Set());
+  const [mergeName, setMergeName] = useState('');
+
+  useEffect(() => {
+    if (pendingSubjectMerge) {
+      setMergeName(pendingSubjectMerge.defaultName);
+    }
+  }, [pendingSubjectMerge]);
 
   const lockFolderTouch = useCallback((locked: boolean) => {
     setFolderTouchActive(locked);
@@ -158,6 +169,9 @@ export default function FilesScreen() {
       {movingBundleId ? (
         <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
       ) : null}
+      {reorderingSubjectId ? (
+        <Text style={styles.moveBanner}>{t('vault.reorderDragHint')}</Text>
+      ) : null}
 
       <ScreenHeader
         title={t('vault.title')}
@@ -200,6 +214,24 @@ export default function FilesScreen() {
       </View>
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
+
+      <SendToNewFolderModal
+        visible={Boolean(pendingSubjectMerge)}
+        title={t('vault.mergeSubjectsTitle')}
+        hint={t('vault.mergeSubjectsHint')}
+        name={mergeName}
+        placeholder={t('vault.mergeSubjectsPlaceholder')}
+        sendLabel={t('vault.mergeSubjectsConfirm')}
+        cancelLabel={t('common.cancel')}
+        onChangeName={setMergeName}
+        onSend={() => {
+          const trimmed = mergeName.trim();
+          if (!trimmed) return;
+          confirmSubjectMerge(trimmed);
+          showMessage('', t('vault.mergeSubjectsDone', { name: trimmed }));
+        }}
+        onClose={cancelSubjectMerge}
+      />
 
       {adding ? (
         <View style={styles.addBox}>
