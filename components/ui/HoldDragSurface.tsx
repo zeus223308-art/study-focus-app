@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
 import {
   type GestureResponderEvent,
   StyleSheet,
@@ -8,12 +8,16 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
-import { theme } from '@/constants/theme';
-import { DELETE_ARM_MS, HOLD_DRAG_MS } from '@/lib/ui/hold-drag';
+import { HOLD_DRAG_MS } from '@/lib/ui/hold-drag';
 
 export { HOLD_DRAG_MS };
+
 const MOVE_CANCEL_PX = 12;
 const TAP_SLOP_PX = 14;
+/** Gap between first tap release and second touch for delete (ms). */
+const DELETE_PAIR_MS = 420;
+/** Defer open slightly so a quick second touch can start delete instead. */
+const OPEN_DEFER_MS = 280;
 
 type Props = {
   enabled: boolean;
@@ -21,7 +25,7 @@ type Props = {
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onPress?: () => void;
-  /** First tap arms; second touch + hold triggers delete confirm. */
+  /** First tap, then second touch + hold within ~0.4s → delete (no selection UI). */
   onDeleteHold?: () => void;
   onGestureActiveChange?: (active: boolean) => void;
   children: React.ReactNode;
@@ -48,10 +52,9 @@ export function HoldDragSurface({
   const movedRef = useRef(false);
   const startRef = useRef<Point>({ pageX: 0, pageY: 0 });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const deleteArmedRef = useRef(false);
-  const deleteArmedAtRef = useRef(0);
+  const openDeferRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deleteHoldRef = useRef(false);
-  const [deleteArmed, setDeleteArmed] = useState(false);
+  const lastReleaseAtRef = useRef(0);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current != null) {
@@ -60,20 +63,12 @@ export function HoldDragSurface({
     }
   }, []);
 
-  const setArmed = useCallback((armed: boolean) => {
-    deleteArmedRef.current = armed;
-    setDeleteArmed(armed);
-    if (armed) deleteArmedAtRef.current = Date.now();
-  }, []);
-
-  const isDeleteArmActive = useCallback(() => {
-    if (!deleteArmedRef.current) return false;
-    if (Date.now() - deleteArmedAtRef.current > DELETE_ARM_MS) {
-      setArmed(false);
-      return false;
+  const clearOpenDefer = useCallback(() => {
+    if (openDeferRef.current != null) {
+      clearTimeout(openDeferRef.current);
+      openDeferRef.current = null;
     }
-    return true;
-  }, [setArmed]);
+  }, []);
 
   const setActive = useCallback(
     (active: boolean) => {
@@ -82,12 +77,24 @@ export function HoldDragSurface({
     [onGestureActiveChange]
   );
 
+  const scheduleOpen = useCallback(() => {
+    if (!onPress) return;
+    if (!onDeleteHold) {
+      onPress();
+      return;
+    }
+    clearOpenDefer();
+    openDeferRef.current = setTimeout(() => {
+      openDeferRef.current = null;
+      onPress();
+    }, OPEN_DEFER_MS);
+  }, [clearOpenDefer, onDeleteHold, onPress]);
+
   const finish = useCallback(
     (pageX: number, pageY: number) => {
       clearTimer();
       const phase = phaseRef.current;
       const moved = movedRef.current;
-      const wasDeleteHold = deleteHoldRef.current;
       phaseRef.current = 'idle';
       movedRef.current = false;
       deleteHoldRef.current = false;
@@ -103,26 +110,10 @@ export function HoldDragSurface({
       const dy = Math.abs(pageY - startRef.current.pageY);
       if (dx >= TAP_SLOP_PX || dy >= TAP_SLOP_PX) return;
 
-      if (onDeleteHold) {
-        if (wasDeleteHold) {
-          setArmed(false);
-          return;
-        }
-        if (!deleteArmedRef.current) {
-          setArmed(true);
-          void Haptics.selectionAsync();
-          return;
-        }
-        if (isDeleteArmActive()) {
-          setArmed(false);
-          return;
-        }
-      }
-
-      setArmed(false);
-      onPress?.();
+      lastReleaseAtRef.current = Date.now();
+      scheduleOpen();
     },
-    [clearTimer, isDeleteArmActive, onDeleteHold, onDragEnd, onPress, setActive, setArmed]
+    [clearTimer, onDragEnd, scheduleOpen, setActive]
   );
 
   const beginLift = useCallback(
@@ -132,7 +123,7 @@ export function HoldDragSurface({
       if (deleteHoldRef.current && onDeleteHold) {
         phaseRef.current = 'idle';
         clearTimer();
-        setArmed(false);
+        clearOpenDefer();
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         onDeleteHold();
         return;
@@ -145,7 +136,7 @@ export function HoldDragSurface({
       onLift();
       onDragMove?.(pageX, pageY);
     },
-    [clearTimer, onDeleteHold, onDragMove, onLift, setActive, setArmed]
+    [clearOpenDefer, clearTimer, onDeleteHold, onDragMove, onLift, setActive]
   );
 
   const scheduleLift = useCallback(
@@ -167,13 +158,21 @@ export function HoldDragSurface({
       movedRef.current = false;
       startRef.current = { pageX, pageY };
 
-      deleteHoldRef.current = Boolean(
-        onDeleteHold && isDeleteArmActive()
-      );
+      const sinceRelease = Date.now() - lastReleaseAtRef.current;
+      if (
+        onDeleteHold &&
+        lastReleaseAtRef.current > 0 &&
+        sinceRelease < DELETE_PAIR_MS
+      ) {
+        clearOpenDefer();
+        deleteHoldRef.current = true;
+      } else {
+        deleteHoldRef.current = false;
+      }
 
       scheduleLift(pageX, pageY);
     },
-    [clearTimer, enabled, isDeleteArmActive, onDeleteHold, scheduleLift]
+    [clearOpenDefer, enabled, onDeleteHold, scheduleLift]
   );
 
   const movePendingOrDrag = useCallback(
@@ -232,13 +231,7 @@ export function HoldDragSurface({
   );
 
   return (
-    <View
-      style={[
-        style,
-        styles.surface,
-        deleteArmed && onDeleteHold ? styles.surfaceDeleteArmed : null,
-      ]}
-      collapsable={false}>
+    <View style={[style, styles.surface]} collapsable={false}>
       <View
         style={styles.touchTarget}
         onTouchStart={enabled ? onTouchStart : undefined}
@@ -254,11 +247,6 @@ export function HoldDragSurface({
 const styles = StyleSheet.create({
   surface: {
     width: '100%',
-  },
-  surfaceDeleteArmed: {
-    borderWidth: 2,
-    borderColor: theme.orange,
-    borderRadius: theme.radius.sm,
   },
   touchTarget: {
     width: '100%',

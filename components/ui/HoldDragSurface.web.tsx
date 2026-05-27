@@ -7,14 +7,15 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { theme } from '@/constants/theme';
-import { DELETE_ARM_MS, HOLD_DRAG_MS } from '@/lib/ui/hold-drag';
+import { HOLD_DRAG_MS } from '@/lib/ui/hold-drag';
 import { resolveWebElement } from '@/lib/ui/resolve-web-element';
 
 export { HOLD_DRAG_MS };
 
 const MOVE_CANCEL_PX = 10;
 const TAP_SLOP_PX = 16;
+const DELETE_PAIR_MS = 420;
+const OPEN_DEFER_MS = 280;
 
 type Props = {
   enabled: boolean;
@@ -58,16 +59,15 @@ export function HoldDragSurface({
   const domBoundRef = useRef(false);
   const phaseRef = useRef<'idle' | 'pending' | 'lifted'>('idle');
   const [lifted, setLifted] = useState(false);
-  const [deleteArmed, setDeleteArmed] = useState(false);
 
   const enabledRef = useRef(enabled);
   const movedRef = useRef(false);
   const startRef = useRef<Point>({ pageX: 0, pageY: 0 });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openDeferRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionCleanupRef = useRef<(() => void) | null>(null);
-  const deleteArmedRef = useRef(false);
-  const deleteArmedAtRef = useRef(0);
   const deleteHoldRef = useRef(false);
+  const lastReleaseAtRef = useRef(0);
 
   const onLiftRef = useRef(onLift);
   const onDragMoveRef = useRef(onDragMove);
@@ -89,25 +89,17 @@ export function HoldDragSurface({
     onGestureActiveChangeRef.current?.(value);
   }, []);
 
-  const setArmed = useCallback((armed: boolean) => {
-    deleteArmedRef.current = armed;
-    setDeleteArmed(armed);
-    if (armed) deleteArmedAtRef.current = Date.now();
-  }, []);
-
-  const isDeleteArmActive = useCallback(() => {
-    if (!deleteArmedRef.current) return false;
-    if (Date.now() - deleteArmedAtRef.current > DELETE_ARM_MS) {
-      setArmed(false);
-      return false;
-    }
-    return true;
-  }, [setArmed]);
-
   const clearTimer = useCallback(() => {
     if (timerRef.current != null) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+  }, []);
+
+  const clearOpenDefer = useCallback(() => {
+    if (openDeferRef.current != null) {
+      clearTimeout(openDeferRef.current);
+      openDeferRef.current = null;
     }
   }, []);
 
@@ -116,13 +108,25 @@ export function HoldDragSurface({
     sessionCleanupRef.current = null;
   }, []);
 
+  const scheduleOpen = useCallback(() => {
+    if (!onPressRef.current) return;
+    if (!onDeleteHoldRef.current) {
+      onPressRef.current();
+      return;
+    }
+    clearOpenDefer();
+    openDeferRef.current = setTimeout(() => {
+      openDeferRef.current = null;
+      onPressRef.current?.();
+    }, OPEN_DEFER_MS);
+  }, [clearOpenDefer]);
+
   const finish = useCallback(
     (pageX: number, pageY: number) => {
       clearTimer();
       clearSession();
       const phase = phaseRef.current;
       const moved = movedRef.current;
-      const wasDeleteHold = deleteHoldRef.current;
       phaseRef.current = 'idle';
       movedRef.current = false;
       deleteHoldRef.current = false;
@@ -138,25 +142,10 @@ export function HoldDragSurface({
       const dy = Math.abs(pageY - startRef.current.pageY);
       if (dx >= TAP_SLOP_PX || dy >= TAP_SLOP_PX) return;
 
-      if (onDeleteHoldRef.current) {
-        if (wasDeleteHold) {
-          setArmed(false);
-          return;
-        }
-        if (!deleteArmedRef.current) {
-          setArmed(true);
-          return;
-        }
-        if (isDeleteArmActive()) {
-          setArmed(false);
-          return;
-        }
-      }
-
-      setArmed(false);
-      onPressRef.current?.();
+      lastReleaseAtRef.current = Date.now();
+      scheduleOpen();
     },
-    [clearSession, clearTimer, isDeleteArmActive, setArmed, setLiftedState]
+    [clearSession, clearTimer, scheduleOpen, setLiftedState]
   );
 
   const beginLift = useCallback(
@@ -166,7 +155,7 @@ export function HoldDragSurface({
       if (deleteHoldRef.current && onDeleteHoldRef.current) {
         phaseRef.current = 'idle';
         clearTimer();
-        setArmed(false);
+        clearOpenDefer();
         onDeleteHoldRef.current();
         return;
       }
@@ -203,7 +192,7 @@ export function HoldDragSurface({
         document.removeEventListener('touchcancel', onEnd);
       };
     },
-    [clearTimer, finish, setArmed, setLiftedState]
+    [clearOpenDefer, clearTimer, finish, setLiftedState]
   );
 
   const startPending = useCallback(
@@ -215,16 +204,25 @@ export function HoldDragSurface({
       movedRef.current = false;
       setLiftedState(false);
       startRef.current = { pageX, pageY };
-      deleteHoldRef.current = Boolean(
-        onDeleteHoldRef.current && isDeleteArmActive()
-      );
+
+      const sinceRelease = Date.now() - lastReleaseAtRef.current;
+      if (
+        onDeleteHoldRef.current &&
+        lastReleaseAtRef.current > 0 &&
+        sinceRelease < DELETE_PAIR_MS
+      ) {
+        clearOpenDefer();
+        deleteHoldRef.current = true;
+      } else {
+        deleteHoldRef.current = false;
+      }
 
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
         beginLift(pageX, pageY);
       }, HOLD_DRAG_MS);
     },
-    [beginLift, clearSession, clearTimer, isDeleteArmActive, setLiftedState]
+    [beginLift, clearOpenDefer, clearSession, clearTimer, setLiftedState]
   );
 
   const movePending = useCallback(
@@ -326,6 +324,7 @@ export function HoldDragSurface({
       cleanupRef.current?.();
       cleanupRef.current = null;
       clearTimer();
+      clearOpenDefer();
       clearSession();
       return;
     }
@@ -334,9 +333,10 @@ export function HoldDragSurface({
       cleanupRef.current?.();
       cleanupRef.current = null;
       clearTimer();
+      clearOpenDefer();
       clearSession();
     };
-  }, [bindDom, clearSession, clearTimer, enabled]);
+  }, [bindDom, clearOpenDefer, clearSession, clearTimer, enabled]);
 
   const onTouchStartRn = useCallback(
     (e: GestureResponderEvent) => {
@@ -379,12 +379,7 @@ export function HoldDragSurface({
       onTouchMove={enabled ? onTouchMoveRn : undefined}
       onTouchEnd={enabled ? onTouchEndRn : undefined}
       onTouchCancel={enabled ? onTouchEndRn : undefined}
-      style={[
-        style,
-        styles.host,
-        lifted && styles.hostLifted,
-        deleteArmed && onDeleteHold ? styles.hostDeleteArmed : null,
-      ]}
+      style={[style, styles.host, lifted && styles.hostLifted]}
       collapsable={false}
       {...({ 'data-hold-drag': lifted ? 'active' : 'idle', 'data-vault-tile': '1' } as object)}>
       {children}
@@ -404,10 +399,5 @@ const styles = StyleSheet.create({
     touchAction: 'none',
     cursor: 'grabbing',
     zIndex: 40,
-  } as unknown as ViewStyle,
-  hostDeleteArmed: {
-    borderWidth: 2,
-    borderColor: theme.orange,
-    borderRadius: theme.radius.sm,
   } as unknown as ViewStyle,
 });
