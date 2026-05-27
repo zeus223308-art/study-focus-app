@@ -421,19 +421,24 @@ export function AppProvider({
     ) => {
       const prev = dataRef.current;
       if (!prev) return null;
+      if (!prev.subjects.some((s) => s.id === subjectId)) return null;
       const check = checkFreemiumLimits(prev);
       if (!check.allowed) {
         setPaywallVisible(true);
         return null;
       }
-      const { data: next, bundleId } = await appendCaptureToData(storage, prev, {
-        imageUri: frontUri,
-        answerImageUri: backUri,
-        subjectId,
-        studyDate,
-      });
-      persist(next);
-      return bundleId;
+      try {
+        const { data: next, bundleId } = await appendCaptureToData(storage, prev, {
+          imageUri: frontUri,
+          answerImageUri: backUri,
+          subjectId,
+          studyDate,
+        });
+        persist(next);
+        return bundleId;
+      } catch {
+        return null;
+      }
     },
     [storage, persist]
   );
@@ -449,10 +454,14 @@ export function AppProvider({
     async (subjectId: string, imageUris: string[], studyDate?: string): Promise<ImportPhotosResult> => {
       if (imageUris.length === 0) return { saved: 0, skippedDueToLimit: 0 };
       let prev = dataRef.current;
-      if (!prev) return { saved: 0, skippedDueToLimit: 0 };
+      if (!prev) return { saved: 0, skippedDueToLimit: 0, failed: true };
+      if (!prev.subjects.some((s) => s.id === subjectId)) {
+        return { saved: 0, skippedDueToLimit: 0, failed: true };
+      }
 
       let saved = 0;
       let paywallShown = false;
+      let failed = false;
 
       for (let i = 0; i < imageUris.length; i++) {
         const check = checkFreemiumLimits(prev);
@@ -472,13 +481,18 @@ export function AppProvider({
           });
           prev = result.data;
           saved += 1;
+          persist(prev);
         } catch {
+          failed = true;
           break;
         }
       }
 
-      if (saved > 0) persist(prev);
-      return { saved, skippedDueToLimit: imageUris.length - saved };
+      return {
+        saved,
+        skippedDueToLimit: paywallShown ? imageUris.length - saved : 0,
+        failed: failed && saved === 0,
+      };
     },
     [storage, persist]
   );

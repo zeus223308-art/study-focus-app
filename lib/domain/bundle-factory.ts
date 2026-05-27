@@ -1,9 +1,31 @@
-import { format, startOfDay } from 'date-fns';
-
+import { todayKey, studyDateBounds } from '@/lib/domain/dates';
+import { normalizeFolderScheduleId } from '@/lib/domain/folder-schedule';
 import type { AppData, NoteBundle, NotePage, ReviewCycleState } from './types';
 import { extractOcrFromImageUri } from '@/lib/review/ocr-extract';
 import { buildLocalCloudAsset, createMiniThumbnail, persistOriginalCopy } from '@/services/storage/asset-pipeline';
-import type { StorageProvider } from '@/services/storage/types';
+import type { StorageProvider, ThumbnailResult } from '@/services/storage/types';
+
+function clampStudyDate(studyDate: string, firstLaunchDate: string): string {
+  const { min, max } = studyDateBounds(firstLaunchDate);
+  if (studyDate < min) return min;
+  if (studyDate > max) return max;
+  return studyDate;
+}
+
+function resolveScheduleId(data: AppData, subject: AppData['subjects'][number]): string {
+  const normalized = normalizeFolderScheduleId(subject.reviewScheduleId || '');
+  if (normalized) return normalized;
+  return data.schedules.find((s) => s.tier === 'standard')?.id ?? data.schedules[0]?.id ?? 'sched_135714';
+}
+
+function fallbackThumb(sourceUri: string): ThumbnailResult {
+  return {
+    thumbnailUri: sourceUri,
+    localMiniUri: sourceUri,
+    width: 0,
+    height: 0,
+  };
+}
 
 export async function createPageFromCapture(
   storage: StorageProvider,
@@ -18,8 +40,20 @@ export async function createPageFromCapture(
   }
 ): Promise<NotePage> {
   const pageId = `page_${Date.now()}_${params.sortIndex}_${Math.random().toString(36).slice(2, 9)}`;
-  const masterUri = await persistOriginalCopy(params.imageUri, params.bundleId, pageId);
-  const thumb = await storage.createThumbnail(masterUri, params.bundleId, pageId);
+  let masterUri = params.imageUri;
+  try {
+    masterUri = await persistOriginalCopy(params.imageUri, params.bundleId, pageId);
+  } catch {
+    masterUri = params.imageUri;
+  }
+
+  let thumb: ThumbnailResult;
+  try {
+    thumb = await storage.createThumbnail(masterUri, params.bundleId, pageId);
+  } catch {
+    thumb = fallbackThumb(masterUri);
+  }
+
   const now = new Date().toISOString();
 
   let answerAsset: NotePage['answerAsset'] = null;
@@ -113,15 +147,16 @@ export async function appendCaptureToData(
     studyDate?: string;
   }
 ): Promise<{ data: AppData; bundleId: string }> {
-  const studyDate = params.studyDate ?? format(startOfDay(new Date()), 'yyyy-MM-dd');
+  const firstLaunch = data.settings.firstLaunchDate ?? todayKey();
+  const studyDate = clampStudyDate(
+    params.studyDate ?? todayKey(),
+    firstLaunch
+  );
   const subject = data.subjects.find((s) => s.id === params.subjectId);
   if (!subject) {
     throw new Error(`appendCaptureToData: unknown subject ${params.subjectId}`);
   }
-  const scheduleId = subject.reviewScheduleId || data.schedules[0]?.id;
-  if (!scheduleId) {
-    throw new Error('appendCaptureToData: no review schedule');
-  }
+  const scheduleId = resolveScheduleId(data, subject);
 
   /** One capture/import = one problem card (new bundle), not merged into same-day stack. */
   const bundleId = `bundle_${params.subjectId}_${studyDate}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;

@@ -45,6 +45,8 @@ export function remainingPhotoSlots(data: AppData): number {
 export type ImportPhotosResult = {
   saved: number;
   skippedDueToLimit: number;
+  /** True when save failed (not limit / cancel). */
+  failed?: boolean;
 };
 
 export function checkFreemiumLimits(data: AppData): FreemiumCheck {

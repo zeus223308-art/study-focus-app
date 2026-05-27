@@ -55,11 +55,17 @@ function keysToPageRefs(keys: Set<string>): PageRef[] {
   });
 }
 
+function normalizeRouteId(id: string | string[] | undefined): string {
+  if (Array.isArray(id)) return id[0] ?? '';
+  return id ?? '';
+}
+
 export default function FolderScreen() {
-  const { id, studyDate: studyDateParam } = useLocalSearchParams<{
+  const { id: rawId, studyDate: studyDateParam } = useLocalSearchParams<{
     id: string;
     studyDate?: string;
   }>();
+  const subjectId = normalizeRouteId(rawId);
   const { t } = useTranslation();
   const router = useRouter();
   const { language } = useLanguage();
@@ -96,10 +102,10 @@ export default function FolderScreen() {
   const viewport = useViewportLayout();
   const insets = useSafeAreaInsets();
 
-  const subject = data.subjects.find((s) => s.id === id);
+  const subject = data.subjects.find((s) => s.id === subjectId);
   const problems = useMemo(
-    () => listSubjectProblems(data.bundles, id ?? '', subject?.itemOrder),
-    [data.bundles, id, subject?.itemOrder]
+    () => listSubjectProblems(data.bundles, subjectId, subject?.itemOrder),
+    [data.bundles, subjectId, subject?.itemOrder]
   );
   useEffect(() => {
     if (typeof studyDateParam === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(studyDateParam)) {
@@ -107,7 +113,7 @@ export default function FolderScreen() {
       return;
     }
     setAlbumFilterDate(localToday);
-  }, [id, localToday, studyDateParam]);
+  }, [subjectId, localToday, studyDateParam]);
 
   useEffect(() => {
     if (!subject?.id) return;
@@ -202,7 +208,7 @@ export default function FolderScreen() {
 
     setImporting(true);
     try {
-      const { saved, skippedDueToLimit } = await importPhotosToSubject(
+      const { saved, skippedDueToLimit, failed } = await importPhotosToSubject(
         subject.id,
         picked.files.map((f) => f.uri),
         albumFilterDate
@@ -216,6 +222,8 @@ export default function FolderScreen() {
         showMessage('', t('folder.importSaved', { count: saved }));
       } else if (skippedDueToLimit > 0) {
         showMessage('', t('folder.importLimitReached'));
+      } else if (failed) {
+        showMessage('', t('folder.importFailed'));
       }
     } finally {
       setImporting(false);

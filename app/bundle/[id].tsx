@@ -317,7 +317,7 @@ export default function BundleScreen() {
 
     setImportingMore(true);
     try {
-      const { saved, skippedDueToLimit } = await importPhotosToSubject(
+      const { saved, skippedDueToLimit, failed } = await importPhotosToSubject(
         bundle.subjectId,
         picked.files.map((f) => f.uri),
         bundle.studyDate
@@ -333,6 +333,8 @@ export default function BundleScreen() {
         router.replace({ pathname: '/folder/[id]', params: { id: bundle.subjectId } });
       } else if (skippedDueToLimit > 0) {
         showMessage('', t('folder.importLimitReached'));
+      } else if (failed) {
+        showMessage('', t('folder.importFailed'));
       }
     } finally {
       setImportingMore(false);

@@ -159,6 +159,7 @@
     "importSaved": "Added {{count}}",
     "importPartialLimit": "{{saved}} added · {{skipped}} skipped (storage limit)",
     "importLimitReached": "Photo storage limit reached",
+    "importFailed": "Could not save the photo. Please try again.",
     "addProblem": "Import photos",
     "addProblemHint": "",
     "problemLabel": "Problem {{n}}",

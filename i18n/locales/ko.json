@@ -159,6 +159,7 @@
     "importSaved": "{{count}}장 추가",
     "importPartialLimit": "{{saved}}장 추가 · {{skipped}}장은 저장 한도로 건너뜀",
     "importLimitReached": "사진 저장 한도에 도달했습니다",
+    "importFailed": "사진을 저장하지 못했습니다. 다시 시도해 주세요.",
     "addProblem": "사진 불러오기",
     "addProblemHint": "",
     "problemLabel": "문제 {{n}}",
