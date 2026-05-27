@@ -1,33 +1,29 @@
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import {
-  VAULT_PREVIEW_HEIGHT,
-  VAULT_TILE_HEIGHT,
-} from '@/lib/ui/viewport-layout';
+import { VAULT_PREVIEW_HEIGHT } from '@/lib/ui/viewport-layout';
 
 type Props = {
-  width: number;
   label: string;
   onPress: () => void;
 };
 
-/** Trailing “+ add folder” slot in the Files carousel row. */
-export function VaultAddFolderTile({ width, label, onPress }: Props) {
+/** Trailing “add subject” slot — same layout stack as {@link SubjectFolderTile}. */
+export function VaultAddFolderTile({ label, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.wrap,
-        { width },
-        pressed && styles.pressed,
-      ]}>
-      <View style={styles.nameSpacer} />
-      <View style={styles.card}>
-        <Text style={styles.plus}>+</Text>
-        <Text style={styles.label} numberOfLines={2}>
-          {label}
-        </Text>
+      style={({ pressed }) => [styles.wrap, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={label}>
+      <View style={styles.nameRow} />
+      <View style={styles.previewSlot}>
+        <View style={styles.card}>
+          <Text style={styles.plus}>+</Text>
+          <Text style={styles.label} numberOfLines={2}>
+            {label}
+          </Text>
+        </View>
       </View>
     </Pressable>
   );
@@ -35,17 +31,28 @@ export function VaultAddFolderTile({ width, label, onPress }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    minHeight: VAULT_TILE_HEIGHT,
+    width: '100%',
+    minWidth: 0,
   },
   pressed: {
     opacity: 0.85,
   },
-  nameSpacer: {
-    height: 32,
+  nameRow: {
     marginBottom: 8,
+    marginLeft: 2,
+    marginRight: 2,
+    minHeight: 24,
+  },
+  previewSlot: {
+    width: '100%',
+    borderRadius: theme.radius.sm,
+    ...(Platform.OS === 'web'
+      ? ({ cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none' } as object)
+      : null),
   },
   card: {
-    minHeight: VAULT_PREVIEW_HEIGHT,
+    width: '100%',
+    height: VAULT_PREVIEW_HEIGHT,
     borderRadius: theme.radius.sm,
     borderWidth: 2,
     borderStyle: 'dashed',
@@ -55,7 +62,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 8,
     gap: 6,
-    ...(Platform.OS === 'web' ? ({ cursor: 'pointer' } as object) : null),
   },
   plus: {
     fontSize: 28,

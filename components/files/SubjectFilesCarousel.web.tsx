@@ -225,7 +225,7 @@ export function SubjectFilesCarousel({
         style={styles.scroller}
         contentContainerStyle={styles.row}>
         {subjects.map((subject) => (
-          <View key={subject.id} style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+          <View key={subject.id} style={[styles.tileSlot, { width: tileWidth }]}>
             <SubjectFolderTile
               subjectId={subject.id}
               name={subject.name}
@@ -248,12 +248,8 @@ export function SubjectFilesCarousel({
           </View>
         ))}
         {onAddFolder && addFolderLabel ? (
-          <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
-            <VaultAddFolderTile
-              width={tileWidth}
-              label={addFolderLabel}
-              onPress={onAddFolder}
-            />
+          <View style={[styles.tileSlot, styles.addSlot, { width: tileWidth }]}>
+            <VaultAddFolderTile label={addFolderLabel} onPress={onAddFolder} />
           </View>
         ) : null}
       </ScrollView>
@@ -281,6 +277,10 @@ const styles = StyleSheet.create({
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
+    marginRight: TILE_GAP,
+  },
+  addSlot: {
+    marginRight: 0,
   },
   empty: {
     paddingHorizontal: PANEL_PAD,

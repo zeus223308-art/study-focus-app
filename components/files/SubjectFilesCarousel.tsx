@@ -189,7 +189,7 @@ export function SubjectFilesCarousel({
   };
 
   const renderItem = ({ item: subject }: ListRenderItemInfo<SubjectFolder>) => (
-    <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+    <View style={[styles.tileSlot, { width: tileWidth }]}>
       <SubjectFolderTile
         subjectId={subject.id}
         name={subject.name}
@@ -216,8 +216,8 @@ export function SubjectFilesCarousel({
 
   const addFolderTile =
     onAddFolder && addFolderLabel ? (
-      <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
-        <VaultAddFolderTile width={tileWidth} label={addFolderLabel} onPress={onAddFolder} />
+      <View style={[styles.tileSlot, styles.addSlot, { width: tileWidth }]}>
+        <VaultAddFolderTile label={addFolderLabel} onPress={onAddFolder} />
       </View>
     ) : null;
 
@@ -252,10 +252,15 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: PANEL_PAD,
+    alignItems: 'flex-start',
   },
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
+    marginRight: TILE_GAP,
+  },
+  addSlot: {
+    marginRight: 0,
   },
   empty: {
     paddingHorizontal: PANEL_PAD,
