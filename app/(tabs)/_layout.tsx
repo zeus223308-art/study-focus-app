@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { DockTabBar } from '@/components/DockTabBar';
 import { CaptureLeaveGuardProvider } from '@/components/capture/CaptureLeaveGuard';
 import { AppUsageGuideProvider } from '@/context/AppUsageGuideContext';
+
 export default function TabLayout() {
   return (
     <CaptureLeaveGuardProvider>

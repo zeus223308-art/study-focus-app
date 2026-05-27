@@ -681,35 +681,37 @@ export function AppProvider({
     updateBundle(id, { archived: false, archivedAt: null });
   }, [updateBundle]);
 
-  const moveBundleToTrash = useCallback((id: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
+  const moveBundleToTrash = useCallback(
+    (id: string) => {
+      const prev = dataRef.current;
+      if (!prev) return;
       const bundle = prev.bundles.find((b) => b.id === id);
-      if (!bundle) return prev;
-      return {
+      if (!bundle) return;
+      persist({
         ...prev,
         bundles: prev.bundles.filter((b) => b.id !== id),
         trash: [createTrashLifecycle(bundle), ...(prev.trash ?? [])],
-      };
-    });
-  }, []);
+      });
+    },
+    [persist]
+  );
 
-  const deletePage = useCallback((bundleId: string, pageId: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
+  const deletePage = useCallback(
+    (bundleId: string, pageId: string) => {
+      const prev = dataRef.current;
+      if (!prev) return;
       const bundle = prev.bundles.find((b) => b.id === bundleId);
-      if (!bundle) return prev;
-      if (!bundle.pages.some((p) => p.id === pageId)) return prev;
+      if (!bundle) return;
+      if (!bundle.pages.some((p) => p.id === pageId)) return;
 
-      const { data: next, bundleRemoved, removedBundle } = removePageFromData(
-        prev,
-        bundleId,
-        pageId
-      );
+      const { data: next, removedBundle } = removePageFromData(prev, bundleId, pageId);
 
       const snapshot =
         removedBundle ?? bundleSnapshotForTrashedPage(bundle, pageId);
-      if (!snapshot) return next;
+      if (!snapshot) {
+        persist(next);
+        return;
+      }
 
       const subject = prev.subjects.find((s) => s.id === bundle.subjectId);
       const itemKey = `${bundleId}:${pageId}`;
@@ -719,16 +721,17 @@ export function AppProvider({
           : s
       );
 
-      return {
+      persist({
         ...next,
         subjects,
         trash: [
           createTrashLifecycle(snapshot, new Date(), { subjectSnapshot: subject }),
           ...(next.trash ?? []),
         ],
-      };
-    });
-  }, []);
+      });
+    },
+    [persist]
+  );
 
   const restoreSubjectTrash = useCallback((subjectId: string) => {
     setData((prev) => {

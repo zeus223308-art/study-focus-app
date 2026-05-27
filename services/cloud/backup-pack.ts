@@ -595,9 +595,13 @@ export function shouldPreferRemoteBackup(local: AppData, remote: BackupEnvelope)
   const remotePages = remote.appData.bundles.reduce((n, b) => n + b.pages.length, 0);
   const localTrash = local.trash?.length ?? 0;
   const remoteTrash = remote.appData.trash?.length ?? 0;
+  const localSaved = local.settings.lastSavedAt;
 
   if (remotePages === 0) return false;
   if (localPages === 0) return true;
+
+  // Local was saved after the remote export (e.g. delete + trash) — never overwrite.
+  if (localSaved && remote.exportedAt <= localSaved) return false;
 
   // Keep local after deletes (trash grew) or any newer trash history.
   if (localTrash > remoteTrash) return false;

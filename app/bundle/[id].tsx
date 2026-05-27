@@ -128,6 +128,31 @@ export default function BundleScreen() {
     setPageIndex((i) => Math.min(i, Math.max(0, bundle.pages.length - 1)));
   }, [bundle?.id, bundle?.pages.length]);
 
+  const persistEditsRef = useRef<() => void>(() => {});
+  persistEditsRef.current = () => {
+    if (!bundle || !page) return;
+    const now = new Date().toISOString();
+    updateBundle(bundle.id, {
+      pages: bundle.pages.map((p) =>
+        p.id === page.id
+          ? {
+              ...p,
+              textNote: note,
+              ocrText: ocrTextDraft,
+              answerOcrText: answerOcrDraft,
+              updatedAt: now,
+            }
+          : p
+      ),
+    });
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => persistEditsRef.current();
+    }, [bundle?.id, page?.id])
+  );
+
   if (!bundle || !page) {
     return (
       <Screen>
@@ -148,22 +173,6 @@ export default function BundleScreen() {
       ),
     });
   };
-
-  const persistEditsRef = useRef<() => void>(() => {});
-  persistEditsRef.current = () => {
-    updateBundle(bundle.id, {
-      pages: bundle.pages.map((p) =>
-        p.id === page.id ? { ...p, textNote: note, updatedAt: new Date().toISOString() } : p
-      ),
-    });
-    saveOcrFields(ocrTextDraft, answerOcrDraft);
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      return () => persistEditsRef.current();
-    }, [bundle.id, page.id])
-  );
 
   const rerunOcr = async () => {
     if (!ocrEnabled) {
@@ -193,8 +202,11 @@ export default function BundleScreen() {
       cancelLabel: t('common.cancel'),
       confirmLabel: t('item.deletePhoto'),
       onConfirm: () => {
-        deletePage(bundle.id, page.id);
+        const bundleId = bundle.id;
+        const pageId = page.id;
+        persistEditsRef.current = () => {};
         safeRouterBack(router, folderBack);
+        deletePage(bundleId, pageId);
       },
     });
   };
