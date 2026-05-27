@@ -12,20 +12,30 @@ import {
 } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
+import { PhotoActionSheet } from '@/components/files/PhotoActionSheet';
+import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
 import { SubjectDropDock } from '@/components/files/SubjectDropDock';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
+import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
 import { groupSubjectProblemsByDate, listSubjectProblems } from '@/lib/grouping/bundles';
+import type { SubjectProblemItem } from '@/lib/grouping/bundles';
 import { pickForImport } from '@/lib/import/pick-for-import';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const ALBUM_GAP = 8;
+
+function itemKey(item: SubjectProblemItem) {
+  return `${item.bundleId}:${item.pageId}`;
+}
 
 export default function FolderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,10 +51,16 @@ export default function FolderScreen() {
     movingBundleId,
     cancelMovingBundle,
     deletePage,
+    archiveBundle,
   } = useApp();
   const [importing, setImporting] = useState(false);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [actionItem, setActionItem] = useState<SubjectProblemItem | null>(null);
+  const [archiveSelectMode, setArchiveSelectMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const viewport = useViewportLayout();
+  const insets = useSafeAreaInsets();
 
   const subject = data.subjects.find((s) => s.id === id);
   const problems = useMemo(
@@ -124,6 +140,29 @@ export default function FolderScreen() {
     }
   };
 
+  const toggleArchiveSelect = (item: SubjectProblemItem) => {
+    const key = itemKey(item);
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const confirmArchiveSelected = () => {
+    const bundleIds = new Set<string>();
+    for (const key of selectedKeys) {
+      bundleIds.add(key.split(':')[0]!);
+    }
+    for (const bid of bundleIds) {
+      archiveBundle(bid);
+    }
+    setArchiveSelectMode(false);
+    setSelectedKeys(new Set());
+    showMessage('', t('folder.archivedCount', { count: bundleIds.size }));
+  };
+
   if (!subject) {
     return (
       <Screen>
@@ -135,7 +174,7 @@ export default function FolderScreen() {
   const addProblemZone = (
     <Pressable
       onPress={importNewProblem}
-      disabled={importing}
+      disabled={importing || archiveSelectMode}
       style={({ pressed }) => [styles.addZone, pressed && styles.addZonePressed]}
       accessibilityLabel={t('folder.addProblem')}>
       {importing ? (
@@ -157,7 +196,20 @@ export default function FolderScreen() {
     <View style={styles.root}>
       <Screen padded={false}>
         <View style={styles.header}>
-          <ScreenHeader title={subject.name} showBack backFallback="/(tabs)/vault" />
+          <ScreenHeader
+            title={subject.name}
+            showBack
+            backFallback="/(tabs)/vault"
+            showSettings={false}
+            right={
+              <Pressable
+                onPress={() => setArchiveModalOpen(true)}
+                style={styles.archiveHeaderBtn}
+                accessibilityLabel={t('folder.archive')}>
+                <Text style={styles.archiveHeaderText}>{t('folder.archive')}</Text>
+              </Pressable>
+            }
+          />
           {movingBundleId && (
             <Pressable onPress={cancelMovingBundle} style={styles.cancelMove}>
               <Text style={styles.cancelMoveText}>{t('common.cancel')}</Text>
@@ -197,17 +249,67 @@ export default function FolderScreen() {
                     params: { id: bundleId, pageId },
                   })
                 }
-                onDelete={confirmDeleteProblem}
-                onDragMove={onDragMove}
-                onDragEnd={onDragEnd}
+                onDelete={archiveSelectMode ? undefined : confirmDeleteProblem}
+                onDragMove={archiveSelectMode ? undefined : onDragMove}
+                onDragEnd={archiveSelectMode ? undefined : onDragEnd}
+                onPhotoAction={(item) => setActionItem(item)}
+                selectionMode={archiveSelectMode ? 'pick' : null}
+                selectedKeys={selectedKeys}
+                onToggleSelect={toggleArchiveSelect}
               />
             ))
           )}
           <View style={styles.footerAdd}>{addProblemZone}</View>
         </ScrollView>
       </Screen>
+
+      {archiveSelectMode ? (
+        <View style={[styles.archiveBar, { paddingBottom: Math.max(16, insets.bottom) }]}>
+          <Button
+            label={t('folder.saveToArchiveCount', { count: selectedKeys.size })}
+            onPress={confirmArchiveSelected}
+            disabled={selectedKeys.size === 0}
+          />
+          <Button
+            label={t('common.cancel')}
+            variant="ghost"
+            onPress={() => {
+              setArchiveSelectMode(false);
+              setSelectedKeys(new Set());
+            }}
+            style={{ marginTop: 8 }}
+          />
+        </View>
+      ) : null}
+
       <SubjectDropDock currentSubjectId={subject.id} subjects={data.subjects} />
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
+
+      <SubjectArchiveModal
+        visible={archiveModalOpen}
+        subjectId={subject.id}
+        subjectName={subject.name}
+        onClose={() => setArchiveModalOpen(false)}
+      />
+
+      <PhotoActionSheet
+        visible={actionItem !== null}
+        restoreLabel={t('folder.restoreFromArchive')}
+        saveToArchiveLabel={t('folder.saveToArchive')}
+        cancelLabel={t('common.cancel')}
+        onRestore={() => {
+          setActionItem(null);
+          setArchiveModalOpen(true);
+        }}
+        onSaveToArchive={() => {
+          if (actionItem) {
+            setActionItem(null);
+            setArchiveSelectMode(true);
+            setSelectedKeys(new Set([itemKey(actionItem)]));
+          }
+        }}
+        onClose={() => setActionItem(null)}
+      />
     </View>
   );
 }
@@ -215,6 +317,19 @@ export default function FolderScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 20 },
+  archiveHeaderBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    backgroundColor: theme.surface,
+  },
+  archiveHeaderText: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.black,
+  },
   cancelMove: { alignSelf: 'flex-end', marginTop: -12, marginBottom: 8 },
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   scroll: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 },
@@ -240,5 +355,12 @@ const styles = StyleSheet.create({
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.orange,
+  },
+  archiveBar: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.grayLight,
+    backgroundColor: theme.beige,
   },
 });

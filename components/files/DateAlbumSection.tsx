@@ -5,7 +5,7 @@ import { theme } from '@/constants/theme';
 import { bundleDisplayTitle } from '@/lib/domain/bundle-title';
 import type { Language } from '@/lib/domain/types';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
-import type { ProblemDateSection } from '@/lib/grouping/bundles';
+import type { ProblemDateSection, SubjectProblemItem } from '@/lib/grouping/bundles';
 import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
 
 type Props = {
@@ -22,10 +22,18 @@ type Props = {
     problemLabel: (n: number) => string;
   };
   onOpen: (bundleId: string, pageId: string) => void;
-  onDelete: (bundleId: string, pageId: string) => void;
+  onDelete?: (bundleId: string, pageId: string) => void;
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (pageX: number, pageY: number) => void;
+  onPhotoAction?: (item: SubjectProblemItem) => void;
+  selectionMode?: 'pick' | null;
+  selectedKeys?: Set<string>;
+  onToggleSelect?: (item: SubjectProblemItem) => void;
 };
+
+function itemKey(item: SubjectProblemItem) {
+  return `${item.bundleId}:${item.pageId}`;
+}
 
 export function DateAlbumSection({
   section,
@@ -39,12 +47,17 @@ export function DateAlbumSection({
   onDelete,
   onDragMove,
   onDragEnd,
+  onPhotoAction,
+  selectionMode,
+  selectedKeys,
+  onToggleSelect,
 }: Props) {
   const cellWidth = Math.floor((contentWidth - gap * (albumColumns - 1)) / albumColumns);
   const heading = formatStudyDateHeading(section.studyDate, language, {
     today: labels.today,
     yesterday: labels.yesterday,
   });
+  const pickMode = selectionMode === 'pick';
 
   return (
     <View style={styles.section}>
@@ -56,18 +69,23 @@ export function DateAlbumSection({
         {section.items.map((item, index) => {
           const title = bundleDisplayTitle(item.bundle);
           const countLabel = title ?? labels.problemLabel(index + 1);
+          const key = itemKey(item);
           return (
             <AlbumPhotoTile
-              key={`${item.bundleId}_${item.pageId}`}
+              key={key}
               bundleId={item.bundleId}
               sourceSubjectId={subjectId}
               thumbnailUri={getPreviewImageUri(item.page.asset) ?? ''}
               countLabel={countLabel}
               cellWidth={cellWidth}
               onOpen={() => onOpen(item.bundleId, item.pageId)}
-              onDelete={() => onDelete(item.bundleId, item.pageId)}
+              onDelete={onDelete ? () => onDelete(item.bundleId, item.pageId) : undefined}
               onDragMove={onDragMove}
               onDragEnd={onDragEnd}
+              onPhotoAction={onPhotoAction ? () => onPhotoAction(item) : undefined}
+              pickMode={pickMode}
+              pickSelected={pickMode && (selectedKeys?.has(key) ?? false)}
+              onTogglePick={onToggleSelect ? () => onToggleSelect(item) : undefined}
             />
           );
         })}

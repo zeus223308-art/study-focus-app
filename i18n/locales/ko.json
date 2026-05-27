@@ -150,7 +150,14 @@
     "dateYesterday": "어제",
     "photoCount": "{{count}}장",
     "archive": "아카이브",
-    "unarchive": "보관함으로"
+    "unarchive": "보관함으로",
+    "archiveModalTitle": "{{name}} · 아카이브",
+    "archiveEmpty": "아카이브된 사진이 없습니다",
+    "saveToArchive": "아카이브에 저장하기",
+    "saveToArchiveCount": "아카이브에 저장 ({{count}})",
+    "restoreFromArchive": "불러오기",
+    "restoreSelected": "불러오기 ({{count}})",
+    "archivedCount": "{{count}}개를 아카이브했습니다"
   },
   "item": {
     "layers": "레이어",

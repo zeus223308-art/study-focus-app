@@ -44,6 +44,21 @@ export function listSubjectProblems(bundles: NoteBundle[], subjectId: string): S
   return items.sort((a, b) => b.page.createdAt.localeCompare(a.page.createdAt));
 }
 
+/** Archived problems for a subject (newest first). */
+export function listArchivedSubjectProblems(
+  bundles: NoteBundle[],
+  subjectId: string
+): SubjectProblemItem[] {
+  const items: SubjectProblemItem[] = [];
+  for (const bundle of bundles) {
+    if (bundle.subjectId !== subjectId || !bundle.archived) continue;
+    for (const page of [...bundle.pages].sort((a, b) => a.sortIndex - b.sortIndex)) {
+      items.push({ bundleId: bundle.id, pageId: page.id, bundle, page });
+    }
+  }
+  return items.sort((a, b) => b.page.createdAt.localeCompare(a.page.createdAt));
+}
+
 export function problemStudyDate(item: SubjectProblemItem): string {
   return item.page.studyDate || item.bundle.studyDate;
 }

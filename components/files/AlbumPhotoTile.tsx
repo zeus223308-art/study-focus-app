@@ -17,6 +17,7 @@ import { useApp } from '@/context/AppContext';
 
 const IS_WEB = Platform.OS === 'web';
 const DRAG_THRESHOLD = 8;
+const DOUBLE_TAP_MS = 320;
 
 type Props = {
   bundleId: string;
@@ -28,6 +29,11 @@ type Props = {
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (pageX: number, pageY: number) => void;
   onDelete?: () => void;
+  /** Long-press / double-tap menu (archive, restore). */
+  onPhotoAction?: () => void;
+  pickMode?: boolean;
+  pickSelected?: boolean;
+  onTogglePick?: () => void;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -41,16 +47,26 @@ export function AlbumPhotoTile({
   onDragMove,
   onDragEnd,
   onDelete,
+  onPhotoAction,
+  pickMode,
+  pickSelected,
+  onTogglePick,
   style,
 }: Props) {
   const { movingBundleId, startMovingBundle, cancelMovingBundle } = useApp();
-  const selected = movingBundleId === bundleId;
+  const dragSelected = movingBundleId === bundleId;
   const didDragRef = useRef(false);
   const pointerDragRef = useRef({ active: false, startX: 0, startY: 0 });
+  const lastTapRef = useRef(0);
 
   const onLongPress = useCallback(() => {
+    if (pickMode) return;
+    if (onPhotoAction) {
+      onPhotoAction();
+      return;
+    }
     startMovingBundle(bundleId, sourceSubjectId);
-  }, [bundleId, sourceSubjectId, startMovingBundle]);
+  }, [pickMode, onPhotoAction, bundleId, sourceSubjectId, startMovingBundle]);
 
   const endDrag = useCallback(
     (pageX: number, pageY: number) => {
@@ -64,7 +80,7 @@ export function AlbumPhotoTile({
 
   const moveDrag = useCallback(
     (pageX: number, pageY: number) => {
-      if (!pointerDragRef.current.active || !selected) return;
+      if (!pointerDragRef.current.active || !dragSelected) return;
       const dx = pageX - pointerDragRef.current.startX;
       const dy = pageY - pointerDragRef.current.startY;
       if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
@@ -72,23 +88,23 @@ export function AlbumPhotoTile({
       }
       onDragMove?.(pageX, pageY);
     },
-    [onDragMove, selected]
+    [onDragMove, dragSelected]
   );
 
   const startDrag = useCallback(
     (pageX: number, pageY: number) => {
-      if (!selected) return;
+      if (!dragSelected) return;
       didDragRef.current = false;
       pointerDragRef.current = { active: true, startX: pageX, startY: pageY };
     },
-    [selected]
+    [dragSelected]
   );
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => selected,
-        onMoveShouldSetPanResponder: () => selected,
+        onStartShouldSetPanResponder: () => dragSelected && !pickMode,
+        onMoveShouldSetPanResponder: () => dragSelected && !pickMode,
         onPanResponderGrant: (evt) => {
           const { pageX, pageY } = evt.nativeEvent;
           startDrag(pageX, pageY);
@@ -106,12 +122,12 @@ export function AlbumPhotoTile({
           endDrag(pageX, pageY);
         },
       }),
-    [endDrag, moveDrag, selected, startDrag]
+    [dragSelected, pickMode, endDrag, moveDrag, startDrag]
   );
 
   const bindWebMouse = useCallback(
     (pageX: number, pageY: number) => {
-      if (!selected || typeof document === 'undefined') return;
+      if (!dragSelected || typeof document === 'undefined' || pickMode) return;
       startDrag(pageX, pageY);
       const onMove = (ev: MouseEvent) => moveDrag(ev.pageX, ev.pageY);
       const onUp = (ev: MouseEvent) => {
@@ -122,28 +138,56 @@ export function AlbumPhotoTile({
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     },
-    [endDrag, moveDrag, selected, startDrag]
+    [dragSelected, pickMode, endDrag, moveDrag, startDrag]
   );
+
+  const handlePress = useCallback(() => {
+    if (pickMode) {
+      onTogglePick?.();
+      return;
+    }
+    if (movingBundleId && movingBundleId !== bundleId) {
+      startMovingBundle(bundleId, sourceSubjectId);
+      return;
+    }
+    if (movingBundleId) {
+      cancelMovingBundle();
+      return;
+    }
+
+    const now = Date.now();
+    if (onPhotoAction && now - lastTapRef.current < DOUBLE_TAP_MS) {
+      lastTapRef.current = 0;
+      onPhotoAction();
+      return;
+    }
+    lastTapRef.current = now;
+
+    if (!didDragRef.current) onOpen();
+  }, [
+    pickMode,
+    onTogglePick,
+    movingBundleId,
+    bundleId,
+    sourceSubjectId,
+    startMovingBundle,
+    cancelMovingBundle,
+    onPhotoAction,
+    onOpen,
+  ]);
+
+  const showPickCheck = pickMode;
+  const tileHighlighted = pickMode ? pickSelected : dragSelected;
 
   return (
     <View style={[styles.cell, { width: cellWidth }, style]}>
       <Pressable
-        onPress={() => {
-          if (movingBundleId && movingBundleId !== bundleId) {
-            startMovingBundle(bundleId, sourceSubjectId);
-            return;
-          }
-          if (movingBundleId) {
-            cancelMovingBundle();
-            return;
-          }
-          if (!didDragRef.current) onOpen();
-        }}
+        onPress={handlePress}
         onLongPress={onLongPress}
         delayLongPress={380}
-        style={[styles.tile, selected && styles.tileSelected]}
-        {...(!IS_WEB ? panResponder.panHandlers : {})}
-        {...(IS_WEB && selected
+        style={[styles.tile, tileHighlighted && styles.tileSelected]}
+        {...(!IS_WEB && !pickMode ? panResponder.panHandlers : {})}
+        {...(IS_WEB && dragSelected && !pickMode
           ? {
               onMouseDown: (e: { button?: number; nativeEvent: { pageX: number; pageY: number } }) => {
                 if (e.button !== undefined && e.button !== 0) return;
@@ -152,8 +196,19 @@ export function AlbumPhotoTile({
             }
           : {})}>
         <ResolvedImage uri={thumbnailUri} style={styles.image} resizeMode="cover" />
-        {selected ? (
-          <View style={styles.checkBadge}>
+        {showPickCheck ? (
+          <View style={[styles.pickBadge, pickSelected && styles.pickBadgeOn]}>
+            {pickSelected ? (
+              <SymbolView
+                name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                size={11}
+                tintColor={theme.white}
+              />
+            ) : null}
+          </View>
+        ) : null}
+        {dragSelected && !pickMode ? (
+          <View style={styles.dragBadge}>
             <SymbolView
               name={{ ios: 'checkmark', android: 'check', web: 'check' }}
               size={12}
@@ -169,7 +224,7 @@ export function AlbumPhotoTile({
           </View>
         ) : null}
       </Pressable>
-      {!movingBundleId && onDelete ? (
+      {!movingBundleId && !pickMode && onDelete ? (
         <Pressable style={styles.deleteBtn} onPress={onDelete} hitSlop={6}>
           <SymbolView
             name={{ ios: 'xmark.circle.fill', android: 'close', web: 'close' }}
@@ -203,7 +258,24 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  checkBadge: {
+  pickBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: theme.white,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickBadgeOn: {
+    backgroundColor: theme.orange,
+    borderColor: theme.orange,
+  },
+  dragBadge: {
     position: 'absolute',
     top: 6,
     right: 6,

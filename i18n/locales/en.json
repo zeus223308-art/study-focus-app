@@ -150,7 +150,14 @@
     "dateYesterday": "Yesterday",
     "photoCount": "{{count}} photos",
     "archive": "Archive",
-    "unarchive": "Restore"
+    "unarchive": "Restore",
+    "archiveModalTitle": "{{name}} · Archive",
+    "archiveEmpty": "No archived photos",
+    "saveToArchive": "Save to archive",
+    "saveToArchiveCount": "Save to archive ({{count}})",
+    "restoreFromArchive": "Restore",
+    "restoreSelected": "Restore ({{count}})",
+    "archivedCount": "{{count}} item(s) archived"
   },
   "item": {
     "layers": "Layers",

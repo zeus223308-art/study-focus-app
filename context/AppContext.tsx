@@ -76,6 +76,7 @@ type AppContextValue = {
   updateBundle: (id: string, patch: Partial<NoteBundle>) => void;
   completeReview: (bundleId: string) => void;
   archiveBundle: (id: string) => void;
+  unarchiveBundle: (id: string) => void;
   moveBundleToTrash: (id: string) => void;
   deletePage: (bundleId: string, pageId: string) => void;
   restoreTrash: (trashId: string) => void;
@@ -428,6 +429,10 @@ export function AppProvider({
     updateBundle(id, { archived: true, archivedAt: new Date().toISOString() });
   }, [updateBundle]);
 
+  const unarchiveBundle = useCallback((id: string) => {
+    updateBundle(id, { archived: false, archivedAt: null });
+  }, [updateBundle]);
+
   const moveBundleToTrash = useCallback((id: string) => {
     setData((prev) => {
       if (!prev) return prev;
@@ -638,6 +643,7 @@ export function AppProvider({
       updateBundle,
       completeReview,
       archiveBundle,
+      unarchiveBundle,
       moveBundleToTrash,
       deletePage,
       restoreTrash,
@@ -684,6 +690,7 @@ export function AppProvider({
     updateBundle,
     completeReview,
     archiveBundle,
+    unarchiveBundle,
     moveBundleToTrash,
     deletePage,
     restoreTrash,
