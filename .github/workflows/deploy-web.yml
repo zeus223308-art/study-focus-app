@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: deploy-web
-  cancel-in-progress: true
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -33,6 +33,17 @@ jobs:
           EXPO_PUBLIC_BASE_PATH: /study-focus-app
           EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }}
         run: npx expo export --platform web
+
+      - name: Verify splash tagline is English only
+        run: |
+          if grep -r '기억을 정복' dist/_expo/static/js/web/ 2>/dev/null; then
+            echo 'ERROR: Korean splash tagline found in web bundle'
+            exit 1
+          fi
+          if ! grep -r 'Conquer your memory' dist/_expo/static/js/web/; then
+            echo 'ERROR: English splash tagline missing from web bundle'
+            exit 1
+          fi
 
       - name: GitHub Pages SPA fallback
         run: |

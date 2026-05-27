@@ -13,11 +13,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
-import en from '@/i18n/locales/en.json';
 
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
-/** Brand tagline — always English on splash (web + native). */
-const SPLASH_TAGLINE = en.splashTagline;
 
 type Props = {
   onFinish: () => void;
@@ -113,7 +110,7 @@ export function SplashBrand({ onFinish }: Props) {
         </Animated.View>
 
         <Animated.View style={[styles.taglineWrap, taglineStyle]}>
-          <Text style={styles.tagline}>{SPLASH_TAGLINE}</Text>
+          <Text style={styles.tagline}>Conquer your memory</Text>
         </Animated.View>
       </View>
 
