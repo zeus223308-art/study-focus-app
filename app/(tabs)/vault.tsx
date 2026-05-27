@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -12,7 +13,7 @@ import {
 } from 'react-native';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
-import { VaultTrashWebPortal } from '@/components/files/VaultTrashWebPortal';
+import { VaultDragTrashSheet } from '@/components/files/VaultDragTrashSheet';
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
@@ -28,6 +29,7 @@ import {
   shouldShowVaultTrashPopup,
   type DragLiftPoint,
 } from '@/lib/ui/subject-drag-delete';
+import { hideVaultTrashDom, setVaultTrashDom } from '@/lib/ui/vault-trash-dom';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const PANEL_PAD = 14;
@@ -59,7 +61,6 @@ export default function FilesScreen() {
   const [panelWidth, setPanelWidth] = useState(0);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
   const [dragSession, setDragSession] = useState<VaultDragSession | null>(null);
-  const [webTrash, setWebTrash] = useState({ show: false, ready: false });
   const [folderTouchActive, setFolderTouchActive] = useState(false);
   const dragActiveRef = useRef(false);
   const liftRef = useRef<DragLiftPoint | null>(null);
@@ -93,17 +94,8 @@ export default function FilesScreen() {
     (pageX: number, pageY: number) => {
       setGhost({ x: pageX, y: pageY, visible: true });
       updateSubjectReorderHover(pageX, pageY);
-      if (Platform.OS === 'web' && liftRef.current) {
-        const ready = isSubjectDragDeleteIntent(
-          pageX,
-          pageY,
-          liftRef.current,
-          windowHeight
-        );
-        setWebTrash({ show: true, ready });
-      }
     },
-    [updateSubjectReorderHover, windowHeight]
+    [updateSubjectReorderHover]
   );
 
   useVaultWebSubjectDrag(dragActiveRef, onSubjectReorderMove);
@@ -114,21 +106,24 @@ export default function FilesScreen() {
       liftRef.current = lift;
       dragActiveRef.current = true;
       if (Platform.OS === 'web') {
-        setWebTrash({ show: true, ready: false });
+        setVaultTrashDom(true, false, {
+          title: t('trash.title'),
+          hint: t('vault.dragTrashKeepPull'),
+        });
       }
       setDragSession({ subjectId, subjectName, lift });
       setGhost({ x: pageX, y: pageY, visible: true });
       startSubjectReorder(subjectId, lift);
       onSubjectReorderMove(pageX, pageY);
     },
-    [onSubjectReorderMove, startSubjectReorder]
+    [onSubjectReorderMove, startSubjectReorder, t]
   );
 
   const endDragSession = useCallback(() => {
     dragActiveRef.current = false;
     liftRef.current = null;
     if (Platform.OS === 'web') {
-      setWebTrash({ show: false, ready: false });
+      hideVaultTrashDom();
     }
     setDragSession(null);
     setGhost((g) => ({ ...g, visible: false }));
@@ -141,19 +136,36 @@ export default function FilesScreen() {
     setAdding(false);
   };
 
+  const trashReady = useMemo(() => {
+    if (!dragSession) return false;
+    const lift = liftRef.current ?? dragSession.lift;
+    return isSubjectDragDeleteIntent(ghost.x, ghost.y, lift, windowHeight);
+  }, [dragSession, ghost.x, ghost.y, windowHeight]);
+
   const trashUi = useMemo(() => {
-    if (Platform.OS === 'web') {
-      return webTrash;
-    }
     if (!dragSession || !ghost.visible) {
       return { show: false, ready: false };
     }
     const { lift } = dragSession;
+    if (Platform.OS === 'web') {
+      return { show: true, ready: trashReady };
+    }
     return {
       show: shouldShowVaultTrashPopup(ghost.y, lift, windowHeight),
-      ready: isSubjectDragDeleteIntent(ghost.x, ghost.y, lift, windowHeight),
+      ready: trashReady,
     };
-  }, [dragSession, ghost.visible, ghost.x, ghost.y, webTrash, windowHeight]);
+  }, [dragSession, ghost.visible, ghost.x, ghost.y, trashReady, windowHeight]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (!dragSession) {
+      hideVaultTrashDom();
+      return;
+    }
+    const hint = trashReady ? t('vault.dragTrashRelease') : t('vault.dragTrashKeepPull');
+    setVaultTrashDom(true, trashReady, { title: t('trash.title'), hint });
+    return () => hideVaultTrashDom();
+  }, [dragSession, trashReady, t]);
 
   const onSubjectReorderEnd = (
     subjectId: string,
@@ -199,6 +211,14 @@ export default function FilesScreen() {
           ) : null}
           {dragSession ? (
             <Text style={styles.moveBanner}>{t('vault.dragSubjectHint')}</Text>
+          ) : null}
+          {dragSession && Platform.OS === 'web' ? (
+            <View style={styles.webTrashBanner} pointerEvents="none">
+              <Text style={styles.webTrashBannerIcon}>🗑</Text>
+              <Text style={styles.webTrashBannerText}>
+                {trashReady ? t('vault.dragTrashRelease') : t('vault.dragTrashKeepPull')}
+              </Text>
+            </View>
           ) : null}
 
           <ScreenHeader
@@ -273,7 +293,19 @@ export default function FilesScreen() {
       </Screen>
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
-      <VaultTrashWebPortal visible={trashUi.show} ready={trashUi.ready} />
+
+      {Platform.OS === 'web' ? (
+        <Modal
+          visible={dragSession != null}
+          transparent
+          animationType="fade"
+          presentationStyle="overFullScreen"
+          statusBarTranslucent>
+          <View style={styles.webTrashModalBackdrop} pointerEvents="box-none">
+            <VaultDragTrashSheet visible ready={trashUi.ready} />
+          </View>
+        </Modal>
+      ) : null}
     </View>
   );
 }
@@ -307,6 +339,45 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
     paddingHorizontal: 12,
+  },
+  webTrashBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: theme.radius.md,
+    borderWidth: 2,
+    borderColor: theme.orange,
+    backgroundColor: theme.orangeMuted,
+  },
+  webTrashBannerIcon: {
+    fontSize: 22,
+  },
+  webTrashBannerText: {
+    flex: 1,
+    fontSize: theme.font.body,
+    fontWeight: '800',
+    color: theme.orange,
+    textAlign: 'center',
+  },
+  webTrashModalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    zIndex: 99999,
+    ...Platform.select({
+      web: {
+        position: 'fixed' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      },
+      default: {},
+    }),
   },
   panel: {
     borderWidth: 1.5,
