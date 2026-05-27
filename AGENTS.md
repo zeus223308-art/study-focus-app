@@ -66,7 +66,7 @@ Built/refined: full app shell, vault/capture/review, DateRibbon, first-launch da
 | **Editor** | `.vscode/settings.json` — `files.autoSave` after 1s |
 | **Agent** | `.cursor/rules/auto-commit-deploy.mdc` + `memorysherpa-context.mdc` — after code changes in Cursor, commit + push `main` unless user says not to |
 | **CI** | `.github/workflows/deploy-web.yml` on push to `main` |
-| **Live URL** | https://zeus223308-art.github.io/study-focus-app/ |
+| **Live URL** | https://zeus223308-art.github.io/study-focus-app/ (desktop + **mobile browser**) |
 
 Local web preview: `npx expo start --web --port 8082`
 
