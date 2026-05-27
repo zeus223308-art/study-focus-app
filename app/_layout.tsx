@@ -33,6 +33,7 @@ SplashScreen.preventAutoHideAsync();
 /** Session-only overlay — not persisted; unmounts when app closes. */
 function shouldShowFloatingCamera(segments: string[]): boolean {
   if (segments.includes('capture')) return false;
+  if (segments.includes('review')) return false;
   return true;
 }
 

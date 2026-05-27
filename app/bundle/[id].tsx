@@ -28,7 +28,6 @@ import { attachAnswerToPage } from '@/lib/domain/attach-answer';
 import { replacePageAnswerPhoto, replacePageFrontPhoto } from '@/lib/files/replace-page-photo';
 import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
-import { pickForImport } from '@/lib/import/pick-for-import';
 import {
   ERASER_WIDTHS,
   HIGHLIGHTER_WIDTHS,
@@ -39,7 +38,6 @@ import type { InkToolId, NoteLayer } from '@/lib/domain/types';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
-import { reportImportPhotosResult } from '@/lib/ui/import-result-feedback';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -71,7 +69,7 @@ export default function BundleScreen() {
     moveBundleToTrash,
     deletePage,
     applyLayerCycleChoice,
-    importPhotosToSubject,
+    setActiveFolderCapture,
   } = useApp();
   const bundle = data.bundles.find((b) => b.id === id);
   const initialPageIndex = useMemo(() => {
@@ -80,7 +78,6 @@ export default function BundleScreen() {
     return i >= 0 ? i : 0;
   }, [bundle?.id, pageId]);
   const [pageIndex, setPageIndex] = useState(initialPageIndex);
-  const [importingMore, setImportingMore] = useState(false);
   const [tool, setTool] = useState<InkToolId>('pen-black');
   const [penWidth, setPenWidth] = useState<number>(PEN_WIDTHS[1]);
   const [highlighterWidth, setHighlighterWidth] = useState<number>(HIGHLIGHTER_WIDTHS[1]);
@@ -314,33 +311,9 @@ export default function BundleScreen() {
     });
   };
 
-  const importMorePhotos = async () => {
-    if (importingMore) return;
-    const picked = await pickForImport({
-      title: t('folder.importSourceTitle'),
-      album: t('folder.importAlbum'),
-      files: t('folder.importFiles'),
-      cancel: t('common.cancel'),
-      unsupportedOnly: t('folder.importUnsupportedOnly'),
-      unsupportedSkipped: t('folder.importUnsupportedSkipped'),
-    });
-    if (!picked.ok) return;
-
-    setImportingMore(true);
-    try {
-      const result = await importPhotosToSubject(
-        bundle.subjectId,
-        picked.files.map((f) => f.uri),
-        bundle.studyDate
-      );
-      if (result.saved > 0) {
-        router.replace({ pathname: '/folder/[id]', params: { id: bundle.subjectId } });
-      } else {
-        reportImportPhotosResult(result, t);
-      }
-    } finally {
-      setImportingMore(false);
-    }
+  const openCaptureFlow = () => {
+    setActiveFolderCapture({ subjectId: bundle.subjectId, studyDate: bundle.studyDate });
+    router.push('/(tabs)/capture');
   };
 
   const subject = data.subjects.find((s) => s.id === bundle.subjectId);
@@ -427,10 +400,8 @@ export default function BundleScreen() {
       />
       </View>
 
-      <Pressable onPress={importMorePhotos} disabled={importingMore} style={styles.addProblemRow}>
-        <Text style={[styles.link, importingMore && styles.linkDisabled]}>
-          {importingMore ? t('folder.importing') : t('folder.importPhotos')}
-        </Text>
+      <Pressable onPress={openCaptureFlow} style={styles.addProblemRow}>
+        <Text style={styles.link}>{t('folder.importPhotos')}</Text>
       </Pressable>
 
       <Button
