@@ -215,8 +215,6 @@ export default function FolderScreen() {
           '',
           t('folder.importPartialLimit', { saved, skipped: skippedDueToLimit })
         );
-      } else if (saved > 0) {
-        showMessage('', t('folder.importSaved', { count: saved }));
       } else if (skippedDueToLimit > 0) {
         showMessage('', t('folder.importLimitReached'));
       } else if (failed) {

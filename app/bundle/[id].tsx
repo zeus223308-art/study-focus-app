@@ -341,7 +341,6 @@ export default function BundleScreen() {
         );
         router.replace({ pathname: '/folder/[id]', params: { id: bundle.subjectId } });
       } else if (saved > 0) {
-        showMessage('', t('folder.importSaved', { count: saved }));
         router.replace({ pathname: '/folder/[id]', params: { id: bundle.subjectId } });
       } else if (skippedDueToLimit > 0) {
         showMessage('', t('folder.importLimitReached'));
