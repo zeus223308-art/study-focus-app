@@ -1,19 +1,9 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
-import { VaultDragTrashSheet } from '@/components/files/VaultDragTrashSheet';
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
@@ -24,12 +14,7 @@ import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
-import {
-  isSubjectDragDeleteIntent,
-  shouldShowVaultTrashPopup,
-  type DragLiftPoint,
-} from '@/lib/ui/subject-drag-delete';
-import { hideVaultTrashDom, setVaultTrashDom } from '@/lib/ui/vault-trash-dom';
+import { isSubjectDragDeleteIntent, type DragLiftPoint } from '@/lib/ui/subject-drag-delete';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const PANEL_PAD = 14;
@@ -110,15 +95,12 @@ export default function FilesScreen() {
       startSubjectReorder(subjectId, lift);
       onSubjectReorderMove(pageX, pageY);
     },
-    [onSubjectReorderMove, startSubjectReorder, t]
+    [onSubjectReorderMove, startSubjectReorder]
   );
 
   const endDragSession = useCallback(() => {
     dragActiveRef.current = false;
     liftRef.current = null;
-    if (Platform.OS === 'web') {
-      hideVaultTrashDom();
-    }
     setDragSession(null);
     setGhost((g) => ({ ...g, visible: false }));
   }, []);
@@ -129,34 +111,6 @@ export default function FilesScreen() {
     setNewName('');
     setAdding(false);
   };
-
-  const trashReady = useMemo(() => {
-    if (!dragSession) return false;
-    const lift = liftRef.current ?? dragSession.lift;
-    return isSubjectDragDeleteIntent(ghost.x, ghost.y, lift, windowHeight);
-  }, [dragSession, ghost.x, ghost.y, windowHeight]);
-
-  const trashUi = useMemo(() => {
-    if (!dragSession || !ghost.visible) {
-      return { show: false, ready: false };
-    }
-    const lift = liftRef.current ?? dragSession.lift;
-    return {
-      show: shouldShowVaultTrashPopup(ghost.y, lift, windowHeight),
-      ready: trashReady,
-    };
-  }, [dragSession, ghost.visible, ghost.x, ghost.y, trashReady, windowHeight]);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    if (!trashUi.show) {
-      hideVaultTrashDom();
-      return;
-    }
-    const hint = trashUi.ready ? t('vault.dragTrashRelease') : t('vault.dragTrashKeepPull');
-    setVaultTrashDom(true, trashUi.ready, { title: t('trash.title'), hint });
-    return () => hideVaultTrashDom();
-  }, [trashUi.show, trashUi.ready, t]);
 
   const onSubjectReorderEnd = (
     subjectId: string,
@@ -203,6 +157,7 @@ export default function FilesScreen() {
           {dragSession ? (
             <Text style={styles.moveBanner}>{t('vault.dragSubjectHint')}</Text>
           ) : null}
+
           <ScreenHeader
             title={t('vault.title')}
             showSettings={false}
@@ -275,19 +230,6 @@ export default function FilesScreen() {
       </Screen>
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
-
-      {Platform.OS === 'web' && trashUi.show ? (
-        <Modal
-          visible
-          transparent
-          animationType="fade"
-          presentationStyle="overFullScreen"
-          statusBarTranslucent>
-          <View style={styles.webTrashModalBackdrop} pointerEvents="box-none">
-            <VaultDragTrashSheet visible ready={trashUi.ready} />
-          </View>
-        </Modal>
-      ) : null}
     </View>
   );
 }
@@ -321,22 +263,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
     paddingHorizontal: 12,
-  },
-  webTrashModalBackdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    zIndex: 99999,
-    ...Platform.select({
-      web: {
-        position: 'fixed' as const,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-      },
-      default: {},
-    }),
   },
   panel: {
     borderWidth: 1.5,

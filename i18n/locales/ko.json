@@ -62,9 +62,7 @@
     "reorderEdgeHint": "끝까지 끌면 다른 페이지 폴더가 나타납니다",
     "previewEmpty": "사진 없음",
     "photos": "{{count}}장",
-    "dragSubjectHint": "카드 사이에 놓으면 순서가 바뀝니다. 삭제는 아래로 끌어 내리세요.",
-    "dragTrashKeepPull": "계속 아래로 끌어 휴지통으로",
-    "dragTrashRelease": "놓으면 삭제 확인",
+    "dragSubjectHint": "카드 사이에 놓으면 순서가 바뀝니다. 삭제는 아래로 끌어 놓으세요.",
     "deleteFolderTitle": "정말 삭제하시겠습니까?",
     "deleteFolderMessage": "「{{name}}」 폴더와 모든 사진이 휴지통으로 이동합니다.",
     "movedToTrash": "「{{name}}」을(를) 휴지통으로 옮겼습니다"

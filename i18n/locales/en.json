@@ -62,9 +62,7 @@
     "reorderEdgeHint": "Drag to the screen edge to reveal more folders",
     "previewEmpty": "No photos",
     "photos": "{{count}} photos",
-    "dragSubjectHint": "Drop between cards to reorder. To delete, drag down toward the bottom.",
-    "dragTrashKeepPull": "Keep pulling down to Trash",
-    "dragTrashRelease": "Release to confirm delete",
+    "dragSubjectHint": "Drop between cards to reorder. Drag down and release to delete.",
     "deleteFolderTitle": "Delete this folder?",
     "deleteFolderMessage": "“{{name}}” and all its photos will move to Trash.",
     "movedToTrash": "Moved “{{name}}” to Trash"

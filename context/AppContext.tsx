@@ -40,11 +40,7 @@ import {
   resolveSubjectMergeTargetId,
   resolveSubjectReorderGapKey,
 } from '@/lib/ui/subject-reorder-hit';
-import {
-  isSubjectDragDeleteIntent,
-  shouldShowVaultTrashPopup,
-  type DragLiftPoint,
-} from '@/lib/ui/subject-drag-delete';
+import { isSubjectDragDeleteIntent, type DragLiftPoint } from '@/lib/ui/subject-drag-delete';
 import { listSubjectProblems } from '@/lib/grouping/bundles';
 import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
 import { isDueToday, advanceAfterReview, resetReviewCycle, maintainReviewCycle } from '@/lib/spacing/engine';
@@ -178,11 +174,6 @@ type AppContextValue = {
     rect: { x: number; y: number; width: number; height: number } | null
   ) => void;
   reorderHoverGapKey: string | null;
-  reorderHoverTrash: boolean;
-  /** Pulling down — show trash sheet before release zone. */
-  reorderTrashHint: boolean;
-  /** Trash popup while dragging a vault folder (overlay above tabs). */
-  vaultTrashSheet: { visible: boolean; ready: boolean };
   updateDragHover: (pageX: number, pageY: number) => void;
   updateSubjectReorderHover: (pageX: number, pageY: number) => void;
   finishItemDrag: (
@@ -230,9 +221,6 @@ export function AppProvider({
   const [reorderingSubjectId, setReorderingSubjectId] = useState<string | null>(null);
   const [reorderHoverSubjectId, setReorderHoverSubjectId] = useState<string | null>(null);
   const [reorderHoverGapKey, setReorderHoverGapKey] = useState<string | null>(null);
-  const [reorderHoverTrash, setReorderHoverTrash] = useState(false);
-  const [reorderTrashHint, setReorderTrashHint] = useState(false);
-  const [vaultTrashSheet, setVaultTrashSheet] = useState({ visible: false, ready: false });
   const [pendingMerge, setPendingMerge] = useState<
     | { kind: 'bundle'; sourceBundleId: string; targetBundleId: string }
     | { kind: 'subject'; sourceSubjectId: string; targetSubjectId: string }
@@ -821,9 +809,6 @@ export function AppProvider({
       setReorderingSubjectId(subjectId);
       setReorderHoverSubjectId(null);
       setReorderHoverGapKey(null);
-      setReorderHoverTrash(false);
-      setReorderTrashHint(false);
-      setVaultTrashSheet({ visible: false, ready: false });
       setMovingBundleId(null);
       setDraggingItemKey(null);
       setDragSourceSubjectId(null);
@@ -838,8 +823,6 @@ export function AppProvider({
   const cancelMovingBundle = useCallback(() => {
     reorderingSubjectIdRef.current = null;
     subjectDragLiftRef.current = null;
-    setReorderTrashHint(false);
-    setVaultTrashSheet({ visible: false, ready: false });
     setMovingBundleId(null);
     setDraggingItemKey(null);
     setDragSourceSubjectId(null);
@@ -848,8 +831,6 @@ export function AppProvider({
     setReorderingSubjectId(null);
     setReorderHoverSubjectId(null);
     setReorderHoverGapKey(null);
-    setReorderHoverTrash(false);
-    setReorderTrashHint(false);
     setMergeDragMode(null);
     setMergeDraggingSubjectId(null);
   }, []);
@@ -962,16 +943,7 @@ export function AppProvider({
         subjectDragLiftRef.current = { x: pageX, y: pageY };
       }
       const lift = subjectDragLiftRef.current;
-      const showPopup = shouldShowVaultTrashPopup(pageY, lift);
-      const onTrash = isSubjectDragDeleteIntent(pageX, pageY, lift);
-      setReorderTrashHint((prev) => (prev === showPopup ? prev : showPopup));
-      setReorderHoverTrash((prev) => (prev === onTrash ? prev : onTrash));
-      setVaultTrashSheet((prev) =>
-        prev.visible === showPopup && prev.ready === onTrash
-          ? prev
-          : { visible: showPopup, ready: onTrash }
-      );
-      if (onTrash) {
+      if (isSubjectDragDeleteIntent(pageX, pageY, lift)) {
         setReorderHoverGapKey((prev) => (prev === null ? prev : null));
         return;
       }
@@ -1286,9 +1258,6 @@ export function AppProvider({
       reorderingSubjectId,
       reorderHoverSubjectId,
       reorderHoverGapKey,
-      reorderHoverTrash,
-      reorderTrashHint,
-      vaultTrashSheet,
       subjectReorderMeasureTick,
       bumpSubjectReorderMeasure,
       startItemDrag,
@@ -1357,9 +1326,6 @@ export function AppProvider({
     reorderingSubjectId,
     reorderHoverSubjectId,
     reorderHoverGapKey,
-    reorderHoverTrash,
-    reorderTrashHint,
-    vaultTrashSheet,
     pendingMerge,
     mergeDraggingSubjectId,
     mergeDragMode,
