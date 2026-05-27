@@ -100,9 +100,8 @@ export function useViewportLayout(): ViewportLayout {
     const pagerSize = computePagerSize(width, deviceClass);
 
     const listNumColumns = isPhone ? 1 : 2;
-    // ~⅓ linear tile size vs former 3/4/5-column grid (×3 columns).
     const albumNumColumns =
-      deviceClass === 'phone' ? 9 : deviceClass === 'tablet' ? 12 : 15;
+      deviceClass === 'phone' ? 7 : deviceClass === 'tablet' ? 8 : 11;
     const vaultFoldersPerPage = computeVaultFoldersPerPage(width);
     const dashboardCardsPerRow = isPhone ? 1 : 2;
 
