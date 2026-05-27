@@ -37,7 +37,6 @@ export default function OnboardingScreen() {
           accessibilityLabel={t('appName')}
         />
       </View>
-      <Text style={styles.brand}>{t('appName')}</Text>
       <View style={styles.card}>
         <Text style={styles.title}>{t(`onboarding.${key}`)}</Text>
       </View>
@@ -68,16 +67,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignSelf: 'center',
     marginTop: 24,
+    marginBottom: 24,
   },
   logoImage: { width: '100%', height: '100%' },
-  brand: {
-    fontSize: 22,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginTop: 12,
-    marginBottom: 24,
-    color: theme.black,
-  },
   card: {
     flex: 1,
     justifyContent: 'center',

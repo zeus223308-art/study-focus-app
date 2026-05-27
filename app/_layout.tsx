@@ -33,7 +33,11 @@ function shouldShowFloatingCamera(segments: string[]): boolean {
   return true;
 }
 
-function RootNavigator() {
+type RootNavigatorProps = {
+  splashDone: boolean;
+};
+
+function RootNavigator({ splashDone }: RootNavigatorProps) {
   const { t } = useTranslation();
   const {
     data,
@@ -45,20 +49,17 @@ function RootNavigator() {
   } = useApp();
   const router = useRouter();
   const segments = useSegments();
-  const [brandDone, setBrandDone] = useState(false);
-
-  const onBrandFinish = useCallback(() => setBrandDone(true), []);
 
   useEffect(() => {
-    if (!ready || !brandDone) return;
-    SplashScreen.hideAsync();
+    if (!ready || !splashDone) return;
+    void SplashScreen.hideAsync();
     const inOnboarding = segments[0] === 'onboarding';
     if (!data.settings.onboardingDone && !inOnboarding) {
       router.replace('/onboarding');
     }
-  }, [ready, brandDone, data.settings.onboardingDone, segments, router]);
+  }, [ready, splashDone, data.settings.onboardingDone, segments, router]);
 
-  if (!brandDone) return <SplashBrand onFinish={onBrandFinish} />;
+  if (!splashDone || !ready) return null;
 
   const showCamera = shouldShowFloatingCamera(segments);
 
@@ -104,7 +105,17 @@ function RootNavigator() {
   );
 }
 
+function AppRoot({ splashDone }: { splashDone: boolean }) {
+  return (
+    <MobileWebFrame>
+      <StatusBar style="light" />
+      <RootNavigator splashDone={splashDone} />
+    </MobileWebFrame>
+  );
+}
+
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   appShell: { flex: 1 },
   fontSplash: {
     flex: 1,
@@ -122,6 +133,12 @@ export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  const [animDone, setAnimDone] = useState(false);
+  const [appReady, setAppReady] = useState(false);
+  const splashDone = animDone && appReady;
+
+  const onBrandFinish = useCallback(() => setAnimDone(true), []);
+  const onAppReady = useCallback(() => setAppReady(true), []);
 
   useEffect(() => {
     if (error) throw error;
@@ -136,11 +153,11 @@ export default function RootLayout() {
   }
 
   return (
-    <AppProvider>
-      <MobileWebFrame>
-        <StatusBar style="light" />
-        <RootNavigator />
-      </MobileWebFrame>
-    </AppProvider>
+    <View style={styles.root}>
+      <AppProvider onReady={onAppReady}>
+        <AppRoot splashDone={splashDone} />
+      </AppProvider>
+      {!splashDone ? <SplashBrand onFinish={onBrandFinish} /> : null}
+    </View>
   );
 }

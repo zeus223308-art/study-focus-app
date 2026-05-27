@@ -106,7 +106,13 @@ type AppContextValue = {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function AppProvider({
+  children,
+  onReady,
+}: {
+  children: ReactNode;
+  onReady?: () => void;
+}) {
   const storage = useMemo(() => createStorageProvider(), []);
   const [ready, setReady] = useState(false);
   const [data, setData] = useState<AppData | null>(null);
@@ -213,6 +219,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (ready) onReady?.();
+  }, [ready, onReady]);
 
   useEffect(() => {
     const prev = prevLocalTodayRef.current;

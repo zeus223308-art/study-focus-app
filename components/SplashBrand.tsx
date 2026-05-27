@@ -1,6 +1,8 @@
-import { useEffect } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { getLocales } from 'expo-localization';
+import { useCallback, useEffect, useMemo } from 'react';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
   runOnJS,
@@ -12,6 +14,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
+import en from '@/i18n/locales/en.json';
+import ko from '@/i18n/locales/ko.json';
 
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
 
@@ -31,13 +35,23 @@ const T = {
   allOut: 600,
 };
 
+function splashTagline(): string {
+  const code = getLocales()[0]?.languageCode ?? 'ko';
+  return code === 'ko' ? ko.splashTagline : en.splashTagline;
+}
+
 export function SplashBrand({ onFinish }: Props) {
+  const insets = useSafeAreaInsets();
+  const tagline = useMemo(() => splashTagline(), []);
+
   useEffect(() => {
-    // Hide native splash only after the PNG logo is on screen (avoids black flash on mobile).
-    const id = requestAnimationFrame(() => {
-      void SplashScreen.hideAsync();
-    });
-    return () => cancelAnimationFrame(id);
+    if (Platform.OS === 'ios') {
+      SplashScreen.setOptions({ duration: 280, fade: true });
+    }
+  }, []);
+
+  const hideNativeSplash = useCallback(() => {
+    void SplashScreen.hideAsync();
   }, []);
 
   const mountainOpacity = useSharedValue(1);
@@ -93,18 +107,24 @@ export function SplashBrand({ onFinish }: Props) {
   }));
 
   return (
-    <Animated.View style={[styles.root, screenStyle]}>
+    <Animated.View style={[styles.root, screenStyle]} pointerEvents="auto">
       <View style={styles.center}>
         <Animated.View style={[styles.mountainWrap, mountainStyle]}>
-          <Image source={mountainLogo} style={styles.mountainLogo} resizeMode="contain" accessibilityLabel="MemorySherpa logo" />
+          <Image
+            source={mountainLogo}
+            style={styles.mountainLogo}
+            resizeMode="contain"
+            accessibilityLabel="MemorySherpa logo"
+            onLayout={hideNativeSplash}
+          />
         </Animated.View>
 
         <Animated.View style={[styles.taglineWrap, taglineStyle]}>
-          <Text style={styles.tagline}>Conquer your memory</Text>
+          <Text style={styles.tagline}>{tagline}</Text>
         </Animated.View>
       </View>
 
-      <Animated.View style={[styles.footer, footerStyle]}>
+      <Animated.View style={[styles.footer, { bottom: Math.max(insets.bottom, 24) + 32 }, footerStyle]}>
         <Text style={styles.copy}>© MemorySherpa</Text>
       </Animated.View>
     </Animated.View>
@@ -116,6 +136,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: SPLASH_BLACK,
     zIndex: 9999,
+    elevation: 9999,
   },
   center: {
     flex: 1,
@@ -145,7 +166,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    bottom: 56,
     left: 0,
     right: 0,
     alignItems: 'center',
