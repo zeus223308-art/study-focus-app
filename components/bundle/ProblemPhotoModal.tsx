@@ -21,7 +21,7 @@ import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 import type { CloudAsset, InkToolId, NoteLayer } from '@/lib/domain/types';
-import { getFullImageUri } from '@/lib/files/display-image-uri';
+import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 
 type Side = 'front' | 'back';
@@ -137,6 +137,7 @@ export function ProblemPhotoModal({
   };
 
   const viewerH = Math.min(layout.height * 0.55, viewerW * 1.25);
+  const imageH = Math.max(120, viewerH - 28);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -163,23 +164,28 @@ export function ProblemPhotoModal({
         )}
 
         <View style={styles.viewer} onLayout={onLayout}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={onScrollEnd}
-            style={{ height: viewerH }}>
-            {sides.map((item) => {
-              const uri = getFullImageUri(item.asset);
-              return (
-                <View key={item.side} style={{ width: viewerW, height: viewerH }}>
-                  <Text style={styles.sideLabel}>{item.label}</Text>
-                  {uri ? (
-                    <View style={styles.imageBox}>
+          {viewerW > 0 ? (
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={onScrollEnd}
+              scrollEventThrottle={16}
+              decelerationRate="fast"
+              style={{ width: viewerW, height: viewerH }}
+              contentContainerStyle={{ width: viewerW * sides.length, height: viewerH }}>
+              {sides.map((item) => {
+                const displayUri =
+                  getPreviewImageUri(item.asset) ?? getFullImageUri(item.asset);
+                return (
+                  <View key={item.side} style={{ width: viewerW, height: viewerH }}>
+                    <Text style={styles.sideLabel}>{item.label}</Text>
+                    <View style={[styles.imageBox, { height: imageH }]}>
                       <ResolvedImage
-                        uri={uri}
+                        uri={displayUri}
                         asset={item.asset}
-                        style={{ width: viewerW, height: viewerH - 28 }}
+                        preferPreview={false}
+                        style={{ width: viewerW, height: imageH }}
                         resizeMode="contain"
                       />
                       {item.side === 'front' && layer ? (
@@ -190,16 +196,19 @@ export function ProblemPhotoModal({
                           visible
                           interactive={inkKind !== null}
                           onStrokesChange={onStrokesChange}
-                          height={viewerH - 28}
-                          style={styles.ink}
+                          height={imageH}
+                          style={[
+                            styles.ink,
+                            inkKind === null && styles.inkPassthrough,
+                          ]}
                         />
                       ) : null}
                     </View>
-                  ) : null}
-                </View>
-              );
-            })}
-          </ScrollView>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          ) : null}
           {sides.length > 1 ? (
             <Text style={styles.pager}>
               {pageIndex + 1} / {sides.length}
@@ -229,7 +238,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     textAlign: 'center',
   },
-  imageBox: { position: 'relative', flex: 1 },
-  ink: { position: 'absolute', left: 0, top: 28, right: 0, bottom: 0 },
+  imageBox: { position: 'relative', overflow: 'hidden' },
+  ink: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
+  inkPassthrough: { pointerEvents: 'none' as const },
   pager: { textAlign: 'center', color: theme.gray, marginTop: 8, fontWeight: '700' },
 });
