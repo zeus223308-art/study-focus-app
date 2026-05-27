@@ -113,14 +113,9 @@ export default function FilesScreen() {
         title={t('vault.title')}
         showSettings={false}
         right={
-          <View style={styles.headerActions}>
-            <Pressable onPress={() => setAdding(true)} hitSlop={8}>
-              <Text style={styles.headerAction}>{t('vault.addFolder')}</Text>
-            </Pressable>
-            <Pressable onPress={() => router.push('/search')} hitSlop={8}>
-              <Text style={styles.headerAction}>{t('item.search')}</Text>
-            </Pressable>
-          </View>
+          <Pressable onPress={() => router.push('/search')} hitSlop={8}>
+            <Text style={styles.headerAction}>{t('item.search')}</Text>
+          </Pressable>
         }
       />
 
@@ -165,11 +160,7 @@ export default function FilesScreen() {
             </Pressable>
           </View>
         </View>
-      ) : (
-        <Pressable onPress={() => setAdding(true)}>
-          <Text style={styles.addLabel}>+ {t('vault.addFolder')}</Text>
-        </Pressable>
-      )}
+      ) : null}
 
       <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
         <Text style={styles.trash}>{t('trash.title')}</Text>
@@ -179,9 +170,7 @@ export default function FilesScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   headerAction: { fontSize: theme.font.bodySmall, color: theme.orange, fontWeight: '700' },
-  search: { fontSize: theme.font.bodySmall, color: theme.orange, fontWeight: '700' },
   moveBanner: {
     fontSize: theme.font.caption,
     fontWeight: '700',
@@ -213,7 +202,6 @@ const styles = StyleSheet.create({
   addActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 12 },
   cancel: { color: theme.gray },
   save: { color: theme.orange, fontWeight: '800' },
-  addLabel: { marginTop: 20, fontWeight: '700', color: theme.gray },
   trashLink: { marginTop: 24 },
   trash: { color: theme.gray, fontSize: theme.font.caption },
 });
