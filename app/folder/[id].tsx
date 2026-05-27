@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -62,6 +62,7 @@ export default function FolderScreen() {
   const [actionItem, setActionItem] = useState<SubjectProblemItem | null>(null);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [tileGestureActive, setTileGestureActive] = useState(false);
   const viewport = useViewportLayout();
   const insets = useSafeAreaInsets();
 
@@ -180,6 +181,12 @@ export default function FolderScreen() {
     showMessage('', t('folder.archivedCount', { count: bundleIds.size }));
   };
 
+  const lockTileGesture = useCallback((active: boolean) => {
+    setTileGestureActive(active);
+  }, []);
+
+  const albumScrollEnabled = !movingBundleId && !archiveSelectMode && !tileGestureActive;
+
   if (!subject) {
     return (
       <Screen>
@@ -225,9 +232,6 @@ export default function FolderScreen() {
               />
             }
           />
-          {movingBundleId ? (
-            <Text style={styles.reorderHint}>{t('folder.reorderHint')}</Text>
-          ) : null}
           {movingBundleId && (
             <Pressable onPress={cancelMovingBundle} style={styles.cancelMove}>
               <Text style={styles.cancelMoveText}>{t('common.cancel')}</Text>
@@ -235,6 +239,7 @@ export default function FolderScreen() {
           )}
         </View>
         <ScrollView
+          scrollEnabled={albumScrollEnabled}
           contentContainerStyle={[
             styles.scroll,
             problems.length === 0 && styles.scrollEmpty,
@@ -276,6 +281,7 @@ export default function FolderScreen() {
                         handleItemDragEnd(moved, pageX, pageY, item)
                 }
                 reorderEnabled={!archiveSelectMode}
+                onGestureActiveChange={lockTileGesture}
                 onPhotoAction={
                   archiveSelectMode ? undefined : (item) => setActionItem(item)
                 }
@@ -353,13 +359,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20 },
   cancelMove: { alignSelf: 'flex-end', marginTop: -12, marginBottom: 8 },
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
-  reorderHint: {
-    fontSize: theme.font.caption,
-    fontWeight: '700',
-    color: theme.orange,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
   scroll: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 },
   scrollEmpty: { flexGrow: 1, justifyContent: 'center' },
   emptyBlock: { marginTop: 24, marginBottom: 8, gap: 16 },

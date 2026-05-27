@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { useApp } from '@/context/AppContext';
 
 type Rect = { x: number; y: number; width: number; height: number };
 
@@ -24,6 +25,7 @@ export function SubjectReorderTarget({
   lifted,
 }: Props) {
   const ref = useRef<View>(null);
+  const { subjectReorderMeasureTick } = useApp();
 
   const measure = useCallback(() => {
     ref.current?.measureInWindow((x, y, width, height) => {
@@ -34,7 +36,7 @@ export function SubjectReorderTarget({
   useEffect(() => {
     measure();
     return () => register(subjectId, null);
-  }, [measure, register, subjectId]);
+  }, [measure, register, subjectId, subjectReorderMeasureTick]);
 
   return (
     <View

@@ -1,11 +1,19 @@
 import { useCallback, useRef } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
+import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { useLongPressDragGesture } from '@/lib/ui/long-press-drag';
 
 const IS_WEB = Platform.OS === 'web';
 const DOUBLE_TAP_MS = 320;
@@ -22,11 +30,11 @@ type Props = {
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onLiftForDrag: () => void;
-  /** Double-tap menu (archive, delete). */
   onPhotoAction?: () => void;
   pickMode?: boolean;
   pickSelected?: boolean;
   onTogglePick?: () => void;
+  onGestureActiveChange?: (active: boolean) => void;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -44,26 +52,21 @@ export function AlbumPhotoTile({
   pickMode,
   pickSelected,
   onTogglePick,
+  onGestureActiveChange,
   style,
 }: Props) {
   const { movingBundleId, draggingItemKey, dragHoverItemKey, cancelMovingBundle } = useApp();
-  const dragLifted = movingBundleId === bundleId && draggingItemKey === itemDragKey;
-  const itemHover = dragHoverItemKey === itemDragKey && !dragLifted;
+  const contextLifted = movingBundleId === bundleId && draggingItemKey === itemDragKey;
+  const itemHover = dragHoverItemKey === itemDragKey && !contextLifted;
   const lastTapRef = useRef(0);
+  const dragEnabled = !pickMode && Boolean(onDragMove);
 
-  const onShortPress = useCallback(() => {
+  const handlePress = useCallback(() => {
     if (pickMode) {
       onTogglePick?.();
       return;
     }
-    if (dragLifted) {
-      cancelMovingBundle();
-      return;
-    }
-    if (movingBundleId) {
-      cancelMovingBundle();
-      return;
-    }
+    if (movingBundleId) return;
 
     const now = Date.now();
     if (onPhotoAction && now - lastTapRef.current < DOUBLE_TAP_MS) {
@@ -73,46 +76,29 @@ export function AlbumPhotoTile({
     }
     lastTapRef.current = now;
     onOpen();
-  }, [
-    pickMode,
-    onTogglePick,
-    dragLifted,
-    movingBundleId,
-    cancelMovingBundle,
-    onPhotoAction,
-    onOpen,
-  ]);
+  }, [pickMode, onTogglePick, movingBundleId, onPhotoAction, onOpen]);
 
-  const { panHandlers, bindWebMouse } = useLongPressDragGesture({
-    enabled: !pickMode && Boolean(onDragMove),
-    instantDrag: dragLifted,
-    onLift: onLiftForDrag,
-    onDragMove,
-    onDragEnd,
-    onShortPress,
-  });
+  const handleLift = useCallback(() => {
+    onLiftForDrag();
+  }, [onLiftForDrag]);
 
-  const tileHighlighted = pickMode ? pickSelected : dragLifted || itemHover;
+  const handleDragEnd = useCallback(
+    (moved: boolean, pageX: number, pageY: number) => {
+      onDragEnd?.(moved, pageX, pageY);
+    },
+    [onDragEnd]
+  );
 
-  return (
-    <View style={[styles.cell, { width: cellWidth }, style]}>
-      <View
-        style={[styles.tile, tileHighlighted && styles.tileSelected, dragLifted && styles.tileLifted]}
-        {...(!IS_WEB && !pickMode ? panHandlers : {})}
-        {...(IS_WEB && !pickMode
-          ? {
-              onMouseDown: (e: { button?: number; nativeEvent: { pageX: number; pageY: number } }) => {
-                if (e.button !== undefined && e.button !== 0) return;
-                bindWebMouse(e.nativeEvent.pageX, e.nativeEvent.pageY);
-              },
-            }
-          : pickMode
-            ? {}
-            : {})}>
-        <Pressable style={styles.fill} onPress={pickMode ? onShortPress : undefined}>
+  const tileHighlighted = pickMode ? pickSelected : contextLifted || itemHover;
+  const showLifted = contextLifted;
+
+  if (pickMode) {
+    return (
+      <View style={[styles.cell, { width: cellWidth }, style]}>
+        <Pressable
+          onPress={handlePress}
+          style={[styles.tile, tileHighlighted && styles.tileSelected]}>
           <ResolvedImage uri={thumbnailUri} style={styles.image} resizeMode="cover" />
-        </Pressable>
-        {pickMode ? (
           <View style={[styles.pickBadge, pickSelected && styles.pickBadgeOn]}>
             {pickSelected ? (
               <SymbolView
@@ -122,24 +108,47 @@ export function AlbumPhotoTile({
               />
             ) : null}
           </View>
-        ) : null}
-        {dragLifted && !pickMode ? (
-          <View style={styles.dragBadge}>
-            <SymbolView
-              name={{ ios: 'line.3.horizontal', android: 'menu', web: 'menu' }}
-              size={12}
-              tintColor={theme.white}
-            />
-          </View>
-        ) : null}
-        {countLabel ? (
-          <View style={styles.countBadge} pointerEvents="none">
-            <Text style={styles.countText} numberOfLines={1}>
-              {countLabel}
-            </Text>
-          </View>
-        ) : null}
+        </Pressable>
       </View>
+    );
+  }
+
+  return (
+    <View style={[styles.cell, { width: cellWidth }, style]}>
+      <HoldDragSurface
+        enabled={dragEnabled}
+        onLift={handleLift}
+        onDragMove={onDragMove}
+        onDragEnd={handleDragEnd}
+        onPress={handlePress}
+        onGestureActiveChange={onGestureActiveChange}
+        style={[
+          styles.tile,
+          tileHighlighted && styles.tileSelected,
+          showLifted && styles.tileLifted,
+          showLifted && styles.tileLiftedShadow,
+          itemHover && styles.tileHover,
+        ]}>
+        <View pointerEvents="none" style={styles.tileContent}>
+          <ResolvedImage uri={thumbnailUri} style={styles.image} resizeMode="cover" />
+          {showLifted ? (
+            <View style={styles.dragBadge}>
+              <SymbolView
+                name={{ ios: 'line.3.horizontal', android: 'menu', web: 'menu' }}
+                size={12}
+                tintColor={theme.white}
+              />
+            </View>
+          ) : null}
+          {countLabel ? (
+            <View style={styles.countBadge}>
+              <Text style={styles.countText} numberOfLines={1}>
+                {countLabel}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </HoldDragSurface>
     </View>
   );
 }
@@ -156,8 +165,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.grayLight,
     borderWidth: 1,
     borderColor: theme.grayLight,
+    ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'none', userSelect: 'none' } as object) : null),
   },
-  fill: {
+  tileContent: {
     width: '100%',
     height: '100%',
   },
@@ -165,9 +175,20 @@ const styles = StyleSheet.create({
     borderColor: theme.orange,
     borderWidth: 2,
   },
+  tileHover: {
+    borderColor: theme.orange,
+    borderWidth: 2,
+    backgroundColor: theme.orangeMuted,
+  },
   tileLifted: {
-    opacity: 0.72,
-    transform: [{ scale: 0.96 }],
+    opacity: 0.88,
+    transform: [{ scale: 1.04 }],
+    borderColor: theme.orange,
+    borderWidth: 2,
+    zIndex: 20,
+  },
+  tileLiftedShadow: {
+    ...theme.cardShadow,
   },
   image: {
     width: '100%',

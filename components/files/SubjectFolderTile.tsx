@@ -5,10 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { SubjectDropTarget } from '@/components/files/SubjectDropTarget';
 import { SubjectFolderPreview } from '@/components/files/SubjectFolderPreview';
 import { SubjectReorderTarget } from '@/components/files/SubjectReorderTarget';
+import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
-import { useLongPressDragGesture } from '@/lib/ui/long-press-drag';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -24,7 +24,6 @@ type Props = {
   onPreviewGestureLock: (locked: boolean) => void;
 };
 
-/** Files tab — subject name above card; swipe problem previews inside the card. */
 export function SubjectFolderTile({
   subjectId,
   name,
@@ -47,8 +46,9 @@ export function SubjectFolderTile({
     cancelMovingBundle,
   } = useApp();
   const cardRef = useRef<View>(null);
-  const dragLifted = reorderingSubjectId === subjectId;
-  const reorderHover = reorderHoverSubjectId === subjectId && !dragLifted;
+  const isActive = reorderingSubjectId === subjectId;
+  const reorderHover = reorderHoverSubjectId === subjectId && !isActive;
+  const dragEnabled = !movingBundleId && Boolean(onReorderDragMove);
 
   const tryDropHere = () => {
     if (!movingBundleId || subjectId === dragSourceSubjectId) return;
@@ -58,50 +58,24 @@ export function SubjectFolderTile({
     });
   };
 
-  const onShortPress = useCallback(() => {
-    if (dragLifted) {
-      cancelMovingBundle();
+  const handlePress = useCallback(() => {
+    if (movingBundleId) {
+      tryDropHere();
       return;
     }
-    if (movingBundleId) return;
     if (reorderingSubjectId) return;
     onPress();
-  }, [cancelMovingBundle, dragLifted, movingBundleId, onPress, reorderingSubjectId]);
+  }, [movingBundleId, onPress, reorderingSubjectId]);
 
-  const { panHandlers, bindWebMouse } = useLongPressDragGesture({
-    enabled: !movingBundleId,
-    instantDrag: dragLifted,
-    onLift: onLiftForReorder,
-    onDragMove: onReorderDragMove,
-    onDragEnd: onReorderDragEnd,
-    onShortPress,
-  });
+  const handleLift = useCallback(() => {
+    onLiftForReorder();
+  }, [onLiftForReorder]);
 
-  const tileBody = (
-    <>
-      <View style={styles.nameRow}>
-        <Text style={styles.name} numberOfLines={1}>
-          {name}
-        </Text>
-      </View>
-      <View ref={cardRef} collapsable={false}>
-        <SubjectFolderPreview
-          variant="vault"
-          items={previewItems}
-          totalLabel={totalLabel}
-          emptyHint={t('vault.previewEmpty')}
-          onOpen={() => {
-            if (movingBundleId) {
-              tryDropHere();
-              return;
-            }
-            if (reorderingSubjectId) return;
-            onPress();
-          }}
-          onGestureLock={onPreviewGestureLock}
-        />
-      </View>
-    </>
+  const handleDragEnd = useCallback(
+    (moved: boolean, pageX: number, pageY: number) => {
+      onReorderDragEnd?.(moved, pageX, pageY);
+    },
+    [onReorderDragEnd]
   );
 
   return (
@@ -110,22 +84,34 @@ export function SubjectFolderTile({
         subjectId={subjectId}
         register={registerSubjectReorderZone}
         hover={reorderHover}
-        lifted={dragLifted}>
-        <View
-          {...(!IS_WEB && !movingBundleId ? panHandlers : {})}
-          {...(IS_WEB && !movingBundleId
-            ? {
-                onMouseDown: (e: {
-                  button?: number;
-                  nativeEvent: { pageX: number; pageY: number };
-                }) => {
-                  if (e.button !== undefined && e.button !== 0) return;
-                  bindWebMouse(e.nativeEvent.pageX, e.nativeEvent.pageY);
-                },
-              }
-            : {})}>
-          {tileBody}
-        </View>
+        lifted={isActive}>
+        <HoldDragSurface
+          enabled={dragEnabled}
+          onLift={handleLift}
+          onDragMove={onReorderDragMove}
+          onDragEnd={handleDragEnd}
+          onPress={handlePress}
+          onGestureActiveChange={onPreviewGestureLock}
+          style={[
+            styles.dragSurface,
+            isActive && styles.dragSurfaceLifted,
+            reorderHover && styles.dragSurfaceHover,
+          ]}>
+          <View ref={cardRef} collapsable={false} pointerEvents="none">
+            <Text style={[styles.name, isActive && styles.nameLifted]} numberOfLines={1}>
+              {name}
+            </Text>
+            <SubjectFolderPreview
+              variant="vault"
+              items={previewItems}
+              totalLabel={totalLabel}
+              emptyHint={t('vault.previewEmpty')}
+              passthroughGestures
+              onOpen={handlePress}
+              onGestureLock={onPreviewGestureLock}
+            />
+          </View>
+        </HoldDragSurface>
       </SubjectReorderTarget>
     </SubjectDropTarget>
   );
@@ -136,16 +122,33 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: 0,
   },
-  nameRow: {
+  dragSurface: {
+    width: '100%',
+    borderRadius: theme.radius.sm,
+    ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'none', userSelect: 'none' } as object) : null),
+  },
+  dragSurfaceHover: {
+    borderWidth: 2,
+    borderColor: theme.orange,
+    backgroundColor: theme.orangeMuted,
+  },
+  dragSurfaceLifted: {
+    transform: [{ scale: 1.03 }],
+    zIndex: 30,
+    borderWidth: 2,
+    borderColor: theme.orange,
+    backgroundColor: theme.orangeMuted,
+    ...theme.cardShadow,
+  },
+  name: {
     marginBottom: 8,
     marginLeft: 2,
     marginRight: 2,
-  },
-  name: {
-    flex: 1,
-    minWidth: 0,
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.black,
+  },
+  nameLifted: {
+    color: theme.orange,
   },
 });

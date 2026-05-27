@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  ScrollView,
   StyleSheet,
   Text,
   View,
-  type ListRenderItemInfo,
+  type ViewStyle,
 } from 'react-native';
 import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
 import { theme } from '@/constants/theme';
@@ -14,6 +14,7 @@ import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { computeVaultFolderTileWidth } from '@/lib/ui/viewport-layout';
+import { resolveWebElement } from '@/lib/ui/resolve-web-element';
 
 const TILE_GAP = 14;
 const PANEL_PAD = 14;
@@ -53,7 +54,8 @@ export function SubjectFilesCarousel({
   emptyLabel,
   onFolderGestureLock,
 }: Props) {
-  const listRef = useRef<FlatList<SubjectFolder>>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollDomRef = useRef<HTMLElement | null>(null);
   const panelRef = useRef<View>(null);
   const scrollXRef = useRef(0);
   const panelBoundsRef = useRef({ left: 0, right: 0 });
@@ -73,9 +75,19 @@ export function SubjectFilesCarousel({
 
   const slotWidth = tileWidth + TILE_GAP;
 
+  const bindScrollDom = useCallback((node: ScrollView | null) => {
+    scrollRef.current = node;
+    scrollDomRef.current = resolveWebElement(node);
+  }, []);
+
   const updateMaxScroll = useCallback(() => {
     maxScrollXRef.current = Math.max(0, subjects.length * slotWidth - pageWidth + PANEL_PAD * 2);
-  }, [pageWidth, slotWidth, subjects.length]);
+    const dom = scrollDomRef.current;
+    if (dom) {
+      dom.style.overflowX = listScrollEnabled ? 'auto' : 'hidden';
+      dom.style.touchAction = reorderingSubjectId ? 'none' : 'pan-x';
+    }
+  }, [listScrollEnabled, pageWidth, reorderingSubjectId, slotWidth, subjects.length]);
 
   useEffect(() => {
     updateMaxScroll();
@@ -84,8 +96,7 @@ export function SubjectFilesCarousel({
   const setPreviewGestureLock = useCallback(
     (locked: boolean) => {
       onFolderGestureLock?.(locked);
-      const canScroll = subjects.length > 1 && !locked && !reorderingSubjectId;
-      setListScrollEnabled(canScroll);
+      setListScrollEnabled(subjects.length > 1 && !locked && !reorderingSubjectId);
     },
     [onFolderGestureLock, reorderingSubjectId, subjects.length]
   );
@@ -105,7 +116,12 @@ export function SubjectFilesCarousel({
 
   const scrollToX = useCallback((x: number) => {
     const clamped = Math.max(0, Math.min(x, maxScrollXRef.current));
-    listRef.current?.scrollToOffset({ offset: clamped, animated: false });
+    const dom = scrollDomRef.current;
+    if (dom) {
+      dom.scrollLeft = clamped;
+    } else {
+      scrollRef.current?.scrollTo({ x: clamped, animated: false });
+    }
     scrollXRef.current = clamped;
   }, []);
 
@@ -179,51 +195,49 @@ export function SubjectFilesCarousel({
     if (reorderingSubjectId) bumpSubjectReorderMeasure();
   };
 
-  const renderItem = ({ item: subject }: ListRenderItemInfo<SubjectFolder>) => (
-    <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
-      <SubjectFolderTile
-        subjectId={subject.id}
-        name={subject.name}
-        totalLabel={totalLabelFor(subject.id)}
-        previewItems={previewItemsFor(subject.id)}
-        onPreviewGestureLock={setPreviewGestureLock}
-        onPress={() => onSubjectPress(subject.id)}
-        onLiftForReorder={() => onSubjectLift(subject.id)}
-        onReorderDragMove={handleReorderDragMove}
-        onReorderDragEnd={(moved, pageX, pageY) => {
-          stopAutoScroll();
-          onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
-        }}
-      />
-    </View>
-  );
-
   if (subjects.length === 0) {
     return emptyLabel ? <Text style={styles.empty}>{emptyLabel}</Text> : null;
   }
 
   if (pageWidth <= 0 || tileWidth <= 0) return null;
 
+  const carouselMode = reorderingSubjectId ? 'reorder' : 'scroll';
+
   return (
-    <View ref={panelRef} onLayout={measurePanelBounds} style={styles.wrap}>
-      <FlatList
-        ref={listRef}
-        data={subjects}
+    <View
+      ref={panelRef}
+      onLayout={measurePanelBounds}
+      style={styles.wrap}
+      {...({ 'data-subject-carousel': carouselMode } as object)}>
+      <ScrollView
+        ref={bindScrollDom}
         horizontal
         scrollEnabled={listScrollEnabled}
         nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        scrollEventThrottle={16}
         onScroll={onScroll}
-        contentContainerStyle={styles.listContent}
-        getItemLayout={(_, index) => ({
-          length: slotWidth,
-          offset: slotWidth * index,
-          index,
-        })}
-      />
+        scrollEventThrottle={16}
+        style={styles.scroller}
+        contentContainerStyle={styles.row}>
+        {subjects.map((subject) => (
+          <View key={subject.id} style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+            <SubjectFolderTile
+              subjectId={subject.id}
+              name={subject.name}
+              totalLabel={totalLabelFor(subject.id)}
+              previewItems={previewItemsFor(subject.id)}
+              onPreviewGestureLock={setPreviewGestureLock}
+              onPress={() => onSubjectPress(subject.id)}
+              onLiftForReorder={() => onSubjectLift(subject.id)}
+              onReorderDragMove={handleReorderDragMove}
+              onReorderDragEnd={(moved, pageX, pageY) => {
+                stopAutoScroll();
+                onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
+              }}
+            />
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -231,8 +245,18 @@ export function SubjectFilesCarousel({
 const styles = StyleSheet.create({
   wrap: {
     width: '100%',
+    overflow: 'hidden',
   },
-  listContent: {
+  scroller: {
+    width: '100%',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    WebkitOverflowScrolling: 'touch',
+    touchAction: 'pan-x',
+  } as ViewStyle,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     paddingHorizontal: PANEL_PAD,
   },
   tileSlot: {

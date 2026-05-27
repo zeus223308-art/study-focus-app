@@ -1,6 +1,5 @@
 import { forwardRef, ReactNode } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
+import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dockTopContentInset } from '@/components/DockTabBar';
 import { theme } from '@/constants/theme';
@@ -17,8 +16,9 @@ type Props = {
   nestedScrollEnabled?: boolean;
 };
 
+/** Web: RN ScrollView (gesture-handler ScrollView breaks nested touch on mobile Safari). */
 export const Screen = forwardRef<ScrollView, Props>(function Screen(
-  { children, scroll, scrollEnabled = true, style, padded = true, nestedScrollEnabled },
+  { children, scroll, scrollEnabled = true, style, padded = true },
   ref
 ) {
   const insets = useSafeAreaInsets();
@@ -54,7 +54,7 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
         scrollEnabled={scrollEnabled}
         contentContainerStyle={{ paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD }}
         showsVerticalScrollIndicator={false}
-        nestedScrollEnabled={nestedScrollEnabled}>
+        nestedScrollEnabled>
         {inner}
       </ScrollView>
     );
@@ -63,5 +63,9 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
 });
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.beige },
+  root: {
+    flex: 1,
+    backgroundColor: theme.beige,
+    WebkitOverflowScrolling: 'touch',
+  } as ViewStyle,
 });

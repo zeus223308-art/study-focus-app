@@ -1,4 +1,5 @@
 import '@/lib/auth/complete-oauth-popup';
+import 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
 import { Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -17,6 +18,7 @@ import { AppProvider, useApp } from '@/context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/constants/theme';
 import { Image, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SPLASH_BLACK } from '@/components/MountainMLogo';
 
@@ -145,11 +147,11 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={styles.root}>
+    <GestureHandlerRootView style={styles.root}>
       <AppProvider onReady={onAppReady}>
         <AppRoot splashDone={splashDone} />
       </AppProvider>
       {!splashDone ? <SplashBrand onFinish={onBrandFinish} /> : null}
-    </View>
+    </GestureHandlerRootView>
   );
 }

@@ -68,5 +68,22 @@ html, body, #root {
 body {
   background-color: #0A0A0A;
   overflow-x: hidden;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+/* Vault subject strip — horizontal swipe between cards */
+[data-subject-carousel="scroll"] {
+  touch-action: pan-x !important;
+  -webkit-overflow-scrolling: touch;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+[data-subject-carousel="reorder"] {
+  touch-action: none !important;
+}
+[data-hold-drag="active"] {
+  touch-action: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
 }
 `;

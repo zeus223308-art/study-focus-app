@@ -32,6 +32,7 @@ type Props = {
   selectedKeys?: Set<string>;
   onToggleSelect?: (item: SubjectProblemItem) => void;
   reorderEnabled?: boolean;
+  onGestureActiveChange?: (active: boolean) => void;
 };
 
 function itemKey(item: SubjectProblemItem) {
@@ -55,6 +56,7 @@ export function DateAlbumSection({
   selectedKeys,
   onToggleSelect,
   reorderEnabled,
+  onGestureActiveChange,
 }: Props) {
   const { registerItemDropZone, dragHoverItemKey } = useApp();
   const cellWidth = Math.floor((contentWidth - gap * (albumColumns - 1)) / albumColumns);
@@ -94,6 +96,7 @@ export function DateAlbumSection({
               pickMode={pickMode}
               pickSelected={pickMode && (selectedKeys?.has(key) ?? false)}
               onTogglePick={onToggleSelect ? () => onToggleSelect(item) : undefined}
+              onGestureActiveChange={reorderEnabled && !pickMode ? onGestureActiveChange : undefined}
             />
           );
 

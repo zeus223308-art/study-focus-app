@@ -102,6 +102,9 @@ type AppContextValue = {
   dragHoverItemKey: string | null;
   reorderingSubjectId: string | null;
   reorderHoverSubjectId: string | null;
+  /** Bumps when carousel scrolls during reorder so drop zones re-measure. */
+  subjectReorderMeasureTick: number;
+  bumpSubjectReorderMeasure: () => void;
   startItemDrag: (bundleId: string, pageId: string, subjectId: string, itemKey: string) => void;
   startMovingBundle: (bundleId: string, sourceSubjectId: string) => void;
   startSubjectReorder: (subjectId: string) => void;
@@ -124,6 +127,10 @@ type AppContextValue = {
   finishSubjectReorder: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'cancelled';
   finishBundleDrop: (pageX: number, pageY: number) => string | null;
   reorderSubjects: (activeId: string, overId: string) => void;
+  /** Tap target folder while reordering (works without drag). */
+  dropSubjectReorderOn: (overId: string) => boolean;
+  /** Tap target photo while reordering (works without drag). */
+  dropItemReorderOn: (overKey: string) => boolean;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -152,6 +159,7 @@ export function AppProvider({
   const [dragHoverItemKey, setDragHoverItemKey] = useState<string | null>(null);
   const [reorderingSubjectId, setReorderingSubjectId] = useState<string | null>(null);
   const [reorderHoverSubjectId, setReorderHoverSubjectId] = useState<string | null>(null);
+  const [subjectReorderMeasureTick, setSubjectReorderMeasureTick] = useState(0);
   const dropZonesRef = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(
     new Map()
   );
@@ -592,6 +600,10 @@ export function AppProvider({
     [storage, persist]
   );
 
+  const bumpSubjectReorderMeasure = useCallback(() => {
+    setSubjectReorderMeasureTick((t) => t + 1);
+  }, []);
+
   const startMovingBundle = useCallback((bundleId: string, sourceSubjectId: string) => {
     setMovingBundleId(bundleId);
     setDragSourceSubjectId(sourceSubjectId);
@@ -707,21 +719,41 @@ export function AppProvider({
   );
 
   const finishSubjectReorder = useCallback(
-    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'cancelled' => {
+    (pageX: number, pageY: number, _moved: boolean): 'reordered' | 'cancelled' => {
       if (!reorderingSubjectId) return 'cancelled';
       const hover =
         hitTestZones(pageX, pageY, subjectReorderZonesRef.current) ?? reorderHoverSubjectId;
       const activeId = reorderingSubjectId;
-      if (moved && hover && hover !== activeId) {
-        cancelMovingBundle();
+      if (hover && hover !== activeId) {
         reorderSubjects(activeId, hover);
+        cancelMovingBundle();
         return 'reordered';
       }
-      if (!moved) return 'cancelled';
       cancelMovingBundle();
       return 'cancelled';
     },
     [cancelMovingBundle, hitTestZones, reorderHoverSubjectId, reorderSubjects, reorderingSubjectId]
+  );
+
+  const dropSubjectReorderOn = useCallback(
+    (overId: string): boolean => {
+      if (!reorderingSubjectId || reorderingSubjectId === overId) return false;
+      reorderSubjects(reorderingSubjectId, overId);
+      cancelMovingBundle();
+      return true;
+    },
+    [cancelMovingBundle, reorderSubjects, reorderingSubjectId]
+  );
+
+  const dropItemReorderOn = useCallback(
+    (overKey: string): boolean => {
+      if (!movingBundleId || !draggingItemKey || !dragSourceSubjectId) return false;
+      if (overKey === draggingItemKey) return false;
+      reorderSubjectItems(dragSourceSubjectId, draggingItemKey, overKey);
+      cancelMovingBundle();
+      return true;
+    },
+    [cancelMovingBundle, dragSourceSubjectId, draggingItemKey, movingBundleId, reorderSubjectItems]
   );
 
   const finishItemDrag = useCallback(
@@ -894,6 +926,8 @@ export function AppProvider({
       dragHoverItemKey,
       reorderingSubjectId,
       reorderHoverSubjectId,
+      subjectReorderMeasureTick,
+      bumpSubjectReorderMeasure,
       startItemDrag,
       startMovingBundle,
       startSubjectReorder,
@@ -907,6 +941,8 @@ export function AppProvider({
       finishSubjectReorder,
       finishBundleDrop,
       reorderSubjects,
+      dropSubjectReorderOn,
+      dropItemReorderOn,
     };
   }, [
     ready,
@@ -950,6 +986,8 @@ export function AppProvider({
     dragHoverItemKey,
     reorderingSubjectId,
     reorderHoverSubjectId,
+    subjectReorderMeasureTick,
+    bumpSubjectReorderMeasure,
     startItemDrag,
     startMovingBundle,
     startSubjectReorder,
@@ -963,6 +1001,8 @@ export function AppProvider({
     finishSubjectReorder,
     finishBundleDrop,
     reorderSubjects,
+    dropSubjectReorderOn,
+    dropItemReorderOn,
   ]);
 
   if (!value) return null;

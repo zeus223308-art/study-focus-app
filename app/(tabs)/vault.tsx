@@ -1,8 +1,7 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
-
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
 import { Button } from '@/components/ui/Button';
@@ -30,7 +29,6 @@ export default function FilesScreen() {
     startSubjectReorder,
     updateSubjectReorderHover,
     finishSubjectReorder,
-    cancelMovingBundle,
   } = useApp();
   const { width: windowWidth } = useWindowDimensions();
   const viewport = useViewportLayout();
@@ -38,6 +36,13 @@ export default function FilesScreen() {
   const [newName, setNewName] = useState('');
   const [panelWidth, setPanelWidth] = useState(0);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
+  const [folderTouchActive, setFolderTouchActive] = useState(false);
+
+  const lockFolderTouch = useCallback((locked: boolean) => {
+    setFolderTouchActive(locked);
+  }, []);
+
+  const screenScrollEnabled = !reorderingSubjectId && !folderTouchActive;
 
   const pageWidth = panelWidth > 0 ? panelWidth : Math.max(280, windowWidth - 40);
 
@@ -79,8 +84,8 @@ export default function FilesScreen() {
   };
 
   const onSubjectReorderEnd = (
-    subjectId: string,
-    subjectName: string,
+    _subjectId: string,
+    _subjectName: string,
     moved: boolean,
     pageX: number,
     pageY: number
@@ -93,12 +98,9 @@ export default function FilesScreen() {
   };
 
   return (
-    <Screen scroll nestedScrollEnabled>
+    <Screen scroll scrollEnabled={screenScrollEnabled} nestedScrollEnabled>
       {movingBundleId ? (
         <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
-      ) : null}
-      {reorderingSubjectId ? (
-        <Text style={styles.moveBanner}>{t('folder.reorderHint')}</Text>
       ) : null}
 
       <ScreenHeader
@@ -110,12 +112,6 @@ export default function FilesScreen() {
           </Pressable>
         }
       />
-
-      {reorderingSubjectId ? (
-        <Pressable onPress={cancelMovingBundle} style={styles.cancelReorder}>
-          <Text style={styles.cancelReorderText}>{t('common.cancel')}</Text>
-        </Pressable>
-      ) : null}
 
       <View style={styles.panel}>
         <View
@@ -142,7 +138,7 @@ export default function FilesScreen() {
               onSubjectLift={startSubjectReorder}
               onSubjectReorderMove={onSubjectReorderMove}
               onSubjectReorderEnd={onSubjectReorderEnd}
-              swipeHint={subjectPages.length > 1 ? t('vault.swipeHint') : undefined}
+              onFolderGestureLock={lockFolderTouch}
             />
           )}
         </View>
@@ -187,8 +183,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 12,
   },
-  cancelReorder: { alignSelf: 'flex-end', paddingHorizontal: 20, marginBottom: 4 },
-  cancelReorderText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   panel: {
     borderWidth: 1.5,
     borderColor: theme.black,

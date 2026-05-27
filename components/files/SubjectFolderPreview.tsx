@@ -25,6 +25,8 @@ type Props = {
   onOpen: () => void;
   onGestureLock: (locked: boolean) => void;
   onLongPress?: () => void;
+  /** Parent handles long-press drag; avoid stealing touches. */
+  passthroughGestures?: boolean;
   variant?: PreviewVariant;
   /** Shown as small tag on top-left inside the card (dashboard). */
   subjectTag?: string;
@@ -41,6 +43,7 @@ export function SubjectFolderPreview({
   onOpen,
   onGestureLock,
   onLongPress,
+  passthroughGestures = false,
   variant = 'vault',
   subjectTag,
   onInteraction,
@@ -88,22 +91,36 @@ export function SubjectFolderPreview({
     { minHeight: cardHeight },
   ];
 
-  const renderItem = ({ item }: ListRenderItemInfo<SubjectPreviewItem>) => (
-    <Pressable
-      style={[styles.slide, { width: cardWidth, height: cardHeight }]}
-      onPress={() => {
-        if (!didSwipeRef.current) {
-          onInteraction?.();
-          onOpen();
-        }
-      }}>
-      <ResolvedImage uri={item.thumbnailUri} style={styles.image} resizeMode="cover" />
-    </Pressable>
-  );
+  const renderItem = ({ item }: ListRenderItemInfo<SubjectPreviewItem>) => {
+    const slide = (
+      <View style={[styles.slide, { width: cardWidth, height: cardHeight }]}>
+        <ResolvedImage uri={item.thumbnailUri} style={styles.image} resizeMode="cover" />
+      </View>
+    );
+    if (passthroughGestures) return slide;
+    return (
+      <Pressable
+        style={[styles.slide, { width: cardWidth, height: cardHeight }]}
+        onPress={() => {
+          if (!didSwipeRef.current) {
+            onInteraction?.();
+            onOpen();
+          }
+        }}>
+        <ResolvedImage uri={item.thumbnailUri} style={styles.image} resizeMode="cover" />
+      </Pressable>
+    );
+  };
 
   if (items.length === 0) {
+    const EmptyWrap = passthroughGestures ? View : Pressable;
     return (
-      <Pressable style={emptyStyle} onPress={onOpen} onLongPress={onLongPress} delayLongPress={450}>
+      <EmptyWrap
+        style={emptyStyle}
+        pointerEvents={passthroughGestures ? 'none' : 'auto'}
+        {...(!passthroughGestures
+          ? { onPress: onOpen, onLongPress, delayLongPress: 450 }
+          : {})}>
         {subjectTag ? (
           <View style={styles.subjectTag}>
             <Text style={styles.subjectTagText}>{subjectTag}</Text>
@@ -111,12 +128,46 @@ export function SubjectFolderPreview({
         ) : null}
         <Text style={styles.emptyHint}>{emptyHint}</Text>
         <Text style={styles.total}>{totalLabel}</Text>
-      </Pressable>
+      </EmptyWrap>
     );
   }
 
+  if (passthroughGestures) {
+    const first = items[0];
+    return (
+      <View
+        style={cardStyle}
+        pointerEvents="none"
+        onLayout={(e) => {
+          const w = Math.round(e.nativeEvent.layout.width);
+          if (w > 0 && w !== cardWidth) setCardWidth(w);
+        }}>
+        {subjectTag ? (
+          <View style={styles.subjectTag}>
+            <Text style={styles.subjectTagText} numberOfLines={1}>
+              {subjectTag}
+            </Text>
+          </View>
+        ) : null}
+        <View style={[styles.slide, { height: cardHeight }]}>
+          <ResolvedImage uri={first.thumbnailUri} style={styles.image} resizeMode="cover" />
+        </View>
+        <View style={styles.overlay}>
+          <Text style={styles.badge}>{totalLabel}</Text>
+          {items.length > 1 ? (
+            <Text style={styles.counter}>
+              1 / {items.length}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
+  const CardWrap = Pressable;
+
   return (
-    <Pressable
+    <CardWrap
       onLongPress={onLongPress}
       delayLongPress={450}
       style={cardStyle}
@@ -132,8 +183,7 @@ export function SubjectFolderPreview({
       onTouchCancel={unlock}
       {...(Platform.OS === 'web'
         ? {
-            onMouseDown: (e: { stopPropagation?: () => void }) => {
-              e.stopPropagation?.();
+            onMouseDown: () => {
               lock();
               onInteraction?.();
             },
@@ -151,7 +201,8 @@ export function SubjectFolderPreview({
           data={items}
           horizontal
           pagingEnabled
-          nestedScrollEnabled
+          scrollEnabled={!passthroughGestures}
+          nestedScrollEnabled={!passthroughGestures}
           showsHorizontalScrollIndicator={false}
           keyExtractor={(it) => `${it.bundleId}-${it.pageId}`}
           renderItem={renderItem}
@@ -181,7 +232,7 @@ export function SubjectFolderPreview({
         hitSlop={8}>
         <Text style={styles.openFabText}>{t('common.arrowRight')}</Text>
       </Pressable>
-    </Pressable>
+    </CardWrap>
   );
 }
 
