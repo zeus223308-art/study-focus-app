@@ -244,11 +244,6 @@ export function CloudBackupSettings() {
             last={false}
           />
           <SettingsRow
-            label={t('settings.cloudAutoSync')}
-            value={t('settings.cloudAutoSyncValue')}
-            last={false}
-          />
-          <SettingsRow
             label={t('settings.cloudLastSync')}
             value={busy ? t('settings.cloudSyncing') : syncLabel}
             last={false}
