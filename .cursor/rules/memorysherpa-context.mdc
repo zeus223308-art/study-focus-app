@@ -36,6 +36,8 @@ After **any code change** (features, fixes, i18n, config):
 
 Do **not** commit secrets. Do **not** force-push.
 
+**Background shell:** long commands (deploy wait, expo start, npm ci, export) — agent runs in background automatically; no user approval needed.
+
 ## Responsive / cross-platform (required for UI work)
 
 Every UI change must work on **phone (Android/iOS browser), tablet, and desktop web**.

@@ -54,3 +54,17 @@ Rules:
 ## 5. Mobile web cache
 
 After deploy, users may need hard refresh or private tab once. `app/+html.tsx` has no-cache meta for `index.html`.
+
+## 6. Shell / background runs (user requested)
+
+**Do not ask the user to approve “run in background”.** The agent runs long commands in background automatically.
+
+Use background for:
+- **Deploy wait** — `gh run watch` / sleep + `gh run list` after push (`block_until_ms: 0` or short block, then `Await` poll)
+- **Dev servers** — `npx expo start`, etc.
+- **Installs / exports / tsc** when they may exceed ~30s
+
+Flow:
+1. Start command in background when it would block the session.
+2. Poll with `Await` (or read terminal file) until success/failure.
+3. Report result to the user — no “should I run in background?” prompts.
