@@ -62,10 +62,10 @@
     "reorderEdgeHint": "끝까지 끌면 다른 페이지 폴더가 나타납니다",
     "previewEmpty": "사진 없음",
     "photos": "{{count}}장",
-    "dragSubjectHint": "카드 사이에 놓으면 순서가 바뀝니다. 삭제는 아래로 끌어 놓으세요.",
-    "deleteFolderTitle": "정말 삭제하시겠습니까?",
-    "deleteFolderMessage": "「{{name}}」 폴더와 모든 사진이 휴지통으로 이동합니다.",
-    "movedToTrash": "「{{name}}」을(를) 휴지통으로 옮겼습니다"
+    "deleteFolderTitle": "폴더를 삭제할까요?",
+    "deleteFolderMessage": "\"{{name}}\" 폴더와 모든 사진이 휴지통으로 이동합니다.",
+    "mergeSubjectConfirmTitle": "과목 폴더를 합칠까요?",
+    "mergeSubjectConfirmMessage": "선택한 과목의 모든 사진이 대상 과목으로 합쳐집니다."
   },
   "capture": {
     "title": "촬영",

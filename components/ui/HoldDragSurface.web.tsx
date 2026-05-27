@@ -30,7 +30,7 @@ const OPEN_DEFER_MS = 120;
 
 type Props = {
   enabled: boolean;
-  onLift: (pageX: number, pageY: number) => void;
+  onLift: () => void;
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onPress?: () => void;
@@ -283,7 +283,7 @@ export function HoldDragSurface({
       phaseRef.current = 'lifted';
       movedRef.current = false;
       setLiftedState(true);
-      onLiftRef.current(pageX, pageY);
+      onLiftRef.current();
       onDragMoveRef.current?.(pageX, pageY);
 
       const onMove = (ev: TouchEvent) => {
@@ -388,12 +388,6 @@ export function HoldDragSurface({
           }
           return;
         }
-        if (mergeHoldRef.current) return;
-        if (onDragMoveRef.current && dy >= MOVE_CANCEL_PX && dy >= dx) {
-          clearTimer();
-          beginLift(pageX, pageY);
-          return;
-        }
         if (dx > MOVE_CANCEL_PX && dx > dy) {
           clearTimer();
           phaseRef.current = 'idle';
@@ -401,7 +395,7 @@ export function HoldDragSurface({
         }
       }
     },
-    [beginLift, clearTimer, rescheduleReorderLift]
+    [clearTimer, rescheduleReorderLift]
   );
 
   const bindDom = useCallback(

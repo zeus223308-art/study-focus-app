@@ -15,6 +15,7 @@ import {
 
 import { theme } from '@/constants/theme';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
+import { VAULT_PREVIEW_HEIGHT } from '@/lib/ui/viewport-layout';
 
 export type PreviewVariant = 'vault' | 'dashboard';
 
@@ -33,7 +34,6 @@ type Props = {
   onInteraction?: () => void;
 };
 
-const VAULT_HEIGHT = 112;
 const DASHBOARD_HEIGHT = 120;
 
 export function SubjectFolderPreview({
@@ -49,7 +49,7 @@ export function SubjectFolderPreview({
   onInteraction,
 }: Props) {
   const { t } = useTranslation();
-  const cardHeight = variant === 'dashboard' ? DASHBOARD_HEIGHT : VAULT_HEIGHT;
+  const cardHeight = variant === 'dashboard' ? DASHBOARD_HEIGHT : VAULT_PREVIEW_HEIGHT;
   const [cardWidth, setCardWidth] = useState(0);
   const [index, setIndex] = useState(0);
   const didSwipeRef = useRef(false);
@@ -88,7 +88,7 @@ export function SubjectFolderPreview({
   const emptyStyle = [
     styles.emptyCardBase,
     variant === 'vault' ? styles.cardVault : styles.cardDashboard,
-    { minHeight: cardHeight },
+    { minHeight: cardHeight, height: cardHeight },
   ];
 
   const renderItem = ({ item }: ListRenderItemInfo<SubjectPreviewItem>) => {

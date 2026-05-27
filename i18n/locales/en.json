@@ -62,10 +62,10 @@
     "reorderEdgeHint": "Drag to the screen edge to reveal more folders",
     "previewEmpty": "No photos",
     "photos": "{{count}} photos",
-    "dragSubjectHint": "Drop between cards to reorder. Drag down and release to delete.",
     "deleteFolderTitle": "Delete this folder?",
-    "deleteFolderMessage": "“{{name}}” and all its photos will move to Trash.",
-    "movedToTrash": "Moved “{{name}}” to Trash"
+    "deleteFolderMessage": "\"{{name}}\" and all its photos will move to Trash.",
+    "mergeSubjectConfirmTitle": "Merge these subjects?",
+    "mergeSubjectConfirmMessage": "All photos from the source subject will move into the target subject."
   },
   "capture": {
     "title": "Capture",

@@ -12,8 +12,6 @@ type Props = {
   children: ReactNode;
   scroll?: boolean;
   scrollEnabled?: boolean;
-  /** Web-only: blocks vertical page scroll during vault folder drag. */
-  lockVerticalPan?: boolean;
   style?: ViewStyle;
   padded?: boolean;
   nestedScrollEnabled?: boolean;

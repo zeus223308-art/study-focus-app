@@ -14,11 +14,14 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
-import { computeVaultFolderTileWidth } from '@/lib/ui/viewport-layout';
+import {
+  VAULT_PANEL_PAD,
+  VAULT_TILE_GAP,
+  computeVaultFolderTileWidth,
+  vaultCarouselItemOffset,
+  vaultCarouselScrollWidth,
+} from '@/lib/ui/viewport-layout';
 import { resolveWebElement } from '@/lib/ui/resolve-web-element';
-
-const TILE_GAP = 14;
-const PANEL_PAD = 14;
 const REORDER_EDGE_PX = 52;
 const REORDER_SCROLL_STEP = 22;
 
@@ -29,7 +32,7 @@ type Props = {
   totalLabelFor: (subjectId: string) => string;
   previewItemsFor: (subjectId: string) => SubjectPreviewItem[];
   onSubjectPress: (subjectId: string) => void;
-  onSubjectLift: (subjectId: string, subjectName: string, pageX: number, pageY: number) => void;
+  onSubjectLift: (subjectId: string) => void;
   onSubjectReorderMove: (pageX: number, pageY: number) => void;
   onSubjectReorderEnd: (
     subjectId: string,
@@ -66,7 +69,6 @@ export function SubjectFilesCarousel({
   const [listScrollEnabled, setListScrollEnabled] = useState(true);
 
   const { reorderingSubjectId, bumpSubjectReorderMeasure } = useApp();
-  const scrollLocked = Boolean(reorderingSubjectId);
 
   const subjects = useMemo(() => pages.flat(), [pages]);
 
@@ -75,28 +77,21 @@ export function SubjectFilesCarousel({
     [pageWidth, foldersPerPage]
   );
 
-  const slotWidth = tileWidth + TILE_GAP;
-
   const bindScrollDom = useCallback((node: ScrollView | null) => {
     scrollRef.current = node;
     scrollDomRef.current = resolveWebElement(node);
   }, []);
 
   const updateMaxScroll = useCallback(() => {
-    maxScrollXRef.current = Math.max(0, subjects.length * slotWidth - pageWidth + PANEL_PAD * 2);
+    const content = vaultCarouselScrollWidth(subjects.length, tileWidth);
+    maxScrollXRef.current = Math.max(0, content - pageWidth + VAULT_PANEL_PAD * 2);
     const dom = scrollDomRef.current;
     if (dom) {
       dom.style.overflowX = listScrollEnabled ? 'auto' : 'hidden';
       dom.style.touchAction =
         reorderingSubjectId ? 'none' : 'pan-x';
     }
-  }, [
-    listScrollEnabled,
-    pageWidth,
-    reorderingSubjectId,
-    slotWidth,
-    subjects.length,
-  ]);
+  }, [listScrollEnabled, pageWidth, reorderingSubjectId, subjects.length, tileWidth]);
 
   useEffect(() => {
     updateMaxScroll();
@@ -179,17 +174,16 @@ export function SubjectFilesCarousel({
   useEffect(() => () => stopAutoScroll(), [stopAutoScroll]);
 
   useEffect(() => {
-    const dragId = reorderingSubjectId;
-    if (!dragId) {
+    if (!reorderingSubjectId) {
       stopAutoScroll();
       setListScrollEnabled(subjects.length > 1);
       return;
     }
     measurePanelBounds();
     setListScrollEnabled(false);
-    const idx = subjects.findIndex((s) => s.id === dragId);
+    const idx = subjects.findIndex((s) => s.id === reorderingSubjectId);
     if (idx >= 0) {
-      scrollToX(Math.max(0, idx * slotWidth - PANEL_PAD));
+      scrollToX(Math.max(0, vaultCarouselItemOffset(idx, tileWidth) - VAULT_PANEL_PAD));
     }
     bumpSubjectReorderMeasure();
   }, [
@@ -197,9 +191,9 @@ export function SubjectFilesCarousel({
     measurePanelBounds,
     reorderingSubjectId,
     scrollToX,
-    slotWidth,
     stopAutoScroll,
     subjects,
+    tileWidth,
   ]);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -225,16 +219,16 @@ export function SubjectFilesCarousel({
       <ScrollView
         ref={bindScrollDom}
         horizontal
-        scrollEnabled={listScrollEnabled && !scrollLocked}
+        scrollEnabled={listScrollEnabled}
         nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        style={[styles.scroller, scrollLocked && styles.scrollerDragLock]}
+        style={styles.scroller}
         contentContainerStyle={styles.row}>
         {subjects.map((subject, index) => (
           <View key={subject.id} style={styles.rowSlot}>
-            <SubjectReorderGap gapIndex={index} width={TILE_GAP} />
+            {index > 0 ? <SubjectReorderGap gapIndex={index} width={VAULT_TILE_GAP} /> : null}
             <View style={[styles.tileSlot, { width: tileWidth }]}>
               <SubjectFolderTile
                 subjectId={subject.id}
@@ -243,10 +237,7 @@ export function SubjectFilesCarousel({
                 previewItems={previewItemsFor(subject.id)}
                 onPreviewGestureLock={setPreviewGestureLock}
                 onPress={() => onSubjectPress(subject.id)}
-                onLiftForReorder={(pageX, pageY) => {
-                  setListScrollEnabled(false);
-                  onSubjectLift(subject.id, subject.name, pageX, pageY);
-                }}
+                onLiftForReorder={() => onSubjectLift(subject.id)}
                 onReorderDragMove={handleReorderDragMove}
                 onReorderDragEnd={(moved, pageX, pageY) => {
                   stopAutoScroll();
@@ -257,7 +248,7 @@ export function SubjectFilesCarousel({
           </View>
         ))}
         {subjects.length > 0 ? (
-          <SubjectReorderGap gapIndex={subjects.length} width={TILE_GAP} />
+          <SubjectReorderGap gapIndex={subjects.length} width={VAULT_TILE_GAP} />
         ) : null}
       </ScrollView>
     </View>
@@ -276,28 +267,23 @@ const styles = StyleSheet.create({
     WebkitOverflowScrolling: 'touch',
     touchAction: 'pan-x',
   } as ViewStyle,
-  scrollerDragLock: {
-    touchAction: 'none',
-    overflow: 'hidden',
-  } as ViewStyle,
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: PANEL_PAD,
+    alignItems: 'stretch',
+    paddingHorizontal: VAULT_PANEL_PAD,
   },
   rowSlot: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     flexGrow: 0,
     flexShrink: 0,
   },
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
-    alignItems: 'stretch',
   },
   empty: {
-    paddingHorizontal: PANEL_PAD,
+    paddingHorizontal: VAULT_PANEL_PAD,
     fontSize: theme.font.body,
     fontWeight: '600',
     color: theme.gray,

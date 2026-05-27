@@ -42,13 +42,39 @@ export function computePagerSize(width: number, deviceClass: DeviceClass): numbe
   return Math.round(Math.max(280, Math.min(cap, available)));
 }
 
+export const VAULT_PANEL_PAD = 14;
+export const VAULT_TILE_GAP = 14;
+export const VAULT_MIN_TILE_WIDTH = 72;
+export const VAULT_NAME_ROW_HEIGHT = 32;
+export const VAULT_PREVIEW_HEIGHT = 112;
+export const VAULT_TILE_HEIGHT = VAULT_NAME_ROW_HEIGHT + VAULT_PREVIEW_HEIGHT;
+
+/** Panel width → how many equal folder tiles fit in one visible row (2–4). */
+export function computeVaultFoldersPerPage(pageWidth: number): number {
+  const inner = pageWidth - VAULT_PANEL_PAD * 2;
+  const n = Math.floor((inner + VAULT_TILE_GAP) / (VAULT_MIN_TILE_WIDTH + VAULT_TILE_GAP));
+  return Math.max(2, Math.min(4, n));
+}
+
 /** 금고 캐러셀 — 페이지에 과목 수가 적어도 타일 너비를 동일하게 유지 */
 export function computeVaultFolderTileWidth(pageWidth: number, foldersPerPage: number): number {
-  const panelPad = 14;
-  const gap = 14;
-  const inner = pageWidth - panelPad * 2;
-  const gaps = Math.max(0, foldersPerPage - 1) * gap;
+  const inner = pageWidth - VAULT_PANEL_PAD * 2;
+  const gaps = Math.max(0, foldersPerPage - 1) * VAULT_TILE_GAP;
   return Math.floor((inner - gaps) / Math.max(1, foldersPerPage));
+}
+
+export function vaultCarouselItemLength(index: number, tileWidth: number): number {
+  return index === 0 ? tileWidth : VAULT_TILE_GAP + tileWidth;
+}
+
+export function vaultCarouselItemOffset(index: number, tileWidth: number): number {
+  if (index <= 0) return 0;
+  return tileWidth + (index - 1) * (tileWidth + VAULT_TILE_GAP);
+}
+
+export function vaultCarouselScrollWidth(subjectCount: number, tileWidth: number): number {
+  if (subjectCount <= 0) return 0;
+  return subjectCount * tileWidth + subjectCount * VAULT_TILE_GAP;
 }
 
 export function computeContentMaxWidth(width: number, deviceClass: DeviceClass): number {
@@ -75,7 +101,7 @@ export function useViewportLayout(): ViewportLayout {
     const listNumColumns = isPhone ? 1 : 2;
     const albumNumColumns =
       deviceClass === 'phone' ? 3 : deviceClass === 'tablet' ? 4 : 5;
-    const vaultFoldersPerPage = isPhone ? 2 : deviceClass === 'tablet' ? 3 : 4;
+    const vaultFoldersPerPage = computeVaultFoldersPerPage(width);
     const dashboardCardsPerRow = isPhone ? 1 : 2;
 
     return {

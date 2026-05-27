@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   PanResponder,
-  Platform,
   type GestureResponderEvent,
   StyleSheet,
   View,
@@ -32,7 +31,7 @@ const OPEN_DEFER_MS = 120;
 
 type Props = {
   enabled: boolean;
-  onLift: (pageX: number, pageY: number) => void;
+  onLift: () => void;
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onPress?: () => void;
@@ -50,15 +49,7 @@ type Props = {
 type Point = { pageX: number; pageY: number };
 
 function eventPoint(e: GestureResponderEvent): Point {
-  const ne = e.nativeEvent as {
-    pageX: number;
-    pageY: number;
-    clientX?: number;
-    clientY?: number;
-  };
-  if (Platform.OS === 'web' && ne.clientX != null && ne.clientY != null) {
-    return { pageX: ne.clientX, pageY: ne.clientY };
-  }
+  const ne = e.nativeEvent;
   return { pageX: ne.pageX, pageY: ne.pageY };
 }
 
@@ -254,7 +245,7 @@ export function HoldDragSurface({
       movedRef.current = false;
       setActive(true);
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      onLiftRef.current(pageX, pageY);
+      onLiftRef.current();
       onDragMoveRef.current?.(pageX, pageY);
     },
     [clearOpenDefer, clearTimer, setActive]
@@ -331,38 +322,26 @@ export function HoldDragSurface({
           }
           return;
         }
-        if (mergeHoldRef.current) return;
-        if (onDragMoveRef.current) {
-          clearTimer();
-          beginLift(pageX, pageY);
-          return;
-        }
         clearTimer();
         phaseRef.current = 'idle';
         deleteHoldRef.current = false;
       }
     },
-    [beginLift, clearTimer, scheduleLift]
+    [clearTimer, scheduleLift]
   );
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => enabledRef.current,
-        onStartShouldSetPanResponderCapture: () =>
-          Platform.OS === 'web' && enabledRef.current,
+        onStartShouldSetPanResponderCapture: () => false,
         onMoveShouldSetPanResponder: () =>
           enabledRef.current &&
           (phaseRef.current === 'lifted' ||
             phaseRef.current === 'pending' ||
             mergeHoldRef.current),
         onMoveShouldSetPanResponderCapture: () =>
-          Platform.OS === 'web'
-            ? enabledRef.current &&
-              (phaseRef.current === 'lifted' ||
-                phaseRef.current === 'pending' ||
-                mergeHoldRef.current)
-            : phaseRef.current === 'lifted' || mergeHoldRef.current,
+          phaseRef.current === 'lifted' || mergeHoldRef.current,
         onPanResponderTerminationRequest: () => phaseRef.current !== 'lifted',
         onPanResponderGrant: (e) => {
           const p = eventPoint(e);

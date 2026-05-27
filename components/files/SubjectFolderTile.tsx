@@ -6,10 +6,11 @@ import { SubjectDropTarget } from '@/components/files/SubjectDropTarget';
 import { SubjectFolderName } from '@/components/files/SubjectFolderName';
 import { SubjectFolderPreview } from '@/components/files/SubjectFolderPreview';
 import { SubjectMergeTarget } from '@/components/files/SubjectMergeTarget';
-import { VaultFolderDragGesture } from '@/components/files/VaultFolderDragGesture';
+import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
+import { VAULT_PREVIEW_HEIGHT, VAULT_TILE_HEIGHT } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -19,7 +20,7 @@ type Props = {
   totalLabel: string;
   previewItems: SubjectPreviewItem[];
   onPress: () => void;
-  onLiftForReorder: (pageX: number, pageY: number) => void;
+  onLiftForReorder: () => void;
   onReorderDragMove?: (pageX: number, pageY: number) => void;
   onReorderDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onPreviewGestureLock: (locked: boolean) => void;
@@ -66,12 +67,9 @@ export function SubjectFolderTile({
     onPress();
   }, [movingBundleId, onPress, reorderingSubjectId]);
 
-  const handleLift = useCallback(
-    (pageX: number, pageY: number) => {
-      onLiftForReorder(pageX, pageY);
-    },
-    [onLiftForReorder]
-  );
+  const handleLift = useCallback(() => {
+    onLiftForReorder();
+  }, [onLiftForReorder]);
 
   const handleDragEnd = useCallback(
     (moved: boolean, pageX: number, pageY: number) => {
@@ -85,37 +83,35 @@ export function SubjectFolderTile({
       <SubjectMergeTarget
         subjectId={subjectId}
         register={registerSubjectMergeZone}
-          lifted={isActive}
+        lifted={isActive}
         style={styles.tileBody}>
         <SubjectFolderName
           subjectId={subjectId}
           name={name}
           lifted={isActive}
-          disabled={
-            Boolean(movingBundleId) ||
-            Boolean(reorderingSubjectId)
-          }
+          disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
           onOpen={openFolder}
           onEditingChange={setNameEditing}
         />
-        <VaultFolderDragGesture
-          enabled={dragEnabled}
-          onLift={handleLift}
-          onDragMove={onReorderDragMove}
-          onDragEnd={handleDragEnd}
-          onGestureActiveChange={onPreviewGestureLock}
-          style={[styles.dragSurface, isActive && styles.dragSurfaceLifted]}>
-          <View ref={cardRef} collapsable={false} pointerEvents="box-none">
-            <SubjectFolderPreview
-              variant="vault"
-              items={previewItems}
-              totalLabel={totalLabel}
-              emptyHint={t('vault.previewEmpty')}
-              passthroughGestures
-              onGestureLock={onPreviewGestureLock}
-            />
-          </View>
-        </VaultFolderDragGesture>
+        <HoldDragSurface
+            enabled={dragEnabled}
+            onLift={handleLift}
+            onDragMove={onReorderDragMove}
+            onDragEnd={handleDragEnd}
+            onGestureActiveChange={onPreviewGestureLock}
+            style={[styles.dragSurface, isActive && styles.dragSurfaceLifted]}
+          >
+            <View ref={cardRef} collapsable={false} pointerEvents="box-none">
+              <SubjectFolderPreview
+                variant="vault"
+                items={previewItems}
+                totalLabel={totalLabel}
+                emptyHint={t('vault.previewEmpty')}
+                passthroughGestures
+                onGestureLock={onPreviewGestureLock}
+              />
+            </View>
+        </HoldDragSurface>
       </SubjectMergeTarget>
     </SubjectDropTarget>
   );
@@ -125,14 +121,17 @@ const styles = StyleSheet.create({
   wrap: {
     width: '100%',
     minWidth: 0,
-    alignSelf: 'flex-start',
   },
   tileBody: {
     width: '100%',
-    alignItems: 'stretch',
+    height: VAULT_TILE_HEIGHT,
+    flexDirection: 'column',
   },
   dragSurface: {
     width: '100%',
+    height: VAULT_PREVIEW_HEIGHT,
+    flexGrow: 0,
+    flexShrink: 0,
     borderRadius: theme.radius.sm,
     ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'manipulation', userSelect: 'none' } as object) : null),
   },

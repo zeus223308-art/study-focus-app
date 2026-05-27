@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -48,8 +48,6 @@ export function SubjectReorderGap({ gapIndex, width }: Props) {
 
   const showSlot = Boolean(reorderingSubjectId);
   const hover = reorderHoverGapKey === gapKey;
-  const layoutWidth =
-    showSlot && Platform.OS !== 'web' ? Math.max(width, SUBJECT_GAP_HIT_MIN) : width;
 
   if (!showSlot) {
     return <View style={{ width }} pointerEvents="none" />;
@@ -59,7 +57,7 @@ export function SubjectReorderGap({ gapIndex, width }: Props) {
     <View
       ref={ref}
       onLayout={measure}
-      style={[styles.gap, { width: layoutWidth }, hover && styles.gapHover]}
+      style={[styles.gap, { width }, hover && styles.gapHover]}
       pointerEvents="box-only">
       {hover ? <View style={styles.line} /> : null}
     </View>
@@ -71,7 +69,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: 120,
   },
   gapHover: {
     backgroundColor: theme.orangeMuted,

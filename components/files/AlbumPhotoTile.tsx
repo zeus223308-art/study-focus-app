@@ -24,7 +24,6 @@ type Props = {
   /** First tap arms; second touch + hold opens delete confirm. */
   onDeleteHold?: () => void;
   onHoldMenu?: () => void;
-  onMergeHold?: () => void;
   pickMode?: boolean;
   pickSelected?: boolean;
   onTogglePick?: () => void;
@@ -44,7 +43,6 @@ export function AlbumPhotoTile({
   onLiftForDrag,
   onDeleteHold,
   onHoldMenu,
-  onMergeHold,
   pickMode,
   pickSelected,
   onTogglePick,
@@ -65,12 +63,9 @@ export function AlbumPhotoTile({
     onOpen();
   }, [pickMode, onTogglePick, movingBundleId, onOpen]);
 
-  const handleLift = useCallback(
-    (_pageX: number, _pageY: number) => {
-      onLiftForDrag();
-    },
-    [onLiftForDrag]
-  );
+  const handleLift = useCallback(() => {
+    onLiftForDrag();
+  }, [onLiftForDrag]);
 
   const handleDragEnd = useCallback(
     (moved: boolean, pageX: number, pageY: number) => {
@@ -113,7 +108,6 @@ export function AlbumPhotoTile({
         onPress={handlePress}
         onDeleteHold={onDeleteHold}
         onHoldMenu={onHoldMenu}
-        onMergeHold={onMergeHold}
         onGestureActiveChange={onGestureActiveChange}
         style={[
           styles.tile,

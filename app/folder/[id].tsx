@@ -23,7 +23,6 @@ import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
 import { SubjectDropDock } from '@/components/files/SubjectDropDock';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
-import { TitleInputDialog } from '@/components/ui/TitleInputDialog';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
@@ -52,16 +51,11 @@ export default function FolderScreen() {
     updateDragHover,
     finishItemDrag,
     startItemDrag,
-    startMergeBundleDrag,
     movingBundleId,
     dragHoverSubjectId,
     cancelMovingBundle,
     deletePage,
     archiveBundle,
-    consumePendingMerge,
-    clearPendingMerge,
-    mergeBundlesWithTitle,
-    mergeSubjectsWithName,
     splitPageToNewBundle,
   } = useApp();
   const [importing, setImporting] = useState(false);
@@ -72,11 +66,6 @@ export default function FolderScreen() {
   const [tileGestureActive, setTileGestureActive] = useState(false);
   const [holdMenuItem, setHoldMenuItem] = useState<SubjectProblemItem | null>(null);
   const [splitItem, setSplitItem] = useState<SubjectProblemItem | null>(null);
-  const [mergeTitle, setMergeTitle] = useState<
-    | { kind: 'bundle'; sourceBundleId: string; targetBundleId: string }
-    | { kind: 'subject'; sourceSubjectId: string; targetSubjectId: string }
-    | null
-  >(null);
   const viewport = useViewportLayout();
   const insets = useSafeAreaInsets();
 
@@ -155,12 +144,6 @@ export default function FolderScreen() {
     startItemDrag(item.bundleId, item.pageId, subject.id, itemKey(item));
   };
 
-  const onMergeHoldItem = (item: SubjectProblemItem) => {
-    if (!subject) return;
-    setGhost({ x: 0, y: 0, visible: true });
-    startMergeBundleDrag(item.bundleId, item.pageId, subject.id, itemKey(item));
-  };
-
   const handleItemDragEnd = (
     moved: boolean,
     pageX: number,
@@ -175,17 +158,6 @@ export default function FolderScreen() {
     } else if (result === 'moved') {
       const name = data.subjects.find((s) => s.id === moveTargetId)?.name ?? '';
       Alert.alert('', t('folder.movedTo', { name }));
-    } else if (result === 'merge') {
-      const merge = consumePendingMerge();
-      if (!merge || merge.kind !== 'bundle') return;
-      confirmChoice({
-        title: t('folder.mergeConfirmTitle'),
-        message: t('folder.mergeConfirmMessage'),
-        yesLabel: t('common.yes'),
-        noLabel: t('common.no'),
-        onYes: () => setMergeTitle(merge),
-        onNo: () => clearPendingMerge(),
-      });
     }
   };
 
@@ -323,7 +295,6 @@ export default function FolderScreen() {
                     : (item) => confirmDeleteProblem(item.bundleId, item.pageId)
                 }
                 onHoldMenu={archiveSelectMode ? undefined : onHoldMenuItem}
-                onMergeHold={archiveSelectMode ? undefined : onMergeHoldItem}
                 selectionMode={archiveSelectMode ? 'pick' : null}
                 selectedKeys={selectedKeys}
                 onToggleSelect={toggleArchiveSelect}
@@ -405,44 +376,6 @@ export default function FolderScreen() {
           if (targetSubjectId !== subject?.id) {
             router.push({ pathname: '/folder/[id]', params: { id: targetSubjectId } });
           }
-        }}
-      />
-
-      <TitleInputDialog
-        visible={mergeTitle !== null}
-        title={
-          mergeTitle?.kind === 'subject'
-            ? t('folder.mergeSubjectNamePrompt')
-            : t('folder.mergeTitlePrompt')
-        }
-        placeholder={
-          mergeTitle?.kind === 'subject'
-            ? t('folder.mergeSubjectNamePlaceholder')
-            : t('folder.mergeTitlePlaceholder')
-        }
-        confirmLabel={t('common.save')}
-        cancelLabel={t('common.cancel')}
-        onCancel={() => {
-          setMergeTitle(null);
-          clearPendingMerge();
-        }}
-        onConfirm={(title) => {
-          if (!mergeTitle) return;
-          if (mergeTitle.kind === 'bundle') {
-            mergeBundlesWithTitle(
-              mergeTitle.sourceBundleId,
-              mergeTitle.targetBundleId,
-              title
-            );
-          } else {
-            mergeSubjectsWithName(
-              mergeTitle.sourceSubjectId,
-              mergeTitle.targetSubjectId,
-              title
-            );
-          }
-          setMergeTitle(null);
-          showMessage('', t('folder.merged'));
         }}
       />
 

@@ -10,6 +10,7 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { VAULT_NAME_ROW_HEIGHT } from '@/lib/ui/viewport-layout';
 
 const DOUBLE_TAP_MS = 320;
 
@@ -130,20 +131,14 @@ export function SubjectFolderName({
 
 const styles = StyleSheet.create({
   nameRow: {
-    width: '100%',
-    alignSelf: 'stretch',
-    marginBottom: 8,
-    paddingHorizontal: 4,
-    minHeight: 24,
+    height: VAULT_NAME_ROW_HEIGHT,
+    marginBottom: 0,
     justifyContent: 'center',
-    alignItems: 'flex-start',
   },
   name: {
-    width: '100%',
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.black,
-    textAlign: 'left',
   },
   nameLifted: {
     color: theme.orange,
