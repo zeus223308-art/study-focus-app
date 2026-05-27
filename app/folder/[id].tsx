@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
-import { PhotoActionSheet } from '@/components/files/PhotoActionSheet';
 import { SubjectArchiveHeaderButton } from '@/components/files/SubjectArchiveHeaderButton';
 import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
 import { SubjectDropDock } from '@/components/files/SubjectDropDock';
@@ -59,7 +58,6 @@ export default function FolderScreen() {
   const [importing, setImporting] = useState(false);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
-  const [actionItem, setActionItem] = useState<SubjectProblemItem | null>(null);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [tileGestureActive, setTileGestureActive] = useState(false);
@@ -282,8 +280,10 @@ export default function FolderScreen() {
                 }
                 reorderEnabled={!archiveSelectMode}
                 onGestureActiveChange={lockTileGesture}
-                onPhotoAction={
-                  archiveSelectMode ? undefined : (item) => setActionItem(item)
+                onDeleteHold={
+                  archiveSelectMode
+                    ? undefined
+                    : (item) => confirmDeleteProblem(item.bundleId, item.pageId)
                 }
                 selectionMode={archiveSelectMode ? 'pick' : null}
                 selectedKeys={selectedKeys}
@@ -324,32 +324,6 @@ export default function FolderScreen() {
         onClose={() => setArchiveModalOpen(false)}
       />
 
-      <PhotoActionSheet
-        visible={actionItem !== null}
-        restoreLabel={t('folder.restoreFromArchive')}
-        saveToArchiveLabel={t('folder.saveToArchive')}
-        cancelLabel={t('common.cancel')}
-        deleteLabel={t('item.deletePhoto')}
-        onDelete={() => {
-          if (actionItem) {
-            const { bundleId, pageId } = actionItem;
-            setActionItem(null);
-            confirmDeleteProblem(bundleId, pageId);
-          }
-        }}
-        onRestore={() => {
-          setActionItem(null);
-          setArchiveModalOpen(true);
-        }}
-        onSaveToArchive={() => {
-          if (actionItem) {
-            setActionItem(null);
-            setArchiveSelectMode(true);
-            setSelectedKeys(new Set([itemKey(actionItem)]));
-          }
-        }}
-        onClose={() => setActionItem(null)}
-      />
     </View>
   );
 }

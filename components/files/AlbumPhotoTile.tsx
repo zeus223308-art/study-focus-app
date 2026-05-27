@@ -1,13 +1,5 @@
-import { useCallback, useRef } from 'react';
-import {
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { useCallback } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
@@ -16,7 +8,6 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 
 const IS_WEB = Platform.OS === 'web';
-const DOUBLE_TAP_MS = 320;
 
 type Props = {
   bundleId: string;
@@ -30,7 +21,8 @@ type Props = {
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onLiftForDrag: () => void;
-  onPhotoAction?: () => void;
+  /** First tap arms; second touch + hold opens delete confirm. */
+  onDeleteHold?: () => void;
   pickMode?: boolean;
   pickSelected?: boolean;
   onTogglePick?: () => void;
@@ -48,17 +40,16 @@ export function AlbumPhotoTile({
   onDragMove,
   onDragEnd,
   onLiftForDrag,
-  onPhotoAction,
+  onDeleteHold,
   pickMode,
   pickSelected,
   onTogglePick,
   onGestureActiveChange,
   style,
 }: Props) {
-  const { movingBundleId, draggingItemKey, dragHoverItemKey, cancelMovingBundle } = useApp();
+  const { movingBundleId, draggingItemKey, dragHoverItemKey } = useApp();
   const contextLifted = movingBundleId === bundleId && draggingItemKey === itemDragKey;
   const itemHover = dragHoverItemKey === itemDragKey && !contextLifted;
-  const lastTapRef = useRef(0);
   const dragEnabled = !pickMode && Boolean(onDragMove);
 
   const handlePress = useCallback(() => {
@@ -67,16 +58,8 @@ export function AlbumPhotoTile({
       return;
     }
     if (movingBundleId) return;
-
-    const now = Date.now();
-    if (onPhotoAction && now - lastTapRef.current < DOUBLE_TAP_MS) {
-      lastTapRef.current = 0;
-      onPhotoAction();
-      return;
-    }
-    lastTapRef.current = now;
     onOpen();
-  }, [pickMode, onTogglePick, movingBundleId, onPhotoAction, onOpen]);
+  }, [pickMode, onTogglePick, movingBundleId, onOpen]);
 
   const handleLift = useCallback(() => {
     onLiftForDrag();
@@ -121,6 +104,7 @@ export function AlbumPhotoTile({
         onDragMove={onDragMove}
         onDragEnd={handleDragEnd}
         onPress={handlePress}
+        onDeleteHold={onDeleteHold}
         onGestureActiveChange={onGestureActiveChange}
         style={[
           styles.tile,
@@ -165,7 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.grayLight,
     borderWidth: 1,
     borderColor: theme.grayLight,
-    ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'none', userSelect: 'none' } as object) : null),
+    ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'manipulation', userSelect: 'none' } as object) : null),
   },
   tileContent: {
     width: '100%',

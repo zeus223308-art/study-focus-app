@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
-import { PhotoActionSheet } from '@/components/files/PhotoActionSheet';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
@@ -36,7 +35,6 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
 
-  const [actionItem, setActionItem] = useState<SubjectProblemItem | null>(null);
   const [restoreSelectMode, setRestoreSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
@@ -64,7 +62,6 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
   );
 
   const closeAll = () => {
-    setActionItem(null);
     setRestoreSelectMode(false);
     setSelectedKeys(new Set());
     onClose();
@@ -146,7 +143,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                     selectedKeys={selectedKeys}
                     onToggleSelect={toggleSelect}
                     onLiftItemForDrag={() => {}}
-                    onPhotoAction={(item) => setActionItem(item)}
+                    onDeleteHold={(item) => confirmDeleteProblem(item.bundleId, item.pageId)}
                     onOpen={() => {}}
                     reorderEnabled={false}
                   />
@@ -177,29 +174,6 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
         </View>
       </Modal>
 
-      <PhotoActionSheet
-        visible={actionItem !== null}
-        restoreLabel={t('folder.restoreFromArchive')}
-        saveToArchiveLabel={t('folder.saveToArchive')}
-        deleteLabel={t('item.deletePhoto')}
-        cancelLabel={t('common.cancel')}
-        hideSaveToArchive
-        onDelete={() => {
-          if (actionItem) {
-            confirmDeleteProblem(actionItem.bundleId, actionItem.pageId);
-            setActionItem(null);
-          }
-        }}
-        onRestore={() => {
-          if (actionItem) {
-            setActionItem(null);
-            setRestoreSelectMode(true);
-            setSelectedKeys(new Set([itemKey(actionItem)]));
-          }
-        }}
-        onSaveToArchive={() => setActionItem(null)}
-        onClose={() => setActionItem(null)}
-      />
     </>
   );
 }

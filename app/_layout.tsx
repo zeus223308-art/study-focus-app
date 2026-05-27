@@ -12,6 +12,7 @@ import { RecoveryBanner } from '@/components/RecoveryBanner';
 import { FloatingCameraButton } from '@/components/FloatingCameraButton';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { GoogleOAuthReturnHandler } from '@/components/settings/GoogleOAuthReturnHandler';
+import { ChoiceConfirmHost } from '@/components/ui/ChoiceConfirmHost';
 import { MobileWebFrame } from '@/components/MobileWebFrame';
 import { SplashBrand } from '@/components/SplashBrand';
 import { AppProvider, useApp } from '@/context/AppContext';
@@ -95,6 +96,7 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
       </Stack>
       {showCamera && <FloatingCameraButton />}
       <PaywallGate />
+      <ChoiceConfirmHost />
     </View>
   );
 }

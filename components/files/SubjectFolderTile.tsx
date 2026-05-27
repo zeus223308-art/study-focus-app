@@ -21,6 +21,7 @@ type Props = {
   onLiftForReorder: () => void;
   onReorderDragMove?: (pageX: number, pageY: number) => void;
   onReorderDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
+  onDeleteHold?: () => void;
   onPreviewGestureLock: (locked: boolean) => void;
 };
 
@@ -33,6 +34,7 @@ export function SubjectFolderTile({
   onLiftForReorder,
   onReorderDragMove,
   onReorderDragEnd,
+  onDeleteHold,
   onPreviewGestureLock,
 }: Props) {
   const { t } = useTranslation();
@@ -91,6 +93,7 @@ export function SubjectFolderTile({
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
           onPress={handlePress}
+          onDeleteHold={onDeleteHold}
           onGestureActiveChange={onPreviewGestureLock}
           style={[
             styles.dragSurface,

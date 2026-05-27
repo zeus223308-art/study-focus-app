@@ -1,5 +1,7 @@
 import { Alert, Platform } from 'react-native';
 
+import { presentChoiceConfirm } from '@/lib/ui/choice-confirm-registry';
+
 /** Cancel + destructive confirm (delete, trash, etc.). Works on web where Alert.alert is a no-op. */
 export function confirmDestructive(options: {
   title: string;
@@ -40,12 +42,7 @@ export function confirmChoice(options: {
   const { title, message, yesLabel, noLabel, onYes, onNo } = options;
 
   if (Platform.OS === 'web') {
-    const text = message ? `${title}\n\n${message}` : title;
-    if (typeof globalThis.confirm === 'function' && globalThis.confirm(text)) {
-      void onYes();
-    } else {
-      onNo?.();
-    }
+    presentChoiceConfirm({ title, message, yesLabel, noLabel, onYes, onNo });
     return;
   }
 

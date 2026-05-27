@@ -139,6 +139,7 @@ export default function FilesScreen() {
               onSubjectReorderMove={onSubjectReorderMove}
               onSubjectReorderEnd={onSubjectReorderEnd}
               onFolderGestureLock={lockFolderTouch}
+              onSubjectDeleteHold={confirmDeleteSubject}
             />
           )}
         </View>

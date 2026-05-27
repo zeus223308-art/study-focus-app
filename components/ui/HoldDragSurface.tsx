@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   type GestureResponderEvent,
   StyleSheet,
@@ -8,7 +8,8 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
-import { HOLD_DRAG_MS } from '@/lib/ui/hold-drag';
+import { theme } from '@/constants/theme';
+import { DELETE_ARM_MS, HOLD_DRAG_MS } from '@/lib/ui/hold-drag';
 
 export { HOLD_DRAG_MS };
 const MOVE_CANCEL_PX = 12;
@@ -20,6 +21,8 @@ type Props = {
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onPress?: () => void;
+  /** First tap arms; second touch + hold triggers delete confirm. */
+  onDeleteHold?: () => void;
   onGestureActiveChange?: (active: boolean) => void;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -29,7 +32,6 @@ type Point = { pageX: number; pageY: number };
 
 /**
  * Touch long-press + drag (native iOS/Android + mobile web).
- * Desktop web also handles mouse via document listeners.
  */
 export function HoldDragSurface({
   enabled,
@@ -37,6 +39,7 @@ export function HoldDragSurface({
   onDragMove,
   onDragEnd,
   onPress,
+  onDeleteHold,
   onGestureActiveChange,
   children,
   style,
@@ -45,12 +48,32 @@ export function HoldDragSurface({
   const movedRef = useRef(false);
   const startRef = useRef<Point>({ pageX: 0, pageY: 0 });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deleteArmedRef = useRef(false);
+  const deleteArmedAtRef = useRef(0);
+  const deleteHoldRef = useRef(false);
+  const [deleteArmed, setDeleteArmed] = useState(false);
+
   const clearTimer = useCallback(() => {
     if (timerRef.current != null) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
   }, []);
+
+  const setArmed = useCallback((armed: boolean) => {
+    deleteArmedRef.current = armed;
+    setDeleteArmed(armed);
+    if (armed) deleteArmedAtRef.current = Date.now();
+  }, []);
+
+  const isDeleteArmActive = useCallback(() => {
+    if (!deleteArmedRef.current) return false;
+    if (Date.now() - deleteArmedAtRef.current > DELETE_ARM_MS) {
+      setArmed(false);
+      return false;
+    }
+    return true;
+  }, [setArmed]);
 
   const setActive = useCallback(
     (active: boolean) => {
@@ -64,28 +87,57 @@ export function HoldDragSurface({
       clearTimer();
       const phase = phaseRef.current;
       const moved = movedRef.current;
+      const wasDeleteHold = deleteHoldRef.current;
       phaseRef.current = 'idle';
       movedRef.current = false;
+      deleteHoldRef.current = false;
       setActive(false);
 
       if (phase === 'lifted') {
         onDragEnd?.(moved, pageX, pageY);
         return;
       }
-      if (phase === 'pending') {
-        const dx = Math.abs(pageX - startRef.current.pageX);
-        const dy = Math.abs(pageY - startRef.current.pageY);
-        if (dx < TAP_SLOP_PX && dy < TAP_SLOP_PX) {
-          onPress?.();
+      if (phase !== 'pending') return;
+
+      const dx = Math.abs(pageX - startRef.current.pageX);
+      const dy = Math.abs(pageY - startRef.current.pageY);
+      if (dx >= TAP_SLOP_PX || dy >= TAP_SLOP_PX) return;
+
+      if (onDeleteHold) {
+        if (wasDeleteHold) {
+          setArmed(false);
+          return;
+        }
+        if (!deleteArmedRef.current) {
+          setArmed(true);
+          void Haptics.selectionAsync();
+          return;
+        }
+        if (isDeleteArmActive()) {
+          setArmed(false);
+          return;
         }
       }
+
+      setArmed(false);
+      onPress?.();
     },
-    [clearTimer, onDragEnd, onPress, setActive]
+    [clearTimer, isDeleteArmActive, onDeleteHold, onDragEnd, onPress, setActive, setArmed]
   );
 
   const beginLift = useCallback(
     (pageX: number, pageY: number) => {
       if (phaseRef.current !== 'pending') return;
+
+      if (deleteHoldRef.current && onDeleteHold) {
+        phaseRef.current = 'idle';
+        clearTimer();
+        setArmed(false);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        onDeleteHold();
+        return;
+      }
+
       phaseRef.current = 'lifted';
       movedRef.current = false;
       setActive(true);
@@ -93,7 +145,7 @@ export function HoldDragSurface({
       onLift();
       onDragMove?.(pageX, pageY);
     },
-    [onDragMove, onLift, setActive]
+    [clearTimer, onDeleteHold, onDragMove, onLift, setActive, setArmed]
   );
 
   const scheduleLift = useCallback(
@@ -114,9 +166,14 @@ export function HoldDragSurface({
       phaseRef.current = 'pending';
       movedRef.current = false;
       startRef.current = { pageX, pageY };
+
+      deleteHoldRef.current = Boolean(
+        onDeleteHold && isDeleteArmActive()
+      );
+
       scheduleLift(pageX, pageY);
     },
-    [clearTimer, enabled, scheduleLift]
+    [clearTimer, enabled, isDeleteArmActive, onDeleteHold, scheduleLift]
   );
 
   const movePendingOrDrag = useCallback(
@@ -132,6 +189,7 @@ export function HoldDragSurface({
       if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
         clearTimer();
         phaseRef.current = 'idle';
+        deleteHoldRef.current = false;
       }
     },
     [clearTimer, onDragMove]
@@ -174,7 +232,13 @@ export function HoldDragSurface({
   );
 
   return (
-    <View style={[style, styles.surface]} collapsable={false}>
+    <View
+      style={[
+        style,
+        styles.surface,
+        deleteArmed && onDeleteHold ? styles.surfaceDeleteArmed : null,
+      ]}
+      collapsable={false}>
       <View
         style={styles.touchTarget}
         onTouchStart={enabled ? onTouchStart : undefined}
@@ -190,6 +254,11 @@ export function HoldDragSurface({
 const styles = StyleSheet.create({
   surface: {
     width: '100%',
+  },
+  surfaceDeleteArmed: {
+    borderWidth: 2,
+    borderColor: theme.orange,
+    borderRadius: theme.radius.sm,
   },
   touchTarget: {
     width: '100%',
