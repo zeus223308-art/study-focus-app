@@ -1,4 +1,5 @@
 import type { NoteBundle, NotePage } from '@/lib/domain/types';
+import { mergeItemOrder } from '@/lib/domain/reorder';
 
 export type BundleStack = {
   studyDate: string;
@@ -33,7 +34,11 @@ export type SubjectProblemItem = {
   page: NotePage;
 };
 
-export function listSubjectProblems(bundles: NoteBundle[], subjectId: string): SubjectProblemItem[] {
+export function listSubjectProblems(
+  bundles: NoteBundle[],
+  subjectId: string,
+  itemOrder?: string[]
+): SubjectProblemItem[] {
   const items: SubjectProblemItem[] = [];
   for (const bundle of bundles) {
     if (bundle.subjectId !== subjectId || bundle.archived) continue;
@@ -41,7 +46,19 @@ export function listSubjectProblems(bundles: NoteBundle[], subjectId: string): S
       items.push({ bundleId: bundle.id, pageId: page.id, bundle, page });
     }
   }
-  return items.sort((a, b) => b.page.createdAt.localeCompare(a.page.createdAt));
+
+  const keys = items.map((item) => `${item.bundleId}:${item.pageId}`);
+  const order = mergeItemOrder(itemOrder, keys);
+  const rank = new Map(order.map((key, index) => [key, index]));
+
+  return items.sort((a, b) => {
+    const ka = `${a.bundleId}:${a.pageId}`;
+    const kb = `${b.bundleId}:${b.pageId}`;
+    const ra = rank.get(ka) ?? Number.MAX_SAFE_INTEGER;
+    const rb = rank.get(kb) ?? Number.MAX_SAFE_INTEGER;
+    if (ra !== rb) return ra - rb;
+    return b.page.createdAt.localeCompare(a.page.createdAt);
+  });
 }
 
 /** Archived problems for a subject (newest first). */
@@ -68,7 +85,7 @@ export type ProblemDateSection = {
   items: SubjectProblemItem[];
 };
 
-/** Newest dates first; within a date, newest photos first (album-style). */
+/** Newest dates first; within a date, preserve `problems` order. */
 export function groupSubjectProblemsByDate(problems: SubjectProblemItem[]): ProblemDateSection[] {
   const map = new Map<string, SubjectProblemItem[]>();
   for (const item of problems) {
@@ -78,10 +95,7 @@ export function groupSubjectProblemsByDate(problems: SubjectProblemItem[]): Prob
     map.set(studyDate, list);
   }
   return Array.from(map.entries())
-    .map(([studyDate, items]) => ({
-      studyDate,
-      items: items.sort((a, b) => b.page.createdAt.localeCompare(a.page.createdAt)),
-    }))
+    .map(([studyDate, items]) => ({ studyDate, items }))
     .sort((a, b) => b.studyDate.localeCompare(a.studyDate));
 }
 

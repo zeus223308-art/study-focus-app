@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 
+import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -12,7 +13,7 @@ import { useApp } from '@/context/AppContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
-import { confirmChoice } from '@/lib/ui/confirm';
+import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const PANEL_PAD = 14;
@@ -20,12 +21,23 @@ const PANEL_PAD = 14;
 export default function FilesScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, addSubject, deleteSubject, movingBundleId } = useApp();
+  const {
+    data,
+    addSubject,
+    deleteSubject,
+    movingBundleId,
+    reorderingSubjectId,
+    startSubjectReorder,
+    updateSubjectReorderHover,
+    finishSubjectReorder,
+    cancelMovingBundle,
+  } = useApp();
   const { width: windowWidth } = useWindowDimensions();
   const viewport = useViewportLayout();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [panelWidth, setPanelWidth] = useState(0);
+  const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
 
   const pageWidth = panelWidth > 0 ? panelWidth : Math.max(280, windowWidth - 40);
 
@@ -61,10 +73,34 @@ export default function FilesScreen() {
     });
   };
 
+  const onSubjectReorderMove = (pageX: number, pageY: number) => {
+    setGhost({ x: pageX, y: pageY, visible: true });
+    updateSubjectReorderHover(pageX, pageY);
+  };
+
+  const onSubjectReorderEnd = (
+    subjectId: string,
+    subjectName: string,
+    moved: boolean,
+    pageX: number,
+    pageY: number
+  ) => {
+    setGhost({ x: pageX, y: pageY, visible: false });
+    const result = finishSubjectReorder(pageX, pageY, moved);
+    if (result === 'delete') {
+      confirmDeleteSubject(subjectId, subjectName);
+    } else if (result === 'reordered') {
+      showMessage('', t('folder.reordered'));
+    }
+  };
+
   return (
     <Screen scroll nestedScrollEnabled>
       {movingBundleId ? (
         <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
+      ) : null}
+      {reorderingSubjectId ? (
+        <Text style={styles.moveBanner}>{t('folder.reorderHint')}</Text>
       ) : null}
 
       <ScreenHeader
@@ -76,6 +112,12 @@ export default function FilesScreen() {
           </Pressable>
         }
       />
+
+      {reorderingSubjectId ? (
+        <Pressable onPress={cancelMovingBundle} style={styles.cancelReorder}>
+          <Text style={styles.cancelReorderText}>{t('common.cancel')}</Text>
+        </Pressable>
+      ) : null}
 
       <View style={styles.panel}>
         <View
@@ -99,12 +141,16 @@ export default function FilesScreen() {
               onSubjectPress={(subjectId) =>
                 router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
               }
-              onSubjectDeletePress={confirmDeleteSubject}
+              onSubjectLift={startSubjectReorder}
+              onSubjectReorderMove={onSubjectReorderMove}
+              onSubjectReorderEnd={onSubjectReorderEnd}
               swipeHint={subjectPages.length > 1 ? t('vault.swipeHint') : undefined}
             />
           )}
         </View>
       </View>
+
+      <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
 
       {adding ? (
         <View style={styles.addBox}>
@@ -143,6 +189,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 12,
   },
+  cancelReorder: { alignSelf: 'flex-end', paddingHorizontal: 20, marginBottom: 4 },
+  cancelReorderText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   panel: {
     borderWidth: 1.5,
     borderColor: theme.black,

@@ -145,11 +145,10 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                     selectionMode={restoreSelectMode ? 'pick' : null}
                     selectedKeys={selectedKeys}
                     onToggleSelect={toggleSelect}
-                    onDeleteRequest={
-                      restoreSelectMode ? undefined : confirmDeleteProblem
-                    }
+                    onLiftItemForDrag={() => {}}
                     onPhotoAction={(item) => setActionItem(item)}
                     onOpen={() => {}}
+                    reorderEnabled={false}
                   />
                 ))
               )}
@@ -182,8 +181,15 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
         visible={actionItem !== null}
         restoreLabel={t('folder.restoreFromArchive')}
         saveToArchiveLabel={t('folder.saveToArchive')}
+        deleteLabel={t('item.deletePhoto')}
         cancelLabel={t('common.cancel')}
         hideSaveToArchive
+        onDelete={() => {
+          if (actionItem) {
+            confirmDeleteProblem(actionItem.bundleId, actionItem.pageId);
+            setActionItem(null);
+          }
+        }}
         onRestore={() => {
           if (actionItem) {
             setActionItem(null);

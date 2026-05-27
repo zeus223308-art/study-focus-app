@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   PanResponder,
   Platform,
@@ -21,16 +21,17 @@ const DOUBLE_TAP_MS = 320;
 
 type Props = {
   bundleId: string;
+  pageId: string;
+  itemDragKey: string;
   sourceSubjectId: string;
   thumbnailUri: string;
   countLabel?: string;
   cellWidth: number;
   onOpen: () => void;
   onDragMove?: (pageX: number, pageY: number) => void;
-  onDragEnd?: (pageX: number, pageY: number) => void;
-  /** Long-press → yes/no delete confirm. */
-  onDeleteRequest?: () => void;
-  /** Double-tap menu (archive, restore). */
+  onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
+  onLiftForDrag: () => void;
+  /** Double-tap menu (archive, delete). */
   onPhotoAction?: () => void;
   pickMode?: boolean;
   pickSelected?: boolean;
@@ -40,6 +41,8 @@ type Props = {
 
 export function AlbumPhotoTile({
   bundleId,
+  pageId,
+  itemDragKey,
   sourceSubjectId,
   thumbnailUri,
   countLabel,
@@ -47,37 +50,43 @@ export function AlbumPhotoTile({
   onOpen,
   onDragMove,
   onDragEnd,
-  onDeleteRequest,
+  onLiftForDrag,
   onPhotoAction,
   pickMode,
   pickSelected,
   onTogglePick,
   style,
 }: Props) {
-  const { movingBundleId, startMovingBundle, cancelMovingBundle } = useApp();
-  const dragSelected = movingBundleId === bundleId;
+  const {
+    movingBundleId,
+    draggingItemKey,
+    dragHoverItemKey,
+    cancelMovingBundle,
+  } = useApp();
+  const dragLifted = movingBundleId === bundleId && draggingItemKey === itemDragKey;
+  const itemHover = dragHoverItemKey === itemDragKey && !dragLifted;
   const didDragRef = useRef(false);
   const pointerDragRef = useRef({ active: false, startX: 0, startY: 0 });
   const lastTapRef = useRef(0);
+  const pendingDragStart = useRef<{ pageX: number; pageY: number } | null>(null);
 
-  const onLongPress = useCallback(() => {
-    if (pickMode) return;
-    if (onDeleteRequest) {
-      onDeleteRequest();
-      return;
-    }
-    if (onPhotoAction) {
-      onPhotoAction();
-      return;
-    }
-    startMovingBundle(bundleId, sourceSubjectId);
-  }, [pickMode, onDeleteRequest, onPhotoAction, bundleId, sourceSubjectId, startMovingBundle]);
+  const onLongPress = useCallback(
+    (event: { nativeEvent: { pageX: number; pageY: number } }) => {
+      if (pickMode) return;
+      pendingDragStart.current = {
+        pageX: event.nativeEvent.pageX,
+        pageY: event.nativeEvent.pageY,
+      };
+      onLiftForDrag();
+    },
+    [pickMode, onLiftForDrag]
+  );
 
   const endDrag = useCallback(
     (pageX: number, pageY: number) => {
       if (!pointerDragRef.current.active) return;
       pointerDragRef.current.active = false;
-      if (didDragRef.current) onDragEnd?.(pageX, pageY);
+      onDragEnd?.(didDragRef.current, pageX, pageY);
       didDragRef.current = false;
     },
     [onDragEnd]
@@ -85,7 +94,7 @@ export function AlbumPhotoTile({
 
   const moveDrag = useCallback(
     (pageX: number, pageY: number) => {
-      if (!pointerDragRef.current.active || !dragSelected) return;
+      if (!pointerDragRef.current.active || !dragLifted) return;
       const dx = pageX - pointerDragRef.current.startX;
       const dy = pageY - pointerDragRef.current.startY;
       if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
@@ -93,23 +102,30 @@ export function AlbumPhotoTile({
       }
       onDragMove?.(pageX, pageY);
     },
-    [onDragMove, dragSelected]
+    [onDragMove, dragLifted]
   );
 
   const startDrag = useCallback(
     (pageX: number, pageY: number) => {
-      if (!dragSelected) return;
+      if (!dragLifted) return;
       didDragRef.current = false;
       pointerDragRef.current = { active: true, startX: pageX, startY: pageY };
     },
-    [dragSelected]
+    [dragLifted]
   );
+
+  useEffect(() => {
+    if (!dragLifted || !pendingDragStart.current) return;
+    const { pageX, pageY } = pendingDragStart.current;
+    pendingDragStart.current = null;
+    startDrag(pageX, pageY);
+  }, [dragLifted, startDrag]);
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => dragSelected && !pickMode,
-        onMoveShouldSetPanResponder: () => dragSelected && !pickMode,
+        onStartShouldSetPanResponder: () => dragLifted && !pickMode,
+        onMoveShouldSetPanResponder: () => dragLifted && !pickMode,
         onPanResponderGrant: (evt) => {
           const { pageX, pageY } = evt.nativeEvent;
           startDrag(pageX, pageY);
@@ -127,12 +143,12 @@ export function AlbumPhotoTile({
           endDrag(pageX, pageY);
         },
       }),
-    [dragSelected, pickMode, endDrag, moveDrag, startDrag]
+    [dragLifted, pickMode, endDrag, moveDrag, startDrag]
   );
 
   const bindWebMouse = useCallback(
     (pageX: number, pageY: number) => {
-      if (!dragSelected || typeof document === 'undefined' || pickMode) return;
+      if (!dragLifted || typeof document === 'undefined' || pickMode) return;
       startDrag(pageX, pageY);
       const onMove = (ev: MouseEvent) => moveDrag(ev.pageX, ev.pageY);
       const onUp = (ev: MouseEvent) => {
@@ -143,16 +159,12 @@ export function AlbumPhotoTile({
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     },
-    [dragSelected, pickMode, endDrag, moveDrag, startDrag]
+    [dragLifted, pickMode, endDrag, moveDrag, startDrag]
   );
 
   const handlePress = useCallback(() => {
     if (pickMode) {
       onTogglePick?.();
-      return;
-    }
-    if (movingBundleId && movingBundleId !== bundleId) {
-      startMovingBundle(bundleId, sourceSubjectId);
       return;
     }
     if (movingBundleId) {
@@ -169,30 +181,19 @@ export function AlbumPhotoTile({
     lastTapRef.current = now;
 
     if (!didDragRef.current) onOpen();
-  }, [
-    pickMode,
-    onTogglePick,
-    movingBundleId,
-    bundleId,
-    sourceSubjectId,
-    startMovingBundle,
-    cancelMovingBundle,
-    onPhotoAction,
-    onOpen,
-  ]);
+  }, [pickMode, onTogglePick, movingBundleId, cancelMovingBundle, onPhotoAction, onOpen]);
 
-  const showPickCheck = pickMode;
-  const tileHighlighted = pickMode ? pickSelected : dragSelected;
+  const tileHighlighted = pickMode ? pickSelected : dragLifted || itemHover;
 
   return (
     <View style={[styles.cell, { width: cellWidth }, style]}>
       <Pressable
         onPress={handlePress}
         onLongPress={onLongPress}
-        delayLongPress={380}
-        style={[styles.tile, tileHighlighted && styles.tileSelected]}
+        delayLongPress={420}
+        style={[styles.tile, tileHighlighted && styles.tileSelected, dragLifted && styles.tileLifted]}
         {...(!IS_WEB && !pickMode ? panResponder.panHandlers : {})}
-        {...(IS_WEB && dragSelected && !pickMode
+        {...(IS_WEB && dragLifted && !pickMode
           ? {
               onMouseDown: (e: { button?: number; nativeEvent: { pageX: number; pageY: number } }) => {
                 if (e.button !== undefined && e.button !== 0) return;
@@ -201,7 +202,7 @@ export function AlbumPhotoTile({
             }
           : {})}>
         <ResolvedImage uri={thumbnailUri} style={styles.image} resizeMode="cover" />
-        {showPickCheck ? (
+        {pickMode ? (
           <View style={[styles.pickBadge, pickSelected && styles.pickBadgeOn]}>
             {pickSelected ? (
               <SymbolView
@@ -212,10 +213,10 @@ export function AlbumPhotoTile({
             ) : null}
           </View>
         ) : null}
-        {dragSelected && !pickMode ? (
+        {dragLifted && !pickMode ? (
           <View style={styles.dragBadge}>
             <SymbolView
-              name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+              name={{ ios: 'line.3.horizontal', android: 'menu', web: 'menu' }}
               size={12}
               tintColor={theme.white}
             />
@@ -249,6 +250,10 @@ const styles = StyleSheet.create({
   tileSelected: {
     borderColor: theme.orange,
     borderWidth: 2,
+  },
+  tileLifted: {
+    opacity: 0.72,
+    transform: [{ scale: 0.96 }],
   },
   image: {
     width: '100%',

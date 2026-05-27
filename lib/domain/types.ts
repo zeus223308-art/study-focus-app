@@ -26,6 +26,8 @@ export type SubjectFolder = {
   color: string;
   sortOrder: number;
   createdAt: string;
+  /** `${bundleId}:${pageId}` display order for album grid */
+  itemOrder?: string[];
 };
 
 export type PenToolId = 'pen-black' | 'pen-red' | 'pen-blue';

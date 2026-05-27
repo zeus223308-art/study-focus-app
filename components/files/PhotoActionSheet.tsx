@@ -7,9 +7,11 @@ type Props = {
   visible: boolean;
   restoreLabel: string;
   saveToArchiveLabel: string;
+  deleteLabel?: string;
   cancelLabel: string;
   onRestore: () => void;
   onSaveToArchive: () => void;
+  onDelete?: () => void;
   onClose: () => void;
   hideSaveToArchive?: boolean;
   hideRestore?: boolean;
@@ -19,9 +21,11 @@ export function PhotoActionSheet({
   visible,
   restoreLabel,
   saveToArchiveLabel,
+  deleteLabel,
   cancelLabel,
   onRestore,
   onSaveToArchive,
+  onDelete,
   onClose,
   hideSaveToArchive,
   hideRestore,
@@ -43,6 +47,13 @@ export function PhotoActionSheet({
           {!hideSaveToArchive ? (
             <Pressable style={[styles.row, !hideRestore && styles.rowBorder]} onPress={onSaveToArchive}>
               <Text style={styles.rowText}>{saveToArchiveLabel}</Text>
+            </Pressable>
+          ) : null}
+          {onDelete && deleteLabel ? (
+            <Pressable
+              style={[styles.row, (!hideRestore || !hideSaveToArchive) && styles.rowBorder]}
+              onPress={onDelete}>
+              <Text style={[styles.rowText, styles.deleteText]}>{deleteLabel}</Text>
             </Pressable>
           ) : null}
           <Pressable style={styles.cancelRow} onPress={onClose}>
@@ -87,6 +98,9 @@ const styles = StyleSheet.create({
     fontSize: theme.font.body,
     fontWeight: '700',
     color: theme.black,
+  },
+  deleteText: {
+    color: theme.orange,
   },
   cancelRow: {
     marginTop: 8,

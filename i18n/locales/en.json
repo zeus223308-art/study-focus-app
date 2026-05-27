@@ -146,6 +146,8 @@
     "importUnsupportedOnly": "Images only",
     "importUnsupportedSkipped": "Skipped non-images",
     "dropHint": "Drag to move",
+    "reorderHint": "Drag to reorder · drop on another subject to move",
+    "reordered": "Order updated",
     "movedTo": "Moved to {{name}}",
     "empty": "No photos",
     "dateToday": "Today",

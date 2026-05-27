@@ -27,6 +27,8 @@ import type {
 } from '@/lib/domain/types';
 import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
 import { removePageFromData } from '@/lib/domain/remove-page';
+import { mergeItemOrder, reorderItemKeys, reorderSubjectFolders } from '@/lib/domain/reorder';
+import { listSubjectProblems } from '@/lib/grouping/bundles';
 import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
 import { isDueToday, advanceAfterReview, resetReviewCycle, maintainReviewCycle } from '@/lib/spacing/engine';
 import {
@@ -94,16 +96,34 @@ type AppContextValue = {
   derivativeRegenNotice: { failed: number } | null;
   dismissDerivativeRegenNotice: () => void;
   movingBundleId: string | null;
+  draggingItemKey: string | null;
   dragSourceSubjectId: string | null;
   dragHoverSubjectId: string | null;
+  dragHoverItemKey: string | null;
+  reorderingSubjectId: string | null;
+  reorderHoverSubjectId: string | null;
+  startItemDrag: (bundleId: string, pageId: string, subjectId: string, itemKey: string) => void;
   startMovingBundle: (bundleId: string, sourceSubjectId: string) => void;
+  startSubjectReorder: (subjectId: string) => void;
   cancelMovingBundle: () => void;
   registerSubjectDropZone: (
     subjectId: string,
     rect: { x: number; y: number; width: number; height: number } | null
   ) => void;
+  registerItemDropZone: (
+    itemKey: string,
+    rect: { x: number; y: number; width: number; height: number } | null
+  ) => void;
+  registerSubjectReorderZone: (
+    subjectId: string,
+    rect: { x: number; y: number; width: number; height: number } | null
+  ) => void;
   updateDragHover: (pageX: number, pageY: number) => void;
+  updateSubjectReorderHover: (pageX: number, pageY: number) => void;
+  finishItemDrag: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'moved' | 'cancelled' | 'delete';
+  finishSubjectReorder: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'delete' | 'cancelled';
   finishBundleDrop: (pageX: number, pageY: number) => string | null;
+  reorderSubjects: (activeId: string, overId: string) => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -126,11 +146,21 @@ export function AppProvider({
     null
   );
   const [movingBundleId, setMovingBundleId] = useState<string | null>(null);
+  const [draggingItemKey, setDraggingItemKey] = useState<string | null>(null);
   const [dragSourceSubjectId, setDragSourceSubjectId] = useState<string | null>(null);
   const [dragHoverSubjectId, setDragHoverSubjectId] = useState<string | null>(null);
+  const [dragHoverItemKey, setDragHoverItemKey] = useState<string | null>(null);
+  const [reorderingSubjectId, setReorderingSubjectId] = useState<string | null>(null);
+  const [reorderHoverSubjectId, setReorderHoverSubjectId] = useState<string | null>(null);
   const dropZonesRef = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(
     new Map()
   );
+  const itemDropZonesRef = useRef<
+    Map<string, { x: number; y: number; width: number; height: number }>
+  >(new Map());
+  const subjectReorderZonesRef = useRef<
+    Map<string, { x: number; y: number; width: number; height: number }>
+  >(new Map());
   const prevLocalTodayRef = useRef(localToday);
   const dataRef = useRef<AppData | null>(null);
   const skipPersistRef = useRef(false);
@@ -566,13 +596,191 @@ export function AppProvider({
     setMovingBundleId(bundleId);
     setDragSourceSubjectId(sourceSubjectId);
     setDragHoverSubjectId(null);
+    setDragHoverItemKey(null);
+  }, []);
+
+  const startItemDrag = useCallback(
+    (bundleId: string, _pageId: string, subjectId: string, itemKey: string) => {
+      setMovingBundleId(bundleId);
+      setDraggingItemKey(itemKey);
+      setDragSourceSubjectId(subjectId);
+      setDragHoverSubjectId(null);
+      setDragHoverItemKey(null);
+      setReorderingSubjectId(null);
+      setReorderHoverSubjectId(null);
+    },
+    []
+  );
+
+  const startSubjectReorder = useCallback((subjectId: string) => {
+    setReorderingSubjectId(subjectId);
+    setReorderHoverSubjectId(null);
+    setMovingBundleId(null);
+    setDraggingItemKey(null);
+    setDragSourceSubjectId(null);
+    setDragHoverSubjectId(null);
+    setDragHoverItemKey(null);
   }, []);
 
   const cancelMovingBundle = useCallback(() => {
     setMovingBundleId(null);
+    setDraggingItemKey(null);
     setDragSourceSubjectId(null);
     setDragHoverSubjectId(null);
+    setDragHoverItemKey(null);
+    setReorderingSubjectId(null);
+    setReorderHoverSubjectId(null);
   }, []);
+
+  const registerItemDropZone = useCallback(
+    (itemKey: string, rect: { x: number; y: number; width: number; height: number } | null) => {
+      if (rect) itemDropZonesRef.current.set(itemKey, rect);
+      else itemDropZonesRef.current.delete(itemKey);
+    },
+    []
+  );
+
+  const registerSubjectReorderZone = useCallback(
+    (subjectId: string, rect: { x: number; y: number; width: number; height: number } | null) => {
+      if (rect) subjectReorderZonesRef.current.set(subjectId, rect);
+      else subjectReorderZonesRef.current.delete(subjectId);
+    },
+    []
+  );
+
+  const hitTestZones = useCallback(
+    (pageX: number, pageY: number, zones: Map<string, { x: number; y: number; width: number; height: number }>) => {
+      for (const [key, rect] of zones.entries()) {
+        if (
+          pageX >= rect.x &&
+          pageX <= rect.x + rect.width &&
+          pageY >= rect.y &&
+          pageY <= rect.y + rect.height
+        ) {
+          return key;
+        }
+      }
+      return null;
+    },
+    []
+  );
+
+  const reorderSubjects = useCallback((activeId: string, overId: string) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        subjects: reorderSubjectFolders(prev.subjects, activeId, overId),
+      };
+    });
+  }, []);
+
+  const reorderSubjectItems = useCallback(
+    (subjectId: string, activeKey: string, overKey: string) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        const subject = prev.subjects.find((s) => s.id === subjectId);
+        if (!subject) return prev;
+        const problems = listSubjectProblems(prev.bundles, subjectId, subject.itemOrder);
+        const keys = problems.map((p) => `${p.bundleId}:${p.pageId}`);
+        const merged = mergeItemOrder(subject.itemOrder, keys);
+        const nextOrder = reorderItemKeys(merged, activeKey, overKey);
+        return {
+          ...prev,
+          subjects: prev.subjects.map((s) =>
+            s.id === subjectId ? { ...s, itemOrder: nextOrder } : s
+          ),
+        };
+      });
+    },
+    []
+  );
+
+  const updateSubjectReorderHover = useCallback(
+    (pageX: number, pageY: number) => {
+      if (!reorderingSubjectId) return;
+      const found = hitTestZones(pageX, pageY, subjectReorderZonesRef.current);
+      const next = found && found !== reorderingSubjectId ? found : null;
+      setReorderHoverSubjectId((prev) => (prev === next ? prev : next));
+    },
+    [hitTestZones, reorderingSubjectId]
+  );
+
+  const finishSubjectReorder = useCallback(
+    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'delete' | 'cancelled' => {
+      if (!reorderingSubjectId) return 'cancelled';
+      const hover =
+        hitTestZones(pageX, pageY, subjectReorderZonesRef.current) ?? reorderHoverSubjectId;
+      const activeId = reorderingSubjectId;
+      cancelMovingBundle();
+      if (moved && hover && hover !== activeId) {
+        reorderSubjects(activeId, hover);
+        return 'reordered';
+      }
+      if (!moved) return 'delete';
+      return 'cancelled';
+    },
+    [cancelMovingBundle, hitTestZones, reorderHoverSubjectId, reorderSubjects, reorderingSubjectId]
+  );
+
+  const finishItemDrag = useCallback(
+    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'moved' | 'cancelled' | 'delete' => {
+      if (!movingBundleId || !dragSourceSubjectId) {
+        cancelMovingBundle();
+        return 'cancelled';
+      }
+
+      if (!moved) {
+        cancelMovingBundle();
+        return 'delete';
+      }
+
+      const hoverItem =
+        hitTestZones(pageX, pageY, itemDropZonesRef.current) ?? dragHoverItemKey;
+      if (
+        hoverItem &&
+        draggingItemKey &&
+        hoverItem !== draggingItemKey
+      ) {
+        reorderSubjectItems(dragSourceSubjectId, draggingItemKey, hoverItem);
+        cancelMovingBundle();
+        return 'reordered';
+      }
+
+      let target: string | null = null;
+      for (const [subjectId, rect] of dropZonesRef.current.entries()) {
+        if (
+          pageX >= rect.x &&
+          pageX <= rect.x + rect.width &&
+          pageY >= rect.y &&
+          pageY <= rect.y + rect.height
+        ) {
+          target = subjectId;
+          break;
+        }
+      }
+      if (target && target !== dragSourceSubjectId && data) {
+        const next = moveBundleToSubjectData(data, movingBundleId, target);
+        persist(next);
+        cancelMovingBundle();
+        return 'moved';
+      }
+
+      cancelMovingBundle();
+      return 'cancelled';
+    },
+    [
+      cancelMovingBundle,
+      data,
+      dragHoverItemKey,
+      dragSourceSubjectId,
+      draggingItemKey,
+      hitTestZones,
+      movingBundleId,
+      persist,
+      reorderSubjectItems,
+    ]
+  );
 
   const registerSubjectDropZone = useCallback(
     (subjectId: string, rect: { x: number; y: number; width: number; height: number } | null) => {
@@ -585,6 +793,11 @@ export function AppProvider({
   const updateDragHover = useCallback(
     (pageX: number, pageY: number) => {
       if (!movingBundleId) return;
+      const itemFound = hitTestZones(pageX, pageY, itemDropZonesRef.current);
+      const itemNext =
+        itemFound && itemFound !== draggingItemKey ? itemFound : null;
+      setDragHoverItemKey((prev) => (prev === itemNext ? prev : itemNext));
+
       let found: string | null = null;
       for (const [subjectId, rect] of dropZonesRef.current.entries()) {
         if (
@@ -600,7 +813,7 @@ export function AppProvider({
       const next = found && found !== dragSourceSubjectId ? found : null;
       setDragHoverSubjectId((prev) => (prev === next ? prev : next));
     },
-    [dragSourceSubjectId, movingBundleId]
+    [dragSourceSubjectId, draggingItemKey, hitTestZones, movingBundleId]
   );
 
   const finishBundleDrop = useCallback(
@@ -675,13 +888,25 @@ export function AppProvider({
       derivativeRegenNotice,
       dismissDerivativeRegenNotice,
       movingBundleId,
+      draggingItemKey,
       dragSourceSubjectId,
       dragHoverSubjectId,
+      dragHoverItemKey,
+      reorderingSubjectId,
+      reorderHoverSubjectId,
+      startItemDrag,
       startMovingBundle,
+      startSubjectReorder,
       cancelMovingBundle,
       registerSubjectDropZone,
+      registerItemDropZone,
+      registerSubjectReorderZone,
       updateDragHover,
+      updateSubjectReorderHover,
+      finishItemDrag,
+      finishSubjectReorder,
       finishBundleDrop,
+      reorderSubjects,
     };
   }, [
     ready,
@@ -719,13 +944,25 @@ export function AppProvider({
     restoreLocalBackup,
     upgradePhotoQuality,
     movingBundleId,
+    draggingItemKey,
     dragSourceSubjectId,
     dragHoverSubjectId,
+    dragHoverItemKey,
+    reorderingSubjectId,
+    reorderHoverSubjectId,
+    startItemDrag,
     startMovingBundle,
+    startSubjectReorder,
     cancelMovingBundle,
     registerSubjectDropZone,
+    registerItemDropZone,
+    registerSubjectReorderZone,
     updateDragHover,
+    updateSubjectReorderHover,
+    finishItemDrag,
+    finishSubjectReorder,
     finishBundleDrop,
+    reorderSubjects,
   ]);
 
   if (!value) return null;

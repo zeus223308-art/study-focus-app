@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AlbumPhotoTile } from '@/components/files/AlbumPhotoTile';
+import { ItemDropTarget } from '@/components/files/ItemDropTarget';
 import { theme } from '@/constants/theme';
+import { useApp } from '@/context/AppContext';
 import { bundleDisplayTitle } from '@/lib/domain/bundle-title';
 import type { Language } from '@/lib/domain/types';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
@@ -22,13 +24,14 @@ type Props = {
     problemLabel: (n: number) => string;
   };
   onOpen: (bundleId: string, pageId: string) => void;
-  onDeleteRequest?: (bundleId: string, pageId: string) => void;
   onDragMove?: (pageX: number, pageY: number) => void;
-  onDragEnd?: (pageX: number, pageY: number) => void;
+  onDragEnd?: (item: SubjectProblemItem, moved: boolean, pageX: number, pageY: number) => void;
+  onLiftItemForDrag: (item: SubjectProblemItem) => void;
   onPhotoAction?: (item: SubjectProblemItem) => void;
   selectionMode?: 'pick' | null;
   selectedKeys?: Set<string>;
   onToggleSelect?: (item: SubjectProblemItem) => void;
+  reorderEnabled?: boolean;
 };
 
 function itemKey(item: SubjectProblemItem) {
@@ -44,14 +47,16 @@ export function DateAlbumSection({
   gap,
   labels,
   onOpen,
-  onDeleteRequest,
   onDragMove,
   onDragEnd,
+  onLiftItemForDrag,
   onPhotoAction,
   selectionMode,
   selectedKeys,
   onToggleSelect,
+  reorderEnabled,
 }: Props) {
+  const { registerItemDropZone, dragHoverItemKey } = useApp();
   const cellWidth = Math.floor((contentWidth - gap * (albumColumns - 1)) / albumColumns);
   const heading = formatStudyDateHeading(section.studyDate, language, {
     today: labels.today,
@@ -70,25 +75,40 @@ export function DateAlbumSection({
           const title = bundleDisplayTitle(item.bundle);
           const countLabel = title ?? labels.problemLabel(index + 1);
           const key = itemKey(item);
-          return (
+          const tile = (
             <AlbumPhotoTile
-              key={key}
               bundleId={item.bundleId}
+              pageId={item.pageId}
+              itemDragKey={key}
               sourceSubjectId={subjectId}
               thumbnailUri={getPreviewImageUri(item.page.asset) ?? ''}
               countLabel={countLabel}
               cellWidth={cellWidth}
               onOpen={() => onOpen(item.bundleId, item.pageId)}
-              onDeleteRequest={
-                onDeleteRequest ? () => onDeleteRequest(item.bundleId, item.pageId) : undefined
+              onLiftForDrag={() => onLiftItemForDrag(item)}
+              onDragMove={reorderEnabled && !pickMode ? onDragMove : undefined}
+              onDragEnd={
+                onDragEnd ? (moved, pageX, pageY) => onDragEnd(item, moved, pageX, pageY) : undefined
               }
-              onDragMove={onDragMove}
-              onDragEnd={onDragEnd}
               onPhotoAction={onPhotoAction ? () => onPhotoAction(item) : undefined}
               pickMode={pickMode}
               pickSelected={pickMode && (selectedKeys?.has(key) ?? false)}
               onTogglePick={onToggleSelect ? () => onToggleSelect(item) : undefined}
             />
+          );
+
+          if (!reorderEnabled || pickMode) {
+            return <View key={key}>{tile}</View>;
+          }
+
+          return (
+            <ItemDropTarget
+              key={key}
+              itemKey={key}
+              register={registerItemDropZone}
+              hover={dragHoverItemKey === key}>
+              {tile}
+            </ItemDropTarget>
           );
         })}
       </View>

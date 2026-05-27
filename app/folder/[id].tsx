@@ -48,8 +48,10 @@ export default function FolderScreen() {
     localToday,
     importPhotosToSubject,
     updateDragHover,
-    finishBundleDrop,
+    finishItemDrag,
+    startItemDrag,
     movingBundleId,
+    dragHoverSubjectId,
     cancelMovingBundle,
     deletePage,
     archiveBundle,
@@ -65,8 +67,8 @@ export default function FolderScreen() {
 
   const subject = data.subjects.find((s) => s.id === id);
   const problems = useMemo(
-    () => listSubjectProblems(data.bundles, id ?? ''),
-    [data.bundles, id]
+    () => listSubjectProblems(data.bundles, id ?? '', subject?.itemOrder),
+    [data.bundles, id, subject?.itemOrder]
   );
   const dateSections = useMemo(() => groupSubjectProblemsByDate(problems), [problems]);
 
@@ -133,11 +135,27 @@ export default function FolderScreen() {
     });
   };
 
-  const onDragEnd = (pageX: number, pageY: number) => {
+  const onLiftItemForDrag = (item: SubjectProblemItem) => {
+    if (!subject) return;
+    startItemDrag(item.bundleId, item.pageId, subject.id, itemKey(item));
+  };
+
+  const handleItemDragEnd = (
+    moved: boolean,
+    pageX: number,
+    pageY: number,
+    item: SubjectProblemItem
+  ) => {
     setGhost({ x: pageX, y: pageY, visible: false });
-    const name = finishBundleDrop(pageX, pageY);
-    if (name) {
+    const moveTargetId = dragHoverSubjectId;
+    const result = finishItemDrag(pageX, pageY, moved);
+    if (result === 'moved') {
+      const name = data.subjects.find((s) => s.id === moveTargetId)?.name ?? '';
       Alert.alert('', t('folder.movedTo', { name }));
+    } else if (result === 'reordered') {
+      showMessage('', t('folder.reordered'));
+    } else if (result === 'delete') {
+      confirmDeleteProblem(item.bundleId, item.pageId);
     }
   };
 
@@ -209,6 +227,9 @@ export default function FolderScreen() {
               />
             }
           />
+          {movingBundleId ? (
+            <Text style={styles.reorderHint}>{t('folder.reorderHint')}</Text>
+          ) : null}
           {movingBundleId && (
             <Pressable onPress={cancelMovingBundle} style={styles.cancelMove}>
               <Text style={styles.cancelMoveText}>{t('common.cancel')}</Text>
@@ -248,9 +269,15 @@ export default function FolderScreen() {
                     params: { id: bundleId, pageId },
                   })
                 }
-                onDeleteRequest={archiveSelectMode ? undefined : confirmDeleteProblem}
+                onLiftItemForDrag={onLiftItemForDrag}
                 onDragMove={archiveSelectMode ? undefined : onDragMove}
-                onDragEnd={archiveSelectMode ? undefined : onDragEnd}
+                onDragEnd={
+                  archiveSelectMode
+                    ? undefined
+                    : (item, moved, pageX, pageY) =>
+                        handleItemDragEnd(moved, pageX, pageY, item)
+                }
+                reorderEnabled={!archiveSelectMode}
                 onPhotoAction={
                   archiveSelectMode ? undefined : (item) => setActionItem(item)
                 }
@@ -298,6 +325,14 @@ export default function FolderScreen() {
         restoreLabel={t('folder.restoreFromArchive')}
         saveToArchiveLabel={t('folder.saveToArchive')}
         cancelLabel={t('common.cancel')}
+        deleteLabel={t('item.deletePhoto')}
+        onDelete={() => {
+          if (actionItem) {
+            const { bundleId, pageId } = actionItem;
+            setActionItem(null);
+            confirmDeleteProblem(bundleId, pageId);
+          }
+        }}
         onRestore={() => {
           setActionItem(null);
           setArchiveModalOpen(true);
@@ -320,6 +355,13 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20 },
   cancelMove: { alignSelf: 'flex-end', marginTop: -12, marginBottom: 8 },
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
+  reorderHint: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.orange,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
   scroll: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 },
   scrollEmpty: { flexGrow: 1, justifyContent: 'center' },
   emptyBlock: { marginTop: 24, marginBottom: 8, gap: 16 },

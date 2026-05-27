@@ -14,6 +14,7 @@ import {
 
 import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
 import { theme } from '@/constants/theme';
+import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { computeVaultFolderTileWidth } from '@/lib/ui/viewport-layout';
@@ -47,7 +48,15 @@ type Props = {
   totalLabelFor: (subjectId: string) => string;
   previewItemsFor: (subjectId: string) => SubjectPreviewItem[];
   onSubjectPress: (subjectId: string) => void;
-  onSubjectDeletePress: (subjectId: string, subjectName: string) => void;
+  onSubjectLift: (subjectId: string) => void;
+  onSubjectReorderMove: (pageX: number, pageY: number) => void;
+  onSubjectReorderEnd: (
+    subjectId: string,
+    subjectName: string,
+    moved: boolean,
+    pageX: number,
+    pageY: number
+  ) => void;
   swipeHint?: string;
   emptyLabel?: string;
 };
@@ -59,7 +68,9 @@ export function SubjectFilesCarousel({
   totalLabelFor,
   previewItemsFor,
   onSubjectPress,
-  onSubjectDeletePress,
+  onSubjectLift,
+  onSubjectReorderMove,
+  onSubjectReorderEnd,
   swipeHint,
   emptyLabel,
 }: Props) {
@@ -177,6 +188,8 @@ export function SubjectFilesCarousel({
     previewGestureLockRef.current = locked;
   }, []);
 
+  const { reorderingSubjectId } = useApp();
+
   const startPointerDrag = useCallback(
     (pageX: number) => {
       if (previewGestureLockRef.current) return;
@@ -206,10 +219,12 @@ export function SubjectFilesCarousel({
         onStartShouldSetPanResponder: () => false,
         onMoveShouldSetPanResponder: (_, g) =>
           !previewGestureLockRef.current &&
+          !reorderingSubjectId &&
           Math.abs(g.dx) > HORIZONTAL_LOCK_PX &&
           Math.abs(g.dx) > Math.abs(g.dy) * 1.15,
         onMoveShouldSetPanResponderCapture: (_, g) =>
           !previewGestureLockRef.current &&
+          !reorderingSubjectId &&
           Math.abs(g.dx) > HORIZONTAL_LOCK_PX &&
           Math.abs(g.dx) > Math.abs(g.dy) * 1.15,
         onPanResponderGrant: (evt) => startPointerDrag(evt.nativeEvent.pageX),
@@ -217,12 +232,14 @@ export function SubjectFilesCarousel({
         onPanResponderRelease: endPointerDrag,
         onPanResponderTerminate: endPointerDrag,
       }),
-    [endPointerDrag, movePointer, startPointerDrag]
+    [endPointerDrag, movePointer, reorderingSubjectId, startPointerDrag]
   );
 
   const bindWebMouseDrag = useCallback(
     (pageX: number) => {
-      if (typeof document === 'undefined' || previewGestureLockRef.current) return;
+      if (typeof document === 'undefined' || previewGestureLockRef.current || reorderingSubjectId) {
+        return;
+      }
       startPointerDrag(pageX);
       const onMove = (ev: MouseEvent) => movePointer(ev.pageX);
       const onUp = () => {
@@ -233,7 +250,7 @@ export function SubjectFilesCarousel({
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     },
-    [endPointerDrag, movePointer, startPointerDrag]
+    [endPointerDrag, movePointer, reorderingSubjectId, startPointerDrag]
   );
 
   const tileWidth = useMemo(
@@ -243,10 +260,10 @@ export function SubjectFilesCarousel({
 
   const handleSubjectPress = useCallback(
     (subjectId: string) => {
-      if (didDragRef.current) return;
+      if (didDragRef.current || reorderingSubjectId) return;
       onSubjectPress(subjectId);
     },
-    [onSubjectPress]
+    [onSubjectPress, reorderingSubjectId]
   );
 
   const renderPage = ({ item: row }: ListRenderItemInfo<SubjectFolder[]>) => (
@@ -261,7 +278,11 @@ export function SubjectFilesCarousel({
               previewItems={previewItemsFor(subject.id)}
               onPreviewGestureLock={setPreviewGestureLock}
               onPress={() => handleSubjectPress(subject.id)}
-              onDeletePress={() => onSubjectDeletePress(subject.id, subject.name)}
+              onLiftForReorder={() => onSubjectLift(subject.id)}
+              onReorderDragMove={onSubjectReorderMove}
+              onReorderDragEnd={(moved, pageX, pageY) =>
+                onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY)
+              }
             />
           </View>
         ))}
