@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  Keyboard,
   PanResponder,
   Pressable,
   StyleSheet,
@@ -24,8 +25,6 @@ export type ScratchTextBox = {
 
 type WorkMode = 'draw' | 'text' | 'erase';
 
-const ZOOM_STEPS = [0.75, 1, 1.25, 1.5] as const;
-
 type Props = {
   width: number;
   height: number;
@@ -33,11 +32,13 @@ type Props = {
   onStrokesChange: (strokes: InkStroke[]) => void;
   textBoxes: ScratchTextBox[];
   onTextBoxesChange: (boxes: ScratchTextBox[]) => void;
+  onCanvasTouchChange?: (active: boolean) => void;
 };
 
 function DraggableTextBox({
   box,
   active,
+  editing,
   mode,
   cardWidth,
   cardHeight,
@@ -48,6 +49,7 @@ function DraggableTextBox({
 }: {
   box: ScratchTextBox;
   active: boolean;
+  editing: boolean;
   mode: WorkMode;
   cardWidth: number;
   cardHeight: number;
@@ -57,11 +59,12 @@ function DraggableTextBox({
   onRemove: () => void;
 }) {
   const dragOrigin = useRef({ x: box.x, y: box.y });
+  const resizeOrigin = useRef({ w: box.width, h: box.height });
 
-  const pan = useRef(
+  const dragPan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => mode === 'text',
-      onMoveShouldSetPanResponder: () => mode === 'text',
+      onStartShouldSetPanResponder: () => mode === 'text' && active,
+      onMoveShouldSetPanResponder: () => mode === 'text' && active,
       onPanResponderGrant: () => {
         dragOrigin.current = { x: box.x, y: box.y };
         onActivate();
@@ -74,6 +77,24 @@ function DraggableTextBox({
     })
   ).current;
 
+  const resizePan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => mode === 'text' && active,
+      onMoveShouldSetPanResponder: () => mode === 'text' && active,
+      onPanResponderGrant: () => {
+        resizeOrigin.current = { w: box.width, h: box.height };
+        onActivate();
+      },
+      onPanResponderMove: (_, g) => {
+        const w = Math.max(72, Math.min(cardWidth - box.x, resizeOrigin.current.w + g.dx));
+        const h = Math.max(32, Math.min(cardHeight - box.y, resizeOrigin.current.h + g.dy));
+        onChange({ width: w, height: h });
+      },
+    })
+  ).current;
+
+  const showChrome = active && editing;
+
   return (
     <View
       style={[
@@ -82,42 +103,33 @@ function DraggableTextBox({
           left: box.x,
           top: box.y,
           width: box.width,
-          minHeight: box.height,
+          height: box.height,
         },
-        active && styles.textBoxActive,
+        showChrome ? styles.textBoxEditing : styles.textBoxIdle,
+        active && !editing && styles.textBoxSelected,
       ]}
       pointerEvents={mode === 'text' ? 'auto' : 'none'}>
-      <View style={styles.textBoxHeader} {...pan.panHandlers}>
-        <Text style={styles.dragHint}>⋯</Text>
-        {active && mode === 'text' ? (
+      <View style={styles.textBoxHeader} {...(showChrome ? dragPan.panHandlers : {})}>
+        {showChrome ? <Text style={styles.dragHint}>⋯</Text> : null}
+        {showChrome ? (
           <Pressable onPress={onRemove} hitSlop={8} style={styles.deleteChip}>
             <Text style={styles.deleteChipText}>×</Text>
           </Pressable>
         ) : null}
       </View>
       <TextInput
-        style={styles.textInput}
+        style={[styles.textInput, !showChrome && styles.textInputIdle]}
         multiline
         value={box.text}
+        editable={showChrome}
         onChangeText={(text) => onChange({ text })}
         onFocus={onActivate}
         placeholder={placeholder}
         placeholderTextColor={theme.gray}
       />
-      {active && mode === 'text' ? (
-        <View style={styles.resizeRow}>
-          <Pressable
-            onPress={() => onChange({ width: Math.max(80, box.width - 20) })}
-            style={styles.resizeBtn}>
-            <Text style={styles.resizeBtnText}>−</Text>
-          </Pressable>
-          <Pressable
-            onPress={() =>
-              onChange({ width: Math.min(cardWidth - box.x, box.width + 20) })
-            }
-            style={styles.resizeBtn}>
-            <Text style={styles.resizeBtnText}>+</Text>
-          </Pressable>
+      {showChrome ? (
+        <View style={styles.resizeHandle} {...resizePan.panHandlers}>
+          <View style={styles.resizeCorner} />
         </View>
       ) : null}
     </View>
@@ -131,15 +143,22 @@ export function RecallWorkCard({
   onStrokesChange,
   textBoxes,
   onTextBoxesChange,
+  onCanvasTouchChange,
 }: Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<WorkMode>('draw');
   const [activeBoxId, setActiveBoxId] = useState<string | null>(null);
-  const [zoomIndex, setZoomIndex] = useState(1);
+  const [editingText, setEditingText] = useState(false);
 
   const recallTool: RecallTool = mode === 'erase' ? 'eraser' : 'pen-black';
-  const zoom = ZOOM_STEPS[zoomIndex] ?? 1;
   const surfaceH = height - 36;
+  const canvasInteractive = mode === 'draw' || mode === 'erase' || (mode === 'text' && !editingText);
+
+  const dismissTextEditing = useCallback(() => {
+    setEditingText(false);
+    setActiveBoxId(null);
+    Keyboard.dismiss();
+  }, []);
 
   const addTextBox = useCallback(() => {
     const id = `tb_${Date.now()}`;
@@ -147,12 +166,13 @@ export function RecallWorkCard({
       id,
       x: width * 0.1,
       y: surfaceH * 0.2,
-      width: Math.min(160, width * 0.6),
-      height: 48,
+      width: Math.min(160, width * 0.55),
+      height: 56,
       text: '',
     };
     onTextBoxesChange([...textBoxes, box]);
     setActiveBoxId(id);
+    setEditingText(true);
     setMode('text');
   }, [onTextBoxesChange, surfaceH, textBoxes, width]);
 
@@ -164,6 +184,7 @@ export function RecallWorkCard({
     <Pressable
       key={m}
       onPress={() => {
+        if (m !== 'text') dismissTextEditing();
         setMode(m);
         if (m === 'text' && textBoxes.length === 0) addTextBox();
       }}
@@ -178,18 +199,6 @@ export function RecallWorkCard({
         {modeBtn('draw', t('review.workDraw'))}
         {modeBtn('text', t('review.workText'))}
         {modeBtn('erase', t('review.workEraser'))}
-        <Pressable
-          onPress={() => setZoomIndex((i) => Math.max(0, i - 1))}
-          disabled={zoomIndex <= 0}
-          style={[styles.zoomBtn, zoomIndex <= 0 && styles.zoomBtnDisabled]}>
-          <Text style={styles.zoomBtnText}>−</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => setZoomIndex((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))}
-          disabled={zoomIndex >= ZOOM_STEPS.length - 1}
-          style={[styles.zoomBtn, zoomIndex >= ZOOM_STEPS.length - 1 && styles.zoomBtnDisabled]}>
-          <Text style={styles.zoomBtnText}>+</Text>
-        </Pressable>
         {mode === 'text' ? (
           <Pressable onPress={addTextBox} style={styles.addText}>
             <Text style={styles.addTextLabel}>+</Text>
@@ -198,30 +207,39 @@ export function RecallWorkCard({
       </View>
 
       <View style={[styles.surfaceOuter, { width, height: surfaceH }]}>
-        <View
-          style={[
-            styles.surface,
-            {
-              width,
-              height: surfaceH,
-              transform: [{ scale: zoom }],
-            },
-          ]}>
-          <RecallCanvas strokes={strokes} onStrokesChange={onStrokesChange} tool={recallTool} />
+        <View style={[styles.surface, { width, height: surfaceH }]}>
+          <View
+            style={[styles.canvasLayer, { width, height: surfaceH }]}
+            pointerEvents={canvasInteractive ? 'auto' : 'none'}>
+            <RecallCanvas
+              strokes={strokes}
+              onStrokesChange={onStrokesChange}
+              tool={recallTool}
+              onTouchStart={() => onCanvasTouchChange?.(true)}
+              onTouchEnd={() => onCanvasTouchChange?.(false)}
+            />
+          </View>
+          {editingText ? (
+            <Pressable style={styles.dismissBackdrop} onPress={dismissTextEditing} />
+          ) : null}
           {textBoxes.map((box) => (
             <DraggableTextBox
               key={box.id}
               box={box}
               active={activeBoxId === box.id}
+              editing={editingText && activeBoxId === box.id}
               mode={mode}
               cardWidth={width}
               cardHeight={surfaceH}
               placeholder={t('review.textBoxPlaceholder')}
               onChange={(patch) => updateBox(box.id, patch)}
-              onActivate={() => setActiveBoxId(box.id)}
+              onActivate={() => {
+                setActiveBoxId(box.id);
+                setEditingText(true);
+              }}
               onRemove={() => {
                 onTextBoxesChange(textBoxes.filter((b) => b.id !== box.id));
-                setActiveBoxId(null);
+                dismissTextEditing();
               }}
             />
           ))}
@@ -260,16 +278,6 @@ const styles = StyleSheet.create({
   modeBtnOn: { backgroundColor: theme.orange },
   modeBtnText: { fontSize: 11, fontWeight: '800', color: theme.gray },
   modeBtnTextOn: { color: theme.white },
-  zoomBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: theme.beige,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  zoomBtnDisabled: { opacity: 0.35 },
-  zoomBtnText: { fontWeight: '800', fontSize: 16, color: theme.black },
   addText: {
     width: 28,
     height: 28,
@@ -282,28 +290,49 @@ const styles = StyleSheet.create({
   surfaceOuter: {
     overflow: 'hidden',
     backgroundColor: theme.white,
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: 'relative',
+  },
+  dismissBackdrop: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 2,
   },
   surface: {
     position: 'relative',
     backgroundColor: theme.white,
+    zIndex: 1,
+  },
+  canvasLayer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
   },
   textBox: {
     position: 'absolute',
+    borderRadius: 6,
+    padding: 4,
+    zIndex: 4,
+  },
+  textBoxEditing: {
+    borderWidth: 2,
+    borderColor: theme.orange,
+    backgroundColor: 'rgba(255,255,255,0.96)',
+  },
+  textBoxIdle: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
+  textBoxSelected: {
     borderWidth: 1,
     borderColor: theme.orange,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    padding: 4,
+    borderStyle: 'dashed',
+    backgroundColor: 'transparent',
   },
-  textBoxActive: { borderWidth: 2 },
   textBoxHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 2,
-    minHeight: 20,
+    minHeight: 18,
   },
   dragHint: { color: theme.gray, fontWeight: '800', fontSize: 14, paddingHorizontal: 4 },
   deleteChip: {
@@ -316,18 +345,31 @@ const styles = StyleSheet.create({
   },
   deleteChipText: { color: theme.white, fontWeight: '800', fontSize: 14, lineHeight: 16 },
   textInput: {
+    flex: 1,
     fontSize: 14,
     color: theme.black,
-    minHeight: 36,
     textAlignVertical: 'top',
+    padding: 0,
   },
-  resizeRow: { flexDirection: 'row', gap: 4, marginTop: 4 },
-  resizeBtn: {
-    flex: 1,
-    paddingVertical: 2,
-    backgroundColor: theme.grayLight,
-    borderRadius: 4,
-    alignItems: 'center',
+  textInputIdle: {
+    backgroundColor: 'transparent',
   },
-  resizeBtnText: { fontWeight: '800', fontSize: 12, color: theme.black },
+  resizeHandle: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    width: 28,
+    height: 28,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+  },
+  resizeCorner: {
+    width: 14,
+    height: 14,
+    borderRightWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: theme.orange,
+    marginRight: 2,
+    marginBottom: 2,
+  },
 });

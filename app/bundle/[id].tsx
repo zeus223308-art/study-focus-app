@@ -96,8 +96,10 @@ export default function BundleScreen() {
   const [redoStack, setRedoStack] = useState<NoteLayer['strokes'][]>([]);
   const viewport = useViewportLayout();
   const viewerLayout = useFullscreenViewerLayout();
-  const photoW = Math.round(
-    Math.min(viewport.contentMaxWidth - viewport.horizontalPadding * 2, 480) * 0.5
+  const photoW = Math.min(
+    viewport.width - viewport.horizontalPadding * 2,
+    viewport.contentMaxWidth,
+    560
   );
   const photoH = Math.round(photoW * 1.12);
 

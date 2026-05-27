@@ -34,18 +34,31 @@ type Props = {
   onStrokesChange: (strokes: InkStroke[]) => void;
   tool: RecallTool;
   fullScreen?: boolean;
+  onTouchStart?: () => void;
+  onTouchEnd?: () => void;
 };
 
 /** White scratch layer for active recall during blackout */
-export function RecallCanvas({ strokes, onStrokesChange, tool, fullScreen }: Props) {
+export function RecallCanvas({
+  strokes,
+  onStrokesChange,
+  tool,
+  fullScreen,
+  onTouchStart,
+  onTouchEnd,
+}: Props) {
   const [size, setSize] = useState({ w: 320, h: 240 });
   const strokesRef = useRef(strokes);
   const toolRef = useRef(tool);
+  const touchStartRef = useRef(onTouchStart);
+  const touchEndRef = useRef(onTouchEnd);
   const currentRef = useRef<InkStroke | null>(null);
   const [, bump] = useState(0);
 
   strokesRef.current = strokes;
   toolRef.current = tool;
+  touchStartRef.current = onTouchStart;
+  touchEndRef.current = onTouchEnd;
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -73,6 +86,7 @@ export function RecallCanvas({ strokes, onStrokesChange, tool, fullScreen }: Pro
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt: GestureResponderEvent) => {
+        touchStartRef.current?.();
         const activeTool = toolRef.current;
         const { locationX: x, locationY: y } = evt.nativeEvent;
         currentRef.current = {
@@ -92,8 +106,14 @@ export function RecallCanvas({ strokes, onStrokesChange, tool, fullScreen }: Pro
         cur.points.push({ x, y });
         bump((n) => n + 1);
       },
-      onPanResponderRelease: commitStroke,
-      onPanResponderTerminate: commitStroke,
+      onPanResponderRelease: () => {
+        commitStroke();
+        touchEndRef.current?.();
+      },
+      onPanResponderTerminate: () => {
+        commitStroke();
+        touchEndRef.current?.();
+      },
     })
   ).current;
 
@@ -145,7 +165,9 @@ export function RecallCanvas({ strokes, onStrokesChange, tool, fullScreen }: Pro
 const styles = StyleSheet.create({
   wrap: {
     flex: 1,
-    minHeight: 200,
+    width: '100%',
+    height: '100%',
+    minHeight: 120,
     backgroundColor: theme.paper,
     borderRadius: theme.radius.md,
     borderWidth: 1,

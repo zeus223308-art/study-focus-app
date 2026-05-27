@@ -110,8 +110,10 @@ export default function ReviewSessionScreen() {
   const frontFade = useRef(new Animated.Value(1)).current;
   const problemShift = useRef(new Animated.Value(0)).current;
   const viewport = useViewportLayout();
-  const workCardW = Math.min(260, viewport.width - 40);
-  const workCardH = Math.round(workCardW * 0.72);
+  const workCardW = Math.min(viewport.width - 24, viewport.contentMaxWidth, 520);
+  const problemCardH = Math.round(workCardW * 0.52);
+  const workCardH = Math.round(workCardW * 1.44);
+  const [recallScrollLocked, setRecallScrollLocked] = useState(false);
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
   const [recallCountdownSec, setRecallCountdownSec] = useState(3);
@@ -181,6 +183,12 @@ export default function ReviewSessionScreen() {
   useEffect(() => {
     resetSlide();
   }, [index, resetSlide]);
+
+  useEffect(() => {
+    if (phase !== 'recall-work' && phase !== 'countdown') {
+      setRecallScrollLocked(false);
+    }
+  }, [phase]);
 
   const effectiveSlideMs = useCallback(
     (page: NotePage, side: SlideSide) => {
@@ -386,7 +394,7 @@ export default function ReviewSessionScreen() {
     (phase === 'recall-work' || phase === 'countdown') && !showAnswerOverlay;
   const problemLiftY = problemShift.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -Math.round(workCardH * 0.06)],
+    outputRange: [0, -Math.round(problemCardH * 0.06)],
   });
   const showingBack = current.side === 'back' && Boolean(answerUri);
   const displayUri = showingBack ? resolvedAnswerUri : resolvedFrontUri;
@@ -453,20 +461,21 @@ export default function ReviewSessionScreen() {
           style={styles.recallScroll}
           contentContainerStyle={styles.recallFull}
           keyboardShouldPersistTaps="handled"
+          scrollEnabled={!recallScrollLocked}
           showsVerticalScrollIndicator>
           <Animated.View
             style={[
               styles.problemStage,
-              { width: workCardW, height: workCardH, transform: [{ translateY: problemLiftY }] },
+              { width: workCardW, height: problemCardH, transform: [{ translateY: problemLiftY }] },
             ]}>
             {resolvedFrontUri ? (
               <Image
                 source={{ uri: resolvedFrontUri }}
-                style={{ width: workCardW, height: workCardH }}
+                style={{ width: workCardW, height: problemCardH }}
                 resizeMode="contain"
               />
             ) : (
-              <View style={[styles.imageMissing, { width: workCardW, height: workCardH }]} />
+              <View style={[styles.imageMissing, { width: workCardW, height: problemCardH }]} />
             )}
             {phase === 'countdown' && countdown !== null ? (
               <View style={styles.countdownOnImage}>
@@ -484,6 +493,7 @@ export default function ReviewSessionScreen() {
                 onStrokesChange={setRecallStrokes}
                 textBoxes={textBoxes}
                 onTextBoxesChange={setTextBoxes}
+                onCanvasTouchChange={setRecallScrollLocked}
               />
               {!hasAnswer ? <Text style={styles.warn}>{t('review.noBackPhoto')}</Text> : null}
               <View style={styles.recallActions}>
