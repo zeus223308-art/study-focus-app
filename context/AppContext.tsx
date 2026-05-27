@@ -57,7 +57,6 @@ import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/
 import {
   checkFreemiumLimits,
   createStorageProvider,
-  remainingPhotoSlots,
   type ImportPhotosResult,
 } from '@/services/storage';
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
