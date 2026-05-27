@@ -165,7 +165,19 @@
     "saveToArchiveCount": "Save to archive ({{count}})",
     "restoreFromArchive": "Restore",
     "restoreSelected": "Restore ({{count}})",
-    "archivedCount": "{{count}} item(s) archived"
+    "archivedCount": "{{count}} item(s) archived",
+    "mergeConfirmTitle": "Merge these?",
+    "mergeConfirmMessage": "Combines the stacks into one. You can merge across subjects.",
+    "mergeTitlePrompt": "Enter a title",
+    "mergeTitlePlaceholder": "Merged file name",
+    "merged": "Merged",
+    "sendToNewFolder": "Send to new folder",
+    "splitTitlePrompt": "Create new file",
+    "splitNameLabel": "File name",
+    "splitNamePlaceholder": "Enter title",
+    "splitSubjectLabel": "Subject folder",
+    "splitDone": "Sent to new file",
+    "holdReorder": "Reorder"
   },
   "item": {
     "layers": "Layers",

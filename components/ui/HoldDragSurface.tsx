@@ -27,6 +27,8 @@ type Props = {
   onPress?: () => void;
   /** First tap, then second touch + hold within ~0.4s → delete (no selection UI). */
   onDeleteHold?: () => void;
+  /** Long-press without move → action menu (e.g. split to new folder). */
+  onHoldMenu?: () => void;
   onGestureActiveChange?: (active: boolean) => void;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -44,6 +46,7 @@ export function HoldDragSurface({
   onDragEnd,
   onPress,
   onDeleteHold,
+  onHoldMenu,
   onGestureActiveChange,
   children,
   style,
@@ -129,6 +132,15 @@ export function HoldDragSurface({
         return;
       }
 
+      if (onHoldMenu) {
+        phaseRef.current = 'idle';
+        clearTimer();
+        clearOpenDefer();
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onHoldMenu();
+        return;
+      }
+
       phaseRef.current = 'lifted';
       movedRef.current = false;
       setActive(true);
@@ -136,7 +148,7 @@ export function HoldDragSurface({
       onLift();
       onDragMove?.(pageX, pageY);
     },
-    [clearOpenDefer, clearTimer, onDeleteHold, onDragMove, onLift, setActive]
+    [clearOpenDefer, clearTimer, onDeleteHold, onDragMove, onHoldMenu, onLift, setActive]
   );
 
   const scheduleLift = useCallback(

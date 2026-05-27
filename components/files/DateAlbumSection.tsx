@@ -28,6 +28,7 @@ type Props = {
   onDragEnd?: (item: SubjectProblemItem, moved: boolean, pageX: number, pageY: number) => void;
   onLiftItemForDrag: (item: SubjectProblemItem) => void;
   onDeleteHold?: (item: SubjectProblemItem) => void;
+  onHoldMenu?: (item: SubjectProblemItem) => void;
   selectionMode?: 'pick' | null;
   selectedKeys?: Set<string>;
   onToggleSelect?: (item: SubjectProblemItem) => void;
@@ -52,6 +53,7 @@ export function DateAlbumSection({
   onDragEnd,
   onLiftItemForDrag,
   onDeleteHold,
+  onHoldMenu,
   selectionMode,
   selectedKeys,
   onToggleSelect,
@@ -93,6 +95,7 @@ export function DateAlbumSection({
                 onDragEnd ? (moved, pageX, pageY) => onDragEnd(item, moved, pageX, pageY) : undefined
               }
               onDeleteHold={onDeleteHold ? () => onDeleteHold(item) : undefined}
+              onHoldMenu={onHoldMenu ? () => onHoldMenu(item) : undefined}
               pickMode={pickMode}
               pickSelected={pickMode && (selectedKeys?.has(key) ?? false)}
               onTogglePick={onToggleSelect ? () => onToggleSelect(item) : undefined}

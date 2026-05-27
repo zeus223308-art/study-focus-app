@@ -165,7 +165,19 @@
     "saveToArchiveCount": "아카이브에 저장 ({{count}})",
     "restoreFromArchive": "불러오기",
     "restoreSelected": "불러오기 ({{count}})",
-    "archivedCount": "{{count}}개를 아카이브했습니다"
+    "archivedCount": "{{count}}개를 아카이브했습니다",
+    "mergeConfirmTitle": "합칠까요?",
+    "mergeConfirmMessage": "선택한 사진 묶음을 하나로 합칩니다. 다른 과목 사진도 합칠 수 있습니다.",
+    "mergeTitlePrompt": "제목을 입력하세요",
+    "mergeTitlePlaceholder": "합친 파일 이름",
+    "merged": "합쳤습니다",
+    "sendToNewFolder": "새로운 폴더로 보내기",
+    "splitTitlePrompt": "새 파일 만들기",
+    "splitNameLabel": "파일 이름",
+    "splitNamePlaceholder": "제목 입력",
+    "splitSubjectLabel": "과목 폴더",
+    "splitDone": "새 파일로 보냈습니다",
+    "holdReorder": "순서 변경"
   },
   "item": {
     "layers": "레이어",

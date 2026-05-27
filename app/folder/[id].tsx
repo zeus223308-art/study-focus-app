@@ -16,11 +16,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
+import { PhotoHoldActionSheet } from '@/components/files/PhotoHoldActionSheet';
+import { SplitToNewFolderModal } from '@/components/files/SplitToNewFolderModal';
 import { SubjectArchiveHeaderButton } from '@/components/files/SubjectArchiveHeaderButton';
 import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
 import { SubjectDropDock } from '@/components/files/SubjectDropDock';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
+import { TitleInputDialog } from '@/components/ui/TitleInputDialog';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
@@ -54,6 +57,10 @@ export default function FolderScreen() {
     cancelMovingBundle,
     deletePage,
     archiveBundle,
+    consumePendingMerge,
+    clearPendingMerge,
+    mergeBundlesWithTitle,
+    splitPageToNewBundle,
   } = useApp();
   const [importing, setImporting] = useState(false);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
@@ -61,6 +68,12 @@ export default function FolderScreen() {
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [tileGestureActive, setTileGestureActive] = useState(false);
+  const [holdMenuItem, setHoldMenuItem] = useState<SubjectProblemItem | null>(null);
+  const [splitItem, setSplitItem] = useState<SubjectProblemItem | null>(null);
+  const [mergePair, setMergePair] = useState<{
+    sourceBundleId: string;
+    targetBundleId: string;
+  } | null>(null);
   const viewport = useViewportLayout();
   const insets = useSafeAreaInsets();
 
@@ -153,7 +166,22 @@ export default function FolderScreen() {
     } else if (result === 'moved') {
       const name = data.subjects.find((s) => s.id === moveTargetId)?.name ?? '';
       Alert.alert('', t('folder.movedTo', { name }));
+    } else if (result === 'merge') {
+      const merge = consumePendingMerge();
+      if (!merge) return;
+      confirmChoice({
+        title: t('folder.mergeConfirmTitle'),
+        message: t('folder.mergeConfirmMessage'),
+        yesLabel: t('common.yes'),
+        noLabel: t('common.no'),
+        onYes: () => setMergePair(merge),
+        onNo: () => clearPendingMerge(),
+      });
     }
+  };
+
+  const onHoldMenuItem = (item: SubjectProblemItem) => {
+    setHoldMenuItem(item);
   };
 
   const toggleArchiveSelect = (item: SubjectProblemItem) => {
@@ -285,6 +313,7 @@ export default function FolderScreen() {
                     ? undefined
                     : (item) => confirmDeleteProblem(item.bundleId, item.pageId)
                 }
+                onHoldMenu={archiveSelectMode ? undefined : onHoldMenuItem}
                 selectionMode={archiveSelectMode ? 'pick' : null}
                 selectedKeys={selectedKeys}
                 onToggleSelect={toggleArchiveSelect}
@@ -322,6 +351,73 @@ export default function FolderScreen() {
         subjectId={subject.id}
         subjectName={subject.name}
         onClose={() => setArchiveModalOpen(false)}
+      />
+
+      <PhotoHoldActionSheet
+        visible={holdMenuItem !== null}
+        sendToNewFolderLabel={t('folder.sendToNewFolder')}
+        reorderLabel={t('folder.holdReorder')}
+        cancelLabel={t('common.cancel')}
+        onSendToNewFolder={() => {
+          const item = holdMenuItem;
+          setHoldMenuItem(null);
+          if (item) setSplitItem(item);
+        }}
+        onReorder={() => {
+          const item = holdMenuItem;
+          setHoldMenuItem(null);
+          if (item) onLiftItemForDrag(item);
+        }}
+        onClose={() => setHoldMenuItem(null)}
+      />
+
+      <SplitToNewFolderModal
+        visible={splitItem !== null}
+        title={t('folder.splitTitlePrompt')}
+        nameLabel={t('folder.splitNameLabel')}
+        namePlaceholder={t('folder.splitNamePlaceholder')}
+        subjectLabel={t('folder.splitSubjectLabel')}
+        confirmLabel={t('common.save')}
+        cancelLabel={t('common.cancel')}
+        subjects={data.subjects}
+        initialSubjectId={splitItem?.bundle.subjectId ?? subject?.id ?? ''}
+        onCancel={() => setSplitItem(null)}
+        onConfirm={(title, targetSubjectId) => {
+          if (!splitItem) return;
+          splitPageToNewBundle(
+            splitItem.bundleId,
+            splitItem.pageId,
+            title,
+            targetSubjectId
+          );
+          setSplitItem(null);
+          showMessage('', t('folder.splitDone'));
+          if (targetSubjectId !== subject?.id) {
+            router.push({ pathname: '/folder/[id]', params: { id: targetSubjectId } });
+          }
+        }}
+      />
+
+      <TitleInputDialog
+        visible={mergePair !== null}
+        title={t('folder.mergeTitlePrompt')}
+        placeholder={t('folder.mergeTitlePlaceholder')}
+        confirmLabel={t('common.save')}
+        cancelLabel={t('common.cancel')}
+        onCancel={() => {
+          setMergePair(null);
+          clearPendingMerge();
+        }}
+        onConfirm={(title) => {
+          if (!mergePair) return;
+          mergeBundlesWithTitle(
+            mergePair.sourceBundleId,
+            mergePair.targetBundleId,
+            title
+          );
+          setMergePair(null);
+          showMessage('', t('folder.merged'));
+        }}
       />
 
     </View>

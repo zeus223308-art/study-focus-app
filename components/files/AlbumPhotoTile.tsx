@@ -23,6 +23,7 @@ type Props = {
   onLiftForDrag: () => void;
   /** First tap arms; second touch + hold opens delete confirm. */
   onDeleteHold?: () => void;
+  onHoldMenu?: () => void;
   pickMode?: boolean;
   pickSelected?: boolean;
   onTogglePick?: () => void;
@@ -41,6 +42,7 @@ export function AlbumPhotoTile({
   onDragEnd,
   onLiftForDrag,
   onDeleteHold,
+  onHoldMenu,
   pickMode,
   pickSelected,
   onTogglePick,
@@ -105,6 +107,7 @@ export function AlbumPhotoTile({
         onDragEnd={handleDragEnd}
         onPress={handlePress}
         onDeleteHold={onDeleteHold}
+        onHoldMenu={onHoldMenu}
         onGestureActiveChange={onGestureActiveChange}
         style={[
           styles.tile,

@@ -24,6 +24,7 @@ type Props = {
   onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onPress?: () => void;
   onDeleteHold?: () => void;
+  onHoldMenu?: () => void;
   onGestureActiveChange?: (active: boolean) => void;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -50,6 +51,7 @@ export function HoldDragSurface({
   onDragEnd,
   onPress,
   onDeleteHold,
+  onHoldMenu,
   onGestureActiveChange,
   children,
   style,
@@ -74,6 +76,7 @@ export function HoldDragSurface({
   const onDragEndRef = useRef(onDragEnd);
   const onPressRef = useRef(onPress);
   const onDeleteHoldRef = useRef(onDeleteHold);
+  const onHoldMenuRef = useRef(onHoldMenu);
   const onGestureActiveChangeRef = useRef(onGestureActiveChange);
 
   enabledRef.current = enabled;
@@ -82,6 +85,7 @@ export function HoldDragSurface({
   onDragEndRef.current = onDragEnd;
   onPressRef.current = onPress;
   onDeleteHoldRef.current = onDeleteHold;
+  onHoldMenuRef.current = onHoldMenu;
   onGestureActiveChangeRef.current = onGestureActiveChange;
 
   const setLiftedState = useCallback((value: boolean) => {
@@ -157,6 +161,14 @@ export function HoldDragSurface({
         clearTimer();
         clearOpenDefer();
         onDeleteHoldRef.current();
+        return;
+      }
+
+      if (onHoldMenuRef.current) {
+        phaseRef.current = 'idle';
+        clearTimer();
+        clearOpenDefer();
+        onHoldMenuRef.current();
         return;
       }
 

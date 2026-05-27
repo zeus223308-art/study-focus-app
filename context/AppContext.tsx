@@ -25,8 +25,10 @@ import type {
   ReviewSchedule,
   SubjectFolder,
 } from '@/lib/domain/types';
+import { mergeBundlesIntoTarget } from '@/lib/domain/merge-bundles';
 import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
 import { removePageFromData } from '@/lib/domain/remove-page';
+import { splitPageToNewBundle as splitPageToNewBundleData } from '@/lib/domain/split-page';
 import { mergeItemOrder, reorderItemKeys, reorderSubjectFolders } from '@/lib/domain/reorder';
 import { listSubjectProblems } from '@/lib/grouping/bundles';
 import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
@@ -83,6 +85,16 @@ type AppContextValue = {
   unarchiveBundle: (id: string) => void;
   moveBundleToTrash: (id: string) => void;
   deletePage: (bundleId: string, pageId: string) => void;
+  mergeBundlesWithTitle: (sourceBundleId: string, targetBundleId: string, title: string) => void;
+  splitPageToNewBundle: (
+    bundleId: string,
+    pageId: string,
+    title: string,
+    targetSubjectId: string
+  ) => void;
+  pendingMerge: { sourceBundleId: string; targetBundleId: string } | null;
+  consumePendingMerge: () => { sourceBundleId: string; targetBundleId: string } | null;
+  clearPendingMerge: () => void;
   restoreTrash: (trashId: string) => void;
   applyLayerCycleChoice: (bundleId: string, choice: LayerCycleChoice) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
@@ -124,7 +136,11 @@ type AppContextValue = {
   ) => void;
   updateDragHover: (pageX: number, pageY: number) => void;
   updateSubjectReorderHover: (pageX: number, pageY: number) => void;
-  finishItemDrag: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'moved' | 'cancelled';
+  finishItemDrag: (
+    pageX: number,
+    pageY: number,
+    moved: boolean
+  ) => 'reordered' | 'moved' | 'merge' | 'cancelled';
   finishSubjectReorder: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'cancelled';
   finishBundleDrop: (pageX: number, pageY: number) => string | null;
   reorderSubjects: (activeId: string, overId: string) => void;
@@ -160,6 +176,10 @@ export function AppProvider({
   const [dragHoverItemKey, setDragHoverItemKey] = useState<string | null>(null);
   const [reorderingSubjectId, setReorderingSubjectId] = useState<string | null>(null);
   const [reorderHoverSubjectId, setReorderHoverSubjectId] = useState<string | null>(null);
+  const [pendingMerge, setPendingMerge] = useState<{
+    sourceBundleId: string;
+    targetBundleId: string;
+  } | null>(null);
   const [subjectReorderMeasureTick, setSubjectReorderMeasureTick] = useState(0);
   const dropZonesRef = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(
     new Map()
@@ -533,6 +553,38 @@ export function AppProvider({
     });
   }, []);
 
+  const clearPendingMerge = useCallback(() => setPendingMerge(null), []);
+
+  const consumePendingMerge = useCallback(() => {
+    let next: { sourceBundleId: string; targetBundleId: string } | null = null;
+    setPendingMerge((prev) => {
+      next = prev;
+      return null;
+    });
+    return next;
+  }, []);
+
+  const mergeBundlesWithTitle = useCallback(
+    (sourceBundleId: string, targetBundleId: string, title: string) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        return mergeBundlesIntoTarget(prev, sourceBundleId, targetBundleId, title);
+      });
+      setPendingMerge(null);
+    },
+    []
+  );
+
+  const splitPageToNewBundle = useCallback(
+    (bundleId: string, pageId: string, title: string, targetSubjectId: string) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        return splitPageToNewBundleData(prev, bundleId, pageId, title, targetSubjectId);
+      });
+    },
+    []
+  );
+
   const restoreTrash = useCallback((trashId: string) => {
     setData((prev) => {
       if (!prev) return prev;
@@ -773,7 +825,7 @@ export function AppProvider({
   );
 
   const finishItemDrag = useCallback(
-    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'moved' | 'cancelled' => {
+    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'moved' | 'merge' | 'cancelled' => {
       if (!movingBundleId || !dragSourceSubjectId) {
         cancelMovingBundle();
         return 'cancelled';
@@ -785,11 +837,16 @@ export function AppProvider({
 
       const hoverItem =
         hitTestZones(pageX, pageY, itemDropZonesRef.current) ?? dragHoverItemKey;
-      if (
-        hoverItem &&
-        draggingItemKey &&
-        hoverItem !== draggingItemKey
-      ) {
+      if (hoverItem && draggingItemKey && hoverItem !== draggingItemKey) {
+        const targetBundleId = hoverItem.split(':')[0]!;
+        if (targetBundleId !== movingBundleId) {
+          setPendingMerge({
+            sourceBundleId: movingBundleId,
+            targetBundleId,
+          });
+          cancelMovingBundle();
+          return 'merge';
+        }
         reorderSubjectItems(dragSourceSubjectId, draggingItemKey, hoverItem);
         cancelMovingBundle();
         return 'reordered';
@@ -924,6 +981,11 @@ export function AppProvider({
       unarchiveBundle,
       moveBundleToTrash,
       deletePage,
+      mergeBundlesWithTitle,
+      splitPageToNewBundle,
+      pendingMerge,
+      consumePendingMerge,
+      clearPendingMerge,
       restoreTrash,
       applyLayerCycleChoice,
       updateSettings,
@@ -989,6 +1051,10 @@ export function AppProvider({
     unarchiveBundle,
     moveBundleToTrash,
     deletePage,
+    mergeBundlesWithTitle,
+    splitPageToNewBundle,
+    consumePendingMerge,
+    clearPendingMerge,
     restoreTrash,
     applyLayerCycleChoice,
     updateSettings,
