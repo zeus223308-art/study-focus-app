@@ -2,7 +2,6 @@ import { useRef } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { SubjectArchiveHeaderButton } from '@/components/files/SubjectArchiveHeaderButton';
 import { SubjectDropTarget } from '@/components/files/SubjectDropTarget';
 import { SubjectFolderPreview } from '@/components/files/SubjectFolderPreview';
 import { theme } from '@/constants/theme';
@@ -15,7 +14,6 @@ type Props = {
   totalLabel: string;
   previewItems: SubjectPreviewItem[];
   onPress: () => void;
-  onArchivePress: () => void;
   onDeletePress: () => void;
   onPreviewGestureLock: (locked: boolean) => void;
 };
@@ -27,7 +25,6 @@ export function SubjectFolderTile({
   totalLabel,
   previewItems,
   onPress,
-  onArchivePress,
   onDeletePress,
   onPreviewGestureLock,
 }: Props) {
@@ -55,7 +52,6 @@ export function SubjectFolderTile({
             {name}
           </Text>
         </Pressable>
-        <SubjectArchiveHeaderButton label={t('folder.archive')} onPress={onArchivePress} />
       </View>
       <View ref={cardRef} collapsable={false}>
         <SubjectFolderPreview

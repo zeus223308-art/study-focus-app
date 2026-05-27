@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
-import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
@@ -27,9 +26,6 @@ export default function FilesScreen() {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [panelWidth, setPanelWidth] = useState(0);
-  const [archiveSubject, setArchiveSubject] = useState<{ id: string; name: string } | null>(
-    null
-  );
 
   const pageWidth = panelWidth > 0 ? panelWidth : Math.max(280, windowWidth - 40);
 
@@ -103,9 +99,6 @@ export default function FilesScreen() {
               onSubjectPress={(subjectId) =>
                 router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
               }
-              onSubjectArchivePress={(subjectId, subjectName) =>
-                setArchiveSubject({ id: subjectId, name: subjectName })
-              }
               onSubjectDeletePress={confirmDeleteSubject}
               swipeHint={subjectPages.length > 1 ? t('vault.swipeHint') : undefined}
             />
@@ -134,15 +127,6 @@ export default function FilesScreen() {
       <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
         <Text style={styles.trash}>{t('trash.title')}</Text>
       </Pressable>
-
-      {archiveSubject ? (
-        <SubjectArchiveModal
-          visible
-          subjectId={archiveSubject.id}
-          subjectName={archiveSubject.name}
-          onClose={() => setArchiveSubject(null)}
-        />
-      ) : null}
     </Screen>
   );
 }

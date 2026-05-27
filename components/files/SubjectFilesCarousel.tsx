@@ -47,7 +47,6 @@ type Props = {
   totalLabelFor: (subjectId: string) => string;
   previewItemsFor: (subjectId: string) => SubjectPreviewItem[];
   onSubjectPress: (subjectId: string) => void;
-  onSubjectArchivePress: (subjectId: string, subjectName: string) => void;
   onSubjectDeletePress: (subjectId: string, subjectName: string) => void;
   swipeHint?: string;
   emptyLabel?: string;
@@ -60,7 +59,6 @@ export function SubjectFilesCarousel({
   totalLabelFor,
   previewItemsFor,
   onSubjectPress,
-  onSubjectArchivePress,
   onSubjectDeletePress,
   swipeHint,
   emptyLabel,
@@ -263,7 +261,6 @@ export function SubjectFilesCarousel({
               previewItems={previewItemsFor(subject.id)}
               onPreviewGestureLock={setPreviewGestureLock}
               onPress={() => handleSubjectPress(subject.id)}
-              onArchivePress={() => onSubjectArchivePress(subject.id, subject.name)}
               onDeletePress={() => onSubjectDeletePress(subject.id, subject.name)}
             />
           </View>
