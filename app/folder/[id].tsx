@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { PhotoActionSheet } from '@/components/files/PhotoActionSheet';
+import { SubjectArchiveHeaderButton } from '@/components/files/SubjectArchiveHeaderButton';
 import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
 import { SubjectDropDock } from '@/components/files/SubjectDropDock';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -202,12 +203,10 @@ export default function FolderScreen() {
             backFallback="/(tabs)/vault"
             showSettings={false}
             right={
-              <Pressable
+              <SubjectArchiveHeaderButton
+                label={t('folder.archive')}
                 onPress={() => setArchiveModalOpen(true)}
-                style={styles.archiveHeaderBtn}
-                accessibilityLabel={t('folder.archive')}>
-                <Text style={styles.archiveHeaderText}>{t('folder.archive')}</Text>
-              </Pressable>
+              />
             }
           />
           {movingBundleId && (
@@ -317,19 +316,6 @@ export default function FolderScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 20 },
-  archiveHeaderBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: theme.radius.pill,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    backgroundColor: theme.surface,
-  },
-  archiveHeaderText: {
-    fontSize: theme.font.caption,
-    fontWeight: '700',
-    color: theme.black,
-  },
   cancelMove: { alignSelf: 'flex-end', marginTop: -12, marginBottom: 8 },
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   scroll: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24 },

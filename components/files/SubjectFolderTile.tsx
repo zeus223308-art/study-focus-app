@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { SubjectArchiveHeaderButton } from '@/components/files/SubjectArchiveHeaderButton';
 import { SubjectDropTarget } from '@/components/files/SubjectDropTarget';
 import { SubjectFolderPreview } from '@/components/files/SubjectFolderPreview';
 import { theme } from '@/constants/theme';
@@ -14,6 +15,7 @@ type Props = {
   totalLabel: string;
   previewItems: SubjectPreviewItem[];
   onPress: () => void;
+  onArchivePress: () => void;
   onPreviewGestureLock: (locked: boolean) => void;
 };
 
@@ -24,6 +26,7 @@ export function SubjectFolderTile({
   totalLabel,
   previewItems,
   onPress,
+  onArchivePress,
   onPreviewGestureLock,
 }: Props) {
   const { t } = useTranslation();
@@ -40,7 +43,12 @@ export function SubjectFolderTile({
 
   return (
     <SubjectDropTarget subjectId={subjectId} style={styles.wrap}>
-      <Text style={styles.name}>{name}</Text>
+      <View style={styles.nameRow}>
+        <Text style={styles.name} numberOfLines={1}>
+          {name}
+        </Text>
+        <SubjectArchiveHeaderButton label={t('folder.archive')} onPress={onArchivePress} />
+      </View>
       <View ref={cardRef} collapsable={false}>
         <SubjectFolderPreview
           variant="vault"
@@ -66,11 +74,20 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: 0,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 8,
+    marginLeft: 2,
+    marginRight: 2,
+  },
   name: {
+    flex: 1,
+    minWidth: 0,
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.black,
-    marginBottom: 8,
-    marginLeft: 2,
   },
 });
