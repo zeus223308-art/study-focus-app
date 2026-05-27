@@ -1,16 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { useWebLongPress } from '@/hooks/useWebLongPress';
 
 const DOUBLE_TAP_MS = 320;
 
@@ -20,7 +14,6 @@ type Props = {
   lifted?: boolean;
   disabled?: boolean;
   onEditingChange?: (editing: boolean) => void;
-  /** Long-press on subject name (Files tab menu). */
   onLongPressMenu?: () => void;
 };
 
@@ -33,17 +26,11 @@ export function SubjectFolderName({
   onLongPressMenu,
 }: Props) {
   const { renameSubject } = useApp();
-  const hostRef = useRef<View>(null);
   const lastTapRef = useRef(0);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
 
   const menuEnabled = Boolean(onLongPressMenu) && !disabled && !editing;
-
-  useWebLongPress(hostRef, {
-    enabled: Platform.OS === 'web' && menuEnabled,
-    onLongPress: () => onLongPressMenu?.(),
-  });
 
   useEffect(() => {
     setDraft(name);
@@ -68,7 +55,11 @@ export function SubjectFolderName({
     setEditing(false);
   }, [name]);
 
-  const handlePress = useCallback(() => {
+  const openMenu = useCallback(() => {
+    onLongPressMenu?.();
+  }, [onLongPressMenu]);
+
+  const tryRename = useCallback(() => {
     if (disabled || editing) return;
     const now = Date.now();
     if (now - lastTapRef.current < DOUBLE_TAP_MS) {
@@ -78,6 +69,28 @@ export function SubjectFolderName({
     }
     lastTapRef.current = now;
   }, [disabled, editing]);
+
+  const nameGesture = useMemo(() => {
+    const longPress = Gesture.LongPress()
+      .minDuration(500)
+      .maxDistance(24)
+      .enabled(menuEnabled)
+      .onStart(() => {
+        'worklet';
+        runOnJS(openMenu)();
+      });
+
+    const doubleTap = Gesture.Tap()
+      .numberOfTaps(2)
+      .maxDelay(DOUBLE_TAP_MS + 80)
+      .enabled(!disabled && !editing)
+      .onEnd(() => {
+        'worklet';
+        runOnJS(tryRename)();
+      });
+
+    return Gesture.Exclusive(longPress, doubleTap);
+  }, [disabled, editing, menuEnabled, openMenu, tryRename]);
 
   if (editing) {
     return (
@@ -92,34 +105,23 @@ export function SubjectFolderName({
           maxLength={40}
           returnKeyType="done"
           style={styles.input}
-          {...(Platform.OS === 'web'
-            ? ({
-                onKeyPress: (e: { nativeEvent: { key?: string } }) => {
-                  if (e.nativeEvent.key === 'Escape') cancel();
-                },
-              } as object)
-            : {})}
         />
       </View>
     );
   }
 
   return (
-    <Pressable
-      ref={hostRef}
-      onPress={handlePress}
-      onLongPress={Platform.OS === 'web' ? undefined : onLongPressMenu}
-      delayLongPress={500}
-      disabled={disabled}
-      hitSlop={8}
-      style={styles.nameRow}
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      accessibilityHint="Double tap to rename; long press for menu">
-      <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
-        {name}
-      </Text>
-    </Pressable>
+    <GestureDetector gesture={nameGesture}>
+      <View
+        style={styles.nameRow}
+        accessibilityRole="button"
+        accessibilityLabel={name}
+        accessibilityHint="Double tap to rename; long press for menu">
+        <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
+          {name}
+        </Text>
+      </View>
+    </GestureDetector>
   );
 }
 
@@ -128,7 +130,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginLeft: 2,
     marginRight: 2,
-    minHeight: 24,
+    minHeight: 28,
     justifyContent: 'center',
   },
   name: {
@@ -149,6 +151,5 @@ const styles = StyleSheet.create({
     borderColor: theme.orange,
     borderRadius: theme.radius.sm,
     backgroundColor: theme.surface,
-    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
 });

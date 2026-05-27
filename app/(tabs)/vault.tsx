@@ -4,15 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
-import { SubjectFolderHoldMenuSheet } from '@/components/files/SubjectFolderHoldMenuSheet';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useVaultSubjectMenu } from '@/context/VaultSubjectMenuContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
-import { confirmChoice, showMessage } from '@/lib/ui/confirm';
+import { showMessage } from '@/lib/ui/confirm';
 import {
   computeVaultFoldersPerPage,
   useViewportLayout,
@@ -23,10 +23,10 @@ const PANEL_PAD = 14;
 export default function FilesScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { openVaultSubjectMenu } = useVaultSubjectMenu();
   const {
     data,
     addSubject,
-    deleteSubject,
     movingBundleId,
     reorderingSubjectId,
     startSubjectReorder,
@@ -40,10 +40,6 @@ export default function FilesScreen() {
   const [panelWidth, setPanelWidth] = useState(0);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
   const [folderTouchActive, setFolderTouchActive] = useState(false);
-  const [holdMenuSubject, setHoldMenuSubject] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
 
   const lockFolderTouch = useCallback((locked: boolean) => {
     setFolderTouchActive(locked);
@@ -79,23 +75,6 @@ export default function FilesScreen() {
     setAdding(false);
   };
 
-  const confirmDeleteSubject = (subjectId: string, subjectName: string) => {
-    confirmChoice({
-      title: t('vault.deleteFolderTitle'),
-      message: t('vault.deleteFolderMessage', { name: subjectName }),
-      yesLabel: t('common.yes'),
-      noLabel: t('common.no'),
-      onYes: () => deleteSubject(subjectId),
-    });
-  };
-
-  const startHoldMenuReorder = () => {
-    if (!holdMenuSubject) return;
-    const { id } = holdMenuSubject;
-    setHoldMenuSubject(null);
-    startSubjectReorder(id);
-  };
-
   const onSubjectReorderMove = (pageX: number, pageY: number) => {
     setGhost({ x: pageX, y: pageY, visible: true });
     updateSubjectReorderHover(pageX, pageY);
@@ -117,85 +96,68 @@ export default function FilesScreen() {
 
   return (
     <>
-    <Screen scroll scrollEnabled={screenScrollEnabled} nestedScrollEnabled>
-      {movingBundleId ? (
-        <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
-      ) : null}
+      <Screen scroll scrollEnabled={screenScrollEnabled} nestedScrollEnabled>
+        {movingBundleId ? (
+          <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
+        ) : null}
 
-      <ScreenHeader
-        title={t('vault.title')}
-        showSettings={false}
-        right={
-          <Pressable onPress={() => router.push('/search')} hitSlop={8}>
-            <Text style={styles.headerAction}>{t('item.search')}</Text>
-          </Pressable>
-        }
-      />
-
-      <View style={styles.panel}>
-        <View
-          style={styles.carouselSlot}
-          onLayout={(e) => {
-            const w = Math.round(e.nativeEvent.layout.width);
-            if (w > 0 && w !== panelWidth) setPanelWidth(w);
-          }}>
-          <SubjectFilesCarousel
-            pages={subjectPages}
-            pageWidth={pageWidth}
-            foldersPerPage={foldersPerPage}
-            onAddFolder={() => setAdding(true)}
-            addFolderLabel={t('vault.addFolderCard')}
-            totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
-            previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
-            onSubjectPress={(subjectId) =>
-              router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
-            }
-            onSubjectLift={startSubjectReorder}
-            onSubjectReorderMove={onSubjectReorderMove}
-            onSubjectReorderEnd={onSubjectReorderEnd}
-            onFolderGestureLock={lockFolderTouch}
-            onSubjectHoldMenu={(subjectId, subjectName) =>
-              setHoldMenuSubject({ id: subjectId, name: subjectName })
-            }
-          />
-        </View>
-      </View>
-
-      {adding ? (
-        <View style={styles.addBox}>
-          <TextInput value={newName} onChangeText={setNewName} style={styles.input} autoFocus />
-          <View style={styles.addActions}>
-            <Pressable onPress={() => setAdding(false)}>
-              <Text style={styles.cancel}>{t('common.cancel')}</Text>
+        <ScreenHeader
+          title={t('vault.title')}
+          showSettings={false}
+          right={
+            <Pressable onPress={() => router.push('/search')} hitSlop={8}>
+              <Text style={styles.headerAction}>{t('item.search')}</Text>
             </Pressable>
-            <Pressable onPress={confirmAdd}>
-              <Text style={styles.save}>{t('common.save')}</Text>
-            </Pressable>
+          }
+        />
+
+        <View style={styles.panel}>
+          <View
+            style={styles.carouselSlot}
+            onLayout={(e) => {
+              const w = Math.round(e.nativeEvent.layout.width);
+              if (w > 0 && w !== panelWidth) setPanelWidth(w);
+            }}>
+            <SubjectFilesCarousel
+              pages={subjectPages}
+              pageWidth={pageWidth}
+              foldersPerPage={foldersPerPage}
+              onAddFolder={() => setAdding(true)}
+              addFolderLabel={t('vault.addFolderCard')}
+              totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
+              previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
+              onSubjectPress={(subjectId) =>
+                router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
+              }
+              onSubjectLift={startSubjectReorder}
+              onSubjectReorderMove={onSubjectReorderMove}
+              onSubjectReorderEnd={onSubjectReorderEnd}
+              onFolderGestureLock={lockFolderTouch}
+              onSubjectHoldMenu={openVaultSubjectMenu}
+            />
           </View>
         </View>
-      ) : null}
 
-      <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
-        <Text style={styles.trash}>{t('trash.title')}</Text>
-      </Pressable>
-    </Screen>
+        {adding ? (
+          <View style={styles.addBox}>
+            <TextInput value={newName} onChangeText={setNewName} style={styles.input} autoFocus />
+            <View style={styles.addActions}>
+              <Pressable onPress={() => setAdding(false)}>
+                <Text style={styles.cancel}>{t('common.cancel')}</Text>
+              </Pressable>
+              <Pressable onPress={confirmAdd}>
+                <Text style={styles.save}>{t('common.save')}</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
 
-    <SubjectFolderHoldMenuSheet
-      visible={holdMenuSubject !== null}
-      reorderLabel={t('folder.holdMenuReorder')}
-      deleteLabel={t('vault.deleteFolderAction')}
-      cancelLabel={t('common.cancel')}
-      onReorder={startHoldMenuReorder}
-      onDelete={() => {
-        if (!holdMenuSubject) return;
-        const { id, name } = holdMenuSubject;
-        setHoldMenuSubject(null);
-        confirmDeleteSubject(id, name);
-      }}
-      onClose={() => setHoldMenuSubject(null)}
-    />
+        <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
+          <Text style={styles.trash}>{t('trash.title')}</Text>
+        </Pressable>
+      </Screen>
 
-    <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
+      <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
     </>
   );
 }

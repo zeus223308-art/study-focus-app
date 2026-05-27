@@ -4,11 +4,13 @@ import { StyleSheet, View } from 'react-native';
 import { DockTabBar } from '@/components/DockTabBar';
 import { CaptureLeaveGuardProvider } from '@/components/capture/CaptureLeaveGuard';
 import { AppUsageGuideProvider } from '@/context/AppUsageGuideContext';
+import { VaultSubjectMenuProvider } from '@/context/VaultSubjectMenuContext';
 
 export default function TabLayout() {
   return (
     <CaptureLeaveGuardProvider>
     <AppUsageGuideProvider>
+    <VaultSubjectMenuProvider>
     <View style={styles.root}>
     <Tabs
       initialRouteName="index"
@@ -24,6 +26,7 @@ export default function TabLayout() {
       <Tabs.Screen name="settings" />
     </Tabs>
     </View>
+    </VaultSubjectMenuProvider>
     </AppUsageGuideProvider>
     </CaptureLeaveGuardProvider>
   );

@@ -95,7 +95,7 @@ export function SubjectFolderTile({
           subjectId={subjectId}
           name={name}
           lifted={isActive}
-          disabled={Boolean(movingBundleId) || isActive}
+          disabled={Boolean(movingBundleId)}
           onEditingChange={setNameEditing}
           onLongPressMenu={onHoldMenu}
         />
