@@ -15,7 +15,7 @@ import {
 import { confirmChoice } from '@/lib/ui/confirm';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
-const ALBUM_GAP = 2;
+const ALBUM_GAP = 0;
 
 function itemKey(item: SubjectProblemItem) {
   return `${item.bundleId}:${item.pageId}`;

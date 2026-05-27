@@ -146,10 +146,10 @@ const styles = StyleSheet.create({
   tile: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: theme.radius.sm,
+    borderRadius: 2,
     overflow: 'hidden',
     backgroundColor: theme.grayLight,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.grayLight,
     ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'manipulation', userSelect: 'none' } as object) : null),
   },

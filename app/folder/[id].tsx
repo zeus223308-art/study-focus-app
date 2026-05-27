@@ -41,7 +41,8 @@ import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
-const ALBUM_GAP = 2;
+/** ~1px visual gutter between tiles (grid gap 0 + hairline borders). */
+const ALBUM_GAP = 0;
 
 function itemKey(item: SubjectProblemItem) {
   return `${item.bundleId}:${item.pageId}`;
@@ -408,7 +409,7 @@ export default function FolderScreen() {
                 contentWidth={albumContentWidth}
                 gap={ALBUM_GAP}
                 hideHeader
-                sectionMarginBottom={8}
+                sectionMarginBottom={2}
                 labels={albumLabels}
                 onOpen={(bundleId, pageId) =>
                   router.push({
