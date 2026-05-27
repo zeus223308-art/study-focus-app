@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   dragSurface: {
     width: '100%',
     borderRadius: theme.radius.sm,
-    ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'none', userSelect: 'none' } as object) : null),
+    ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'manipulation', userSelect: 'none' } as object) : null),
   },
   dragSurfaceHover: {
     borderWidth: 2,

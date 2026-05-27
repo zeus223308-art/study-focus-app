@@ -86,4 +86,11 @@ body {
   -webkit-user-select: none !important;
   user-select: none !important;
 }
+[data-vault-tile="1"] {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+[data-vault-tile="1"][data-hold-drag="active"] {
+  touch-action: none !important;
+}
 `;

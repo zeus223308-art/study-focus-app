@@ -1,12 +1,18 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type GestureResponderEvent,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { HOLD_DRAG_MS } from '@/lib/ui/hold-drag';
 import { resolveWebElement } from '@/lib/ui/resolve-web-element';
 
 export { HOLD_DRAG_MS };
 
-const MOVE_CANCEL_PX = 14;
+const MOVE_CANCEL_PX = 10;
 const TAP_SLOP_PX = 16;
 
 type Props = {
@@ -20,13 +26,19 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-function touchPageXY(t: Touch): { pageX: number; pageY: number } {
+type Point = { pageX: number; pageY: number };
+
+function touchPageXY(t: Touch): Point {
   return { pageX: t.pageX || t.clientX, pageY: t.pageY || t.clientY };
 }
 
+function eventPoint(e: GestureResponderEvent): Point {
+  const ne = e.nativeEvent as { pageX?: number; pageY?: number };
+  return { pageX: ne.pageX ?? 0, pageY: ne.pageY ?? 0 };
+}
+
 /**
- * Mobile web: bind touch listeners on the real DOM node (iOS Safari + github.io).
- * Pressable / RN onTouch* are unreliable inside overflow scroll parents.
+ * Mobile web (Chrome / Safari): DOM touch + RN onTouch fallback.
  */
 export function HoldDragSurface({
   enabled,
@@ -39,12 +51,16 @@ export function HoldDragSurface({
   style,
 }: Props) {
   const hostRef = useRef<View>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const domBoundRef = useRef(false);
   const [lifted, setLifted] = useState(false);
 
   const enabledRef = useRef(enabled);
   const liftedRef = useRef(false);
   const movedRef = useRef(false);
-  const startRef = useRef({ pageX: 0, pageY: 0 });
+  const startRef = useRef<Point>({ pageX: 0, pageY: 0 });
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionCleanupRef = useRef<(() => void) | null>(null);
 
   const onLiftRef = useRef(onLift);
   const onDragMoveRef = useRef(onDragMove);
@@ -65,36 +81,20 @@ export function HoldDragSurface({
     onGestureActiveChangeRef.current?.(value);
   }, []);
 
-  useLayoutEffect(() => {
-    if (!enabled) return;
+  const clearTimer = useCallback(() => {
+    if (timerRef.current != null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
-    const el = resolveWebElement(hostRef.current);
-    if (!el) return;
+  const clearSession = useCallback(() => {
+    sessionCleanupRef.current?.();
+    sessionCleanupRef.current = null;
+  }, []);
 
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let sessionMove: ((ev: TouchEvent) => void) | null = null;
-    let sessionEnd: ((ev: TouchEvent) => void) | null = null;
-
-    const clearTimer = () => {
-      if (timer != null) {
-        clearTimeout(timer);
-        timer = null;
-      }
-    };
-
-    const clearSession = () => {
-      if (sessionMove) {
-        document.removeEventListener('touchmove', sessionMove);
-        sessionMove = null;
-      }
-      if (sessionEnd) {
-        document.removeEventListener('touchend', sessionEnd);
-        document.removeEventListener('touchcancel', sessionEnd);
-        sessionEnd = null;
-      }
-    };
-
-    const finish = (pageX: number, pageY: number) => {
+  const finish = useCallback(
+    (pageX: number, pageY: number) => {
       clearTimer();
       clearSession();
       const wasLifted = liftedRef.current;
@@ -111,16 +111,19 @@ export function HoldDragSurface({
       if (dx < TAP_SLOP_PX && dy < TAP_SLOP_PX) {
         onPressRef.current?.();
       }
-    };
+    },
+    [clearSession, clearTimer, setLiftedState]
+  );
 
-    const beginLift = (pageX: number, pageY: number) => {
+  const beginLift = useCallback(
+    (pageX: number, pageY: number) => {
       liftedRef.current = true;
       movedRef.current = false;
       setLiftedState(true);
       onLiftRef.current();
       onDragMoveRef.current?.(pageX, pageY);
 
-      sessionMove = (ev: TouchEvent) => {
+      const onMove = (ev: TouchEvent) => {
         if (!liftedRef.current) return;
         const t = ev.touches[0];
         if (!t) return;
@@ -130,85 +133,197 @@ export function HoldDragSurface({
         onDragMoveRef.current?.(pt.pageX, pt.pageY);
       };
 
-      sessionEnd = (ev: TouchEvent) => {
+      const onEnd = (ev: TouchEvent) => {
         const t = ev.changedTouches[0];
         if (!t) return;
         const pt = touchPageXY(t);
         finish(pt.pageX, pt.pageY);
       };
 
-      document.addEventListener('touchmove', sessionMove, { passive: false });
-      document.addEventListener('touchend', sessionEnd);
-      document.addEventListener('touchcancel', sessionEnd);
-    };
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onEnd);
+      document.addEventListener('touchcancel', onEnd);
+      sessionCleanupRef.current = () => {
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onEnd);
+        document.removeEventListener('touchcancel', onEnd);
+      };
+    },
+    [finish, setLiftedState]
+  );
 
-    const onTouchStart = (ev: TouchEvent) => {
-      if (!enabledRef.current || ev.touches.length !== 1) return;
-      const t = ev.touches[0]!;
+  const startPending = useCallback(
+    (pageX: number, pageY: number) => {
+      if (!enabledRef.current) return;
       clearTimer();
       clearSession();
       liftedRef.current = false;
       movedRef.current = false;
       setLiftedState(false);
-      startRef.current = touchPageXY(t);
+      startRef.current = { pageX, pageY };
 
-      timer = setTimeout(() => {
-        timer = null;
-        beginLift(touchPageXY(t).pageX, touchPageXY(t).pageY);
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        beginLift(pageX, pageY);
       }, HOLD_DRAG_MS);
-    };
+    },
+    [beginLift, clearSession, clearTimer, setLiftedState]
+  );
 
-    const onTouchMoveLocal = (ev: TouchEvent) => {
-      if (liftedRef.current) return;
-      if (!timer || ev.touches.length !== 1) return;
-      const t = ev.touches[0]!;
-      const pt = touchPageXY(t);
-      const dx = Math.abs(pt.pageX - startRef.current.pageX);
-      const dy = Math.abs(pt.pageY - startRef.current.pageY);
-      if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
-        clearTimer();
-      }
-    };
-
-    const onTouchEndLocal = (ev: TouchEvent) => {
-      if (liftedRef.current) return;
-      const t = ev.changedTouches[0];
-      if (!t) {
-        clearTimer();
+  const movePending = useCallback(
+    (pageX: number, pageY: number) => {
+      if (liftedRef.current) {
+        movedRef.current = true;
+        onDragMoveRef.current?.(pageX, pageY);
         return;
       }
-      const pt = touchPageXY(t);
-      if (timer) {
+      if (!timerRef.current) return;
+      const dx = Math.abs(pageX - startRef.current.pageX);
+      const dy = Math.abs(pageY - startRef.current.pageY);
+      // Horizontal move before lift → let carousel scroll, not reorder.
+      if (dx > MOVE_CANCEL_PX && dx > dy) {
         clearTimer();
-        finish(pt.pageX, pt.pageY);
       }
-    };
+    },
+    [clearTimer]
+  );
 
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchmove', onTouchMoveLocal, { passive: true });
-    el.addEventListener('touchend', onTouchEndLocal, { passive: true });
-    el.addEventListener('touchcancel', onTouchEndLocal, { passive: true });
+  const bindDom = useCallback(
+    (node: View | null) => {
+      cleanupRef.current?.();
+      cleanupRef.current = null;
+      domBoundRef.current = false;
+      if (!node || !enabledRef.current) return;
 
-    el.style.touchAction = 'manipulation';
-    el.style.webkitUserSelect = 'none';
-    (el.style as CSSStyleDeclaration & { webkitTouchCallout?: string }).webkitTouchCallout = 'none';
+      const el = resolveWebElement(node);
+      if (!el) return;
+      domBoundRef.current = true;
 
-    return () => {
+      const onTouchStart = (ev: TouchEvent) => {
+        if (!enabledRef.current || ev.touches.length !== 1) return;
+        const t = ev.touches[0]!;
+        startPending(touchPageXY(t).pageX, touchPageXY(t).pageY);
+      };
+
+      const onTouchMove = (ev: TouchEvent) => {
+        const t = ev.touches[0];
+        if (!t) return;
+        if (liftedRef.current) ev.preventDefault();
+        movePending(touchPageXY(t).pageX, touchPageXY(t).pageY);
+      };
+
+      const onTouchEnd = (ev: TouchEvent) => {
+        if (liftedRef.current) return;
+        const t = ev.changedTouches[0];
+        if (!t) {
+          clearTimer();
+          return;
+        }
+        const pt = touchPageXY(t);
+        if (timerRef.current) finish(pt.pageX, pt.pageY);
+      };
+
+      el.addEventListener('touchstart', onTouchStart, { passive: true });
+      el.addEventListener('touchmove', onTouchMove, { passive: false });
+      el.addEventListener('touchend', onTouchEnd, { passive: true });
+      el.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+      el.style.touchAction = liftedRef.current ? 'none' : 'manipulation';
+      el.style.webkitUserSelect = 'none';
+      (el.style as CSSStyleDeclaration & { webkitTouchCallout?: string }).webkitTouchCallout =
+        'none';
+
+      cleanupRef.current = () => {
+        domBoundRef.current = false;
+        el.removeEventListener('touchstart', onTouchStart);
+        el.removeEventListener('touchmove', onTouchMove);
+        el.removeEventListener('touchend', onTouchEnd);
+        el.removeEventListener('touchcancel', onTouchEnd);
+      };
+    },
+    [clearTimer, finish, movePending, startPending]
+  );
+
+  const setHostRef = useCallback(
+    (node: View | null) => {
+      hostRef.current = node;
+      bindDom(node);
+      if (!node || !enabledRef.current) return;
+      if (resolveWebElement(node)) return;
+      let attempts = 0;
+      const retry = () => {
+        attempts += 1;
+        bindDom(hostRef.current);
+        if (!cleanupRef.current && attempts < 8) {
+          requestAnimationFrame(retry);
+        }
+      };
+      requestAnimationFrame(retry);
+    },
+    [bindDom]
+  );
+
+  useEffect(() => {
+    if (!enabled) {
+      cleanupRef.current?.();
+      cleanupRef.current = null;
       clearTimer();
       clearSession();
-      el.removeEventListener('touchstart', onTouchStart);
-      el.removeEventListener('touchmove', onTouchMoveLocal);
-      el.removeEventListener('touchend', onTouchEndLocal);
-      el.removeEventListener('touchcancel', onTouchEndLocal);
+      return;
+    }
+    bindDom(hostRef.current);
+    return () => {
+      cleanupRef.current?.();
+      cleanupRef.current = null;
+      clearTimer();
+      clearSession();
     };
-  }, [enabled, setLiftedState]);
+  }, [bindDom, clearSession, clearTimer, enabled]);
+
+  const onTouchStartRn = useCallback(
+    (e: GestureResponderEvent) => {
+      if (domBoundRef.current) return;
+      const p = eventPoint(e);
+      startPending(p.pageX, p.pageY);
+    },
+    [startPending]
+  );
+
+  const onTouchMoveRn = useCallback(
+    (e: GestureResponderEvent) => {
+      if (domBoundRef.current && !liftedRef.current) return;
+      const p = eventPoint(e);
+      movePending(p.pageX, p.pageY);
+    },
+    [movePending]
+  );
+
+  const onTouchEndRn = useCallback(
+    (e: GestureResponderEvent) => {
+      if (domBoundRef.current && !liftedRef.current) return;
+      if (liftedRef.current) {
+        const p = eventPoint(e);
+        finish(p.pageX, p.pageY);
+        return;
+      }
+      if (timerRef.current) {
+        const p = eventPoint(e);
+        finish(p.pageX, p.pageY);
+      }
+    },
+    [finish]
+  );
 
   return (
     <View
-      ref={hostRef}
+      ref={setHostRef}
+      onTouchStart={enabled ? onTouchStartRn : undefined}
+      onTouchMove={enabled ? onTouchMoveRn : undefined}
+      onTouchEnd={enabled ? onTouchEndRn : undefined}
+      onTouchCancel={enabled ? onTouchEndRn : undefined}
       style={[style, styles.host, lifted && styles.hostLifted]}
       collapsable={false}
-      {...({ 'data-hold-drag': lifted ? 'active' : 'idle' } as object)}>
+      {...({ 'data-hold-drag': lifted ? 'active' : 'idle', 'data-vault-tile': '1' } as object)}>
       {children}
     </View>
   );
@@ -217,6 +332,7 @@ export function HoldDragSurface({
 const styles = StyleSheet.create({
   host: {
     width: '100%',
+    minHeight: 44,
     touchAction: 'manipulation',
     cursor: 'grab',
     userSelect: 'none',
@@ -224,5 +340,6 @@ const styles = StyleSheet.create({
   hostLifted: {
     touchAction: 'none',
     cursor: 'grabbing',
+    zIndex: 40,
   } as unknown as ViewStyle,
 });
