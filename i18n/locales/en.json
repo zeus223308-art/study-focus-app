@@ -63,9 +63,7 @@
     "previewEmpty": "No photos",
     "photos": "{{count}} photos",
     "deleteFolderTitle": "Delete this folder?",
-    "deleteFolderMessage": "\"{{name}}\" and all its photos will move to Trash.",
-    "mergeSubjectConfirmTitle": "Merge these subjects?",
-    "mergeSubjectConfirmMessage": "All photos from the source subject will move into the target subject."
+    "deleteFolderMessage": "\"{{name}}\" and all its photos will move to Trash."
   },
   "capture": {
     "title": "Capture",
@@ -168,20 +166,12 @@
     "restoreFromArchive": "Restore",
     "restoreSelected": "Restore ({{count}})",
     "archivedCount": "{{count}} item(s) archived",
-    "mergeConfirmTitle": "Merge these?",
-    "mergeConfirmMessage": "Combines the stacks into one. You can merge across subjects.",
-    "mergeTitlePrompt": "Enter a title",
-    "mergeTitlePlaceholder": "Merged file name",
-    "mergeSubjectNamePrompt": "Enter subject name",
-    "mergeSubjectNamePlaceholder": "Merged subject name",
-    "merged": "Merged",
     "sendToNewFolder": "Send to new folder",
-    "splitTitlePrompt": "Create new file",
-    "splitNameLabel": "File name",
-    "splitNamePlaceholder": "Enter title",
-    "splitSubjectLabel": "Subject folder",
-    "splitDone": "Sent to new file",
-    "holdReorder": "Reorder"
+    "sendToNewFolderTitle": "Create new folder",
+    "sendToNewFolderHint": "Enter a name for the new subject folder, then tap Send.",
+    "sendToNewFolderPlaceholder": "Folder name",
+    "sendToNewFolderDone": "Moved to \"{{name}}\"",
+    "holdMenuReorder": "Reorder (drag to move)"
   },
   "item": {
     "layers": "Layers",
@@ -437,6 +427,7 @@
     "yes": "Yes",
     "no": "No",
     "save": "Save",
+    "send": "Send",
     "done": "Done",
     "default": "Default",
     "check": "✓",

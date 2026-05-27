@@ -12,8 +12,10 @@ import { useApp } from '@/context/AppContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
-import { showMessage } from '@/lib/ui/confirm';
-import { VAULT_PANEL_PAD, computeVaultFoldersPerPage } from '@/lib/ui/viewport-layout';
+import { confirmChoice, showMessage } from '@/lib/ui/confirm';
+import { useViewportLayout } from '@/lib/ui/viewport-layout';
+
+const PANEL_PAD = 14;
 
 export default function FilesScreen() {
   const { t } = useTranslation();
@@ -21,6 +23,7 @@ export default function FilesScreen() {
   const {
     data,
     addSubject,
+    deleteSubject,
     movingBundleId,
     reorderingSubjectId,
     startSubjectReorder,
@@ -28,6 +31,7 @@ export default function FilesScreen() {
     finishSubjectReorder,
   } = useApp();
   const { width: windowWidth } = useWindowDimensions();
+  const viewport = useViewportLayout();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [panelWidth, setPanelWidth] = useState(0);
@@ -41,17 +45,16 @@ export default function FilesScreen() {
   const screenScrollEnabled = !reorderingSubjectId && !folderTouchActive;
 
   const pageWidth = panelWidth > 0 ? panelWidth : Math.max(280, windowWidth - 40);
-  const foldersPerPage = computeVaultFoldersPerPage(pageWidth);
 
   const subjectPages = useMemo(() => {
     const sorted = [...data.subjects].sort((a, b) => a.sortOrder - b.sortOrder);
     const pages: SubjectFolder[][] = [];
-    const perPage = foldersPerPage;
+    const perPage = viewport.vaultFoldersPerPage;
     for (let i = 0; i < sorted.length; i += perPage) {
       pages.push(sorted.slice(i, i + perPage));
     }
     return pages;
-  }, [data.subjects, foldersPerPage]);
+  }, [data.subjects, viewport.vaultFoldersPerPage]);
 
   const pageCountFor = (subjectId: string) =>
     data.bundles
@@ -63,6 +66,16 @@ export default function FilesScreen() {
     addSubject(newName, data.settings.activeScheduleIds[0] ?? data.schedules[0].id);
     setNewName('');
     setAdding(false);
+  };
+
+  const confirmDeleteSubject = (subjectId: string, subjectName: string) => {
+    confirmChoice({
+      title: t('vault.deleteFolderTitle'),
+      message: t('vault.deleteFolderMessage', { name: subjectName }),
+      yesLabel: t('common.yes'),
+      noLabel: t('common.no'),
+      onYes: () => deleteSubject(subjectId),
+    });
   };
 
   const onSubjectReorderMove = (pageX: number, pageY: number) => {
@@ -116,7 +129,7 @@ export default function FilesScreen() {
             <SubjectFilesCarousel
               pages={subjectPages}
               pageWidth={pageWidth}
-              foldersPerPage={foldersPerPage}
+              foldersPerPage={viewport.vaultFoldersPerPage}
               totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
               previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
               onSubjectPress={(subjectId) =>
@@ -126,6 +139,7 @@ export default function FilesScreen() {
               onSubjectReorderMove={onSubjectReorderMove}
               onSubjectReorderEnd={onSubjectReorderEnd}
               onFolderGestureLock={lockFolderTouch}
+              onSubjectDeleteHold={confirmDeleteSubject}
             />
           )}
         </View>
@@ -174,7 +188,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: theme.black,
     borderRadius: theme.radius.sm,
-    paddingVertical: VAULT_PANEL_PAD,
+    paddingVertical: PANEL_PAD,
     backgroundColor: theme.surface,
     overflow: 'hidden',
   },

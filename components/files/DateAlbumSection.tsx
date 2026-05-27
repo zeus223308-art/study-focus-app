@@ -27,8 +27,8 @@ type Props = {
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (item: SubjectProblemItem, moved: boolean, pageX: number, pageY: number) => void;
   onLiftItemForDrag: (item: SubjectProblemItem) => void;
-  onDeleteHold?: (item: SubjectProblemItem) => void;
   onHoldMenu?: (item: SubjectProblemItem) => void;
+  onDeleteHold?: (item: SubjectProblemItem) => void;
   selectionMode?: 'pick' | null;
   selectedKeys?: Set<string>;
   onToggleSelect?: (item: SubjectProblemItem) => void;
@@ -52,8 +52,8 @@ export function DateAlbumSection({
   onDragMove,
   onDragEnd,
   onLiftItemForDrag,
-  onDeleteHold,
   onHoldMenu,
+  onDeleteHold,
   selectionMode,
   selectedKeys,
   onToggleSelect,
@@ -90,12 +90,12 @@ export function DateAlbumSection({
               cellWidth={cellWidth}
               onOpen={() => onOpen(item.bundleId, item.pageId)}
               onLiftForDrag={() => onLiftItemForDrag(item)}
+              onHoldMenu={onHoldMenu ? () => onHoldMenu(item) : undefined}
               onDragMove={reorderEnabled && !pickMode ? onDragMove : undefined}
               onDragEnd={
                 onDragEnd ? (moved, pageX, pageY) => onDragEnd(item, moved, pageX, pageY) : undefined
               }
               onDeleteHold={onDeleteHold ? () => onDeleteHold(item) : undefined}
-              onHoldMenu={onHoldMenu ? () => onHoldMenu(item) : undefined}
               pickMode={pickMode}
               pickSelected={pickMode && (selectedKeys?.has(key) ?? false)}
               onTogglePick={onToggleSelect ? () => onToggleSelect(item) : undefined}

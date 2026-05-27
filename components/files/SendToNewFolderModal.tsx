@@ -1,83 +1,64 @@
-import { useEffect, useState } from 'react';
-import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
 
 type Props = {
   visible: boolean;
   title: string;
-  message?: string;
-  placeholder?: string;
-  initialValue?: string;
-  confirmLabel: string;
+  hint: string;
+  name: string;
+  placeholder: string;
+  sendLabel: string;
   cancelLabel: string;
-  onCancel: () => void;
-  onConfirm: (value: string) => void;
+  onChangeName: (value: string) => void;
+  onSend: () => void;
+  onClose: () => void;
 };
 
-export function TitleInputDialog({
+export function SendToNewFolderModal({
   visible,
   title,
-  message,
+  hint,
+  name,
   placeholder,
-  initialValue = '',
-  confirmLabel,
+  sendLabel,
   cancelLabel,
-  onCancel,
-  onConfirm,
+  onChangeName,
+  onSend,
+  onClose,
 }: Props) {
-  const [draft, setDraft] = useState(initialValue);
-
-  useEffect(() => {
-    if (visible) setDraft(initialValue);
-  }, [visible, initialValue]);
-
-  const submit = () => {
-    const trimmed = draft.trim();
-    if (!trimmed) return;
-    onConfirm(trimmed);
-  };
+  const insets = useSafeAreaInsets();
+  const canSend = name.trim().length > 0;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onCancel}
-      statusBarTranslucent
-      presentationStyle="overFullScreen">
-      <Pressable style={styles.backdrop} onPress={onCancel}>
-        <Pressable style={styles.card} onPress={() => {}}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable
+          style={[styles.card, { marginBottom: Math.max(24, insets.bottom) }]}
+          onPress={() => {}}>
           <Text style={styles.title}>{title}</Text>
-          {message ? <Text style={styles.message}>{message}</Text> : null}
+          <Text style={styles.hint}>{hint}</Text>
           <TextInput
-            value={draft}
-            onChangeText={setDraft}
+            value={name}
+            onChangeText={onChangeName}
             placeholder={placeholder}
             autoFocus
-            maxLength={80}
+            maxLength={40}
             returnKeyType="done"
-            onSubmitEditing={submit}
+            onSubmitEditing={canSend ? onSend : undefined}
             style={styles.input}
             {...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {})}
           />
           <View style={styles.actions}>
-            <Pressable style={[styles.btn, styles.btnCancel]} onPress={onCancel}>
+            <Pressable style={[styles.btn, styles.btnCancel]} onPress={onClose}>
               <Text style={styles.btnCancelText}>{cancelLabel}</Text>
             </Pressable>
             <Pressable
-              style={[styles.btn, styles.btnConfirm, !draft.trim() && styles.btnDisabled]}
-              onPress={submit}
-              disabled={!draft.trim()}>
-              <Text style={styles.btnConfirmText}>{confirmLabel}</Text>
+              style={[styles.btn, styles.btnSend, !canSend && styles.btnDisabled]}
+              onPress={canSend ? onSend : undefined}
+              disabled={!canSend}>
+              <Text style={styles.btnSendText}>{sendLabel}</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -92,8 +73,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 28,
-    zIndex: 99999,
+    padding: 24,
     ...Platform.select({
       web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
       default: {},
@@ -101,7 +81,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    maxWidth: 340,
+    maxWidth: 360,
     backgroundColor: theme.beige,
     borderRadius: theme.radius.lg,
     padding: 22,
@@ -113,21 +93,20 @@ const styles = StyleSheet.create({
     color: theme.black,
     textAlign: 'center',
   },
-  message: {
-    fontSize: theme.font.body,
+  hint: {
+    fontSize: theme.font.bodySmall,
     color: theme.gray,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   input: {
+    fontSize: theme.font.body,
     borderWidth: 1.5,
     borderColor: theme.grayLight,
     borderRadius: theme.radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: theme.font.body,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     backgroundColor: theme.surface,
-    color: theme.black,
   },
   actions: {
     flexDirection: 'row',
@@ -145,7 +124,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.grayLight,
   },
-  btnConfirm: {
+  btnSend: {
     backgroundColor: theme.orange,
   },
   btnDisabled: {
@@ -154,11 +133,9 @@ const styles = StyleSheet.create({
   btnCancelText: {
     fontWeight: '700',
     color: theme.black,
-    fontSize: theme.font.body,
   },
-  btnConfirmText: {
+  btnSendText: {
     fontWeight: '800',
     color: theme.white,
-    fontSize: theme.font.body,
   },
 });

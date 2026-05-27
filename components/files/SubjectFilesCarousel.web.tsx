@@ -9,19 +9,15 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
-import { SubjectReorderGap } from '@/components/files/SubjectReorderGap';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
-import {
-  VAULT_PANEL_PAD,
-  VAULT_TILE_GAP,
-  computeVaultFolderTileWidth,
-  vaultCarouselItemOffset,
-  vaultCarouselScrollWidth,
-} from '@/lib/ui/viewport-layout';
+import { computeVaultFolderTileWidth } from '@/lib/ui/viewport-layout';
 import { resolveWebElement } from '@/lib/ui/resolve-web-element';
+
+const TILE_GAP = 14;
+const PANEL_PAD = 14;
 const REORDER_EDGE_PX = 52;
 const REORDER_SCROLL_STEP = 22;
 
@@ -43,6 +39,7 @@ type Props = {
   ) => void;
   emptyLabel?: string;
   onFolderGestureLock?: (locked: boolean) => void;
+  onSubjectDeleteHold?: (subjectId: string, subjectName: string) => void;
 };
 
 export function SubjectFilesCarousel({
@@ -57,6 +54,7 @@ export function SubjectFilesCarousel({
   onSubjectReorderEnd,
   emptyLabel,
   onFolderGestureLock,
+  onSubjectDeleteHold,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const scrollDomRef = useRef<HTMLElement | null>(null);
@@ -77,21 +75,21 @@ export function SubjectFilesCarousel({
     [pageWidth, foldersPerPage]
   );
 
+  const slotWidth = tileWidth + TILE_GAP;
+
   const bindScrollDom = useCallback((node: ScrollView | null) => {
     scrollRef.current = node;
     scrollDomRef.current = resolveWebElement(node);
   }, []);
 
   const updateMaxScroll = useCallback(() => {
-    const content = vaultCarouselScrollWidth(subjects.length, tileWidth);
-    maxScrollXRef.current = Math.max(0, content - pageWidth + VAULT_PANEL_PAD * 2);
+    maxScrollXRef.current = Math.max(0, subjects.length * slotWidth - pageWidth + PANEL_PAD * 2);
     const dom = scrollDomRef.current;
     if (dom) {
       dom.style.overflowX = listScrollEnabled ? 'auto' : 'hidden';
-      dom.style.touchAction =
-        reorderingSubjectId ? 'none' : 'pan-x';
+      dom.style.touchAction = reorderingSubjectId ? 'none' : 'pan-x';
     }
-  }, [listScrollEnabled, pageWidth, reorderingSubjectId, subjects.length, tileWidth]);
+  }, [listScrollEnabled, pageWidth, reorderingSubjectId, slotWidth, subjects.length]);
 
   useEffect(() => {
     updateMaxScroll();
@@ -100,9 +98,7 @@ export function SubjectFilesCarousel({
   const setPreviewGestureLock = useCallback(
     (locked: boolean) => {
       onFolderGestureLock?.(locked);
-      setListScrollEnabled(
-        subjects.length > 1 && !locked && !reorderingSubjectId
-      );
+      setListScrollEnabled(subjects.length > 1 && !locked && !reorderingSubjectId);
     },
     [onFolderGestureLock, reorderingSubjectId, subjects.length]
   );
@@ -183,7 +179,7 @@ export function SubjectFilesCarousel({
     setListScrollEnabled(false);
     const idx = subjects.findIndex((s) => s.id === reorderingSubjectId);
     if (idx >= 0) {
-      scrollToX(Math.max(0, vaultCarouselItemOffset(idx, tileWidth) - VAULT_PANEL_PAD));
+      scrollToX(Math.max(0, idx * slotWidth - PANEL_PAD));
     }
     bumpSubjectReorderMeasure();
   }, [
@@ -191,9 +187,9 @@ export function SubjectFilesCarousel({
     measurePanelBounds,
     reorderingSubjectId,
     scrollToX,
+    slotWidth,
     stopAutoScroll,
     subjects,
-    tileWidth,
   ]);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -207,8 +203,7 @@ export function SubjectFilesCarousel({
 
   if (pageWidth <= 0 || tileWidth <= 0) return null;
 
-  const carouselMode =
-    reorderingSubjectId ? 'reorder' : 'scroll';
+  const carouselMode = reorderingSubjectId ? 'reorder' : 'scroll';
 
   return (
     <View
@@ -226,30 +221,29 @@ export function SubjectFilesCarousel({
         scrollEventThrottle={16}
         style={styles.scroller}
         contentContainerStyle={styles.row}>
-        {subjects.map((subject, index) => (
-          <View key={subject.id} style={styles.rowSlot}>
-            {index > 0 ? <SubjectReorderGap gapIndex={index} width={VAULT_TILE_GAP} /> : null}
-            <View style={[styles.tileSlot, { width: tileWidth }]}>
-              <SubjectFolderTile
-                subjectId={subject.id}
-                name={subject.name}
-                totalLabel={totalLabelFor(subject.id)}
-                previewItems={previewItemsFor(subject.id)}
-                onPreviewGestureLock={setPreviewGestureLock}
-                onPress={() => onSubjectPress(subject.id)}
-                onLiftForReorder={() => onSubjectLift(subject.id)}
-                onReorderDragMove={handleReorderDragMove}
-                onReorderDragEnd={(moved, pageX, pageY) => {
-                  stopAutoScroll();
-                  onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
-                }}
-              />
-            </View>
+        {subjects.map((subject) => (
+          <View key={subject.id} style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+            <SubjectFolderTile
+              subjectId={subject.id}
+              name={subject.name}
+              totalLabel={totalLabelFor(subject.id)}
+              previewItems={previewItemsFor(subject.id)}
+              onPreviewGestureLock={setPreviewGestureLock}
+              onPress={() => onSubjectPress(subject.id)}
+              onLiftForReorder={() => onSubjectLift(subject.id)}
+              onReorderDragMove={handleReorderDragMove}
+              onReorderDragEnd={(moved, pageX, pageY) => {
+                stopAutoScroll();
+                onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
+              }}
+              onDeleteHold={
+                onSubjectDeleteHold
+                  ? () => onSubjectDeleteHold(subject.id, subject.name)
+                  : undefined
+              }
+            />
           </View>
         ))}
-        {subjects.length > 0 ? (
-          <SubjectReorderGap gapIndex={subjects.length} width={VAULT_TILE_GAP} />
-        ) : null}
       </ScrollView>
     </View>
   );
@@ -269,21 +263,15 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   row: {
     flexDirection: 'row',
-    alignItems: 'stretch',
-    paddingHorizontal: VAULT_PANEL_PAD,
-  },
-  rowSlot: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    flexGrow: 0,
-    flexShrink: 0,
+    alignItems: 'flex-start',
+    paddingHorizontal: PANEL_PAD,
   },
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
   },
   empty: {
-    paddingHorizontal: VAULT_PANEL_PAD,
+    paddingHorizontal: PANEL_PAD,
     fontSize: theme.font.body,
     fontWeight: '600',
     color: theme.gray,

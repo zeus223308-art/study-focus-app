@@ -12,10 +12,13 @@ import {
 import { theme } from '@/constants/theme';
 import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
+import { appendCaptureToData } from '@/lib/domain/bundle-factory';
 import { todayKey } from '@/lib/domain/dates';
-import { ensureAppDataDerivatives } from '@/lib/files/regenerate-derivatives';
-import { upgradeLegacyPhotoQuality } from '@/lib/files/upgrade-legacy-assets';
-import { appendCaptureToData, appendPageToBundle } from '@/lib/domain/bundle-factory';
+import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
+import { movePageToSubject } from '@/lib/domain/move-page-to-subject';
+import { removePageFromData } from '@/lib/domain/remove-page';
+import { mergeItemOrder, reorderItemKeys, reorderSubjectFolders } from '@/lib/domain/reorder';
+import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
 import type {
   AppData,
   AppSettings,
@@ -25,30 +28,21 @@ import type {
   ReviewSchedule,
   SubjectFolder,
 } from '@/lib/domain/types';
-import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
-import { removePageFromData } from '@/lib/domain/remove-page';
-import { splitPageToNewBundle as splitPageToNewBundleData } from '@/lib/domain/split-page';
-import {
-  mergeItemOrder,
-  reorderItemKeys,
-  reorderSubjectFolders,
-  reorderSubjectToGap,
-} from '@/lib/domain/reorder';
-import { resolveSubjectReorderGapKey } from '@/lib/ui/subject-reorder-hit';
+import { ensureAppDataDerivatives } from '@/lib/files/regenerate-derivatives';
+import { upgradeLegacyPhotoQuality } from '@/lib/files/upgrade-legacy-assets';
 import { listSubjectProblems } from '@/lib/grouping/bundles';
-import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
-import { isDueToday, advanceAfterReview, resetReviewCycle, maintainReviewCycle } from '@/lib/spacing/engine';
+import { advanceAfterReview, isDueToday, maintainReviewCycle, resetReviewCycle } from '@/lib/spacing/engine';
 import {
+  canRestoreFromBackup,
   createTrashLifecycle,
   filterActiveTrash,
-  canRestoreFromBackup,
 } from '@/lib/trash/lifecycle';
 import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/google-session';
-import { createStorageProvider, checkFreemiumLimits, countPages } from '@/services/storage';
+import { checkFreemiumLimits, createStorageProvider } from '@/services/storage';
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
 import { hasRecoverableContent } from '@/services/storage/data-safety';
 import { clearGuestSession } from '@/services/storage/guest-session';
-import type { StorageProvider, FreemiumCheck } from '@/services/storage/types';
+import type { FreemiumCheck, StorageProvider } from '@/services/storage/types';
 
 type AppContextValue = {
   ready: boolean;
@@ -81,6 +75,12 @@ type AppContextValue = {
   importPhotosToBundle: (bundleId: string, imageUris: string[]) => Promise<number>;
   addSubject: (name: string, scheduleId: string) => void;
   renameSubject: (subjectId: string, name: string) => void;
+  /** Create a new subject folder and move one photo into it. Returns new subject id. */
+  moveProblemToNewSubject: (
+    bundleId: string,
+    pageId: string,
+    newSubjectName: string
+  ) => string | null;
   deleteSubject: (subjectId: string) => void;
   setSubjectSchedule: (subjectId: string, scheduleId: string) => void;
   toggleActiveSchedule: (id: string) => void;
@@ -90,12 +90,6 @@ type AppContextValue = {
   unarchiveBundle: (id: string) => void;
   moveBundleToTrash: (id: string) => void;
   deletePage: (bundleId: string, pageId: string) => void;
-  splitPageToNewBundle: (
-    bundleId: string,
-    pageId: string,
-    title: string,
-    targetSubjectId: string
-  ) => void;
   restoreTrash: (trashId: string) => void;
   applyLayerCycleChoice: (bundleId: string, choice: LayerCycleChoice) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
@@ -135,22 +129,9 @@ type AppContextValue = {
     subjectId: string,
     rect: { x: number; y: number; width: number; height: number } | null
   ) => void;
-  registerSubjectReorderGapZone: (
-    gapKey: string,
-    rect: { x: number; y: number; width: number; height: number } | null
-  ) => void;
-  registerSubjectMergeZone: (
-    subjectId: string,
-    rect: { x: number; y: number; width: number; height: number } | null
-  ) => void;
-  reorderHoverGapKey: string | null;
   updateDragHover: (pageX: number, pageY: number) => void;
   updateSubjectReorderHover: (pageX: number, pageY: number) => void;
-  finishItemDrag: (
-    pageX: number,
-    pageY: number,
-    moved: boolean
-  ) => 'reordered' | 'moved' | 'cancelled';
+  finishItemDrag: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'moved' | 'cancelled';
   finishSubjectReorder: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'cancelled';
   finishBundleDrop: (pageX: number, pageY: number) => string | null;
   reorderSubjects: (activeId: string, overId: string) => void;
@@ -186,7 +167,6 @@ export function AppProvider({
   const [dragHoverItemKey, setDragHoverItemKey] = useState<string | null>(null);
   const [reorderingSubjectId, setReorderingSubjectId] = useState<string | null>(null);
   const [reorderHoverSubjectId, setReorderHoverSubjectId] = useState<string | null>(null);
-  const [reorderHoverGapKey, setReorderHoverGapKey] = useState<string | null>(null);
   const [subjectReorderMeasureTick, setSubjectReorderMeasureTick] = useState(0);
   const dropZonesRef = useRef<Map<string, { x: number; y: number; width: number; height: number }>>(
     new Map()
@@ -195,12 +175,6 @@ export function AppProvider({
     Map<string, { x: number; y: number; width: number; height: number }>
   >(new Map());
   const subjectReorderZonesRef = useRef<
-    Map<string, { x: number; y: number; width: number; height: number }>
-  >(new Map());
-  const subjectReorderGapZonesRef = useRef<
-    Map<string, { x: number; y: number; width: number; height: number }>
-  >(new Map());
-  const subjectMergeZonesRef = useRef<
     Map<string, { x: number; y: number; width: number; height: number }>
   >(new Map());
   const prevLocalTodayRef = useRef(localToday);
@@ -445,14 +419,44 @@ export function AppProvider({
     setData((prev) =>
       prev
         ? {
-            ...prev,
-            subjects: prev.subjects.map((s) =>
-              s.id === subjectId ? { ...s, name: trimmed } : s
-            ),
-          }
+          ...prev,
+          subjects: prev.subjects.map((s) =>
+            s.id === subjectId ? { ...s, name: trimmed } : s
+          ),
+        }
         : prev
     );
   }, []);
+
+  const moveProblemToNewSubject = useCallback(
+    (bundleId: string, pageId: string, newSubjectName: string) => {
+      const trimmed = newSubjectName.trim();
+      if (!trimmed) return null;
+      const prev = dataRef.current;
+      if (!prev) return null;
+
+      const scheduleId =
+        prev.settings.activeScheduleIds[0] ?? prev.schedules[0]?.id ?? '';
+      const subject: SubjectFolder = {
+        id: `folder_${Date.now()}`,
+        name: trimmed,
+        reviewScheduleId: scheduleId,
+        color: theme.gray,
+        sortOrder: prev.subjects.length,
+        createdAt: new Date().toISOString(),
+      };
+
+      const withSubject: AppData = {
+        ...prev,
+        subjects: [...prev.subjects, subject],
+      };
+      const moved = movePageToSubject(withSubject, bundleId, pageId, subject.id);
+      if (!moved) return null;
+      persist(moved);
+      return subject.id;
+    },
+    [persist]
+  );
 
   const deleteSubject = useCallback((subjectId: string) => {
     setData((prev) => {
@@ -472,11 +476,11 @@ export function AppProvider({
     setData((prev) =>
       prev
         ? {
-            ...prev,
-            subjects: prev.subjects.map((s) =>
-              s.id === subjectId ? { ...s, reviewScheduleId: scheduleId } : s
-            ),
-          }
+          ...prev,
+          subjects: prev.subjects.map((s) =>
+            s.id === subjectId ? { ...s, reviewScheduleId: scheduleId } : s
+          ),
+        }
         : prev
     );
   }, []);
@@ -503,11 +507,11 @@ export function AppProvider({
     setData((prev) =>
       prev
         ? {
-            ...prev,
-            bundles: prev.bundles.map((b) =>
-              b.id === id ? { ...b, ...patch, updatedAt: new Date().toISOString() } : b
-            ),
-          }
+          ...prev,
+          bundles: prev.bundles.map((b) =>
+            b.id === id ? { ...b, ...patch, updatedAt: new Date().toISOString() } : b
+          ),
+        }
         : prev
     );
   }, []);
@@ -565,16 +569,6 @@ export function AppProvider({
       return next;
     });
   }, []);
-
-  const splitPageToNewBundle = useCallback(
-    (bundleId: string, pageId: string, title: string, targetSubjectId: string) => {
-      setData((prev) => {
-        if (!prev) return prev;
-        return splitPageToNewBundleData(prev, bundleId, pageId, title, targetSubjectId);
-      });
-    },
-    []
-  );
 
   const restoreTrash = useCallback((trashId: string) => {
     setData((prev) => {
@@ -679,26 +673,19 @@ export function AppProvider({
       setDragHoverItemKey(null);
       setReorderingSubjectId(null);
       setReorderHoverSubjectId(null);
-      setReorderHoverGapKey(null);
     },
     []
   );
 
-  const startSubjectReorder = useCallback(
-    (subjectId: string) => {
-      setReorderingSubjectId(subjectId);
-      setReorderHoverSubjectId(null);
-      setReorderHoverGapKey(null);
-      setMovingBundleId(null);
-      setDraggingItemKey(null);
-      setDragSourceSubjectId(null);
-      setDragHoverSubjectId(null);
-      setDragHoverItemKey(null);
-      bumpSubjectReorderMeasure();
-      requestAnimationFrame(() => bumpSubjectReorderMeasure());
-    },
-    [bumpSubjectReorderMeasure]
-  );
+  const startSubjectReorder = useCallback((subjectId: string) => {
+    setReorderingSubjectId(subjectId);
+    setReorderHoverSubjectId(null);
+    setMovingBundleId(null);
+    setDraggingItemKey(null);
+    setDragSourceSubjectId(null);
+    setDragHoverSubjectId(null);
+    setDragHoverItemKey(null);
+  }, []);
 
   const cancelMovingBundle = useCallback(() => {
     setMovingBundleId(null);
@@ -708,7 +695,6 @@ export function AppProvider({
     setDragHoverItemKey(null);
     setReorderingSubjectId(null);
     setReorderHoverSubjectId(null);
-    setReorderHoverGapKey(null);
   }, []);
 
   const registerItemDropZone = useCallback(
@@ -723,22 +709,6 @@ export function AppProvider({
     (subjectId: string, rect: { x: number; y: number; width: number; height: number } | null) => {
       if (rect) subjectReorderZonesRef.current.set(subjectId, rect);
       else subjectReorderZonesRef.current.delete(subjectId);
-    },
-    []
-  );
-
-  const registerSubjectReorderGapZone = useCallback(
-    (gapKey: string, rect: { x: number; y: number; width: number; height: number } | null) => {
-      if (rect) subjectReorderGapZonesRef.current.set(gapKey, rect);
-      else subjectReorderGapZonesRef.current.delete(gapKey);
-    },
-    []
-  );
-
-  const registerSubjectMergeZone = useCallback(
-    (subjectId: string, rect: { x: number; y: number; width: number; height: number } | null) => {
-      if (rect) subjectMergeZonesRef.current.set(subjectId, rect);
-      else subjectMergeZonesRef.current.delete(subjectId);
     },
     []
   );
@@ -759,13 +729,6 @@ export function AppProvider({
     },
     []
   );
-
-  const getSortedSubjectIds = useCallback((): string[] => {
-    if (!data) return [];
-    return [...data.subjects]
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map((s) => s.id);
-  }, [data]);
 
   const reorderSubjects = useCallback((activeId: string, overId: string) => {
     setData((prev) => {
@@ -801,48 +764,28 @@ export function AppProvider({
   const updateSubjectReorderHover = useCallback(
     (pageX: number, pageY: number) => {
       if (!reorderingSubjectId) return;
-      const gap = resolveSubjectReorderGapKey(
-        pageX,
-        pageY,
-        subjectReorderGapZonesRef.current,
-        subjectMergeZonesRef.current,
-        getSortedSubjectIds()
-      );
-      setReorderHoverGapKey((prev) => (prev === gap ? prev : gap));
+      const found = hitTestZones(pageX, pageY, subjectReorderZonesRef.current);
+      const next = found && found !== reorderingSubjectId ? found : null;
+      setReorderHoverSubjectId((prev) => (prev === next ? prev : next));
     },
-    [getSortedSubjectIds, reorderingSubjectId]
+    [hitTestZones, reorderingSubjectId]
   );
 
   const finishSubjectReorder = useCallback(
     (pageX: number, pageY: number, _moved: boolean): 'reordered' | 'cancelled' => {
       if (!reorderingSubjectId) return 'cancelled';
-      const gapKey =
-        resolveSubjectReorderGapKey(
-          pageX,
-          pageY,
-          subjectReorderGapZonesRef.current,
-          subjectMergeZonesRef.current,
-          getSortedSubjectIds()
-        ) ?? reorderHoverGapKey;
+      const hover =
+        hitTestZones(pageX, pageY, subjectReorderZonesRef.current) ?? reorderHoverSubjectId;
       const activeId = reorderingSubjectId;
-      if (gapKey?.startsWith('gap:')) {
-        const gapIndex = Number.parseInt(gapKey.slice(4), 10);
-        if (!Number.isNaN(gapIndex)) {
-          setData((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              subjects: reorderSubjectToGap(prev.subjects, activeId, gapIndex),
-            };
-          });
-          cancelMovingBundle();
-          return 'reordered';
-        }
+      if (hover && hover !== activeId) {
+        reorderSubjects(activeId, hover);
+        cancelMovingBundle();
+        return 'reordered';
       }
       cancelMovingBundle();
       return 'cancelled';
     },
-    [cancelMovingBundle, getSortedSubjectIds, reorderHoverGapKey, reorderingSubjectId]
+    [cancelMovingBundle, hitTestZones, reorderHoverSubjectId, reorderSubjects, reorderingSubjectId]
   );
 
   const dropSubjectReorderOn = useCallback(
@@ -874,19 +817,19 @@ export function AppProvider({
       }
 
       if (!moved) {
-        cancelMovingBundle();
         return 'cancelled';
       }
 
       const hoverItem =
         hitTestZones(pageX, pageY, itemDropZonesRef.current) ?? dragHoverItemKey;
-      if (hoverItem && draggingItemKey && hoverItem !== draggingItemKey) {
-        const targetBundleId = hoverItem.split(':')[0]!;
-        if (targetBundleId === movingBundleId) {
-          reorderSubjectItems(dragSourceSubjectId, draggingItemKey, hoverItem);
-          cancelMovingBundle();
-          return 'reordered';
-        }
+      if (
+        hoverItem &&
+        draggingItemKey &&
+        hoverItem !== draggingItemKey
+      ) {
+        reorderSubjectItems(dragSourceSubjectId, draggingItemKey, hoverItem);
+        cancelMovingBundle();
+        return 'reordered';
       }
 
       let target: string | null = null;
@@ -1009,6 +952,7 @@ export function AppProvider({
       importPhotosToBundle,
       addSubject,
       renameSubject,
+      moveProblemToNewSubject,
       deleteSubject,
       setSubjectSchedule,
       toggleActiveSchedule,
@@ -1018,7 +962,6 @@ export function AppProvider({
       unarchiveBundle,
       moveBundleToTrash,
       deletePage,
-      splitPageToNewBundle,
       restoreTrash,
       applyLayerCycleChoice,
       updateSettings,
@@ -1038,7 +981,6 @@ export function AppProvider({
       dragHoverItemKey,
       reorderingSubjectId,
       reorderHoverSubjectId,
-      reorderHoverGapKey,
       subjectReorderMeasureTick,
       bumpSubjectReorderMeasure,
       startItemDrag,
@@ -1048,8 +990,6 @@ export function AppProvider({
       registerSubjectDropZone,
       registerItemDropZone,
       registerSubjectReorderZone,
-      registerSubjectReorderGapZone,
-      registerSubjectMergeZone,
       updateDragHover,
       updateSubjectReorderHover,
       finishItemDrag,
@@ -1078,6 +1018,7 @@ export function AppProvider({
     importPhotosToBundle,
     addSubject,
     renameSubject,
+    moveProblemToNewSubject,
     deleteSubject,
     setSubjectSchedule,
     toggleActiveSchedule,
@@ -1087,7 +1028,6 @@ export function AppProvider({
     unarchiveBundle,
     moveBundleToTrash,
     deletePage,
-    splitPageToNewBundle,
     restoreTrash,
     applyLayerCycleChoice,
     updateSettings,

@@ -13,7 +13,8 @@ type Props = {
   onClose: () => void;
 };
 
-export function PhotoHoldActionSheet({
+/** Long-press menu on folder album photos. */
+export function PhotoHoldMenuSheet({
   visible,
   sendToNewFolderLabel,
   reorderLabel,

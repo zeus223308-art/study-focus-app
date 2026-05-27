@@ -15,7 +15,6 @@ import {
 
 import { theme } from '@/constants/theme';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
-import { VAULT_PREVIEW_HEIGHT } from '@/lib/ui/viewport-layout';
 
 export type PreviewVariant = 'vault' | 'dashboard';
 
@@ -23,7 +22,7 @@ type Props = {
   items: SubjectPreviewItem[];
   totalLabel: string;
   emptyHint: string;
-  onOpen?: () => void;
+  onOpen: () => void;
   onGestureLock: (locked: boolean) => void;
   onLongPress?: () => void;
   /** Parent handles long-press drag; avoid stealing touches. */
@@ -34,6 +33,7 @@ type Props = {
   onInteraction?: () => void;
 };
 
+const VAULT_HEIGHT = 112;
 const DASHBOARD_HEIGHT = 120;
 
 export function SubjectFolderPreview({
@@ -49,7 +49,7 @@ export function SubjectFolderPreview({
   onInteraction,
 }: Props) {
   const { t } = useTranslation();
-  const cardHeight = variant === 'dashboard' ? DASHBOARD_HEIGHT : VAULT_PREVIEW_HEIGHT;
+  const cardHeight = variant === 'dashboard' ? DASHBOARD_HEIGHT : VAULT_HEIGHT;
   const [cardWidth, setCardWidth] = useState(0);
   const [index, setIndex] = useState(0);
   const didSwipeRef = useRef(false);
@@ -88,7 +88,7 @@ export function SubjectFolderPreview({
   const emptyStyle = [
     styles.emptyCardBase,
     variant === 'vault' ? styles.cardVault : styles.cardDashboard,
-    { minHeight: cardHeight, height: cardHeight },
+    { minHeight: cardHeight },
   ];
 
   const renderItem = ({ item }: ListRenderItemInfo<SubjectPreviewItem>) => {
@@ -104,7 +104,7 @@ export function SubjectFolderPreview({
         onPress={() => {
           if (!didSwipeRef.current) {
             onInteraction?.();
-            onOpen?.();
+            onOpen();
           }
         }}>
         <ResolvedImage uri={item.thumbnailUri} style={styles.image} resizeMode="cover" />
@@ -115,7 +115,11 @@ export function SubjectFolderPreview({
   if (items.length === 0) {
     if (passthroughGestures) {
       return (
-        <View style={emptyStyle} pointerEvents="none">
+        <Pressable
+          style={emptyStyle}
+          onPress={onOpen}
+          onLongPress={onLongPress}
+          delayLongPress={500}>
           {subjectTag ? (
             <View style={styles.subjectTag}>
               <Text style={styles.subjectTagText}>{subjectTag}</Text>
@@ -123,7 +127,7 @@ export function SubjectFolderPreview({
           ) : null}
           <Text style={styles.emptyHint}>{emptyHint}</Text>
           <Text style={styles.total}>{totalLabel}</Text>
-        </View>
+        </Pressable>
       );
     }
     return (
@@ -238,7 +242,7 @@ export function SubjectFolderPreview({
         style={styles.openFab}
         onPress={() => {
           onInteraction?.();
-          onOpen?.();
+          onOpen();
         }}
         hitSlop={8}>
         <Text style={styles.openFabText}>{t('common.arrowRight')}</Text>

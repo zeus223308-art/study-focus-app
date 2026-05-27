@@ -7,18 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import {
-  DELETE_STILL_HOLD_MS,
-  HOLD_DRAG_MS,
-  MERGE_HOLD_DRAG_MS,
-  TRIPLE_TAP_MERGE_MS,
-} from '@/lib/ui/hold-drag';
-import {
-  clearMergeTapState,
-  onMergeTouchRelease,
-  shouldMergeHoldOnTouchStart,
-  type MergeTapRefs,
-} from '@/lib/ui/merge-tap-hold';
+import { HOLD_DRAG_MS } from '@/lib/ui/hold-drag';
 import { resolveWebElement } from '@/lib/ui/resolve-web-element';
 
 export { HOLD_DRAG_MS };
@@ -34,10 +23,8 @@ type Props = {
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onPress?: () => void;
-  onDeleteHold?: () => void;
-  deleteOnStillHold?: boolean;
   onHoldMenu?: () => void;
-  onMergeHold?: () => void;
+  onDeleteHold?: () => void;
   onGestureActiveChange?: (active: boolean) => void;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -63,10 +50,8 @@ export function HoldDragSurface({
   onDragMove,
   onDragEnd,
   onPress,
-  onDeleteHold,
-  deleteOnStillHold = false,
   onHoldMenu,
-  onMergeHold,
+  onDeleteHold,
   onGestureActiveChange,
   children,
   style,
@@ -84,25 +69,14 @@ export function HoldDragSurface({
   const openDeferRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionCleanupRef = useRef<(() => void) | null>(null);
   const deleteHoldRef = useRef(false);
-  const dragIntentRef = useRef(false);
-  const mergeHoldRef = useRef(false);
-  const mergeTapRefs = useRef<MergeTapRefs>({
-    tapCount: { current: 0 },
-    lastReleaseAt: { current: 0 },
-    mergeArmed: { current: false },
-  }).current;
-  const tapCountRef = mergeTapRefs.tapCount;
-  const lastReleaseAtRef = mergeTapRefs.lastReleaseAt;
-  const mergeArmedRef = mergeTapRefs.mergeArmed;
+  const lastReleaseAtRef = useRef(0);
 
   const onLiftRef = useRef(onLift);
   const onDragMoveRef = useRef(onDragMove);
   const onDragEndRef = useRef(onDragEnd);
   const onPressRef = useRef(onPress);
   const onDeleteHoldRef = useRef(onDeleteHold);
-  const deleteOnStillHoldRef = useRef(deleteOnStillHold);
   const onHoldMenuRef = useRef(onHoldMenu);
-  const onMergeHoldRef = useRef(onMergeHold);
   const onGestureActiveChangeRef = useRef(onGestureActiveChange);
 
   enabledRef.current = enabled;
@@ -111,9 +85,7 @@ export function HoldDragSurface({
   onDragEndRef.current = onDragEnd;
   onPressRef.current = onPress;
   onDeleteHoldRef.current = onDeleteHold;
-  deleteOnStillHoldRef.current = deleteOnStillHold;
   onHoldMenuRef.current = onHoldMenu;
-  onMergeHoldRef.current = onMergeHold;
   onGestureActiveChangeRef.current = onGestureActiveChange;
 
   const setLiftedState = useCallback((value: boolean) => {
@@ -155,7 +127,6 @@ export function HoldDragSurface({
 
   const finish = useCallback(
     (pageX: number, pageY: number) => {
-      const wasMergePending = mergeHoldRef.current;
       clearTimer();
       clearSession();
       const phase = phaseRef.current;
@@ -163,8 +134,6 @@ export function HoldDragSurface({
       phaseRef.current = 'idle';
       movedRef.current = false;
       deleteHoldRef.current = false;
-      dragIntentRef.current = false;
-      mergeHoldRef.current = false;
       setLiftedState(false);
 
       if (phase === 'lifted') {
@@ -175,39 +144,12 @@ export function HoldDragSurface({
 
       const dx = Math.abs(pageX - startRef.current.pageX);
       const dy = Math.abs(pageY - startRef.current.pageY);
-      const movedTooFar = dx >= TAP_SLOP_PX || dy >= TAP_SLOP_PX;
-
-      if (onMergeHoldRef.current) {
-        onMergeTouchRelease(mergeTapRefs, {
-          wasMergePending,
-          movedTooFar,
-          hasMergeHold: true,
-        });
-        clearOpenDefer();
-        if (
-          !wasMergePending &&
-          !movedTooFar &&
-          tapCountRef.current === 1 &&
-          !mergeArmedRef.current &&
-          onPressRef.current
-        ) {
-          openDeferRef.current = setTimeout(() => {
-            openDeferRef.current = null;
-            if (tapCountRef.current === 1 && !mergeArmedRef.current) {
-              tapCountRef.current = 0;
-              onPressRef.current?.();
-            }
-          }, TRIPLE_TAP_MERGE_MS);
-        }
-        return;
-      }
-
-      if (movedTooFar) return;
+      if (dx >= TAP_SLOP_PX || dy >= TAP_SLOP_PX) return;
 
       lastReleaseAtRef.current = Date.now();
       scheduleOpen();
     },
-    [clearOpenDefer, clearSession, clearTimer, mergeTapRefs, scheduleOpen, setLiftedState]
+    [clearSession, clearTimer, scheduleOpen, setLiftedState]
   );
 
   const beginLift = useCallback(
@@ -222,61 +164,11 @@ export function HoldDragSurface({
         return;
       }
 
-      if (mergeHoldRef.current && onMergeHoldRef.current) {
-        phaseRef.current = 'lifted';
-        movedRef.current = false;
-        clearMergeTapState(mergeTapRefs);
-        setLiftedState(true);
-        clearOpenDefer();
-        onMergeHoldRef.current();
-        onDragMoveRef.current?.(pageX, pageY);
-
-        const onMove = (ev: TouchEvent) => {
-          if (phaseRef.current !== 'lifted') return;
-          const t = ev.touches[0];
-          if (!t) return;
-          ev.preventDefault();
-          movedRef.current = true;
-          const pt = touchPageXY(t);
-          onDragMoveRef.current?.(pt.pageX, pt.pageY);
-        };
-
-        const onEnd = (ev: TouchEvent) => {
-          const t = ev.changedTouches[0];
-          if (!t) return;
-          const pt = touchPageXY(t);
-          finish(pt.pageX, pt.pageY);
-        };
-
-        document.addEventListener('touchmove', onMove, { passive: false });
-        document.addEventListener('touchend', onEnd);
-        document.addEventListener('touchcancel', onEnd);
-        sessionCleanupRef.current = () => {
-          document.removeEventListener('touchmove', onMove);
-          document.removeEventListener('touchend', onEnd);
-          document.removeEventListener('touchcancel', onEnd);
-        };
-        return;
-      }
-
       if (onHoldMenuRef.current) {
         phaseRef.current = 'idle';
         clearTimer();
         clearOpenDefer();
         onHoldMenuRef.current();
-        return;
-      }
-
-      if (
-        deleteOnStillHoldRef.current &&
-        onDeleteHoldRef.current &&
-        !dragIntentRef.current
-      ) {
-        phaseRef.current = 'idle';
-        clearTimer();
-        clearOpenDefer();
-        dragIntentRef.current = false;
-        onDeleteHoldRef.current();
         return;
       }
 
@@ -322,51 +214,27 @@ export function HoldDragSurface({
       clearSession();
       phaseRef.current = 'pending';
       movedRef.current = false;
-      dragIntentRef.current = false;
       setLiftedState(false);
       startRef.current = { pageX, pageY };
-      const sinceRelease = Date.now() - lastReleaseAtRef.current;
 
-      if (shouldMergeHoldOnTouchStart(mergeTapRefs, Boolean(onMergeHoldRef.current))) {
-        clearOpenDefer();
-        mergeHoldRef.current = true;
-      } else {
-        mergeHoldRef.current = false;
-      }
+      const sinceRelease = Date.now() - lastReleaseAtRef.current;
       if (
-        !deleteOnStillHoldRef.current &&
         onDeleteHoldRef.current &&
         lastReleaseAtRef.current > 0 &&
         sinceRelease < DELETE_PAIR_MS
       ) {
         clearOpenDefer();
         deleteHoldRef.current = true;
-      } else if (!mergeHoldRef.current) {
+      } else {
         deleteHoldRef.current = false;
       }
 
-      const delay = mergeHoldRef.current
-        ? MERGE_HOLD_DRAG_MS
-        : deleteOnStillHoldRef.current
-          ? DELETE_STILL_HOLD_MS
-          : HOLD_DRAG_MS;
-      timerRef.current = setTimeout(() => {
-        timerRef.current = null;
-        beginLift(pageX, pageY);
-      }, delay);
-    },
-    [beginLift, clearOpenDefer, clearSession, clearTimer, setLiftedState]
-  );
-
-  const rescheduleReorderLift = useCallback(
-    (pageX: number, pageY: number) => {
-      clearTimer();
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
         beginLift(pageX, pageY);
       }, HOLD_DRAG_MS);
     },
-    [beginLift, clearTimer]
+    [beginLift, clearOpenDefer, clearSession, clearTimer, setLiftedState]
   );
 
   const movePending = useCallback(
@@ -377,25 +245,15 @@ export function HoldDragSurface({
         return;
       }
       if (phaseRef.current !== 'pending' || !timerRef.current) return;
-      if (mergeHoldRef.current) return;
       const dx = Math.abs(pageX - startRef.current.pageX);
       const dy = Math.abs(pageY - startRef.current.pageY);
-      if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
-        if (deleteOnStillHoldRef.current) {
-          if (!dragIntentRef.current) {
-            dragIntentRef.current = true;
-            rescheduleReorderLift(pageX, pageY);
-          }
-          return;
-        }
-        if (dx > MOVE_CANCEL_PX && dx > dy) {
-          clearTimer();
-          phaseRef.current = 'idle';
-          deleteHoldRef.current = false;
-        }
+      if (dx > MOVE_CANCEL_PX && dx > dy) {
+        clearTimer();
+        phaseRef.current = 'idle';
+        deleteHoldRef.current = false;
       }
     },
-    [clearTimer, rescheduleReorderLift]
+    [clearTimer]
   );
 
   const bindDom = useCallback(

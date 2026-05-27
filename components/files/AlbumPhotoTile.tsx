@@ -21,9 +21,10 @@ type Props = {
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
   onLiftForDrag: () => void;
+  /** Long-press opens action menu (send to new folder, etc.). */
+  onHoldMenu?: () => void;
   /** First tap arms; second touch + hold opens delete confirm. */
   onDeleteHold?: () => void;
-  onHoldMenu?: () => void;
   pickMode?: boolean;
   pickSelected?: boolean;
   onTogglePick?: () => void;
@@ -41,8 +42,8 @@ export function AlbumPhotoTile({
   onDragMove,
   onDragEnd,
   onLiftForDrag,
-  onDeleteHold,
   onHoldMenu,
+  onDeleteHold,
   pickMode,
   pickSelected,
   onTogglePick,
@@ -103,11 +104,11 @@ export function AlbumPhotoTile({
       <HoldDragSurface
         enabled={dragEnabled}
         onLift={handleLift}
+        onHoldMenu={onHoldMenu}
         onDragMove={onDragMove}
         onDragEnd={handleDragEnd}
         onPress={handlePress}
         onDeleteHold={onDeleteHold}
-        onHoldMenu={onHoldMenu}
         onGestureActiveChange={onGestureActiveChange}
         style={[
           styles.tile,

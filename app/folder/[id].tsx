@@ -16,8 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
-import { PhotoHoldActionSheet } from '@/components/files/PhotoHoldActionSheet';
-import { SplitToNewFolderModal } from '@/components/files/SplitToNewFolderModal';
+import { PhotoHoldMenuSheet } from '@/components/files/PhotoHoldMenuSheet';
+import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { SubjectArchiveHeaderButton } from '@/components/files/SubjectArchiveHeaderButton';
 import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
 import { SubjectDropDock } from '@/components/files/SubjectDropDock';
@@ -56,16 +56,18 @@ export default function FolderScreen() {
     cancelMovingBundle,
     deletePage,
     archiveBundle,
-    splitPageToNewBundle,
+    moveProblemToNewSubject,
   } = useApp();
   const [importing, setImporting] = useState(false);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
+  const [holdMenuItem, setHoldMenuItem] = useState<SubjectProblemItem | null>(null);
+  const [sendTarget, setSendTarget] = useState<SubjectProblemItem | null>(null);
+  const [sendModalOpen, setSendModalOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [tileGestureActive, setTileGestureActive] = useState(false);
-  const [holdMenuItem, setHoldMenuItem] = useState<SubjectProblemItem | null>(null);
-  const [splitItem, setSplitItem] = useState<SubjectProblemItem | null>(null);
   const viewport = useViewportLayout();
   const insets = useSafeAreaInsets();
 
@@ -161,10 +163,6 @@ export default function FolderScreen() {
     }
   };
 
-  const onHoldMenuItem = (item: SubjectProblemItem) => {
-    setHoldMenuItem(item);
-  };
-
   const toggleArchiveSelect = (item: SubjectProblemItem) => {
     const key = itemKey(item);
     setSelectedKeys((prev) => {
@@ -191,6 +189,36 @@ export default function FolderScreen() {
   const lockTileGesture = useCallback((active: boolean) => {
     setTileGestureActive(active);
   }, []);
+
+  const openSendModal = () => {
+    if (!holdMenuItem) return;
+    setSendTarget(holdMenuItem);
+    setHoldMenuItem(null);
+    setNewFolderName('');
+    setSendModalOpen(true);
+  };
+
+  const confirmSendToNewFolder = () => {
+    const item = sendTarget;
+    const trimmed = newFolderName.trim();
+    if (!item || !trimmed) return;
+
+    const newSubjectId = moveProblemToNewSubject(item.bundleId, item.pageId, trimmed);
+    setSendModalOpen(false);
+    setSendTarget(null);
+    setNewFolderName('');
+
+    if (!newSubjectId) return;
+    showMessage('', t('folder.sendToNewFolderDone', { name: trimmed }));
+    router.replace({ pathname: '/folder/[id]', params: { id: newSubjectId } });
+  };
+
+  const startHoldMenuReorder = () => {
+    if (!holdMenuItem || !subject) return;
+    const item = holdMenuItem;
+    setHoldMenuItem(null);
+    startItemDrag(item.bundleId, item.pageId, subject.id, itemKey(item));
+  };
 
   const albumScrollEnabled = !movingBundleId && !archiveSelectMode && !tileGestureActive;
 
@@ -280,6 +308,9 @@ export default function FolderScreen() {
                   })
                 }
                 onLiftItemForDrag={onLiftItemForDrag}
+                onHoldMenu={
+                  archiveSelectMode ? undefined : (item) => setHoldMenuItem(item)
+                }
                 onDragMove={archiveSelectMode ? undefined : onDragMove}
                 onDragEnd={
                   archiveSelectMode
@@ -294,7 +325,6 @@ export default function FolderScreen() {
                     ? undefined
                     : (item) => confirmDeleteProblem(item.bundleId, item.pageId)
                 }
-                onHoldMenu={archiveSelectMode ? undefined : onHoldMenuItem}
                 selectionMode={archiveSelectMode ? 'pick' : null}
                 selectedKeys={selectedKeys}
                 onToggleSelect={toggleArchiveSelect}
@@ -334,51 +364,32 @@ export default function FolderScreen() {
         onClose={() => setArchiveModalOpen(false)}
       />
 
-      <PhotoHoldActionSheet
+      <PhotoHoldMenuSheet
         visible={holdMenuItem !== null}
         sendToNewFolderLabel={t('folder.sendToNewFolder')}
-        reorderLabel={t('folder.holdReorder')}
+        reorderLabel={t('folder.holdMenuReorder')}
         cancelLabel={t('common.cancel')}
-        onSendToNewFolder={() => {
-          const item = holdMenuItem;
-          setHoldMenuItem(null);
-          if (item) setSplitItem(item);
-        }}
-        onReorder={() => {
-          const item = holdMenuItem;
-          setHoldMenuItem(null);
-          if (item) onLiftItemForDrag(item);
-        }}
+        onSendToNewFolder={openSendModal}
+        onReorder={startHoldMenuReorder}
         onClose={() => setHoldMenuItem(null)}
       />
 
-      <SplitToNewFolderModal
-        visible={splitItem !== null}
-        title={t('folder.splitTitlePrompt')}
-        nameLabel={t('folder.splitNameLabel')}
-        namePlaceholder={t('folder.splitNamePlaceholder')}
-        subjectLabel={t('folder.splitSubjectLabel')}
-        confirmLabel={t('common.save')}
+      <SendToNewFolderModal
+        visible={sendModalOpen}
+        title={t('folder.sendToNewFolderTitle')}
+        hint={t('folder.sendToNewFolderHint')}
+        name={newFolderName}
+        placeholder={t('folder.sendToNewFolderPlaceholder')}
+        sendLabel={t('common.send')}
         cancelLabel={t('common.cancel')}
-        subjects={data.subjects}
-        initialSubjectId={splitItem?.bundle.subjectId ?? subject?.id ?? ''}
-        onCancel={() => setSplitItem(null)}
-        onConfirm={(title, targetSubjectId) => {
-          if (!splitItem) return;
-          splitPageToNewBundle(
-            splitItem.bundleId,
-            splitItem.pageId,
-            title,
-            targetSubjectId
-          );
-          setSplitItem(null);
-          showMessage('', t('folder.splitDone'));
-          if (targetSubjectId !== subject?.id) {
-            router.push({ pathname: '/folder/[id]', params: { id: targetSubjectId } });
-          }
+        onChangeName={setNewFolderName}
+        onSend={confirmSendToNewFolder}
+        onClose={() => {
+          setSendModalOpen(false);
+          setSendTarget(null);
+          setNewFolderName('');
         }}
       />
-
     </View>
   );
 }

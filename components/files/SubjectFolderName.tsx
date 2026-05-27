@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { VAULT_NAME_ROW_HEIGHT } from '@/lib/ui/viewport-layout';
 
 const DOUBLE_TAP_MS = 320;
 
@@ -19,8 +18,6 @@ type Props = {
   name: string;
   lifted?: boolean;
   disabled?: boolean;
-  /** Single tap opens the subject folder; double tap renames. */
-  onOpen?: () => void;
   onEditingChange?: (editing: boolean) => void;
 };
 
@@ -29,12 +26,10 @@ export function SubjectFolderName({
   name,
   lifted,
   disabled,
-  onOpen,
   onEditingChange,
 }: Props) {
   const { renameSubject } = useApp();
   const lastTapRef = useRef(0);
-  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
 
@@ -61,31 +56,16 @@ export function SubjectFolderName({
     setEditing(false);
   }, [name]);
 
-  const clearOpenTimer = useCallback(() => {
-    if (openTimerRef.current != null) {
-      clearTimeout(openTimerRef.current);
-      openTimerRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => () => clearOpenTimer(), [clearOpenTimer]);
-
   const handlePress = useCallback(() => {
     if (disabled || editing) return;
     const now = Date.now();
     if (now - lastTapRef.current < DOUBLE_TAP_MS) {
-      clearOpenTimer();
       lastTapRef.current = 0;
       setEditing(true);
       return;
     }
     lastTapRef.current = now;
-    clearOpenTimer();
-    openTimerRef.current = setTimeout(() => {
-      openTimerRef.current = null;
-      onOpen?.();
-    }, DOUBLE_TAP_MS);
-  }, [clearOpenTimer, disabled, editing, onOpen]);
+  }, [disabled, editing]);
 
   if (editing) {
     return (
@@ -113,26 +93,27 @@ export function SubjectFolderName({
   }
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={handlePress}
       disabled={disabled}
-      activeOpacity={0.65}
-      hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+      hitSlop={8}
       style={styles.nameRow}
       accessibilityRole="button"
       accessibilityLabel={name}
-      accessibilityHint="Tap to open folder. Double tap to rename.">
+      accessibilityHint="Double tap to rename">
       <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
         {name}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   nameRow: {
-    height: VAULT_NAME_ROW_HEIGHT,
-    marginBottom: 0,
+    marginBottom: 8,
+    marginLeft: 2,
+    marginRight: 2,
+    minHeight: 24,
     justifyContent: 'center',
   },
   name: {
