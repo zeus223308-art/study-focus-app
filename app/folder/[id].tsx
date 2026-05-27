@@ -39,10 +39,7 @@ import { pickForImport } from '@/lib/import/pick-for-import';
 import { remainingPhotoSlots } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { NotFoundView } from '@/components/ui/NotFoundView';
-import { useViewportLayout } from '@/lib/ui/viewport-layout';
-
-/** ~1px visual gutter between tiles (grid gap 0 + hairline borders). */
-const ALBUM_GAP = 0;
+import { ALBUM_TILE_GAP, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 function itemKey(item: SubjectProblemItem) {
   return `${item.bundleId}:${item.pageId}`;
@@ -428,7 +425,7 @@ export default function FolderScreen() {
                 subjectId={subject.id}
                 albumColumns={viewport.albumNumColumns}
                 contentWidth={albumContentWidth}
-                gap={ALBUM_GAP}
+                gap={ALBUM_TILE_GAP}
                 hideHeader
                 sectionMarginBottom={2}
                 labels={albumLabels}

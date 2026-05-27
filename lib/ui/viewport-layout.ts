@@ -49,6 +49,9 @@ export const VAULT_NAME_ROW_HEIGHT = 32;
 export const VAULT_PREVIEW_HEIGHT = 112;
 export const VAULT_TILE_HEIGHT = VAULT_NAME_ROW_HEIGHT + VAULT_PREVIEW_HEIGHT;
 
+/** Subject album grid — minimal gutter between photo tiles. */
+export const ALBUM_TILE_GAP = 2;
+
 /** Files tab: always two subject folders per visible row (swipe for more). */
 export function computeVaultFoldersPerPage(_pageWidth: number): number {
   return 2;
@@ -97,8 +100,9 @@ export function useViewportLayout(): ViewportLayout {
     const pagerSize = computePagerSize(width, deviceClass);
 
     const listNumColumns = isPhone ? 1 : 2;
+    // ~⅓ linear tile size vs former 3/4/5-column grid (×3 columns).
     const albumNumColumns =
-      deviceClass === 'phone' ? 3 : deviceClass === 'tablet' ? 4 : 5;
+      deviceClass === 'phone' ? 9 : deviceClass === 'tablet' ? 12 : 15;
     const vaultFoldersPerPage = computeVaultFoldersPerPage(width);
     const dashboardCardsPerRow = isPhone ? 1 : 2;
 

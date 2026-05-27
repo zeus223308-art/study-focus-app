@@ -13,9 +13,7 @@ import {
   type SubjectProblemItem,
 } from '@/lib/grouping/bundles';
 import { confirmChoice } from '@/lib/ui/confirm';
-import { useViewportLayout } from '@/lib/ui/viewport-layout';
-
-const ALBUM_GAP = 0;
+import { ALBUM_TILE_GAP, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 function itemKey(item: SubjectProblemItem) {
   return `${item.bundleId}:${item.pageId}`;
@@ -137,7 +135,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                     subjectId={subjectId}
                     albumColumns={viewport.albumNumColumns}
                     contentWidth={albumContentWidth}
-                    gap={ALBUM_GAP}
+                    gap={ALBUM_TILE_GAP}
                     labels={albumLabels}
                     selectionMode={restoreSelectMode ? 'pick' : null}
                     selectedKeys={selectedKeys}
