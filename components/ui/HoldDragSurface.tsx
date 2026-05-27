@@ -29,6 +29,8 @@ type Props = {
   onHoldMenu?: () => void;
   /** First tap, then second touch + hold within ~0.4s → delete (no selection UI). */
   onDeleteHold?: () => void;
+  /** Skip hold timer (subject already in reorder mode from menu). */
+  instantDrag?: boolean;
   onGestureActiveChange?: (active: boolean) => void;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -47,6 +49,7 @@ export function HoldDragSurface({
   onPress,
   onHoldMenu,
   onDeleteHold,
+  instantDrag,
   onGestureActiveChange,
   children,
   style,
@@ -182,9 +185,14 @@ export function HoldDragSurface({
         deleteHoldRef.current = false;
       }
 
+      if (instantDrag) {
+        beginLift(pageX, pageY);
+        return;
+      }
+
       scheduleLift(pageX, pageY);
     },
-    [clearOpenDefer, enabled, onDeleteHold, scheduleLift]
+    [beginLift, clearOpenDefer, enabled, instantDrag, onDeleteHold, scheduleLift]
   );
 
   const movePendingOrDrag = useCallback(

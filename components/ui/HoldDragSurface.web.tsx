@@ -25,6 +25,8 @@ type Props = {
   onPress?: () => void;
   onHoldMenu?: () => void;
   onDeleteHold?: () => void;
+  /** Skip hold timer (subject already in reorder mode from menu). */
+  instantDrag?: boolean;
   onGestureActiveChange?: (active: boolean) => void;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -52,6 +54,7 @@ export function HoldDragSurface({
   onPress,
   onHoldMenu,
   onDeleteHold,
+  instantDrag,
   onGestureActiveChange,
   children,
   style,
@@ -77,9 +80,11 @@ export function HoldDragSurface({
   const onPressRef = useRef(onPress);
   const onDeleteHoldRef = useRef(onDeleteHold);
   const onHoldMenuRef = useRef(onHoldMenu);
+  const instantDragRef = useRef(instantDrag);
   const onGestureActiveChangeRef = useRef(onGestureActiveChange);
 
   enabledRef.current = enabled;
+  instantDragRef.current = instantDrag;
   onLiftRef.current = onLift;
   onDragMoveRef.current = onDragMove;
   onDragEndRef.current = onDragEnd;
@@ -242,6 +247,11 @@ export function HoldDragSurface({
         deleteHoldRef.current = true;
       } else {
         deleteHoldRef.current = false;
+      }
+
+      if (instantDragRef.current) {
+        beginLift(pageX, pageY);
+        return;
       }
 
       timerRef.current = setTimeout(() => {

@@ -6,17 +6,21 @@ import { theme } from '@/constants/theme';
 type Props = {
   visible: boolean;
   deleteLabel: string;
+  reorderLabel: string;
   cancelLabel: string;
   onDelete: () => void;
+  onReorder: () => void;
   onClose: () => void;
 };
 
-/** Long-press menu to delete a subject (name or empty preview card). */
+/** Long-press menu on subject name (delete or enter reorder mode). */
 export function SubjectFolderHoldMenuSheet({
   visible,
   deleteLabel,
+  reorderLabel,
   cancelLabel,
   onDelete,
+  onReorder,
   onClose,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -28,7 +32,10 @@ export function SubjectFolderHoldMenuSheet({
           style={[styles.sheet, { paddingBottom: Math.max(28, insets.bottom + 12) }]}
           onPress={() => {}}>
           <View style={styles.handle} />
-          <Pressable style={styles.row} onPress={onDelete}>
+          <Pressable style={styles.row} onPress={onReorder}>
+            <Text style={styles.rowText}>{reorderLabel}</Text>
+          </Pressable>
+          <Pressable style={[styles.row, styles.rowBorder]} onPress={onDelete}>
             <Text style={[styles.rowText, styles.deleteText]}>{deleteLabel}</Text>
           </Pressable>
           <Pressable style={styles.cancelRow} onPress={onClose}>

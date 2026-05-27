@@ -89,6 +89,15 @@ export default function FilesScreen() {
     });
   };
 
+  const startHoldMenuReorder = () => {
+    if (!holdMenuSubject) return;
+    const { id } = holdMenuSubject;
+    setHoldMenuSubject(null);
+    startSubjectReorder(id);
+  };
+
+  const showReorderEdgeHint = subjectPages.length > 1;
+
   const onSubjectReorderMove = (pageX: number, pageY: number) => {
     setGhost({ x: pageX, y: pageY, visible: true });
     updateSubjectReorderHover(pageX, pageY);
@@ -112,6 +121,11 @@ export default function FilesScreen() {
     <Screen scroll scrollEnabled={screenScrollEnabled} nestedScrollEnabled>
       {movingBundleId ? (
         <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
+      ) : reorderingSubjectId ? (
+        <Text style={styles.moveBanner}>
+          {t('folder.reorderHint')}
+          {showReorderEdgeHint ? `\n${t('vault.reorderEdgeHint')}` : ''}
+        </Text>
       ) : null}
 
       <ScreenHeader
@@ -155,8 +169,10 @@ export default function FilesScreen() {
 
       <SubjectFolderHoldMenuSheet
         visible={holdMenuSubject !== null}
+        reorderLabel={t('folder.holdMenuReorder')}
         deleteLabel={t('vault.deleteFolderAction')}
         cancelLabel={t('common.cancel')}
+        onReorder={startHoldMenuReorder}
         onDelete={() => {
           if (!holdMenuSubject) return;
           const { id, name } = holdMenuSubject;

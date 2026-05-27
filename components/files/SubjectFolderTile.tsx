@@ -88,8 +88,17 @@ export function SubjectFolderTile({
         register={registerSubjectReorderZone}
         hover={reorderHover}
         lifted={isActive}>
+        <SubjectFolderName
+          subjectId={subjectId}
+          name={name}
+          lifted={isActive}
+          disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
+          onEditingChange={setNameEditing}
+          onLongPressMenu={onHoldMenu}
+        />
         <HoldDragSurface
           enabled={dragEnabled}
+          instantDrag={isActive}
           onLift={handleLift}
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
@@ -100,14 +109,6 @@ export function SubjectFolderTile({
             isActive && styles.dragSurfaceLifted,
             reorderHover && styles.dragSurfaceHover,
           ]}>
-          <SubjectFolderName
-            subjectId={subjectId}
-            name={name}
-            lifted={isActive}
-            disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
-            onEditingChange={setNameEditing}
-            onLongPressMenu={onHoldMenu}
-          />
           <View ref={cardRef} collapsable={false} pointerEvents="box-none">
             <SubjectFolderPreview
               variant="vault"
