@@ -185,6 +185,12 @@
     "sendToNewFolderHint": "새 과목 폴더 이름을 입력한 뒤 보내기를 누르세요.",
     "sendToNewFolderPlaceholder": "폴더 이름",
     "sendToNewFolderDone": "「{{name}}」 폴더로 보냈습니다",
+    "sendToNewFolderBulkHint": "선택한 {{count}}장이 새 과목으로 이동합니다.",
+    "sendToOtherFolder": "다른 파일/폴더로 보내기",
+    "sendToOtherFolderTitle": "보낼 과목 선택",
+    "sendToOtherFolderHint": "과목을 하나만 선택하세요.",
+    "sendToOtherFolderDone": "「{{name}}」(으)로 {{count}}장을 보냈습니다",
+    "exportSelectHint": "보낼 사진을 선택하세요 (꾹 눌러 선택)",
     "holdMenuReorder": "순서 변경 (끌어서 이동)"
   },
   "item": {

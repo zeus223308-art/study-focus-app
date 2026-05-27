@@ -185,6 +185,12 @@
     "sendToNewFolderHint": "Enter a name for the new subject folder, then tap Send.",
     "sendToNewFolderPlaceholder": "Folder name",
     "sendToNewFolderDone": "Moved to \"{{name}}\"",
+    "sendToNewFolderBulkHint": "{{count}} photo(s) will move to the new subject.",
+    "sendToOtherFolder": "Send to another folder",
+    "sendToOtherFolderTitle": "Choose subject",
+    "sendToOtherFolderHint": "Select one subject only.",
+    "sendToOtherFolderDone": "Moved {{count}} photo(s) to \"{{name}}\"",
+    "exportSelectHint": "Select photos to move (long-press to start)",
     "holdMenuReorder": "Reorder (drag to move)"
   },
   "item": {

@@ -16,6 +16,7 @@ import { appendCaptureToData } from '@/lib/domain/bundle-factory';
 import { todayKey } from '@/lib/domain/dates';
 import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
 import { movePageToSubject } from '@/lib/domain/move-page-to-subject';
+import { movePagesToSubject, type PageRef } from '@/lib/domain/move-pages-batch';
 import { removePageFromData } from '@/lib/domain/remove-page';
 import {
   defaultMergedSubjectName,
@@ -96,6 +97,11 @@ type AppContextValue = {
     pageId: string,
     newSubjectName: string
   ) => string | null;
+  moveProblemsToNewSubject: (items: PageRef[], newSubjectName: string) => string | null;
+  moveProblemsToSubject: (
+    items: PageRef[],
+    targetSubjectId: string
+  ) => boolean;
   deleteSubject: (subjectId: string) => void;
   deleteSubjects: (subjectIds: string[]) => void;
   setSubjectSchedule: (subjectId: string, scheduleId: string) => void;
@@ -482,10 +488,10 @@ export function AppProvider({
     );
   }, []);
 
-  const moveProblemToNewSubject = useCallback(
-    (bundleId: string, pageId: string, newSubjectName: string) => {
+  const moveProblemsToNewSubject = useCallback(
+    (items: PageRef[], newSubjectName: string) => {
       const trimmed = newSubjectName.trim();
-      if (!trimmed) return null;
+      if (!trimmed || items.length === 0) return null;
       const prev = dataRef.current;
       if (!prev) return null;
 
@@ -504,10 +510,30 @@ export function AppProvider({
         ...prev,
         subjects: [...prev.subjects, subject],
       };
-      const moved = movePageToSubject(withSubject, bundleId, pageId, subject.id);
+      const moved = movePagesToSubject(withSubject, items, subject.id);
       if (!moved) return null;
       persist(moved);
       return subject.id;
+    },
+    [persist]
+  );
+
+  const moveProblemToNewSubject = useCallback(
+    (bundleId: string, pageId: string, newSubjectName: string) => {
+      return moveProblemsToNewSubject([{ bundleId, pageId }], newSubjectName);
+    },
+    [moveProblemsToNewSubject]
+  );
+
+  const moveProblemsToSubject = useCallback(
+    (items: PageRef[], targetSubjectId: string) => {
+      if (items.length === 0) return false;
+      const prev = dataRef.current;
+      if (!prev) return false;
+      const moved = movePagesToSubject(prev, items, targetSubjectId);
+      if (!moved) return false;
+      persist(moved);
+      return true;
     },
     [persist]
   );
@@ -1194,6 +1220,8 @@ export function AppProvider({
       addSubject,
       renameSubject,
       moveProblemToNewSubject,
+      moveProblemsToNewSubject,
+      moveProblemsToSubject,
       deleteSubject,
       deleteSubjects,
       setSubjectSchedule,
@@ -1267,6 +1295,8 @@ export function AppProvider({
     addSubject,
     renameSubject,
     moveProblemToNewSubject,
+    moveProblemsToNewSubject,
+    moveProblemsToSubject,
     deleteSubject,
     deleteSubjects,
     setSubjectSchedule,
