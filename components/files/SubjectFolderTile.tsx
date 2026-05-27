@@ -80,10 +80,6 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
     marginBottom: 8,
     marginLeft: 2,
     marginRight: 2,

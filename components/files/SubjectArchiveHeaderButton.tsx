@@ -8,7 +8,7 @@ type Props = {
   accessibilityLabel?: string;
 };
 
-/** Header / tile archive affordance — same for every subject folder. */
+/** Folder screen header only — not shown on Files tab subject list. */
 export function SubjectArchiveHeaderButton({ label, onPress, accessibilityLabel }: Props) {
   return (
     <Pressable

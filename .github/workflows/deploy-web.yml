@@ -45,12 +45,22 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Files tab has no per-subject archive buttons
+        run: |
+          if grep -r 'onSubjectArchivePress' dist/_expo/static/js/web/ 2>/dev/null; then
+            echo 'ERROR: Files tab still bundles vault archive tile handlers'
+            exit 1
+          fi
+
       - name: GitHub Pages SPA fallback
         run: |
           cp dist/index.html dist/404.html
           touch dist/.nojekyll
-          echo "<!-- deploy $(date -u +%Y-%m-%dT%H:%M:%SZ) -->" >> dist/index.html
-          echo "<!-- deploy $(date -u +%Y-%m-%dT%H:%M:%SZ) -->" >> dist/404.html
+          CACHE_META='<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" /><meta http-equiv="Pragma" content="no-cache" /><meta http-equiv="Expires" content="0" />'
+          for f in dist/index.html dist/404.html; do
+            sed -i "s|<head>|<head>${CACHE_META}|" "$f"
+            echo "<!-- deploy $(date -u +%Y-%m-%dT%H:%M:%SZ) -->" >> "$f"
+          done
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v4
