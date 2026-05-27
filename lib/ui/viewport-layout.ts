@@ -44,17 +44,14 @@ export function computePagerSize(width: number, deviceClass: DeviceClass): numbe
 
 export const VAULT_PANEL_PAD = 14;
 export const VAULT_TILE_GAP = 14;
-/** Min tile width — lower value fits 4 folders per row on typical phone panels. */
-export const VAULT_MIN_TILE_WIDTH = 64;
+export const VAULT_MIN_TILE_WIDTH = 72;
 export const VAULT_NAME_ROW_HEIGHT = 32;
 export const VAULT_PREVIEW_HEIGHT = 112;
 export const VAULT_TILE_HEIGHT = VAULT_NAME_ROW_HEIGHT + VAULT_PREVIEW_HEIGHT;
 
-/** Panel width → how many equal folder tiles fit in one visible row (2–4). */
-export function computeVaultFoldersPerPage(pageWidth: number): number {
-  const inner = pageWidth - VAULT_PANEL_PAD * 2;
-  const n = Math.floor((inner + VAULT_TILE_GAP) / (VAULT_MIN_TILE_WIDTH + VAULT_TILE_GAP));
-  return Math.max(2, Math.min(4, n));
+/** Files tab: always two subject folders per visible row (swipe for more). */
+export function computeVaultFoldersPerPage(_pageWidth: number): number {
+  return 2;
 }
 
 /** 금고 캐러셀 — 페이지에 과목 수가 적어도 타일 너비를 동일하게 유지 */
