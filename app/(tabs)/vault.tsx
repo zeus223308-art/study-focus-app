@@ -8,7 +8,6 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { useVaultSubjectMenu } from '@/context/VaultSubjectMenuContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
@@ -23,7 +22,6 @@ const PANEL_PAD = 14;
 export default function FilesScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { openVaultSubjectMenu } = useVaultSubjectMenu();
   const {
     data,
     addSubject,
@@ -133,7 +131,6 @@ export default function FilesScreen() {
               onSubjectReorderMove={onSubjectReorderMove}
               onSubjectReorderEnd={onSubjectReorderEnd}
               onFolderGestureLock={lockFolderTouch}
-              onSubjectHoldMenu={openVaultSubjectMenu}
             />
           </View>
         </View>

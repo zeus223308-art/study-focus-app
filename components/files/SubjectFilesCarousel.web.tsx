@@ -40,7 +40,6 @@ type Props = {
   ) => void;
   emptyLabel?: string;
   onFolderGestureLock?: (locked: boolean) => void;
-  onSubjectHoldMenu?: (subjectId: string, subjectName: string) => void;
   onAddFolder?: () => void;
   addFolderLabel?: string;
 };
@@ -57,7 +56,6 @@ export function SubjectFilesCarousel({
   onSubjectReorderEnd,
   emptyLabel,
   onFolderGestureLock,
-  onSubjectHoldMenu,
   onAddFolder,
   addFolderLabel,
 }: Props) {
@@ -239,11 +237,6 @@ export function SubjectFilesCarousel({
                 stopAutoScroll();
                 onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
               }}
-              onHoldMenu={
-                onSubjectHoldMenu
-                  ? () => onSubjectHoldMenu(subject.id, subject.name)
-                  : undefined
-              }
             />
           </View>
         ))}

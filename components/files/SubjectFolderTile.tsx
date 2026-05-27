@@ -22,7 +22,6 @@ type Props = {
   onLiftForReorder: () => void;
   onReorderDragMove?: (pageX: number, pageY: number) => void;
   onReorderDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
-  onHoldMenu?: () => void;
   onPreviewGestureLock: (locked: boolean) => void;
 };
 
@@ -35,7 +34,6 @@ export function SubjectFolderTile({
   onLiftForReorder,
   onReorderDragMove,
   onReorderDragEnd,
-  onHoldMenu,
   onPreviewGestureLock,
 }: Props) {
   const { t } = useTranslation();
@@ -52,9 +50,6 @@ export function SubjectFolderTile({
   const isActive = reorderingSubjectId === subjectId;
   const reorderHover = reorderHoverSubjectId === subjectId && !isActive;
   const dragEnabled = !movingBundleId && Boolean(onReorderDragMove) && !nameEditing;
-  const isEmptyPreview = previewItems.length === 0;
-  /** Empty card long-press → menu (delete); card with photos long-press → drag only. */
-  const cardHoldMenu = onHoldMenu && isEmptyPreview ? onHoldMenu : undefined;
 
   const tryDropHere = () => {
     if (!movingBundleId || subjectId === dragSourceSubjectId) return;
@@ -95,9 +90,8 @@ export function SubjectFolderTile({
           subjectId={subjectId}
           name={name}
           lifted={isActive}
-          disabled={Boolean(movingBundleId)}
+          disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
           onEditingChange={setNameEditing}
-          onLongPressMenu={onHoldMenu}
         />
         <HoldDragSurface
           enabled={dragEnabled}
@@ -106,7 +100,6 @@ export function SubjectFolderTile({
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
           onPress={openFolder}
-          onHoldMenu={cardHoldMenu}
           onGestureActiveChange={onPreviewGestureLock}
           style={[
             styles.dragSurface,
