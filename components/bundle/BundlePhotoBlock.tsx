@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
@@ -8,11 +9,10 @@ import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-u
 
 type Props = {
   label: string;
+  maxWidth: number;
+  maxHeight?: number;
   asset: CloudAsset | null;
-  width: number;
-  height: number;
   onPress: () => void;
-  /** Saved ink overlay (read-only) on the thumbnail */
   showInkPreview?: boolean;
   inkEnabled?: boolean;
   layer?: NoteLayer | null;
@@ -25,9 +25,9 @@ type Props = {
 
 export function BundlePhotoBlock({
   label,
+  maxWidth,
+  maxHeight = 220,
   asset,
-  width,
-  height,
   onPress,
   showInkPreview = false,
   inkEnabled,
@@ -40,11 +40,24 @@ export function BundlePhotoBlock({
 }: Props) {
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
+  const [aspect, setAspect] = useState(4 / 3);
 
-  const onLayout = (_e: LayoutChangeEvent) => {};
+  useEffect(() => {
+    if (!uri) return;
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (w > 0) setAspect(h / w);
+      },
+      () => setAspect(4 / 3)
+    );
+  }, [uri]);
+
+  const width = maxWidth;
+  const height = Math.min(maxHeight, Math.max(72, Math.round(width * aspect)));
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, { width: maxWidth }]}>
       <Text style={styles.label}>{label}</Text>
       <Pressable
         onPress={hasImage ? onPress : onAddPress}
@@ -82,7 +95,7 @@ export function BundlePhotoBlock({
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 16 },
+  wrap: { marginBottom: 16, alignSelf: 'center' },
   label: {
     fontSize: theme.font.body,
     fontWeight: '800',
@@ -90,6 +103,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   frame: {
+    alignSelf: 'center',
     borderRadius: theme.radius.md,
     overflow: 'hidden',
     backgroundColor: theme.surface,

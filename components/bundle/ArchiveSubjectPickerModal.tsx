@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import type { SubjectFolder } from '@/lib/domain/types';
 
@@ -9,7 +11,7 @@ type Props = {
   visible: boolean;
   subjects: SubjectFolder[];
   currentSubjectId: string;
-  onSelect: (subjectId: string) => void;
+  onConfirm: (subjectId: string) => void;
   onClose: () => void;
 };
 
@@ -17,11 +19,16 @@ export function ArchiveSubjectPickerModal({
   visible,
   subjects,
   currentSubjectId,
-  onSelect,
+  onConfirm,
   onClose,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const [pickedId, setPickedId] = useState(currentSubjectId);
+
+  useEffect(() => {
+    if (visible) setPickedId(currentSubjectId);
+  }, [visible, currentSubjectId]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -35,8 +42,8 @@ export function ArchiveSubjectPickerModal({
             {subjects.map((s) => (
               <Pressable
                 key={s.id}
-                onPress={() => onSelect(s.id)}
-                style={[styles.row, s.id === currentSubjectId && styles.rowCurrent]}>
+                onPress={() => setPickedId(s.id)}
+                style={[styles.row, s.id === pickedId && styles.rowSelected]}>
                 <Text style={styles.rowText}>{s.name}</Text>
                 {s.id === currentSubjectId ? (
                   <Text style={styles.badge}>{t('item.archiveCurrentSubject')}</Text>
@@ -44,6 +51,11 @@ export function ArchiveSubjectPickerModal({
               </Pressable>
             ))}
           </ScrollView>
+          <Button
+            label={t('common.confirm')}
+            onPress={() => onConfirm(pickedId)}
+            style={styles.confirmBtn}
+          />
           <Pressable onPress={onClose} style={styles.cancel}>
             <Text style={styles.cancelText}>{t('common.cancel')}</Text>
           </Pressable>
@@ -89,9 +101,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
-  rowCurrent: { borderColor: theme.orange },
+  rowSelected: { borderColor: theme.orange, borderWidth: 2 },
   rowText: { fontWeight: '700', color: theme.black, flex: 1 },
   badge: { fontSize: 11, fontWeight: '700', color: theme.orange },
+  confirmBtn: { marginTop: 4 },
   cancel: { marginTop: 8, alignItems: 'center', paddingVertical: 12 },
   cancelText: { color: theme.gray, fontWeight: '700' },
 });

@@ -96,12 +96,8 @@ export default function BundleScreen() {
   const [redoStack, setRedoStack] = useState<NoteLayer['strokes'][]>([]);
   const viewport = useViewportLayout();
   const viewerLayout = useFullscreenViewerLayout();
-  const photoW = Math.min(
-    viewport.width - viewport.horizontalPadding * 2,
-    viewport.contentMaxWidth,
-    560
-  );
-  const photoH = Math.round(photoW * 1.12);
+  const photoMaxW = viewport.width - viewport.horizontalPadding * 2;
+  const photoMaxH = 220;
 
   const page = bundle?.pages[pageIndex] ?? bundle?.pages[0];
   const strokeWidth = useMemo(() => {
@@ -396,11 +392,12 @@ export default function BundleScreen() {
         </>
       ) : null}
 
+      <View style={styles.photosColumn}>
       <BundlePhotoBlock
         label={t('item.problemSection')}
+        maxWidth={photoMaxW}
+        maxHeight={photoMaxH}
         asset={page.asset}
-        width={photoW}
-        height={photoH}
         showInkPreview={Boolean(activeLayer?.strokes.length)}
         layer={activeLayer ?? undefined}
         onPress={() => {
@@ -411,9 +408,9 @@ export default function BundleScreen() {
 
       <BundlePhotoBlock
         label={t('item.answerSection')}
+        maxWidth={photoMaxW}
+        maxHeight={photoMaxH}
         asset={page.answerAsset}
-        width={photoW}
-        height={photoH}
         onPress={() => {
           if (!page.answerAsset) return;
           setProblemModalOpen(false);
@@ -428,6 +425,7 @@ export default function BundleScreen() {
         placeholder={t('item.addBackPhoto')}
         onAddPress={addBackPhoto}
       />
+      </View>
 
       <Pressable onPress={importMorePhotos} disabled={importingMore} style={styles.addProblemRow}>
         <Text style={[styles.link, importingMore && styles.linkDisabled]}>
@@ -447,7 +445,12 @@ export default function BundleScreen() {
         style={{ marginTop: 8 }}
       />
       <Button
-        label={bundle.archived ? t('folder.unarchive') : t('item.archive')}
+        label={t('common.save')}
+        onPress={() => showMessage('', t('capture.saved'))}
+        style={{ marginTop: 8 }}
+      />
+      <Button
+        label={t('item.archive')}
         variant="secondary"
         onPress={() => {
           if (bundle.archived) {
@@ -513,13 +516,12 @@ export default function BundleScreen() {
         subjects={data.subjects}
         currentSubjectId={bundle.subjectId}
         onClose={() => setArchivePickerOpen(false)}
-        onSelect={(subjectId) => {
+        onConfirm={(subjectId) => {
           setArchivePickerOpen(false);
           if (subjectId !== bundle.subjectId) {
             updateBundle(bundle.id, { subjectId });
           }
           archiveBundle(bundle.id);
-          showMessage('', t('item.archivedToSubject', { name: data.subjects.find((s) => s.id === subjectId)?.name ?? '' }));
         }}
       />
     </Screen>
@@ -550,6 +552,11 @@ const styles = StyleSheet.create({
     fontSize: theme.font.caption,
     fontWeight: '700',
     color: theme.orange,
+  },
+  photosColumn: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   pagerSection: {
     position: 'relative',

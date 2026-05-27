@@ -104,8 +104,14 @@ export function initialCropSelection(
   });
 }
 
-export function clampCropSelection(selection: CropSelection): CropSelection {
-  const withPan = clampImageOffset(selection);
+export function clampCropSelection(
+  selection: CropSelection,
+  opts?: { lockImagePosition?: boolean }
+): CropSelection {
+  const base = opts?.lockImagePosition
+    ? { ...selection, imageOffsetX: 0, imageOffsetY: 0 }
+    : selection;
+  const withPan = opts?.lockImagePosition ? base : clampImageOffset(base);
   const image = imageDisplayRect(withPan);
 
   const maxLeft = image.left + image.width - MIN_CROP_SIZE;
@@ -129,7 +135,9 @@ export function clampCropSelection(selection: CropSelection): CropSelection {
     top = Math.min(top, image.top + image.height - MIN_CROP_SIZE);
   }
 
-  return clampImageOffset({ ...withPan, crop: { left, top, width, height } });
+  return opts?.lockImagePosition
+    ? { ...withPan, crop: { left, top, width, height } }
+    : clampImageOffset({ ...withPan, crop: { left, top, width, height } });
 }
 
 export function cropRegionFromSelection(selection: CropSelection): {

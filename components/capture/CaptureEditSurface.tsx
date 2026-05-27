@@ -34,6 +34,8 @@ type Props = {
   tool?: InkToolId;
   strokeWidth?: number;
   onStrokesChange?: (strokes: InkStroke[]) => void;
+  /** Keep photo centered; crop handles only resize within the image bounds */
+  lockImagePosition?: boolean;
 };
 
 function buildLayer(strokes: InkStroke[]): NoteLayer {
@@ -127,6 +129,7 @@ export function CaptureEditSurface({
   tool = 'pen-black',
   strokeWidth = 3,
   onStrokesChange,
+  lockImagePosition = false,
 }: Props) {
   const [layout, setLayout] = useState({ w: 0, h: 0 });
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
@@ -155,11 +158,11 @@ export function CaptureEditSurface({
 
   const applySelection = useCallback(
     (next: CropSelection) => {
-      const clamped = clampCropSelection(next);
+      const clamped = clampCropSelection(next, { lockImagePosition });
       selectionRef.current = clamped;
       onSelectionChange(clamped);
     },
-    [onSelectionChange]
+    [lockImagePosition, onSelectionChange]
   );
 
   useEffect(() => {
@@ -324,7 +327,7 @@ export function CaptureEditSurface({
       }}>
       {imageRect ? (
         <View
-          {...(mode === 'crop'
+          {...(mode === 'crop' && !lockImagePosition
             ? wrapHandle('image', imageDrag, [
                 styles.imageTouch,
                 {

@@ -31,6 +31,7 @@ import {
 import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { resolveImageUri } from '@/lib/files/resolve-image-uri';
 import { getAnswerImageUri, OCR_PASS_THRESHOLD, scoreActiveRecall } from '@/lib/review/answer-text';
+import { isProblemGradable } from '@/lib/review/problem-gradable';
 import {
   ANSWER_SLIDESHOW_SECONDS,
   FRONT_SLIDESHOW_SECONDS,
@@ -111,8 +112,8 @@ export default function ReviewSessionScreen() {
   const problemShift = useRef(new Animated.Value(0)).current;
   const viewport = useViewportLayout();
   const workCardW = Math.min(viewport.width - 24, viewport.contentMaxWidth, 520);
-  const problemCardH = Math.round(workCardW * 0.52);
-  const workCardH = Math.round(workCardW * 1.44);
+  const problemCardH = Math.round(workCardW * 0.46);
+  const workCardH = Math.round(workCardW * 2.0);
   const [recallScrollLocked, setRecallScrollLocked] = useState(false);
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
@@ -221,11 +222,6 @@ export default function ReviewSessionScreen() {
   const enterRecallPhase = () => {
     setPhase('recall-work');
     problemShift.setValue(0);
-    Animated.timing(problemShift, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
   };
 
   const startCountdown = () => {
@@ -340,6 +336,16 @@ export default function ReviewSessionScreen() {
 
   const submitRecall = () => {
     if (!current || adLocked) return;
+    const gradable = isProblemGradable(current.page);
+
+    if (!gradable) {
+      updateBundle(current.bundle.id, {
+        review: { ...current.bundle.review, aiScoreLast: null },
+      });
+      showPassCelebration(100);
+      return;
+    }
+
     const score = scoreActiveRecall(recallStrokes, current.page);
     updateBundle(current.bundle.id, {
       review: { ...current.bundle.review, aiScoreLast: score },
@@ -390,11 +396,12 @@ export default function ReviewSessionScreen() {
 
   const showAnswerOverlay = isPro && premiumReveal && answerUri && !auto;
   const hasAnswer = Boolean(answerUri);
+  const gradable = isProblemGradable(current.page);
   const recallMode =
     (phase === 'recall-work' || phase === 'countdown') && !showAnswerOverlay;
   const problemLiftY = problemShift.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -Math.round(problemCardH * 0.06)],
+    outputRange: [0, 0],
   });
   const showingBack = current.side === 'back' && Boolean(answerUri);
   const displayUri = showingBack ? resolvedAnswerUri : resolvedFrontUri;
@@ -459,10 +466,11 @@ export default function ReviewSessionScreen() {
       {recallMode ? (
         <ScrollView
           style={styles.recallScroll}
-          contentContainerStyle={styles.recallFull}
+          contentContainerStyle={[styles.recallFull, { paddingTop: 8, paddingBottom: 32 }]}
           keyboardShouldPersistTaps="handled"
           scrollEnabled={!recallScrollLocked}
-          showsVerticalScrollIndicator>
+          showsVerticalScrollIndicator
+          nestedScrollEnabled>
           <Animated.View
             style={[
               styles.problemStage,
@@ -498,7 +506,7 @@ export default function ReviewSessionScreen() {
               {!hasAnswer ? <Text style={styles.warn}>{t('review.noBackPhoto')}</Text> : null}
               <View style={styles.recallActions}>
                 <Button label={t('review.submitRecall')} onPress={submitRecall} disabled={adLocked} />
-                {!isPro ? (
+                {!isPro && gradable ? (
                   <Pressable onPress={() => setHintOffer(true)} disabled={!hasAnswer}>
                     <Text style={[styles.hintLink, !hasAnswer && styles.hintDisabled]}>
                       {t('review.hintAd')}

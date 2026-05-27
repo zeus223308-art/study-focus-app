@@ -38,9 +38,16 @@ type Props = {
   sideLabel: string;
   onConfirm: (result: { uri: string }) => void | Promise<void>;
   onRetake: () => void;
+  lockImagePosition?: boolean;
 };
 
-export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Props) {
+export function CapturePhotoEditor({
+  uri,
+  sideLabel,
+  onConfirm,
+  onRetake,
+  lockImagePosition = false,
+}: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const layout = useFullscreenViewerLayout();
@@ -256,6 +263,7 @@ export function CapturePhotoEditor({ uri, sideLabel, onConfirm, onRetake }: Prop
             tool={tool}
             strokeWidth={strokeWidth}
             onStrokesChange={setStrokes}
+            lockImagePosition={lockImagePosition}
           />
         ) : (
           <View style={styles.cropWrapLoading} />
