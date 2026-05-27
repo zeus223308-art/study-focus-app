@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
@@ -47,8 +47,13 @@ export default function FilesScreen() {
     setFolderTouchActive(locked);
   }, []);
 
-  const screenScrollEnabled =
-    !reorderingSubjectId && !folderTouchActive && !subjectDeleteMode;
+  const screenScrollEnabled = !reorderingSubjectId && !folderTouchActive;
+
+  useEffect(() => {
+    if (!subjectDeleteMode) {
+      setFolderTouchActive(false);
+    }
+  }, [subjectDeleteMode]);
 
   const toggleSubjectDeleteSelect = useCallback((subjectId: string) => {
     setSelectedForDelete((prev) => {

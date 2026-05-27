@@ -29,9 +29,9 @@ type Props = {
   onHoldMenu?: () => void;
   /** First tap, then second touch + hold within ~0.4s → delete (no selection UI). */
   onDeleteHold?: () => void;
-  /** Skip hold timer (subject already in reorder mode from menu). */
-  instantDrag?: boolean;
   onGestureActiveChange?: (active: boolean) => void;
+  /** Tap to onPress only — no long-press lift (selection mode). */
+  tapOnly?: boolean;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 };
@@ -49,8 +49,8 @@ export function HoldDragSurface({
   onPress,
   onHoldMenu,
   onDeleteHold,
-  instantDrag,
   onGestureActiveChange,
+  tapOnly = false,
   children,
   style,
 }: Props) {
@@ -60,7 +60,6 @@ export function HoldDragSurface({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openDeferRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deleteHoldRef = useRef(false);
-  const holdMenuFiredRef = useRef(false);
   const lastReleaseAtRef = useRef(0);
 
   const clearTimer = useCallback(() => {
@@ -105,15 +104,13 @@ export function HoldDragSurface({
       phaseRef.current = 'idle';
       movedRef.current = false;
       deleteHoldRef.current = false;
-      const skipPress = holdMenuFiredRef.current;
-      holdMenuFiredRef.current = false;
       setActive(false);
 
       if (phase === 'lifted') {
         onDragEnd?.(moved, pageX, pageY);
         return;
       }
-      if (phase !== 'pending' || skipPress) return;
+      if (phase !== 'pending') return;
 
       const dx = Math.abs(pageX - startRef.current.pageX);
       const dy = Math.abs(pageY - startRef.current.pageY);
@@ -140,7 +137,6 @@ export function HoldDragSurface({
 
       if (onHoldMenu) {
         phaseRef.current = 'idle';
-        holdMenuFiredRef.current = true;
         clearTimer();
         clearOpenDefer();
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -189,14 +185,10 @@ export function HoldDragSurface({
         deleteHoldRef.current = false;
       }
 
-      if (instantDrag) {
-        beginLift(pageX, pageY);
-        return;
-      }
-
+      if (tapOnly) return;
       scheduleLift(pageX, pageY);
     },
-    [beginLift, clearOpenDefer, enabled, instantDrag, onDeleteHold, scheduleLift]
+    [clearOpenDefer, enabled, onDeleteHold, scheduleLift, tapOnly]
   );
 
   const movePendingOrDrag = useCallback(
@@ -206,11 +198,10 @@ export function HoldDragSurface({
         onDragMove?.(pageX, pageY);
         return;
       }
-      if (phaseRef.current !== 'pending' || !timerRef.current) return;
+      if (phaseRef.current !== 'pending') return;
       const dx = Math.abs(pageX - startRef.current.pageX);
       const dy = Math.abs(pageY - startRef.current.pageY);
-      // Cancel only on mostly-horizontal movement so vertical scroll does not block lift.
-      if (dx > MOVE_CANCEL_PX && dx > dy) {
+      if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
         clearTimer();
         phaseRef.current = 'idle';
         deleteHoldRef.current = false;

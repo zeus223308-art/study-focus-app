@@ -110,13 +110,14 @@ export function SubjectFolderTile({
           onEditingChange={setNameEditing}
         />
         <HoldDragSurface
-          enabled={dragEnabled}
+          enabled={selectionMode || dragEnabled}
+          tapOnly={selectionMode}
           onLift={handleLift}
-          onDragMove={onReorderDragMove}
-          onDragEnd={handleDragEnd}
+          onDragMove={selectionMode ? undefined : onReorderDragMove}
+          onDragEnd={selectionMode ? undefined : handleDragEnd}
           onPress={openFolder}
           onDeleteHold={selectionMode ? undefined : onDeleteHold}
-          onGestureActiveChange={onPreviewGestureLock}
+          onGestureActiveChange={selectionMode ? undefined : onPreviewGestureLock}
           style={[
             styles.dragSurface,
             isActive && styles.dragSurfaceLifted,
@@ -147,7 +148,7 @@ export function SubjectFolderTile({
               items={previewItems}
               totalLabel={totalLabel}
               emptyHint={t('vault.previewEmpty')}
-              passthroughGestures={!selectionMode}
+              passthroughGestures
               onOpen={openFolder}
               onLongPress={selectionMode ? undefined : handleLift}
               onGestureLock={onPreviewGestureLock}

@@ -99,11 +99,10 @@ export function SubjectFilesCarousel({
   const setPreviewGestureLock = useCallback(
     (locked: boolean) => {
       onFolderGestureLock?.(locked);
-      const canScroll =
-        subjects.length > 1 && !locked && !reorderingSubjectId && !subjectDeleteMode;
+      const canScroll = slotCount > 1 && !locked && !reorderingSubjectId;
       setListScrollEnabled(canScroll);
     },
-    [onFolderGestureLock, reorderingSubjectId, subjectDeleteMode, subjects.length]
+    [onFolderGestureLock, reorderingSubjectId, slotCount]
   );
 
   const measurePanelBounds = useCallback(() => {
@@ -170,7 +169,7 @@ export function SubjectFilesCarousel({
   useEffect(() => {
     if (!reorderingSubjectId) {
       stopAutoScroll();
-      setListScrollEnabled(subjects.length > 1);
+      setListScrollEnabled(slotCount > 1);
       return;
     }
     measurePanelBounds();
@@ -188,6 +187,7 @@ export function SubjectFilesCarousel({
     slotWidth,
     stopAutoScroll,
     subjects,
+    slotCount,
   ]);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {

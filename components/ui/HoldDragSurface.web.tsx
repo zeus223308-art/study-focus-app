@@ -25,9 +25,8 @@ type Props = {
   onPress?: () => void;
   onHoldMenu?: () => void;
   onDeleteHold?: () => void;
-  /** Skip hold timer (subject already in reorder mode from menu). */
-  instantDrag?: boolean;
   onGestureActiveChange?: (active: boolean) => void;
+  tapOnly?: boolean;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 };
@@ -54,8 +53,8 @@ export function HoldDragSurface({
   onPress,
   onHoldMenu,
   onDeleteHold,
-  instantDrag,
   onGestureActiveChange,
+  tapOnly = false,
   children,
   style,
 }: Props) {
@@ -66,13 +65,13 @@ export function HoldDragSurface({
   const [lifted, setLifted] = useState(false);
 
   const enabledRef = useRef(enabled);
+  const tapOnlyRef = useRef(tapOnly);
   const movedRef = useRef(false);
   const startRef = useRef<Point>({ pageX: 0, pageY: 0 });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openDeferRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionCleanupRef = useRef<(() => void) | null>(null);
   const deleteHoldRef = useRef(false);
-  const holdMenuFiredRef = useRef(false);
   const lastReleaseAtRef = useRef(0);
 
   const onLiftRef = useRef(onLift);
@@ -81,11 +80,10 @@ export function HoldDragSurface({
   const onPressRef = useRef(onPress);
   const onDeleteHoldRef = useRef(onDeleteHold);
   const onHoldMenuRef = useRef(onHoldMenu);
-  const instantDragRef = useRef(instantDrag);
   const onGestureActiveChangeRef = useRef(onGestureActiveChange);
 
   enabledRef.current = enabled;
-  instantDragRef.current = instantDrag;
+  tapOnlyRef.current = tapOnly;
   onLiftRef.current = onLift;
   onDragMoveRef.current = onDragMove;
   onDragEndRef.current = onDragEnd;
@@ -140,15 +138,13 @@ export function HoldDragSurface({
       phaseRef.current = 'idle';
       movedRef.current = false;
       deleteHoldRef.current = false;
-      const skipPress = holdMenuFiredRef.current;
-      holdMenuFiredRef.current = false;
       setLiftedState(false);
 
       if (phase === 'lifted') {
         onDragEndRef.current?.(moved, pageX, pageY);
         return;
       }
-      if (phase !== 'pending' || skipPress) return;
+      if (phase !== 'pending') return;
 
       const dx = Math.abs(pageX - startRef.current.pageX);
       const dy = Math.abs(pageY - startRef.current.pageY);
@@ -174,7 +170,6 @@ export function HoldDragSurface({
 
       if (onHoldMenuRef.current) {
         phaseRef.current = 'idle';
-        holdMenuFiredRef.current = true;
         clearTimer();
         clearOpenDefer();
         onHoldMenuRef.current();
@@ -187,7 +182,7 @@ export function HoldDragSurface({
       onLiftRef.current();
       onDragMoveRef.current?.(pageX, pageY);
 
-      const onTouchMoveDoc = (ev: TouchEvent) => {
+      const onMove = (ev: TouchEvent) => {
         if (phaseRef.current !== 'lifted') return;
         const t = ev.touches[0];
         if (!t) return;
@@ -197,35 +192,20 @@ export function HoldDragSurface({
         onDragMoveRef.current?.(pt.pageX, pt.pageY);
       };
 
-      const onTouchEndDoc = (ev: TouchEvent) => {
+      const onEnd = (ev: TouchEvent) => {
         const t = ev.changedTouches[0];
         if (!t) return;
         const pt = touchPageXY(t);
         finish(pt.pageX, pt.pageY);
       };
 
-      const onMouseMoveDoc = (ev: MouseEvent) => {
-        if (phaseRef.current !== 'lifted') return;
-        ev.preventDefault();
-        movedRef.current = true;
-        onDragMoveRef.current?.(ev.clientX, ev.clientY);
-      };
-
-      const onMouseUpDoc = (ev: MouseEvent) => {
-        finish(ev.clientX, ev.clientY);
-      };
-
-      document.addEventListener('touchmove', onTouchMoveDoc, { passive: false });
-      document.addEventListener('touchend', onTouchEndDoc);
-      document.addEventListener('touchcancel', onTouchEndDoc);
-      document.addEventListener('mousemove', onMouseMoveDoc);
-      document.addEventListener('mouseup', onMouseUpDoc);
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onEnd);
+      document.addEventListener('touchcancel', onEnd);
       sessionCleanupRef.current = () => {
-        document.removeEventListener('touchmove', onTouchMoveDoc);
-        document.removeEventListener('touchend', onTouchEndDoc);
-        document.removeEventListener('touchcancel', onTouchEndDoc);
-        document.removeEventListener('mousemove', onMouseMoveDoc);
-        document.removeEventListener('mouseup', onMouseUpDoc);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onEnd);
+        document.removeEventListener('touchcancel', onEnd);
       };
     },
     [clearOpenDefer, clearTimer, finish, setLiftedState]
@@ -253,10 +233,7 @@ export function HoldDragSurface({
         deleteHoldRef.current = false;
       }
 
-      if (instantDragRef.current) {
-        beginLift(pageX, pageY);
-        return;
-      }
+      if (tapOnlyRef.current) return;
 
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
@@ -320,36 +297,10 @@ export function HoldDragSurface({
         if (timerRef.current) finish(pt.pageX, pt.pageY);
       };
 
-      const onMouseDown = (ev: MouseEvent) => {
-        if (!enabledRef.current || ev.button !== 0) return;
-        startPending(ev.clientX, ev.clientY);
-      };
-
-      const onMouseMove = (ev: MouseEvent) => {
-        if (phaseRef.current === 'lifted') {
-          movedRef.current = true;
-          onDragMoveRef.current?.(ev.clientX, ev.clientY);
-          return;
-        }
-        movePending(ev.clientX, ev.clientY);
-      };
-
-      const onMouseUp = (ev: MouseEvent) => {
-        if (phaseRef.current === 'lifted') {
-          finish(ev.clientX, ev.clientY);
-          return;
-        }
-        if (timerRef.current) finish(ev.clientX, ev.clientY);
-      };
-
       el.addEventListener('touchstart', onTouchStart, { passive: true });
       el.addEventListener('touchmove', onTouchMove, { passive: false });
       el.addEventListener('touchend', onTouchEnd, { passive: true });
       el.addEventListener('touchcancel', onTouchEnd, { passive: true });
-      el.addEventListener('mousedown', onMouseDown);
-      el.addEventListener('mousemove', onMouseMove);
-      el.addEventListener('mouseup', onMouseUp);
-      el.addEventListener('mouseleave', onMouseUp);
 
       el.style.touchAction = phaseRef.current === 'lifted' ? 'none' : 'manipulation';
       el.style.webkitUserSelect = 'none';
@@ -362,10 +313,6 @@ export function HoldDragSurface({
         el.removeEventListener('touchmove', onTouchMove);
         el.removeEventListener('touchend', onTouchEnd);
         el.removeEventListener('touchcancel', onTouchEnd);
-        el.removeEventListener('mousedown', onMouseDown);
-        el.removeEventListener('mousemove', onMouseMove);
-        el.removeEventListener('mouseup', onMouseUp);
-        el.removeEventListener('mouseleave', onMouseUp);
       };
     },
     [clearTimer, finish, movePending, startPending]
@@ -450,7 +397,7 @@ export function HoldDragSurface({
       onTouchMove={enabled ? onTouchMoveRn : undefined}
       onTouchEnd={enabled ? onTouchEndRn : undefined}
       onTouchCancel={enabled ? onTouchEndRn : undefined}
-      style={[styles.host, lifted && styles.hostLifted, style]}
+      style={[style, styles.host, lifted && styles.hostLifted]}
       collapsable={false}
       {...({ 'data-hold-drag': lifted ? 'active' : 'idle', 'data-vault-tile': '1' } as object)}>
       {children}
