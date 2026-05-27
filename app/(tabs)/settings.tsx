@@ -1,9 +1,9 @@
-import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SymbolView } from 'expo-symbols';
 import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { AppUsageGuideModal } from '@/components/settings/AppUsageGuideModal';
 import { CloudBackupSettings } from '@/components/settings/CloudBackupSettings';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsGroup';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -22,7 +22,6 @@ import { showMessage } from '@/lib/ui/confirm';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
-  const router = useRouter();
   const {
     data,
     updateSettings,
@@ -33,6 +32,7 @@ export default function SettingsScreen() {
     upgradePhotoQuality,
   } = useApp();
   const [photoUpgradeBusy, setPhotoUpgradeBusy] = useState(false);
+  const [usageGuideOpen, setUsageGuideOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { settings, schedules, subjects } = data;
   const active = settings.activeScheduleIds;
@@ -203,12 +203,15 @@ export default function SettingsScreen() {
       </SettingsGroup>
 
       <SettingsGroup>
-        <SettingsRow label={t('settings.ocr')} value={ocrStatusLabel} last />
+        <SettingsRow label={t('settings.ocr')} value={ocrStatusLabel} last={false} />
+        <SettingsRow
+          label={t('settings.appUsageGuide')}
+          onPress={() => setUsageGuideOpen(true)}
+          last
+        />
       </SettingsGroup>
 
-      <Pressable onPress={() => router.push('/onboarding')} style={styles.link}>
-        <Text style={styles.linkText}>{t('settings.onboarding')}</Text>
-      </Pressable>
+      <AppUsageGuideModal visible={usageGuideOpen} onClose={() => setUsageGuideOpen(false)} />
     </Screen>
   );
 }
@@ -269,6 +272,4 @@ const styles = StyleSheet.create({
   langChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   langText: { fontSize: 13, color: theme.black },
   langOn: { fontSize: 13, color: theme.white, fontWeight: '600' },
-  link: { padding: 16 },
-  linkText: { color: theme.orange, fontWeight: '600', textAlign: 'center' },
 });

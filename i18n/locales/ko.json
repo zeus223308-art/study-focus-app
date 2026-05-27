@@ -268,7 +268,7 @@
     "filesSection": "파일",
     "premium": "Premium",
     "addPattern": "+추가",
-    "onboarding": "설정 가이드",
+    "appUsageGuide": "앱 사용법",
     "limits": "저장 한도",
     "photos": "사진 {{used}} / {{max}}",
     "limitPhotos": "사진",
@@ -377,6 +377,14 @@
     "step3": "아카이브 = 복습 제외",
     "start": "시작",
     "skip": "건너뛰기"
+  },
+  "appUsageGuide": {
+    "title": "앱 사용법",
+    "step1": "촬영한 문제를 오늘 복습까지 하세요.",
+    "step2": "파일에 사진을 저장하세요.",
+    "step3": "복습 패턴을 적용해서 오늘부터 복습을 시작해보세요.",
+    "step4": "아카이브에 사진이나 파일을 넣으면 복습에서 제외됩니다.",
+    "close": "닫기"
   },
   "paywall": {
     "imagesTitle": "사진 한도에 도달했어요",

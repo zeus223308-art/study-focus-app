@@ -56,7 +56,7 @@ export const DEFAULT_DATA: AppData = {
     notificationsEnabled: true,
     notificationHour: 9,
     notificationMinute: 0,
-    onboardingDone: false,
+    onboardingDone: true,
     firstLaunchDate: todayKey(),
     photoLimit: theme.limits.freeImages,
     memoLimit: theme.limits.freeMemos,

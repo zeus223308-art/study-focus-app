@@ -268,7 +268,7 @@
     "filesSection": "Files",
     "premium": "Premium",
     "addPattern": "+ Add",
-    "onboarding": "Setup guide",
+    "appUsageGuide": "How to use the app",
     "limits": "Limits",
     "photos": "Photos {{used}} / {{max}}",
     "limitPhotos": "Photos",
@@ -377,6 +377,14 @@
     "step3": "Archive skips review",
     "start": "Start",
     "skip": "Skip"
+  },
+  "appUsageGuide": {
+    "title": "How to use the app",
+    "step1": "Capture problems and review them today.",
+    "step2": "Save photos in Files.",
+    "step3": "Apply a review pattern and start reviewing from today.",
+    "step4": "Items in Archive are excluded from review.",
+    "close": "Close"
   },
   "paywall": {
     "imagesTitle": "Photo limit reached",

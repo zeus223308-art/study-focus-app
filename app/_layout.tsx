@@ -1,6 +1,6 @@
 import '@/lib/auth/complete-oauth-popup';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
@@ -28,7 +28,6 @@ SplashScreen.preventAutoHideAsync();
 
 /** Session-only overlay — not persisted; unmounts when app closes. */
 function shouldShowFloatingCamera(segments: string[]): boolean {
-  if (segments[0] === 'onboarding') return false;
   if (segments.includes('capture')) return false;
   return true;
 }
@@ -40,24 +39,18 @@ type RootNavigatorProps = {
 function RootNavigator({ splashDone }: RootNavigatorProps) {
   const { t } = useTranslation();
   const {
-    data,
     ready,
     autoRecoveryNotice,
     dismissAutoRecoveryNotice,
     derivativeRegenNotice,
     dismissDerivativeRegenNotice,
   } = useApp();
-  const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
     if (!ready || !splashDone) return;
     void SplashScreen.hideAsync();
-    const inOnboarding = segments[0] === 'onboarding';
-    if (!data.settings.onboardingDone && !inOnboarding) {
-      router.replace('/onboarding');
-    }
-  }, [ready, splashDone, data.settings.onboardingDone, segments, router]);
+  }, [ready, splashDone]);
 
   if (!splashDone || !ready) return null;
 
@@ -91,7 +84,6 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
           contentStyle: { backgroundColor: theme.beige },
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="capture" options={{ headerShown: false }} />
         <Stack.Screen name="folder/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="bundle/[id]" options={{ headerShown: false }} />
