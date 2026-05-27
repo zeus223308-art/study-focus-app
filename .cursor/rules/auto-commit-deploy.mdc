@@ -1,23 +1,56 @@
 ---
-description: After code changes, commit and push to main so GitHub Actions deploys the web app
+description: After every code change — save, commit, push, deploy; verify GitHub Pages; mobile + web
 alwaysApply: true
 ---
 
-# Auto commit, push, and deploy
+# Auto save, commit, push, deploy (required)
 
-When you finish a batch of **code or i18n changes** in this repo (not question-only replies):
+User requested: **every fix/feature** ends with save → commit → push → live deploy.  
+Primary usage: **Android / iOS mobile browsers + desktop web** at GitHub Pages (same Expo web bundle).
 
-1. Run `git status` and `git diff --stat` to see what changed.
-2. If there are meaningful changes, **commit and push** without waiting for the user to ask.
-3. Do **not** commit secrets (`.env`, credentials). Never change git config.
-4. Use a clear commit message: one-line summary + short body if needed.
-5. Push to `origin main` (or the current branch that triggers deploy).
+## 1. Editor auto-save
 
-Deploy: pushing to `main` runs `.github/workflows/deploy-web.yml` → GitHub Pages at `/study-focus-app`.
+`.vscode/settings.json` — `files.autoSave` after 1s, `formatOnSave`. No extra step.
+
+## 2. After any code / i18n / config change (not question-only)
+
+1. Run `git status` and `git diff --stat`.
+2. **Commit** on `main` with a clear message (summary + short body if needed).
+3. **Push** to `origin main`.
+4. **Confirm deploy**: `gh run list --workflow=deploy-web.yml --limit 1` — wait until **success** (or report failure + fix).
+5. Tell the user: **commit hash**, **Deploy Web** status, live URL:
+   `https://zeus223308-art.github.io/study-focus-app/`
 
 Skip commit/push only when:
-- The user explicitly says not to commit yet, or
-- There are no file changes, or
-- Changes are exploratory and the user is still deciding.
+- User says don't commit / don't push yet, or
+- No file changes, or
+- Exploratory work still undecided.
 
-After push, briefly tell the user the commit hash and that Deploy Web will run on GitHub Actions.
+Never commit `.env`, keys, or credentials. Never change git config. Never force-push.
+
+## 3. Deploy pipeline
+
+- Workflow: `.github/workflows/deploy-web.yml` on push to `main`
+- `concurrency.cancel-in-progress: false` — do not rely on cancelled runs; ensure latest push completes
+- Pushes in quick succession: still verify the **latest** run succeeded
+
+## 4. Cross-platform (required for UI)
+
+One codebase — **must work on**:
+
+| Target | How users access |
+|--------|------------------|
+| **Mobile web** | Safari (iOS), Chrome (Android) → GitHub Pages URL |
+| **Desktop web** | Same URL in browser |
+| **Native** | Expo Go / future EAS — same React Native components |
+
+Rules:
+- Use `useViewportLayout`, `useSafeAreaInsets`; no single-device fixed widths
+- **Modals / overlays**: mount at tab or root level (`AppUsageGuideProvider` pattern) — **not inside `ScrollView`**
+- Web: `Platform.OS === 'web'` for pointer/drag; native: `PanResponder` where needed
+- Splash / full-screen overlays: `StyleSheet.absoluteFill`, high `zIndex` / `elevation`
+- See `.cursor/rules/responsive-ui.mdc` for breakpoints
+
+## 5. Mobile web cache
+
+After deploy, users may need hard refresh or private tab once. `app/+html.tsx` has no-cache meta for `index.html`.

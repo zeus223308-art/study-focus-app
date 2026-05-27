@@ -24,24 +24,23 @@ alwaysApply: true
 - Calendar dates: use `todayKey()` / local `startOfDay` — never `toISOString().slice(0,10)` for "today"
 - After ribbon/date/tab changes, sanity-check `DateRibbon.tsx`, `dates.ts`, `AppContext.tsx`
 
-## Auto commit + deploy (user requested)
+## Auto commit + deploy (user requested — always)
 
-After **any code change** in this repo (features, fixes, i18n, config):
+After **any code change** (features, fixes, i18n, config):
 
-1. **Commit** on `main` with a clear message (unless user says "don't commit" / "don't push" / question-only).
-2. **Push** to `origin main` so GitHub Actions deploys the web app.
-3. Briefly tell the user the commit hash and public URL: `https://zeus223308-art.github.io/study-focus-app/`
+1. **Commit** + **push** `main` (unless user says not to / question-only).
+2. **Verify** GitHub Actions **Deploy Web** succeeded (`gh run list --workflow=deploy-web.yml`).
+3. Report commit hash + URL: `https://zeus223308-art.github.io/study-focus-app/`
 
-Do **not** commit secrets (`.env`, keys). Do **not** force-push. Skip commit if there are no file changes.
+**Platforms:** Android & iOS **mobile browsers** + desktop web (GitHub Pages). Same bundle — design for phone safe-area, touch, and narrow viewport.
 
-**Limits:** This only runs when the user works with the agent in Cursor — not while they edit alone without a session.
+Do **not** commit secrets. Do **not** force-push.
 
 ## Responsive / cross-platform (required for UI work)
 
-Every UI change must work on **phone, tablet (iPad / Galaxy Tab), and web**.
+Every UI change must work on **phone (Android/iOS browser), tablet, and desktop web**.
 
-- Use `lib/ui/viewport-layout.ts` (`useViewportLayout`, `getDeviceClass`, `computeVaultFolderTileWidth`, etc.) and `lib/ui/fullscreen-viewer-layout.ts` for breakpoints — do not hardcode 360px widths.
-- Prefer `useSafeAreaInsets` over fixed `paddingTop` / `paddingBottom` (notch, home indicator).
-- Use `flex` + `onLayout` for image/annotation areas; avoid fixed heights tied to one device.
-- Web: `MobileWebFrame` widens on tablet viewports; test `Platform.OS === 'web'` drag/pointer separately from native `PanResponder`.
-- Tablet landscape: reuse patterns like unified top bars (`useUnifiedTopBar`) where vertical space is tight.
+- `lib/ui/viewport-layout.ts`, `useSafeAreaInsets`, flex + `onLayout`
+- Modals at **root/tab provider**, not inside scroll content (native mobile web breaks otherwise)
+- Web drag: `Platform.OS === 'web'`; native: `PanResponder`
+- See `.cursor/rules/responsive-ui.mdc`

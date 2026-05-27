@@ -59,16 +59,18 @@ Built/refined: full app shell, vault/capture/review, DateRibbon, first-launch da
 - Firebase/GCS sync, real OCR, ads, drag-drop folders, EAS production builds.
 - Occasional TS noise on `DateRibbon` web `cursor` styles / `.expo/types/router.d.ts`.
 
-## Auto save, commit, push, deploy
+## Auto save, commit, push, deploy (standing user policy)
 
 | Step | What |
 |------|------|
-| **Editor** | `.vscode/settings.json` — `files.autoSave` after 1s |
-| **Agent** | `.cursor/rules/auto-commit-deploy.mdc` + `memorysherpa-context.mdc` — after code changes in Cursor, commit + push `main` unless user says not to |
-| **CI** | `.github/workflows/deploy-web.yml` on push to `main` |
-| **Live URL** | https://zeus223308-art.github.io/study-focus-app/ (desktop + **mobile browser**) |
+| **Editor** | `.vscode/settings.json` — auto-save after 1s |
+| **Agent** | `.cursor/rules/auto-commit-deploy.mdc` — after every change: commit → push → **wait for Deploy Web success** |
+| **CI** | `.github/workflows/deploy-web.yml` on `main` (deploy queue does not cancel in-progress) |
+| **Live URL** | https://zeus223308-art.github.io/study-focus-app/ |
 
-Local web preview: `npx expo start --web --port 8082`
+**Platforms (same web app):** iPhone Safari, Android Chrome, desktop browsers. UI must use viewport + safe-area patterns; modals at root/tab level.
+
+Local preview: `npx expo start --web --port 8082`
 
 ## Dev commands
 

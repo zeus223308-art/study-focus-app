@@ -1,7 +1,7 @@
 ---
 description: UI must support phone, tablet, and web — use viewport utilities
 globs: "**/*.{tsx,ts}"
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Responsive UI (MemorySherpa)
@@ -21,4 +21,6 @@ When adding or changing screens, modals, toolbars, lists, or carousels:
 
 5. **Web** — avoid `Platform.select` web styles inside `StyleSheet.create` (breaks TS); use separate `ViewStyle` constants. Respect `MobileWebFrame` width on desktop.
 
-6. **Verify** mentally for portrait phone, landscape phone, iPad portrait/landscape, and narrow/wide web frame.
+6. **Mobile web (iOS Safari, Android Chrome)** — primary user path via GitHub Pages. Modals/overlays at tab root, not inside `ScrollView`. Touch targets ≥ 44px where practical.
+
+7. **Verify** mentally for portrait phone, landscape phone, iPad portrait/landscape, and narrow/wide web frame.
