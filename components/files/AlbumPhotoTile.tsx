@@ -1,22 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import {
-  PanResponder,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { useCallback, useRef } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useLongPressDragGesture } from '@/lib/ui/long-press-drag';
 
 const IS_WEB = Platform.OS === 'web';
-const DRAG_THRESHOLD = 8;
 const DOUBLE_TAP_MS = 320;
 
 type Props = {
@@ -41,9 +32,7 @@ type Props = {
 
 export function AlbumPhotoTile({
   bundleId,
-  pageId,
   itemDragKey,
-  sourceSubjectId,
   thumbnailUri,
   countLabel,
   cellWidth,
@@ -57,114 +46,18 @@ export function AlbumPhotoTile({
   onTogglePick,
   style,
 }: Props) {
-  const {
-    movingBundleId,
-    draggingItemKey,
-    dragHoverItemKey,
-    cancelMovingBundle,
-  } = useApp();
+  const { movingBundleId, draggingItemKey, dragHoverItemKey, cancelMovingBundle } = useApp();
   const dragLifted = movingBundleId === bundleId && draggingItemKey === itemDragKey;
   const itemHover = dragHoverItemKey === itemDragKey && !dragLifted;
-  const didDragRef = useRef(false);
-  const pointerDragRef = useRef({ active: false, startX: 0, startY: 0 });
   const lastTapRef = useRef(0);
-  const pendingDragStart = useRef<{ pageX: number; pageY: number } | null>(null);
 
-  const onLongPress = useCallback(
-    (event: { nativeEvent: { pageX: number; pageY: number } }) => {
-      if (pickMode) return;
-      pendingDragStart.current = {
-        pageX: event.nativeEvent.pageX,
-        pageY: event.nativeEvent.pageY,
-      };
-      onLiftForDrag();
-    },
-    [pickMode, onLiftForDrag]
-  );
-
-  const endDrag = useCallback(
-    (pageX: number, pageY: number) => {
-      if (!pointerDragRef.current.active) return;
-      pointerDragRef.current.active = false;
-      onDragEnd?.(didDragRef.current, pageX, pageY);
-      didDragRef.current = false;
-    },
-    [onDragEnd]
-  );
-
-  const moveDrag = useCallback(
-    (pageX: number, pageY: number) => {
-      if (!pointerDragRef.current.active || !dragLifted) return;
-      const dx = pageX - pointerDragRef.current.startX;
-      const dy = pageY - pointerDragRef.current.startY;
-      if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
-        didDragRef.current = true;
-      }
-      onDragMove?.(pageX, pageY);
-    },
-    [onDragMove, dragLifted]
-  );
-
-  const startDrag = useCallback(
-    (pageX: number, pageY: number) => {
-      if (!dragLifted) return;
-      didDragRef.current = false;
-      pointerDragRef.current = { active: true, startX: pageX, startY: pageY };
-    },
-    [dragLifted]
-  );
-
-  useEffect(() => {
-    if (!dragLifted || !pendingDragStart.current) return;
-    const { pageX, pageY } = pendingDragStart.current;
-    pendingDragStart.current = null;
-    startDrag(pageX, pageY);
-  }, [dragLifted, startDrag]);
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => dragLifted && !pickMode,
-        onMoveShouldSetPanResponder: () => dragLifted && !pickMode,
-        onPanResponderGrant: (evt) => {
-          const { pageX, pageY } = evt.nativeEvent;
-          startDrag(pageX, pageY);
-        },
-        onPanResponderMove: (evt) => {
-          const { pageX, pageY } = evt.nativeEvent;
-          moveDrag(pageX, pageY);
-        },
-        onPanResponderRelease: (evt) => {
-          const { pageX, pageY } = evt.nativeEvent;
-          endDrag(pageX, pageY);
-        },
-        onPanResponderTerminate: (evt) => {
-          const { pageX, pageY } = evt.nativeEvent;
-          endDrag(pageX, pageY);
-        },
-      }),
-    [dragLifted, pickMode, endDrag, moveDrag, startDrag]
-  );
-
-  const bindWebMouse = useCallback(
-    (pageX: number, pageY: number) => {
-      if (!dragLifted || typeof document === 'undefined' || pickMode) return;
-      startDrag(pageX, pageY);
-      const onMove = (ev: MouseEvent) => moveDrag(ev.pageX, ev.pageY);
-      const onUp = (ev: MouseEvent) => {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        endDrag(ev.pageX, ev.pageY);
-      };
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    },
-    [dragLifted, pickMode, endDrag, moveDrag, startDrag]
-  );
-
-  const handlePress = useCallback(() => {
+  const onShortPress = useCallback(() => {
     if (pickMode) {
       onTogglePick?.();
+      return;
+    }
+    if (dragLifted) {
+      cancelMovingBundle();
       return;
     }
     if (movingBundleId) {
@@ -179,29 +72,46 @@ export function AlbumPhotoTile({
       return;
     }
     lastTapRef.current = now;
+    onOpen();
+  }, [
+    pickMode,
+    onTogglePick,
+    dragLifted,
+    movingBundleId,
+    cancelMovingBundle,
+    onPhotoAction,
+    onOpen,
+  ]);
 
-    if (!didDragRef.current) onOpen();
-  }, [pickMode, onTogglePick, movingBundleId, cancelMovingBundle, onPhotoAction, onOpen]);
+  const { panHandlers, bindWebMouse } = useLongPressDragGesture({
+    enabled: !pickMode && Boolean(onDragMove),
+    instantDrag: dragLifted,
+    onLift: onLiftForDrag,
+    onDragMove,
+    onDragEnd,
+    onShortPress,
+  });
 
   const tileHighlighted = pickMode ? pickSelected : dragLifted || itemHover;
 
   return (
     <View style={[styles.cell, { width: cellWidth }, style]}>
-      <Pressable
-        onPress={handlePress}
-        onLongPress={onLongPress}
-        delayLongPress={420}
+      <View
         style={[styles.tile, tileHighlighted && styles.tileSelected, dragLifted && styles.tileLifted]}
-        {...(!IS_WEB && !pickMode ? panResponder.panHandlers : {})}
-        {...(IS_WEB && dragLifted && !pickMode
+        {...(!IS_WEB && !pickMode ? panHandlers : {})}
+        {...(IS_WEB && !pickMode
           ? {
               onMouseDown: (e: { button?: number; nativeEvent: { pageX: number; pageY: number } }) => {
                 if (e.button !== undefined && e.button !== 0) return;
                 bindWebMouse(e.nativeEvent.pageX, e.nativeEvent.pageY);
               },
             }
-          : {})}>
-        <ResolvedImage uri={thumbnailUri} style={styles.image} resizeMode="cover" />
+          : pickMode
+            ? {}
+            : {})}>
+        <Pressable style={styles.fill} onPress={pickMode ? onShortPress : undefined}>
+          <ResolvedImage uri={thumbnailUri} style={styles.image} resizeMode="cover" />
+        </Pressable>
         {pickMode ? (
           <View style={[styles.pickBadge, pickSelected && styles.pickBadgeOn]}>
             {pickSelected ? (
@@ -223,13 +133,13 @@ export function AlbumPhotoTile({
           </View>
         ) : null}
         {countLabel ? (
-          <View style={styles.countBadge}>
+          <View style={styles.countBadge} pointerEvents="none">
             <Text style={styles.countText} numberOfLines={1}>
               {countLabel}
             </Text>
           </View>
         ) : null}
-      </Pressable>
+      </View>
     </View>
   );
 }
@@ -246,6 +156,10 @@ const styles = StyleSheet.create({
     backgroundColor: theme.grayLight,
     borderWidth: 1,
     borderColor: theme.grayLight,
+  },
+  fill: {
+    width: '100%',
+    height: '100%',
   },
   tileSelected: {
     borderColor: theme.orange,

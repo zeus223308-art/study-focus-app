@@ -146,7 +146,7 @@
     "importUnsupportedOnly": "이미지만 가능",
     "importUnsupportedSkipped": "이미지 아님 · 건너뜀",
     "dropHint": "드래그하여 이동",
-    "reorderHint": "끌어서 순서 변경 · 다른 과목에 놓으면 이동",
+    "reorderHint": "0.7초간 꾹 누른 채 끌어서 순서 변경",
     "reordered": "순서를 변경했습니다",
     "movedTo": "「{{name}}」으로 이동",
     "empty": "사진 없음",

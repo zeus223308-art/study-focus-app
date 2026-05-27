@@ -87,9 +87,7 @@ export default function FilesScreen() {
   ) => {
     setGhost({ x: pageX, y: pageY, visible: false });
     const result = finishSubjectReorder(pageX, pageY, moved);
-    if (result === 'delete') {
-      confirmDeleteSubject(subjectId, subjectName);
-    } else if (result === 'reordered') {
+    if (result === 'reordered') {
       showMessage('', t('folder.reordered'));
     }
   };

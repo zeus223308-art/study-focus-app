@@ -120,8 +120,8 @@ type AppContextValue = {
   ) => void;
   updateDragHover: (pageX: number, pageY: number) => void;
   updateSubjectReorderHover: (pageX: number, pageY: number) => void;
-  finishItemDrag: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'moved' | 'cancelled' | 'delete';
-  finishSubjectReorder: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'delete' | 'cancelled';
+  finishItemDrag: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'moved' | 'cancelled';
+  finishSubjectReorder: (pageX: number, pageY: number, moved: boolean) => 'reordered' | 'cancelled';
   finishBundleDrop: (pageX: number, pageY: number) => string | null;
   reorderSubjects: (activeId: string, overId: string) => void;
 };
@@ -707,32 +707,32 @@ export function AppProvider({
   );
 
   const finishSubjectReorder = useCallback(
-    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'delete' | 'cancelled' => {
+    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'cancelled' => {
       if (!reorderingSubjectId) return 'cancelled';
       const hover =
         hitTestZones(pageX, pageY, subjectReorderZonesRef.current) ?? reorderHoverSubjectId;
       const activeId = reorderingSubjectId;
-      cancelMovingBundle();
       if (moved && hover && hover !== activeId) {
+        cancelMovingBundle();
         reorderSubjects(activeId, hover);
         return 'reordered';
       }
-      if (!moved) return 'delete';
+      if (!moved) return 'cancelled';
+      cancelMovingBundle();
       return 'cancelled';
     },
     [cancelMovingBundle, hitTestZones, reorderHoverSubjectId, reorderSubjects, reorderingSubjectId]
   );
 
   const finishItemDrag = useCallback(
-    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'moved' | 'cancelled' | 'delete' => {
+    (pageX: number, pageY: number, moved: boolean): 'reordered' | 'moved' | 'cancelled' => {
       if (!movingBundleId || !dragSourceSubjectId) {
         cancelMovingBundle();
         return 'cancelled';
       }
 
       if (!moved) {
-        cancelMovingBundle();
-        return 'delete';
+        return 'cancelled';
       }
 
       const hoverItem =
