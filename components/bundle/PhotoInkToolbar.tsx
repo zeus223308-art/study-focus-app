@@ -2,23 +2,20 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import type { InkToolId } from '@/lib/domain/types';
-import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 
 export type PhotoInkToolKind = 'pen' | 'highlighter' | 'eraser' | 'crop';
 
 type Props = {
   activeKind: PhotoInkToolKind | null;
-  tool: InkToolId;
   onSelectKind: (kind: PhotoInkToolKind) => void;
 };
 
-export function PhotoInkToolbar({ activeKind, tool, onSelectKind }: Props) {
+export function PhotoInkToolbar({ activeKind, onSelectKind }: Props) {
   const { t } = useTranslation();
 
-  const isPen = activeKind === 'pen' || (activeKind !== 'crop' && activeKind !== 'eraser' && !isHighlighterTool(tool));
-  const isHi = activeKind === 'highlighter' || isHighlighterTool(tool);
-  const isEraser = activeKind === 'eraser' || tool === 'eraser';
+  const isPen = activeKind === 'pen';
+  const isHi = activeKind === 'highlighter';
+  const isEraser = activeKind === 'eraser';
   const isCrop = activeKind === 'crop';
 
   const btn = (kind: PhotoInkToolKind, label: string, on: boolean) => (

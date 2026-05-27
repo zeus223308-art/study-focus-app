@@ -68,7 +68,7 @@ export function ProblemPhotoModal({
   const layout = useFullscreenViewerLayout();
   const [pageIndex, setPageIndex] = useState(0);
   const [viewerW, setViewerW] = useState(0);
-  const [inkKind, setInkKind] = useState<PhotoInkToolKind>('pen');
+  const [inkKind, setInkKind] = useState<PhotoInkToolKind | null>(null);
 
   const flowApi = useFullscreenInkFlow({
     visible,
@@ -81,7 +81,10 @@ export function ProblemPhotoModal({
   });
 
   useEffect(() => {
-    if (visible) setPageIndex(0);
+    if (visible) {
+      setPageIndex(0);
+      setInkKind(null);
+    }
   }, [visible]);
 
   const sides = useMemo(() => {
@@ -145,7 +148,7 @@ export function ProblemPhotoModal({
           <Text style={styles.hint}>{t('item.swipeForBack')}</Text>
         </View>
 
-        <PhotoInkToolbar activeKind={inkKind} tool={tool} onSelectKind={onSelectKind} />
+        <PhotoInkToolbar activeKind={inkKind} onSelectKind={onSelectKind} />
 
         {flowApi.flow !== null && (
           <FullscreenInkControls
@@ -185,6 +188,7 @@ export function ProblemPhotoModal({
                           tool={tool}
                           strokeWidth={strokeWidth}
                           visible
+                          interactive={inkKind !== null}
                           onStrokesChange={onStrokesChange}
                           height={viewerH - 28}
                           style={styles.ink}

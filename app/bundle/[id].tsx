@@ -6,17 +6,14 @@ import {
   Alert,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { SymbolView } from 'expo-symbols';
-
 import { FullscreenInkControls } from '@/components/annotation/FullscreenInkControls';
 import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink-flow';
+import { ArchiveSubjectPickerModal } from '@/components/bundle/ArchiveSubjectPickerModal';
 import { BundlePhotoBlock } from '@/components/bundle/BundlePhotoBlock';
 import { PhotoCropModal } from '@/components/bundle/PhotoCropModal';
 import { PhotoInkToolbar, type PhotoInkToolKind } from '@/components/bundle/PhotoInkToolbar';
@@ -38,11 +35,6 @@ import {
   PEN_WIDTHS,
   isHighlighterTool,
 } from '@/lib/domain/ink-sizes';
-import {
-  ANSWER_SLIDESHOW_SECONDS,
-  formatAnswerSlideshowLabel,
-  FRONT_SLIDESHOW_SECONDS,
-} from '@/lib/domain/slideshow-timing';
 import type { InkToolId, NoteLayer } from '@/lib/domain/types';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
@@ -75,6 +67,7 @@ export default function BundleScreen() {
     storage,
     updateBundle,
     archiveBundle,
+    unarchiveBundle,
     moveBundleToTrash,
     deletePage,
     applyLayerCycleChoice,
@@ -94,15 +87,18 @@ export default function BundleScreen() {
   const [eraserWidth, setEraserWidth] = useState<number>(ERASER_WIDTHS[1]);
   const [problemModalOpen, setProblemModalOpen] = useState(false);
   const [editAnswer, setEditAnswer] = useState(false);
-  const [answerInkKind, setAnswerInkKind] = useState<PhotoInkToolKind>('pen');
+  const [answerInkKind, setAnswerInkKind] = useState<PhotoInkToolKind | null>(null);
   const [cropOpen, setCropOpen] = useState(false);
   const [cropUri, setCropUri] = useState('');
   const [cropSide, setCropSide] = useState<'front' | 'back'>('front');
+  const [archivePickerOpen, setArchivePickerOpen] = useState(false);
   const [undoStack, setUndoStack] = useState<NoteLayer['strokes'][]>([]);
   const [redoStack, setRedoStack] = useState<NoteLayer['strokes'][]>([]);
   const viewport = useViewportLayout();
   const viewerLayout = useFullscreenViewerLayout();
-  const photoW = Math.min(viewport.contentMaxWidth - viewport.horizontalPadding * 2, 480);
+  const photoW = Math.round(
+    Math.min(viewport.contentMaxWidth - viewport.horizontalPadding * 2, 480) * 0.5
+  );
   const photoH = Math.round(photoW * 1.12);
 
   const page = bundle?.pages[pageIndex] ?? bundle?.pages[0];
@@ -372,11 +368,7 @@ export default function BundleScreen() {
 
       {editAnswer ? (
         <>
-          <PhotoInkToolbar
-            activeKind={answerInkKind}
-            tool={tool}
-            onSelectKind={onSelectAnswerInk}
-          />
+          <PhotoInkToolbar activeKind={answerInkKind} onSelectKind={onSelectAnswerInk} />
           {answerInkFlow.flow !== null && (
             <FullscreenInkControls
               tool={tool}
@@ -407,6 +399,8 @@ export default function BundleScreen() {
         asset={page.asset}
         width={photoW}
         height={photoH}
+        showInkPreview={Boolean(activeLayer?.strokes.length)}
+        layer={activeLayer ?? undefined}
         onPress={() => {
           setEditAnswer(false);
           setProblemModalOpen(true);
@@ -421,6 +415,7 @@ export default function BundleScreen() {
         onPress={() => {
           if (!page.answerAsset) return;
           setProblemModalOpen(false);
+          setAnswerInkKind(null);
           setEditAnswer(true);
         }}
         inkEnabled={editAnswer && Boolean(page.answerAsset)}
@@ -438,62 +433,6 @@ export default function BundleScreen() {
         </Text>
       </Pressable>
 
-      <View style={styles.timingBlock}>
-        <Text style={styles.label}>{t('item.slideshowFront')}</Text>
-        <View style={styles.secRow}>
-          {FRONT_SLIDESHOW_SECONDS.map((sec) => (
-            <Pressable
-              key={`front-${sec}`}
-              onPress={() =>
-                updateBundle(bundle.id, {
-                  pages: bundle.pages.map((p) => ({ ...p, slideshowSeconds: sec })),
-                })
-              }
-              style={[styles.sec, page.slideshowSeconds === sec && styles.secOn]}>
-              <Text style={page.slideshowSeconds === sec ? styles.secOnText : styles.secText}>
-                {sec}s
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text style={[styles.label, styles.labelSpaced]}>{t('item.slideshowBack')}</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.secScroll}>
-          <View style={styles.secRow}>
-            {ANSWER_SLIDESHOW_SECONDS.map((sec) => (
-              <Pressable
-                key={`back-${sec}`}
-                onPress={() =>
-                  updateBundle(bundle.id, {
-                    pages: bundle.pages.map((p) => ({ ...p, answerSlideshowSeconds: sec })),
-                  })
-                }
-                style={[
-                  styles.sec,
-                  (page.answerSlideshowSeconds ?? page.slideshowSeconds) === sec && styles.secOn,
-                ]}>
-                <Text
-                  style={
-                    (page.answerSlideshowSeconds ?? page.slideshowSeconds) === sec
-                      ? styles.secOnText
-                      : styles.secText
-                  }>
-                  {formatAnswerSlideshowLabel(sec)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
-
-      <Button
-        label={t('item.slideshow')}
-        onPress={() =>
-          router.push({
-            pathname: '/review/session',
-            params: { bundleId: bundle.id, slideshow: '1' },
-          })
-        }
-      />
       <Button
         label={t('dashboard.startReview')}
         variant="secondary"
@@ -508,7 +447,13 @@ export default function BundleScreen() {
       <Button
         label={bundle.archived ? t('folder.unarchive') : t('item.archive')}
         variant="secondary"
-        onPress={() => archiveBundle(bundle.id)}
+        onPress={() => {
+          if (bundle.archived) {
+            unarchiveBundle(bundle.id);
+            return;
+          }
+          setArchivePickerOpen(true);
+        }}
         style={{ marginTop: 8 }}
       />
       <Button
@@ -559,6 +504,21 @@ export default function BundleScreen() {
         sideLabel={cropSide === 'front' ? t('item.problemSection') : t('item.answerSection')}
         onConfirm={onCropDone}
         onClose={() => setCropOpen(false)}
+      />
+
+      <ArchiveSubjectPickerModal
+        visible={archivePickerOpen}
+        subjects={data.subjects}
+        currentSubjectId={bundle.subjectId}
+        onClose={() => setArchivePickerOpen(false)}
+        onSelect={(subjectId) => {
+          setArchivePickerOpen(false);
+          if (subjectId !== bundle.subjectId) {
+            updateBundle(bundle.id, { subjectId });
+          }
+          archiveBundle(bundle.id);
+          showMessage('', t('item.archivedToSubject', { name: data.subjects.find((s) => s.id === subjectId)?.name ?? '' }));
+        }}
       />
     </Screen>
   );

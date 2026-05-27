@@ -38,6 +38,8 @@ type Props = {
   tool: InkToolId;
   strokeWidth: number;
   visible: boolean;
+  /** When false, strokes render but pan drawing is disabled */
+  interactive?: boolean;
   onStrokesChange: (strokes: InkStroke[]) => void;
   height?: number;
   style?: StyleProp<ViewStyle>;
@@ -48,6 +50,7 @@ export function AnnotationCanvas({
   tool,
   strokeWidth,
   visible,
+  interactive = true,
   onStrokesChange,
   height = 280,
   style,
@@ -57,12 +60,14 @@ export function AnnotationCanvas({
   const toolRef = useRef(tool);
   const widthRef = useRef(strokeWidth);
   const visibleRef = useRef(visible);
+  const interactiveRef = useRef(interactive);
   const currentRef = useRef<InkStroke | null>(null);
   const [, bump] = useState(0);
 
   toolRef.current = tool;
   widthRef.current = strokeWidth;
   visibleRef.current = visible;
+  interactiveRef.current = interactive;
 
   useEffect(() => {
     strokesRef.current = layer.strokes;
@@ -101,8 +106,10 @@ export function AnnotationCanvas({
 
   const pan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => visibleRef.current && !lockedRef.current,
-      onMoveShouldSetPanResponder: () => visibleRef.current && !lockedRef.current,
+      onStartShouldSetPanResponder: () =>
+        visibleRef.current && interactiveRef.current && !lockedRef.current,
+      onMoveShouldSetPanResponder: () =>
+        visibleRef.current && interactiveRef.current && !lockedRef.current,
       onPanResponderGrant: (evt: GestureResponderEvent) => {
         const activeTool = toolRef.current;
         const { locationX: x, locationY: y } = evt.nativeEvent;

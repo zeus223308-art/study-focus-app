@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Animated,
-  Dimensions,
   Image,
   Modal,
   Pressable,
@@ -22,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
+import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { useApp } from '@/context/AppContext';
 import type { InkStroke, NoteBundle, NotePage } from '@/lib/domain/types';
 import {
@@ -109,8 +109,9 @@ export default function ReviewSessionScreen() {
   const passScale = useRef(new Animated.Value(0.7)).current;
   const frontFade = useRef(new Animated.Value(1)).current;
   const problemShift = useRef(new Animated.Value(0)).current;
-  const workCardW = Math.min(360, Dimensions.get('window').width - 32);
-  const workCardH = Math.round(workCardW * 1.12);
+  const viewport = useViewportLayout();
+  const workCardW = Math.min(260, viewport.width - 40);
+  const workCardH = Math.round(workCardW * 0.72);
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
   const [recallCountdownSec, setRecallCountdownSec] = useState(3);
@@ -249,10 +250,19 @@ export default function ReviewSessionScreen() {
   const advance = useCallback(() => {
     if (index < slides.length - 1) {
       setIndex((i) => i + 1);
-    } else {
-      safeRouterBack(router, '/(tabs)');
     }
-  }, [index, slides.length, router]);
+  }, [index, slides.length]);
+
+  const finishSession = useCallback(() => {
+    if (params.bundleId) {
+      router.replace({
+        pathname: '/bundle/[id]',
+        params: { id: params.bundleId },
+      });
+      return;
+    }
+    safeRouterBack(router, '/(tabs)');
+  }, [params.bundleId, router]);
 
   useEffect(() => {
     if (!auto || !current || phase !== 'front') {
@@ -267,12 +277,16 @@ export default function ReviewSessionScreen() {
       const elapsed = Math.floor((Date.now() - started) / 1000);
       setSlideRemainingSec(Math.max(0, totalSec - elapsed));
     }, 200);
-    const timer = setTimeout(() => advance(), ms);
+    const timer = setTimeout(() => {
+      if (index < slides.length - 1) {
+        setIndex((i) => i + 1);
+      }
+    }, ms);
     return () => {
       clearTimeout(timer);
       clearInterval(tick);
     };
-  }, [index, auto, current, phase, effectiveSlideMs, advance]);
+  }, [index, auto, current, phase, effectiveSlideMs, slides.length]);
 
   const nextReviewDateLabel = useMemo(() => {
     if (!current) return null;
@@ -352,7 +366,7 @@ export default function ReviewSessionScreen() {
     return (
       <Screen style={styles.emptyRoot}>
         <Text style={styles.emptyTitle}>{t('review.emptySession')}</Text>
-        <Button label={t('common.back')} onPress={() => safeRouterBack(router, '/(tabs)')} />
+        <Button label={t('common.back')} onPress={finishSession} />
       </Screen>
     );
   }
@@ -361,7 +375,7 @@ export default function ReviewSessionScreen() {
     return (
       <Screen style={styles.emptyRoot}>
         <Text style={styles.emptyTitle}>{t('review.emptySession')}</Text>
-        <Button label={t('common.back')} onPress={() => safeRouterBack(router, '/(tabs)')} />
+        <Button label={t('common.back')} onPress={finishSession} />
       </Screen>
     );
   }
@@ -372,7 +386,7 @@ export default function ReviewSessionScreen() {
     (phase === 'recall-work' || phase === 'countdown') && !showAnswerOverlay;
   const problemLiftY = problemShift.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -Math.round(workCardH * 0.14)],
+    outputRange: [0, -Math.round(workCardH * 0.06)],
   });
   const showingBack = current.side === 'back' && Boolean(answerUri);
   const displayUri = showingBack ? resolvedAnswerUri : resolvedFrontUri;
@@ -427,7 +441,7 @@ export default function ReviewSessionScreen() {
           ) : null}
           <Pressable
             style={styles.close}
-            onPress={() => safeRouterBack(router, '/(tabs)')}
+            onPress={finishSession}
             hitSlop={12}>
             <Text style={[styles.closeText, recallMode && styles.topBarDarkText]}>{t('common.close')}</Text>
           </Pressable>
@@ -435,7 +449,11 @@ export default function ReviewSessionScreen() {
       </View>
 
       {recallMode ? (
-        <View style={styles.recallFull}>
+        <ScrollView
+          style={styles.recallScroll}
+          contentContainerStyle={styles.recallFull}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator>
           <Animated.View
             style={[
               styles.problemStage,
@@ -480,7 +498,7 @@ export default function ReviewSessionScreen() {
               </View>
             </>
           ) : null}
-        </View>
+        </ScrollView>
       ) : (
         <>
           <View style={styles.stage}>
@@ -692,13 +710,12 @@ const styles = StyleSheet.create({
   },
   frontBadgeText: { color: theme.white, fontWeight: '800', fontSize: 11 },
   backBadge: { backgroundColor: 'rgba(37,99,235,0.92)' },
+  recallScroll: { flex: 1 },
   recallFull: {
-    flex: 1,
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 24,
     gap: 10,
-    position: 'relative',
-    overflow: 'hidden',
+    alignItems: 'center',
   },
   problemStage: {
     alignSelf: 'center',

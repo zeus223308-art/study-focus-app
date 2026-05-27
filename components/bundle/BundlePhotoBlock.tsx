@@ -12,6 +12,8 @@ type Props = {
   width: number;
   height: number;
   onPress: () => void;
+  /** Saved ink overlay (read-only) on the thumbnail */
+  showInkPreview?: boolean;
   inkEnabled?: boolean;
   layer?: NoteLayer | null;
   tool?: InkToolId;
@@ -27,6 +29,7 @@ export function BundlePhotoBlock({
   width,
   height,
   onPress,
+  showInkPreview = false,
   inkEnabled,
   layer,
   tool = 'pen-black',
@@ -55,13 +58,14 @@ export function BundlePhotoBlock({
               style={{ width, height }}
               resizeMode="contain"
             />
-            {inkEnabled && layer && onStrokesChange ? (
+            {layer && (showInkPreview || (inkEnabled && onStrokesChange)) ? (
               <AnnotationCanvas
                 layer={layer}
                 tool={tool}
                 strokeWidth={strokeWidth}
                 visible
-                onStrokesChange={onStrokesChange}
+                interactive={Boolean(inkEnabled && onStrokesChange)}
+                onStrokesChange={onStrokesChange ?? (() => {})}
                 height={height}
                 style={styles.ink}
               />
