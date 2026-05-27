@@ -44,7 +44,8 @@ export function computePagerSize(width: number, deviceClass: DeviceClass): numbe
 
 export const VAULT_PANEL_PAD = 14;
 export const VAULT_TILE_GAP = 14;
-export const VAULT_MIN_TILE_WIDTH = 72;
+/** Min tile width — lower value fits 4 folders per row on typical phone panels. */
+export const VAULT_MIN_TILE_WIDTH = 64;
 export const VAULT_NAME_ROW_HEIGHT = 32;
 export const VAULT_PREVIEW_HEIGHT = 112;
 export const VAULT_TILE_HEIGHT = VAULT_NAME_ROW_HEIGHT + VAULT_PREVIEW_HEIGHT;

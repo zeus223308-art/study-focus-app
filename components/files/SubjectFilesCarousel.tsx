@@ -9,6 +9,7 @@ import {
   type ListRenderItemInfo,
 } from 'react-native';
 import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
+import { VaultAddFolderTile } from '@/components/files/VaultAddFolderTile';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
@@ -39,6 +40,8 @@ type Props = {
   emptyLabel?: string;
   onFolderGestureLock?: (locked: boolean) => void;
   onSubjectDeleteHold?: (subjectId: string, subjectName: string) => void;
+  onAddFolder?: () => void;
+  addFolderLabel?: string;
 };
 
 export function SubjectFilesCarousel({
@@ -54,6 +57,8 @@ export function SubjectFilesCarousel({
   emptyLabel,
   onFolderGestureLock,
   onSubjectDeleteHold,
+  onAddFolder,
+  addFolderLabel,
 }: Props) {
   const listRef = useRef<FlatList<SubjectFolder>>(null);
   const panelRef = useRef<View>(null);
@@ -75,9 +80,11 @@ export function SubjectFilesCarousel({
 
   const slotWidth = tileWidth + TILE_GAP;
 
+  const slotCount = subjects.length + (onAddFolder ? 1 : 0);
+
   const updateMaxScroll = useCallback(() => {
-    maxScrollXRef.current = Math.max(0, subjects.length * slotWidth - pageWidth + PANEL_PAD * 2);
-  }, [pageWidth, slotWidth, subjects.length]);
+    maxScrollXRef.current = Math.max(0, slotCount * slotWidth - pageWidth + PANEL_PAD * 2);
+  }, [pageWidth, slotCount, slotWidth]);
 
   useEffect(() => {
     updateMaxScroll();
@@ -225,6 +232,15 @@ export function SubjectFilesCarousel({
         scrollEventThrottle={16}
         onScroll={onScroll}
         contentContainerStyle={styles.listContent}
+        ListFooterComponent={
+          onAddFolder && addFolderLabel ? (
+            <VaultAddFolderTile
+              width={tileWidth}
+              label={addFolderLabel}
+              onPress={onAddFolder}
+            />
+          ) : null
+        }
         getItemLayout={(_, index) => ({
           length: slotWidth,
           offset: slotWidth * index,

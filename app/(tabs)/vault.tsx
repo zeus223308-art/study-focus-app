@@ -13,7 +13,10 @@ import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
-import { useViewportLayout } from '@/lib/ui/viewport-layout';
+import {
+  computeVaultFoldersPerPage,
+  useViewportLayout,
+} from '@/lib/ui/viewport-layout';
 
 const PANEL_PAD = 14;
 
@@ -46,15 +49,19 @@ export default function FilesScreen() {
 
   const pageWidth = panelWidth > 0 ? panelWidth : Math.max(280, windowWidth - 40);
 
+  const foldersPerPage = useMemo(() => {
+    const basis = panelWidth > 0 ? panelWidth : viewport.width;
+    return computeVaultFoldersPerPage(basis);
+  }, [panelWidth, viewport.width]);
+
   const subjectPages = useMemo(() => {
     const sorted = [...data.subjects].sort((a, b) => a.sortOrder - b.sortOrder);
     const pages: SubjectFolder[][] = [];
-    const perPage = viewport.vaultFoldersPerPage;
-    for (let i = 0; i < sorted.length; i += perPage) {
-      pages.push(sorted.slice(i, i + perPage));
+    for (let i = 0; i < sorted.length; i += foldersPerPage) {
+      pages.push(sorted.slice(i, i + foldersPerPage));
     }
     return pages;
-  }, [data.subjects, viewport.vaultFoldersPerPage]);
+  }, [data.subjects, foldersPerPage]);
 
   const pageCountFor = (subjectId: string) =>
     data.bundles
@@ -107,9 +114,14 @@ export default function FilesScreen() {
         title={t('vault.title')}
         showSettings={false}
         right={
-          <Pressable onPress={() => router.push('/search')}>
-            <Text style={styles.search}>{t('item.search')}</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable onPress={() => setAdding(true)} hitSlop={8}>
+              <Text style={styles.headerAction}>{t('vault.addFolder')}</Text>
+            </Pressable>
+            <Pressable onPress={() => router.push('/search')} hitSlop={8}>
+              <Text style={styles.headerAction}>{t('item.search')}</Text>
+            </Pressable>
+          </View>
         }
       />
 
@@ -129,7 +141,9 @@ export default function FilesScreen() {
             <SubjectFilesCarousel
               pages={subjectPages}
               pageWidth={pageWidth}
-              foldersPerPage={viewport.vaultFoldersPerPage}
+              foldersPerPage={foldersPerPage}
+              onAddFolder={() => setAdding(true)}
+              addFolderLabel={t('vault.addFolder')}
               totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
               previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
               onSubjectPress={(subjectId) =>
@@ -173,6 +187,8 @@ export default function FilesScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  headerAction: { fontSize: theme.font.bodySmall, color: theme.orange, fontWeight: '700' },
   search: { fontSize: theme.font.bodySmall, color: theme.orange, fontWeight: '700' },
   emptyVault: { alignItems: 'center', paddingVertical: 32, gap: 14 },
   emptyVaultText: { fontSize: theme.font.body, color: theme.gray, fontWeight: '600' },

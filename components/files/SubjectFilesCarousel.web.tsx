@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SubjectFolderTile } from '@/components/files/SubjectFolderTile';
+import { VaultAddFolderTile } from '@/components/files/VaultAddFolderTile';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
@@ -40,6 +41,8 @@ type Props = {
   emptyLabel?: string;
   onFolderGestureLock?: (locked: boolean) => void;
   onSubjectDeleteHold?: (subjectId: string, subjectName: string) => void;
+  onAddFolder?: () => void;
+  addFolderLabel?: string;
 };
 
 export function SubjectFilesCarousel({
@@ -55,6 +58,8 @@ export function SubjectFilesCarousel({
   emptyLabel,
   onFolderGestureLock,
   onSubjectDeleteHold,
+  onAddFolder,
+  addFolderLabel,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const scrollDomRef = useRef<HTMLElement | null>(null);
@@ -82,14 +87,16 @@ export function SubjectFilesCarousel({
     scrollDomRef.current = resolveWebElement(node);
   }, []);
 
+  const slotCount = subjects.length + (onAddFolder ? 1 : 0);
+
   const updateMaxScroll = useCallback(() => {
-    maxScrollXRef.current = Math.max(0, subjects.length * slotWidth - pageWidth + PANEL_PAD * 2);
+    maxScrollXRef.current = Math.max(0, slotCount * slotWidth - pageWidth + PANEL_PAD * 2);
     const dom = scrollDomRef.current;
     if (dom) {
       dom.style.overflowX = listScrollEnabled ? 'auto' : 'hidden';
       dom.style.touchAction = reorderingSubjectId ? 'none' : 'pan-x';
     }
-  }, [listScrollEnabled, pageWidth, reorderingSubjectId, slotWidth, subjects.length]);
+  }, [listScrollEnabled, pageWidth, reorderingSubjectId, slotCount, slotWidth]);
 
   useEffect(() => {
     updateMaxScroll();
@@ -244,6 +251,15 @@ export function SubjectFilesCarousel({
             />
           </View>
         ))}
+        {onAddFolder && addFolderLabel ? (
+          <View style={[styles.tileSlot, { width: tileWidth }]}>
+            <VaultAddFolderTile
+              width={tileWidth}
+              label={addFolderLabel}
+              onPress={onAddFolder}
+            />
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
