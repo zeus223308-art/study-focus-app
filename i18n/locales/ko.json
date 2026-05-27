@@ -265,7 +265,7 @@
     "notificationBody": "대기 중인 복습을 확인하세요",
     "reviewPattern": "복습 패턴",
     "reviewPatternHint": "최대 2개",
-    "filesSection": "파일",
+    "reviewPatternHelp": "복습 패턴 선택",
     "premium": "Premium",
     "addPattern": "+추가",
     "appUsageGuide": "앱 사용법",

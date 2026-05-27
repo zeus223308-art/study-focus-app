@@ -265,7 +265,7 @@
     "notificationBody": "You have reviews waiting.",
     "reviewPattern": "Review Pattern",
     "reviewPatternHint": "Max 2",
-    "filesSection": "Files",
+    "reviewPatternHelp": "Review pattern picker",
     "premium": "Premium",
     "addPattern": "+ Add",
     "appUsageGuide": "How to use the app",

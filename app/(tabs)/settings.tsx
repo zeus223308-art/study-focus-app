@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SymbolView } from 'expo-symbols';
 import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { CloudBackupSettings } from '@/components/settings/CloudBackupSettings';
+import { ReviewPatternHelpModal } from '@/components/settings/ReviewPatternHelpModal';
+import { SettingsSectionHeader } from '@/components/settings/SettingsSectionHeader';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsGroup';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
@@ -11,7 +12,6 @@ import { theme } from '@/constants/theme';
 import { useAppUsageGuide } from '@/context/AppUsageGuideContext';
 import { useApp, useLanguage } from '@/context/AppContext';
 import {
-  SCHEDULE_ADD_ID,
   folderScheduleLabel,
   toggleFolderScheduleId,
 } from '@/lib/domain/folder-schedule';
@@ -32,10 +32,10 @@ export default function SettingsScreen() {
     upgradePhotoQuality,
   } = useApp();
   const [photoUpgradeBusy, setPhotoUpgradeBusy] = useState(false);
+  const [patternHelpOpen, setPatternHelpOpen] = useState(false);
   const { openAppUsageGuide } = useAppUsageGuide();
   const { language, setLanguage } = useLanguage();
   const { settings, schedules, subjects } = data;
-  const active = settings.activeScheduleIds;
   const photoCount = freemium.usedImages;
 
   const ocrStatusLabel =
@@ -71,191 +71,125 @@ export default function SettingsScreen() {
     });
 
   return (
-    <Screen scroll>
-      <ScreenHeader title={t('settings.title')} showSettings={false} />
+    <>
+      <Screen scroll>
+        <ScreenHeader title={t('settings.title')} showSettings={false} />
 
-      <Text style={styles.sectionTitle}>{t('settings.reviewPattern')}</Text>
-      <View style={styles.patternGroup}>
-        {schedules.map((s, i) => {
-          const isAddRow = s.id === SCHEDULE_ADD_ID;
-          const isActive = !isAddRow && active.includes(s.id);
-          const patternTitle = isAddRow
-            ? t('settings.addPattern')
-            : language === 'ko'
-              ? s.name
-              : s.nameEn;
-          return (
-            <Pressable
-              key={s.id}
-              onPress={() => {
-                if (isAddRow) {
-                  setPaywallVisible(true);
-                  return;
-                }
-                toggleActiveSchedule(s.id);
-              }}
-              style={[styles.patternRow, i < schedules.length - 1 && styles.patternBorder]}>
-              <View style={styles.patternLeft}>
-                <Text style={styles.patternNum}>{i + 1}</Text>
-                <Text style={[styles.patternName, isAddRow && styles.patternAdd]}>{patternTitle}</Text>
-                {isAddRow && <Text style={styles.premium}>{t('settings.premium')}</Text>}
-              </View>
-              {!isAddRow && (
-                <View style={[styles.check, isActive && styles.checkOn]}>
-                  {isActive ? (
-                    <SymbolView
-                      name={{ ios: 'checkmark', android: 'check', web: 'check' }}
-                      size={14}
-                      tintColor={theme.white}
-                    />
-                  ) : null}
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
-      </View>
+        <SettingsSectionHeader
+          title={t('settings.reviewPattern')}
+          onHelpPress={() => setPatternHelpOpen(true)}
+          helpAccessibilityLabel={t('settings.reviewPatternHelp')}
+        />
+        <SettingsGroup>
+          {subjects.map((f, i) => (
+            <SettingsRow
+              key={f.id}
+              label={f.name}
+              value={folderIntervalLabel(f.reviewScheduleId)}
+              onPress={() => setSubjectSchedule(f.id, toggleFolderScheduleId(f.reviewScheduleId))}
+              last={i === subjects.length - 1}
+            />
+          ))}
+        </SettingsGroup>
 
-      <SettingsGroup title={t('settings.filesSection')}>
-        {subjects.map((f, i) => (
+        <SettingsGroup>
           <SettingsRow
-            key={f.id}
-            label={f.name}
-            value={folderIntervalLabel(f.reviewScheduleId)}
-            onPress={() => setSubjectSchedule(f.id, toggleFolderScheduleId(f.reviewScheduleId))}
-            last={i === subjects.length - 1}
+            label={t('settings.language')}
+            right={
+              <View style={styles.langRow}>
+                {(['ko', 'en'] as Language[]).map((lang) => (
+                  <Pressable
+                    key={lang}
+                    onPress={() => setLanguage(lang)}
+                    style={[styles.langChip, language === lang && styles.langChipOn]}>
+                    <Text style={language === lang ? styles.langOn : styles.langText}>
+                      {lang === 'ko' ? t('settings.langKo') : t('settings.langEn')}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            }
+            last={false}
           />
-        ))}
-      </SettingsGroup>
-
-      <SettingsGroup>
-        <SettingsRow
-          label={t('settings.language')}
-          right={
-            <View style={styles.langRow}>
-              {(['ko', 'en'] as Language[]).map((lang) => (
-                <Pressable
-                  key={lang}
-                  onPress={() => setLanguage(lang)}
-                  style={[styles.langChip, language === lang && styles.langChipOn]}>
-                  <Text style={language === lang ? styles.langOn : styles.langText}>
-                    {lang === 'ko' ? t('settings.langKo') : t('settings.langEn')}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          }
-          last={false}
-        />
-        <View style={[styles.row, styles.rowBorder]}>
-          <Text style={styles.label}>{t('settings.notifications')}</Text>
-          <Switch
-            value={settings.notificationsEnabled}
-            onValueChange={(v) => updateSettings({ notificationsEnabled: v })}
-            trackColor={{ true: theme.orange }}
+          <View style={[styles.row, styles.rowBorder]}>
+            <Text style={styles.label}>{t('settings.notifications')}</Text>
+            <Switch
+              value={settings.notificationsEnabled}
+              onValueChange={(v) => updateSettings({ notificationsEnabled: v })}
+              trackColor={{ true: theme.orange }}
+            />
+          </View>
+          <SettingsRow
+            label={t('settings.limitPhotos')}
+            value={t('settings.limitPhotosValue', {
+              used: photoCount,
+              max: settings.photoLimit,
+            })}
+            last={false}
           />
-        </View>
-        <SettingsRow
-          label={t('settings.limitPhotos')}
-          value={t('settings.limitPhotosValue', {
-            used: photoCount,
-            max: settings.photoLimit,
-          })}
-          last={false}
-        />
-        <SettingsRow
-          label={t('settings.limitMemos')}
-          value={t('settings.limitMemosValue', {
-            used: freemium.usedMemos,
-            max: settings.memoLimit,
-          })}
-          last
-        />
-      </SettingsGroup>
+          <SettingsRow
+            label={t('settings.limitMemos')}
+            value={t('settings.limitMemosValue', {
+              used: freemium.usedMemos,
+              max: settings.memoLimit,
+            })}
+            last
+          />
+        </SettingsGroup>
 
-      <SettingsGroup title={t('settings.cloudSection')}>
-        <CloudBackupSettings />
-        <SettingsRow
-          label={t('settings.upgradePhotoQuality')}
-          value={photoUpgradeBusy ? t('settings.upgradePhotoQualityBusy') : t('settings.upgradePhotoQualityHint')}
-          onPress={() => {
-            if (photoUpgradeBusy || photoCount === 0) return;
-            Alert.alert(t('settings.upgradePhotoQualityTitle'), t('settings.upgradePhotoQualityMessage'), [
-              { text: t('common.cancel'), style: 'cancel' },
-              {
-                text: t('settings.upgradePhotoQualityRun'),
-                onPress: async () => {
-                  setPhotoUpgradeBusy(true);
-                  try {
-                    const { upgraded, unchanged } = await upgradePhotoQuality(true);
-                    showMessage(
-                      t('settings.upgradePhotoQualityDone', { upgraded, unchanged })
-                    );
-                  } finally {
-                    setPhotoUpgradeBusy(false);
-                  }
+        <SettingsGroup title={t('settings.cloudSection')}>
+          <CloudBackupSettings />
+          <SettingsRow
+            label={t('settings.upgradePhotoQuality')}
+            value={photoUpgradeBusy ? t('settings.upgradePhotoQualityBusy') : t('settings.upgradePhotoQualityHint')}
+            onPress={() => {
+              if (photoUpgradeBusy || photoCount === 0) return;
+              Alert.alert(t('settings.upgradePhotoQualityTitle'), t('settings.upgradePhotoQualityMessage'), [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('settings.upgradePhotoQualityRun'),
+                  onPress: async () => {
+                    setPhotoUpgradeBusy(true);
+                    try {
+                      const { upgraded, unchanged } = await upgradePhotoQuality(true);
+                      showMessage(
+                        t('settings.upgradePhotoQualityDone', { upgraded, unchanged })
+                      );
+                    } finally {
+                      setPhotoUpgradeBusy(false);
+                    }
+                  },
                 },
-              },
-            ]);
-          }}
-          last
-        />
-      </SettingsGroup>
+              ]);
+            }}
+            last
+          />
+        </SettingsGroup>
 
-      <SettingsGroup>
-        <SettingsRow label={t('settings.ocr')} value={ocrStatusLabel} last={false} />
-        <SettingsRow
-          label={t('settings.appUsageGuide')}
-          onPress={openAppUsageGuide}
-          last
-        />
-      </SettingsGroup>
-    </Screen>
+        <SettingsGroup>
+          <SettingsRow label={t('settings.ocr')} value={ocrStatusLabel} last={false} />
+          <SettingsRow
+            label={t('settings.appUsageGuide')}
+            onPress={openAppUsageGuide}
+            last
+          />
+        </SettingsGroup>
+      </Screen>
+
+      <ReviewPatternHelpModal
+        visible={patternHelpOpen}
+        schedules={schedules}
+        activeScheduleIds={settings.activeScheduleIds}
+        language={language}
+        onToggleSchedule={toggleActiveSchedule}
+        onAddPattern={() => setPaywallVisible(true)}
+        onClose={() => setPatternHelpOpen(false)}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    fontSize: theme.font.label,
-    fontWeight: '700',
-    color: theme.graySecondary,
-    marginBottom: 4,
-    marginLeft: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  hint: { fontSize: theme.font.caption, fontWeight: '600', color: theme.gray, marginBottom: 8, marginLeft: 4 },
-  patternGroup: {
-    backgroundColor: theme.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    marginBottom: 24,
-    overflow: 'hidden',
-  },
-  patternRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  patternBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
-  patternLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  patternNum: { fontSize: 15, fontWeight: '700', color: theme.orange, width: 20 },
-  patternName: { fontSize: theme.font.body, fontWeight: '700', color: theme.black },
-  patternAdd: { color: theme.orange },
-  premium: { fontSize: theme.font.label, color: theme.orange, fontWeight: '700' },
-  check: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: theme.grayLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
