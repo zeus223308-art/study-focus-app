@@ -89,13 +89,6 @@ export default function FilesScreen() {
     });
   };
 
-  const startHoldMenuReorder = () => {
-    if (!holdMenuSubject) return;
-    const { id } = holdMenuSubject;
-    setHoldMenuSubject(null);
-    startSubjectReorder(id);
-  };
-
   const onSubjectReorderMove = (pageX: number, pageY: number) => {
     setGhost({ x: pageX, y: pageY, visible: true });
     updateSubjectReorderHover(pageX, pageY);
@@ -163,7 +156,6 @@ export default function FilesScreen() {
       <SubjectFolderHoldMenuSheet
         visible={holdMenuSubject !== null}
         deleteLabel={t('vault.deleteFolderAction')}
-        reorderLabel={t('folder.holdMenuReorder')}
         cancelLabel={t('common.cancel')}
         onDelete={() => {
           if (!holdMenuSubject) return;
@@ -171,7 +163,6 @@ export default function FilesScreen() {
           setHoldMenuSubject(null);
           confirmDeleteSubject(id, name);
         }}
-        onReorder={startHoldMenuReorder}
         onClose={() => setHoldMenuSubject(null)}
       />
 

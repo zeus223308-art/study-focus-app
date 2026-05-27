@@ -52,6 +52,9 @@ export function SubjectFolderTile({
   const isActive = reorderingSubjectId === subjectId;
   const reorderHover = reorderHoverSubjectId === subjectId && !isActive;
   const dragEnabled = !movingBundleId && Boolean(onReorderDragMove) && !nameEditing;
+  const isEmptyPreview = previewItems.length === 0;
+  /** Delete menu on empty card only; non-empty card long-press stays drag-to-reorder. */
+  const cardHoldMenu = onHoldMenu && isEmptyPreview ? onHoldMenu : undefined;
 
   const tryDropHere = () => {
     if (!movingBundleId || subjectId === dragSourceSubjectId) return;
@@ -102,7 +105,7 @@ export function SubjectFolderTile({
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
           onPress={openFolder}
-          onHoldMenu={onHoldMenu}
+          onHoldMenu={cardHoldMenu}
           onGestureActiveChange={onPreviewGestureLock}
           style={[
             styles.dragSurface,
@@ -117,7 +120,7 @@ export function SubjectFolderTile({
               emptyHint={t('vault.previewEmpty')}
               passthroughGestures
               onOpen={openFolder}
-              onLongPress={onHoldMenu ? undefined : handleLift}
+              onLongPress={cardHoldMenu ? undefined : handleLift}
               onGestureLock={onPreviewGestureLock}
             />
           </View>
