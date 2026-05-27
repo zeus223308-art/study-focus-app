@@ -125,6 +125,8 @@ export type TrashLifecycle = {
   id: string;
   bundleId: string;
   bundleSnapshot: NoteBundle;
+  /** Whole subject folder snapshot when deleted from Files tab */
+  subjectSnapshot?: SubjectFolder;
   deletedAt: string;
   uiExpiresAt: string;
   backupExpiresAt: string;

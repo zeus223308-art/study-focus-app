@@ -278,7 +278,10 @@
     "title": "휴지통",
     "empty": "비어 있음",
     "restore": "복원",
-    "autoDeleteHint": "익일 삭제 · 3일 후 복원 불가"
+    "restoreSubject": "과목 복원",
+    "subjectPages": "사진 {{count}}장",
+    "subjectEmpty": "사진 없음 (과목 폴더만)",
+    "autoDeleteHint": "3일 이내 복원 가능 · 복원하지 않으면 영구 삭제"
   },
   "schedule": {
     "daily": "매일",

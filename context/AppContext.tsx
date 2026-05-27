@@ -36,7 +36,9 @@ import {
   canRestoreFromBackup,
   createTrashLifecycle,
   filterActiveTrash,
+  isTrashEntryWithPhotos,
 } from '@/lib/trash/lifecycle';
+import { buildTrashEntriesForDeletedSubjects, trashEntriesForSubject } from '@/lib/trash/subject-trash';
 import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/google-session';
 import { checkFreemiumLimits, createStorageProvider } from '@/services/storage';
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
@@ -92,6 +94,7 @@ type AppContextValue = {
   moveBundleToTrash: (id: string) => void;
   deletePage: (bundleId: string, pageId: string) => void;
   restoreTrash: (trashId: string) => void;
+  restoreSubjectTrash: (subjectId: string) => void;
   applyLayerCycleChoice: (bundleId: string, choice: LayerCycleChoice) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
   getSchedule: (id: string) => ReviewSchedule | undefined;
@@ -459,35 +462,28 @@ export function AppProvider({
     [persist]
   );
 
-  const deleteSubject = useCallback((subjectId: string) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      const subjectBundles = prev.bundles.filter((b) => b.subjectId === subjectId);
-      const otherBundles = prev.bundles.filter((b) => b.subjectId !== subjectId);
-      return {
-        ...prev,
-        subjects: prev.subjects.filter((s) => s.id !== subjectId),
-        bundles: otherBundles,
-        trash: [...subjectBundles.map((b) => createTrashLifecycle(b)), ...prev.trash],
-      };
-    });
-  }, []);
-
   const deleteSubjects = useCallback((subjectIds: string[]) => {
     const idSet = new Set(subjectIds);
     if (idSet.size === 0) return;
     setData((prev) => {
       if (!prev) return prev;
-      const subjectBundles = prev.bundles.filter((b) => idSet.has(b.subjectId));
-      const otherBundles = prev.bundles.filter((b) => !idSet.has(b.subjectId));
+      const deletedAt = new Date();
+      const trashEntries = buildTrashEntriesForDeletedSubjects(prev, subjectIds, deletedAt);
       return {
         ...prev,
         subjects: prev.subjects.filter((s) => !idSet.has(s.id)),
-        bundles: otherBundles,
-        trash: [...subjectBundles.map((b) => createTrashLifecycle(b)), ...prev.trash],
+        bundles: prev.bundles.filter((b) => !idSet.has(b.subjectId)),
+        trash: [...trashEntries, ...prev.trash],
       };
     });
   }, []);
+
+  const deleteSubject = useCallback(
+    (subjectId: string) => {
+      deleteSubjects([subjectId]);
+    },
+    [deleteSubjects]
+  );
 
   const setSubjectSchedule = useCallback((subjectId: string, scheduleId: string) => {
     setData((prev) =>
@@ -587,18 +583,82 @@ export function AppProvider({
     });
   }, []);
 
-  const restoreTrash = useCallback((trashId: string) => {
+  const restoreSubjectTrash = useCallback((subjectId: string) => {
     setData((prev) => {
       if (!prev) return prev;
-      const entry = prev.trash.find((t) => t.id === trashId);
-      if (!entry || !canRestoreFromBackup(entry)) return prev;
+      const matching = trashEntriesForSubject(prev.trash, subjectId).filter((e) =>
+        canRestoreFromBackup(e)
+      );
+      if (matching.length === 0) return prev;
+
+      const subjectSnap = matching.find((e) => e.subjectSnapshot)?.subjectSnapshot;
+      let subjects = prev.subjects;
+      if (subjectSnap && !subjects.some((s) => s.id === subjectSnap.id)) {
+        subjects = [...subjects, subjectSnap];
+      }
+
+      const existingBundleIds = new Set(prev.bundles.map((b) => b.id));
+      const bundlesToAdd = matching
+        .filter((e) => isTrashEntryWithPhotos(e) && !existingBundleIds.has(e.bundleSnapshot.id))
+        .map((e) => ({ ...e.bundleSnapshot, archived: false }));
+
+      const restoredIds = new Set(matching.map((e) => e.id));
+
       return {
         ...prev,
-        bundles: [{ ...entry.bundleSnapshot, archived: false }, ...prev.bundles],
-        trash: prev.trash.filter((t) => t.id !== trashId),
+        subjects,
+        bundles: [...bundlesToAdd, ...prev.bundles],
+        trash: prev.trash.filter((t) => !restoredIds.has(t.id)),
       };
     });
   }, []);
+
+  const restoreTrash = useCallback(
+    (trashId: string) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        const entry = prev.trash.find((t) => t.id === trashId);
+        if (!entry || !canRestoreFromBackup(entry)) return prev;
+
+        const subjectId = entry.subjectSnapshot?.id ?? entry.bundleSnapshot.subjectId;
+        const subjectOnly =
+          entry.subjectSnapshot &&
+          !isTrashEntryWithPhotos(entry) &&
+          trashEntriesForSubject(prev.trash, subjectId).every(
+            (e) => e.id === entry.id || !isTrashEntryWithPhotos(e)
+          );
+
+        if (subjectOnly && entry.subjectSnapshot) {
+          return {
+            ...prev,
+            subjects: prev.subjects.some((s) => s.id === entry.subjectSnapshot!.id)
+              ? prev.subjects
+              : [...prev.subjects, entry.subjectSnapshot],
+            trash: prev.trash.filter((t) => t.id !== trashId),
+          };
+        }
+
+        let subjects = prev.subjects;
+        if (entry.subjectSnapshot && !subjects.some((s) => s.id === entry.subjectSnapshot!.id)) {
+          subjects = [...subjects, entry.subjectSnapshot];
+        }
+
+        const bundleExists = prev.bundles.some((b) => b.id === entry.bundleSnapshot.id);
+        const bundles =
+          isTrashEntryWithPhotos(entry) && !bundleExists
+            ? [{ ...entry.bundleSnapshot, archived: false }, ...prev.bundles]
+            : prev.bundles;
+
+        return {
+          ...prev,
+          subjects,
+          bundles,
+          trash: prev.trash.filter((t) => t.id !== trashId),
+        };
+      });
+    },
+    []
+  );
 
   const applyLayerCycleChoice = useCallback((bundleId: string, choice: LayerCycleChoice) => {
     setData((prev) => {
@@ -981,6 +1041,7 @@ export function AppProvider({
       moveBundleToTrash,
       deletePage,
       restoreTrash,
+      restoreSubjectTrash,
       applyLayerCycleChoice,
       updateSettings,
       getSchedule,
@@ -1048,6 +1109,7 @@ export function AppProvider({
     moveBundleToTrash,
     deletePage,
     restoreTrash,
+    restoreSubjectTrash,
     applyLayerCycleChoice,
     updateSettings,
     getSchedule,

@@ -278,7 +278,10 @@
     "title": "Trash",
     "empty": "Empty",
     "restore": "Restore",
-    "autoDeleteHint": "Deletes next day · 3-day restore limit"
+    "restoreSubject": "Restore subject",
+    "subjectPages": "{{count}} photo(s)",
+    "subjectEmpty": "No photos (folder only)",
+    "autoDeleteHint": "Restorable for 3 days · permanently deleted after that"
   },
   "schedule": {
     "daily": "Daily",
