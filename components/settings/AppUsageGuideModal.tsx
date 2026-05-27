@@ -27,22 +27,23 @@ export function AppUsageGuideModal({ visible, onClose }: Props) {
       onRequestClose={onClose}
       statusBarTranslucent
       presentationStyle="overFullScreen">
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('appUsageGuide.close')} />
+        <View
           style={[
             styles.card,
             {
               width: cardWidth,
               maxHeight: viewport.height - insets.top - insets.bottom - 48,
             },
-          ]}
-          onPress={() => {}}>
+          ]}>
           <Text style={styles.title}>{t('appUsageGuide.title')}</Text>
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
-            bounces={false}>
+            bounces={false}
+            nestedScrollEnabled>
             {STEPS.map((key, index) => (
               <View key={key} style={styles.stepRow}>
                 <Text style={styles.stepNum}>{index + 1}</Text>
@@ -51,8 +52,8 @@ export function AppUsageGuideModal({ visible, onClose }: Props) {
             ))}
           </ScrollView>
           <Button label={t('appUsageGuide.close')} onPress={onClose} style={styles.closeBtn} />
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -64,7 +65,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 28,
-    zIndex: 99999,
     ...Platform.select({
       web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
       default: {},
@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.lg,
     padding: 24,
     maxWidth: '100%',
+    zIndex: 1,
   },
   title: {
     fontSize: theme.font.heading,

@@ -9,6 +9,7 @@ import { SettingsGroup, SettingsRow } from '@/components/SettingsGroup';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
+import { useAppUsageGuide } from '@/context/AppUsageGuideContext';
 import { useApp, useLanguage } from '@/context/AppContext';
 import {
   SCHEDULE_ADD_ID,
@@ -32,7 +33,7 @@ export default function SettingsScreen() {
     upgradePhotoQuality,
   } = useApp();
   const [photoUpgradeBusy, setPhotoUpgradeBusy] = useState(false);
-  const [usageGuideOpen, setUsageGuideOpen] = useState(false);
+  const { openAppUsageGuide } = useAppUsageGuide();
   const { language, setLanguage } = useLanguage();
   const { settings, schedules, subjects } = data;
   const active = settings.activeScheduleIds;
@@ -73,6 +74,14 @@ export default function SettingsScreen() {
   return (
     <Screen scroll>
       <ScreenHeader title={t('settings.title')} showSettings={false} />
+
+      <SettingsGroup>
+        <SettingsRow
+          label={t('settings.appUsageGuide')}
+          onPress={openAppUsageGuide}
+          last
+        />
+      </SettingsGroup>
 
       <Text style={styles.sectionTitle}>{t('settings.reviewPattern')}</Text>
       <View style={styles.patternGroup}>
@@ -203,15 +212,8 @@ export default function SettingsScreen() {
       </SettingsGroup>
 
       <SettingsGroup>
-        <SettingsRow label={t('settings.ocr')} value={ocrStatusLabel} last={false} />
-        <SettingsRow
-          label={t('settings.appUsageGuide')}
-          onPress={() => setUsageGuideOpen(true)}
-          last
-        />
+        <SettingsRow label={t('settings.ocr')} value={ocrStatusLabel} last />
       </SettingsGroup>
-
-      <AppUsageGuideModal visible={usageGuideOpen} onClose={() => setUsageGuideOpen(false)} />
     </Screen>
   );
 }
