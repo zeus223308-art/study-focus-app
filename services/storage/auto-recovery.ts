@@ -43,6 +43,27 @@ export async function dataMatchesActiveAccount(data: AppData): Promise<boolean> 
   return owner === active;
 }
 
+/**
+ * Per-account scoped storage is already partitioned by email.
+ * Stamp the active account and keep bundles (do not wipe on stale cloudAccountEmail).
+ */
+export async function stampActiveAccountOnData(data: AppData): Promise<AppData> {
+  const active = await getActiveAccountEmail();
+  if (!active) return data;
+  return {
+    ...data,
+    settings: { ...data.settings, cloudAccountEmail: active },
+  };
+}
+
+/** Guest: reject foreign-owner snapshots. Signed-in: always accept scoped partition. */
+export async function acceptLoadedAppData(data: AppData): Promise<AppData | null> {
+  const active = await getActiveAccountEmail();
+  if (active) return stampActiveAccountOnData(data);
+  if (await dataMatchesActiveAccount(data)) return data;
+  return null;
+}
+
 export async function detectAppUpdateWithEmptyData(data: AppData): Promise<boolean> {
   if (hasRecoverableContent(data)) return false;
   const version = currentAppVersion();

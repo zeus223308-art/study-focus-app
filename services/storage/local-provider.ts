@@ -18,7 +18,7 @@ import { migrateToV4 } from '@/services/storage/migration';
 
 
 
-import { dataMatchesActiveAccount, stampRecoverySettings } from './auto-recovery';
+import { acceptLoadedAppData, dataMatchesActiveAccount, stampRecoverySettings } from './auto-recovery';
 import { clearGuestSession, getGuestSessionData, setGuestSessionData } from './guest-session';
 import { hasRecoverableContent } from './data-safety';
 import { readLocalBackupRaw, writeLocalBackupRaw } from './local-backup';
@@ -187,12 +187,12 @@ export class LocalStorageProvider implements StorageProvider {
 
 
       const normalized = normalizeLoadedData(mergeParsedAppData(parsed));
-
-      if (!(await dataMatchesActiveAccount(normalized))) {
+      const accepted = await acceptLoadedAppData(normalized);
+      if (!accepted) {
         return structuredClone(DEFAULT_DATA);
       }
 
-      if (!hasRecoverableContent(normalized)) {
+      if (!hasRecoverableContent(accepted)) {
 
         const fromBackup = await this.loadFromLocalBackupRaw();
 
@@ -202,7 +202,7 @@ export class LocalStorageProvider implements StorageProvider {
 
 
 
-      return this.finalizeLoaded(normalized);
+      return this.finalizeLoaded(accepted);
 
     } catch {
 
@@ -269,9 +269,10 @@ export class LocalStorageProvider implements StorageProvider {
       if (!hasRecoverableContent(parsed)) return null;
 
       const merged = normalizeLoadedData(mergeParsedAppData(parsed));
-      if (!(await dataMatchesActiveAccount(merged))) return null;
+      const accepted = await acceptLoadedAppData(merged);
+      if (!accepted) return null;
 
-      return this.finalizeLoaded(merged);
+      return this.finalizeLoaded(accepted);
 
     } catch {
 

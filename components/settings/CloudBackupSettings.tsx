@@ -21,6 +21,7 @@ import { cleanGoogleOAuthUrl } from '@/services/cloud/google-oauth-callback';
 import { allowsDevClientIdOverride } from '@/services/cloud/google-client-store';
 import { googleOAuthErrorMessage } from '@/lib/cloud/google-oauth-errors';
 import { ensureGoogleDriveSession } from '@/services/cloud/google-session';
+import { countAppPages } from '@/services/storage';
 
 export function CloudBackupSettings() {
   const { t } = useTranslation();
@@ -41,6 +42,7 @@ export function CloudBackupSettings() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const { settings } = data;
+  const storedPhotos = countAppPages(data);
   const devSetup = allowsDevClientIdOverride();
   const inAppBrowserBlocked = useInAppBrowserBlocked();
 
@@ -274,6 +276,11 @@ export function CloudBackupSettings() {
 
       {session ? (
         <>
+          <SettingsRow
+            label={t('settings.cloudStoredPhotos')}
+            value={t('settings.cloudStoredPhotosValue', { count: storedPhotos })}
+            last={false}
+          />
           <SettingsRow
             label={t('settings.cloudLastSync')}
             value={syncLabel}

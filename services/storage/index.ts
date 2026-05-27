@@ -8,6 +8,7 @@ export {
   findPage,
   remainingPhotoSlots,
 } from './types';
+export { countActiveAppPages, countActivePagesForSubject, countAppPages } from './data-safety';
 export type {
   StorageProvider,
   FreemiumCheck,

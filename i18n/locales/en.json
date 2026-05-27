@@ -361,6 +361,8 @@
     "cloudSyncNow": "Sync",
     "cloudSyncing": "Syncing…",
     "cloudLastSync": "Last sync",
+    "cloudStoredPhotos": "Photos on this account",
+    "cloudStoredPhotosValue": "{{count}}",
     "cloudNeverSynced": "Never",
     "cloudSyncedJustNow": "Just now",
     "cloudSyncedMinutes": "{{count}}m ago",

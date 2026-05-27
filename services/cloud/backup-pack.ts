@@ -591,17 +591,17 @@ export function parseBackupJson(raw: string): BackupEnvelope {
 
 
 export function shouldPreferRemoteBackup(local: AppData, remote: BackupEnvelope): boolean {
+  const localPages = local.bundles.reduce((n, b) => n + b.pages.length, 0);
+  const remotePages = remote.appData.bundles.reduce((n, b) => n + b.pages.length, 0);
 
-  if (local.bundles.length === 0 && remote.appData.bundles.length > 0) return true;
-
-  if (remote.appData.bundles.length === 0) return false;
+  if (remotePages === 0) return false;
+  if (localPages === 0) return true;
+  if (remotePages > localPages) return true;
 
   const localSync = local.settings.lastCloudSyncAt;
-
   if (!localSync) return false;
 
   return remote.exportedAt > localSync;
-
 }
 
 

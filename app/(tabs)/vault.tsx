@@ -11,7 +11,7 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
-import { totalPagesInBundle } from '@/lib/grouping/bundles';
+import { countActivePagesForSubject } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import {
   computeVaultFoldersPerPage,
@@ -126,10 +126,7 @@ export default function FilesScreen() {
     return pages;
   }, [data.subjects, foldersPerPage]);
 
-  const pageCountFor = (subjectId: string) =>
-    data.bundles
-      .filter((b) => b.subjectId === subjectId && !b.archived)
-      .reduce((n, b) => n + totalPagesInBundle(b), 0);
+  const pageCountFor = (subjectId: string) => countActivePagesForSubject(data, subjectId);
 
   const confirmAdd = () => {
     if (!newName.trim()) return;

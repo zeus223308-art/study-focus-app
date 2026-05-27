@@ -1,4 +1,5 @@
 import type { AppData, NoteBundle, NotePage } from '@/lib/domain/types';
+import { countAppPages } from '@/services/storage/data-safety';
 
 export type ThumbnailResult = {
   thumbnailUri: string;
@@ -32,7 +33,7 @@ export type FreemiumCheck = {
 };
 
 export function countUsedImages(data: AppData): number {
-  return data.bundles.reduce((n, b) => n + b.pages.length, 0);
+  return countAppPages(data);
 }
 
 /** How many more pages can be added on the free tier (unlimited on pro). */

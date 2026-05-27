@@ -19,6 +19,7 @@ import type { Language } from '@/lib/domain/types';
 import { scheduleDailyReviewReminder, cancelAllReminders } from '@/lib/notifications';
 import { isOcrAvailable } from '@/lib/review/ocr-extract';
 import { showMessage } from '@/lib/ui/confirm';
+import { countAppPages } from '@/services/storage';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
@@ -36,7 +37,7 @@ export default function SettingsScreen() {
   const { openAppUsageGuide } = useAppUsageGuide();
   const { language, setLanguage } = useLanguage();
   const { settings, schedules, subjects } = data;
-  const photoCount = freemium.usedImages;
+  const photoCount = countAppPages(data);
 
   const ocrStatusLabel =
     Platform.OS === 'web'

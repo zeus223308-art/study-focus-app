@@ -60,7 +60,8 @@ import {
   type ImportPhotosResult,
 } from '@/services/storage';
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
-import { hasRecoverableContent } from '@/services/storage/data-safety';
+import { countAppPages, hasRecoverableContent } from '@/services/storage/data-safety';
+import { readRecoveryManifest } from '@/services/storage/recovery-manifest';
 import { clearGuestSession } from '@/services/storage/guest-session';
 import type { FreemiumCheck, StorageProvider } from '@/services/storage/types';
 
@@ -261,6 +262,21 @@ export function AppProvider({
           const fromLocal = await storage.restoreLocalBackup();
           if (fromLocal && hasRecoverableContent(fromLocal)) {
             loaded = fromLocal;
+          }
+        }
+      }
+
+      if (token) {
+        const localPages = countAppPages(loaded);
+        const manifest = await readRecoveryManifest();
+        const expected = Math.max(
+          loaded.settings.lastSavedPageCount ?? 0,
+          manifest?.lastSavedPageCount ?? 0
+        );
+        if (expected > localPages) {
+          const synced = await storage.syncAllPending(loaded);
+          if (countAppPages(synced) > localPages) {
+            loaded = synced;
           }
         }
       }

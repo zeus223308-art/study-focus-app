@@ -38,8 +38,8 @@ export function normalizeAppSettings(settings: AppSettings, data: AppData): AppS
   return {
     ...merged,
     firstLaunchDate,
-    hadStudyContent: merged.hadStudyContent ?? pageCount > 0,
-    lastSavedPageCount: merged.lastSavedPageCount ?? pageCount,
+    hadStudyContent: pageCount > 0 || Boolean(merged.hadStudyContent),
+    lastSavedPageCount: pageCount,
     lastSavedAt: merged.lastSavedAt ?? null,
     lastAppVersion: merged.lastAppVersion ?? null,
     lastAutoRecoveryAt: merged.lastAutoRecoveryAt ?? null,

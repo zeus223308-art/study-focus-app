@@ -361,6 +361,8 @@
     "cloudSyncNow": "동기화",
     "cloudSyncing": "동기화 중…",
     "cloudLastSync": "마지막 동기화",
+    "cloudStoredPhotos": "이 계정 사진",
+    "cloudStoredPhotosValue": "{{count}}장",
     "cloudNeverSynced": "없음",
     "cloudSyncedJustNow": "방금",
     "cloudSyncedMinutes": "{{count}}분 전",
