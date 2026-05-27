@@ -157,8 +157,11 @@ export function CaptureEditSurface({
   }, [uri]);
 
   const applySelection = useCallback(
-    (next: CropSelection) => {
-      const clamped = clampCropSelection(next, { lockImagePosition });
+    (next: CropSelection, opts?: { cropOnly?: boolean }) => {
+      const clamped = clampCropSelection(next, {
+        lockImagePosition,
+        cropOnly: opts?.cropOnly,
+      });
       selectionRef.current = clamped;
       onSelectionChange(clamped);
     },
@@ -210,7 +213,7 @@ export function CaptureEditSurface({
       }
 
       const nextCrop = resizeCrop(drag.startCrop, handle, dx, dy);
-      applySelection({ ...current, crop: nextCrop });
+      applySelection({ ...current, crop: nextCrop }, { cropOnly: true });
     },
     [applySelection]
   );

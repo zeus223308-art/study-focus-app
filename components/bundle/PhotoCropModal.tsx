@@ -21,7 +21,6 @@ export function PhotoCropModal({ visible, uri, sideLabel, onConfirm, onClose }: 
         <CapturePhotoEditor
           uri={uri}
           sideLabel={sideLabel}
-          lockImagePosition
           onConfirm={async (result) => {
             onConfirm(result.uri);
             onClose();

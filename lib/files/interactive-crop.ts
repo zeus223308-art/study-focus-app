@@ -104,24 +104,17 @@ export function initialCropSelection(
   });
 }
 
-export function clampCropSelection(
-  selection: CropSelection,
-  opts?: { lockImagePosition?: boolean }
-): CropSelection {
-  const base = opts?.lockImagePosition
-    ? { ...selection, imageOffsetX: 0, imageOffsetY: 0 }
-    : selection;
-  const withPan = opts?.lockImagePosition ? base : clampImageOffset(base);
-  const image = imageDisplayRect(withPan);
+function clampCropRectWithinImage(selection: CropSelection): CropSelection {
+  const image = imageDisplayRect(selection);
 
   const maxLeft = image.left + image.width - MIN_CROP_SIZE;
   const maxTop = image.top + image.height - MIN_CROP_SIZE;
 
-  let left = Math.min(Math.max(image.left, withPan.crop.left), maxLeft);
-  let top = Math.min(Math.max(image.top, withPan.crop.top), maxTop);
+  let left = Math.min(Math.max(image.left, selection.crop.left), maxLeft);
+  let top = Math.min(Math.max(image.top, selection.crop.top), maxTop);
 
-  let width = Math.max(MIN_CROP_SIZE, withPan.crop.width);
-  let height = Math.max(MIN_CROP_SIZE, withPan.crop.height);
+  let width = Math.max(MIN_CROP_SIZE, selection.crop.width);
+  let height = Math.max(MIN_CROP_SIZE, selection.crop.height);
 
   if (left + width > image.left + image.width) width = image.left + image.width - left;
   if (top + height > image.top + image.height) height = image.top + image.height - top;
@@ -135,9 +128,30 @@ export function clampCropSelection(
     top = Math.min(top, image.top + image.height - MIN_CROP_SIZE);
   }
 
-  return opts?.lockImagePosition
-    ? { ...withPan, crop: { left, top, width, height } }
-    : clampImageOffset({ ...withPan, crop: { left, top, width, height } });
+  return { ...selection, crop: { left, top, width, height } };
+}
+
+/** Resize/move crop box only — does not pan the photo behind the frame. */
+export function clampCropRectOnly(selection: CropSelection): CropSelection {
+  return clampCropRectWithinImage(selection);
+}
+
+export function clampCropSelection(
+  selection: CropSelection,
+  opts?: { lockImagePosition?: boolean; cropOnly?: boolean }
+): CropSelection {
+  const base = opts?.lockImagePosition
+    ? { ...selection, imageOffsetX: 0, imageOffsetY: 0 }
+    : selection;
+
+  if (opts?.cropOnly) {
+    return clampCropRectWithinImage(base);
+  }
+
+  const withPan = opts?.lockImagePosition ? base : clampImageOffset(base);
+  const cropped = clampCropRectWithinImage(withPan);
+
+  return opts?.lockImagePosition ? cropped : clampImageOffset(cropped);
 }
 
 export function cropRegionFromSelection(selection: CropSelection): {

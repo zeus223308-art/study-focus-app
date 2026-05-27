@@ -26,7 +26,6 @@ import { useApp } from '@/context/AppContext';
 import type { InkStroke, NoteBundle, NotePage } from '@/lib/domain/types';
 import {
   buildCountdownSteps,
-  RECALL_COUNTDOWN_OPTIONS,
 } from '@/lib/review/blackout';
 import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { resolveImageUri } from '@/lib/files/resolve-image-uri';
@@ -111,13 +110,13 @@ export default function ReviewSessionScreen() {
   const frontFade = useRef(new Animated.Value(1)).current;
   const problemShift = useRef(new Animated.Value(0)).current;
   const viewport = useViewportLayout();
-  const workCardW = Math.min(viewport.width - 24, viewport.contentMaxWidth, 520);
+  const workCardW = viewport.width - viewport.horizontalPadding * 2;
   const problemCardH = Math.round(workCardW * 0.46);
   const workCardH = Math.round(workCardW * 2.0);
   const [recallScrollLocked, setRecallScrollLocked] = useState(false);
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
-  const [recallCountdownSec, setRecallCountdownSec] = useState(3);
+  const recallCountdownSec = 3;
   const [sessionSlideSec, setSessionSlideSec] = useState<number | null>(null);
   const [slideRemainingSec, setSlideRemainingSec] = useState(0);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -466,7 +465,10 @@ export default function ReviewSessionScreen() {
       {recallMode ? (
         <ScrollView
           style={styles.recallScroll}
-          contentContainerStyle={[styles.recallFull, { paddingTop: 8, paddingBottom: 32 }]}
+          contentContainerStyle={[
+            styles.recallFull,
+            { paddingTop: 8, paddingBottom: 32, paddingHorizontal: 6 },
+          ]}
           keyboardShouldPersistTaps="handled"
           scrollEnabled={!recallScrollLocked}
           showsVerticalScrollIndicator
@@ -565,26 +567,6 @@ export default function ReviewSessionScreen() {
             {index + 1} / {slides.length}
             {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
           </Text>
-          <Text style={styles.durationLabel}>{t('review.countdownDuration')}</Text>
-          <View style={styles.durationRow}>
-            {RECALL_COUNTDOWN_OPTIONS.map((sec) => (
-              <Pressable
-                key={sec}
-                onPress={() => setRecallCountdownSec(sec)}
-                style={[
-                  styles.durationChip,
-                  recallCountdownSec === sec && styles.durationChipOn,
-                ]}>
-                <Text
-                  style={[
-                    styles.durationChipText,
-                    recallCountdownSec === sec && styles.durationChipTextOn,
-                  ]}>
-                  {t('review.timerSec', { sec })}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
           <Button label={t('review.startCountdown')} onPress={startCountdown} />
         </View>
           )}
@@ -730,7 +712,7 @@ const styles = StyleSheet.create({
   backBadge: { backgroundColor: 'rgba(37,99,235,0.92)' },
   recallScroll: { flex: 1 },
   recallFull: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 6,
     paddingBottom: 24,
     gap: 10,
     alignItems: 'center',
