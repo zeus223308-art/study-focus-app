@@ -4,8 +4,7 @@ export type SubjectReorderHit =
   | { kind: 'merge'; targetId: string }
   | { kind: 'insert'; index: number; lineX: number };
 
-const GAP_HIT_PAD = 10;
-const MERGE_INSET_X = 0.22;
+const GAP_HIT_PAD = 12;
 
 type ZoneEntry = { id: string; rect: ZoneRect };
 
@@ -13,8 +12,17 @@ function inRow(pageY: number, rect: ZoneRect): boolean {
   return pageY >= rect.y && pageY <= rect.y + rect.height;
 }
 
+function inRect(pageX: number, pageY: number, rect: ZoneRect): boolean {
+  return (
+    pageX >= rect.x &&
+    pageX <= rect.x + rect.width &&
+    pageY >= rect.y &&
+    pageY <= rect.y + rect.height
+  );
+}
+
 /**
- * Horizontal vault carousel: gap between tiles → insert line; tile center → merge.
+ * Horizontal vault carousel: drop on another subject tile → merge; gap between tiles → insert.
  */
 export function hitTestSubjectReorderDrag(
   pageX: number,
@@ -33,21 +41,14 @@ export function hitTestSubjectReorderDrag(
   if (entries.length === 0) return null;
 
   for (const { id, rect } of entries) {
-    if (id === activeId || !inRow(pageY, rect)) continue;
-    const mergeLeft = rect.x + rect.width * MERGE_INSET_X;
-    const mergeRight = rect.x + rect.width * (1 - MERGE_INSET_X);
-    if (pageX >= mergeLeft && pageX <= mergeRight) {
+    if (id === activeId) continue;
+    if (inRect(pageX, pageY, rect)) {
       return { kind: 'merge', targetId: id };
     }
   }
 
-  const rowRect = entries[0]!.rect;
-
   const first = entries[0]!;
-  if (
-    pageX < first.rect.x + GAP_HIT_PAD &&
-    inRow(pageY, first.rect)
-  ) {
+  if (pageX < first.rect.x + GAP_HIT_PAD && inRow(pageY, first.rect)) {
     return { kind: 'insert', index: 0, lineX: first.rect.x };
   }
 
@@ -68,10 +69,7 @@ export function hitTestSubjectReorderDrag(
   }
 
   const last = entries[entries.length - 1]!;
-  if (
-    pageX > last.rect.x + last.rect.width - GAP_HIT_PAD &&
-    inRow(pageY, last.rect)
-  ) {
+  if (pageX > last.rect.x + last.rect.width - GAP_HIT_PAD && inRow(pageY, last.rect)) {
     return {
       kind: 'insert',
       index: sortedIds.length,
@@ -80,15 +78,4 @@ export function hitTestSubjectReorderDrag(
   }
 
   return null;
-}
-
-export function rowBoundsFromZones(zones: Map<string, ZoneRect>): ZoneRect | null {
-  let top = Infinity;
-  let bottom = -Infinity;
-  for (const rect of zones.values()) {
-    top = Math.min(top, rect.y);
-    bottom = Math.max(bottom, rect.y + rect.height);
-  }
-  if (!Number.isFinite(top)) return null;
-  return { x: 0, y: top, width: 0, height: bottom - top };
 }

@@ -25,18 +25,23 @@ export function SubjectReorderTarget({
   lifted,
 }: Props) {
   const ref = useRef<View>(null);
-  const { subjectReorderMeasureTick } = useApp();
+  const { subjectReorderMeasureTick, reorderingSubjectId } = useApp();
+  const isLifted = lifted || reorderingSubjectId === subjectId;
 
   const measure = useCallback(() => {
+    if (isLifted) {
+      register(subjectId, null);
+      return;
+    }
     ref.current?.measureInWindow((x, y, width, height) => {
       register(subjectId, { x, y, width, height });
     });
-  }, [register, subjectId]);
+  }, [isLifted, register, subjectId]);
 
   useEffect(() => {
     measure();
     return () => register(subjectId, null);
-  }, [measure, register, subjectId, subjectReorderMeasureTick]);
+  }, [measure, register, subjectId, subjectReorderMeasureTick, isLifted]);
 
   return (
     <View
