@@ -52,9 +52,6 @@ export function SubjectFolderTile({
   const isActive = reorderingSubjectId === subjectId;
   const reorderHover = reorderHoverSubjectId === subjectId && !isActive;
   const dragEnabled = !movingBundleId && Boolean(onReorderDragMove) && !nameEditing;
-  const isEmptyPreview = previewItems.length === 0;
-  /** Delete menu on empty card only; non-empty card long-press stays drag-to-reorder. */
-  const cardHoldMenu = onHoldMenu && isEmptyPreview ? onHoldMenu : undefined;
 
   const tryDropHere = () => {
     if (!movingBundleId || subjectId === dragSourceSubjectId) return;
@@ -91,27 +88,26 @@ export function SubjectFolderTile({
         register={registerSubjectReorderZone}
         hover={reorderHover}
         lifted={isActive}>
-        <SubjectFolderName
-          subjectId={subjectId}
-          name={name}
-          lifted={isActive}
-          disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
-          onEditingChange={setNameEditing}
-          onLongPressMenu={onHoldMenu}
-        />
         <HoldDragSurface
           enabled={dragEnabled}
           onLift={handleLift}
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
           onPress={openFolder}
-          onHoldMenu={cardHoldMenu}
           onGestureActiveChange={onPreviewGestureLock}
           style={[
             styles.dragSurface,
             isActive && styles.dragSurfaceLifted,
             reorderHover && styles.dragSurfaceHover,
           ]}>
+          <SubjectFolderName
+            subjectId={subjectId}
+            name={name}
+            lifted={isActive}
+            disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
+            onEditingChange={setNameEditing}
+            onLongPressMenu={onHoldMenu}
+          />
           <View ref={cardRef} collapsable={false} pointerEvents="box-none">
             <SubjectFolderPreview
               variant="vault"
@@ -120,7 +116,6 @@ export function SubjectFolderTile({
               emptyHint={t('vault.previewEmpty')}
               passthroughGestures
               onOpen={openFolder}
-              onLongPress={cardHoldMenu ? undefined : handleLift}
               onGestureLock={onPreviewGestureLock}
             />
           </View>

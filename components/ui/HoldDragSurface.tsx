@@ -194,10 +194,11 @@ export function HoldDragSurface({
         onDragMove?.(pageX, pageY);
         return;
       }
-      if (phaseRef.current !== 'pending') return;
+      if (phaseRef.current !== 'pending' || !timerRef.current) return;
       const dx = Math.abs(pageX - startRef.current.pageX);
       const dy = Math.abs(pageY - startRef.current.pageY);
-      if (dx > MOVE_CANCEL_PX || dy > MOVE_CANCEL_PX) {
+      // Cancel only on mostly-horizontal movement so vertical scroll does not block lift.
+      if (dx > MOVE_CANCEL_PX && dx > dy) {
         clearTimer();
         phaseRef.current = 'idle';
         deleteHoldRef.current = false;

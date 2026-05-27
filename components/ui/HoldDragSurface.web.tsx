@@ -178,7 +178,7 @@ export function HoldDragSurface({
       onLiftRef.current();
       onDragMoveRef.current?.(pageX, pageY);
 
-      const onMove = (ev: TouchEvent) => {
+      const onTouchMoveDoc = (ev: TouchEvent) => {
         if (phaseRef.current !== 'lifted') return;
         const t = ev.touches[0];
         if (!t) return;
@@ -188,20 +188,35 @@ export function HoldDragSurface({
         onDragMoveRef.current?.(pt.pageX, pt.pageY);
       };
 
-      const onEnd = (ev: TouchEvent) => {
+      const onTouchEndDoc = (ev: TouchEvent) => {
         const t = ev.changedTouches[0];
         if (!t) return;
         const pt = touchPageXY(t);
         finish(pt.pageX, pt.pageY);
       };
 
-      document.addEventListener('touchmove', onMove, { passive: false });
-      document.addEventListener('touchend', onEnd);
-      document.addEventListener('touchcancel', onEnd);
+      const onMouseMoveDoc = (ev: MouseEvent) => {
+        if (phaseRef.current !== 'lifted') return;
+        ev.preventDefault();
+        movedRef.current = true;
+        onDragMoveRef.current?.(ev.clientX, ev.clientY);
+      };
+
+      const onMouseUpDoc = (ev: MouseEvent) => {
+        finish(ev.clientX, ev.clientY);
+      };
+
+      document.addEventListener('touchmove', onTouchMoveDoc, { passive: false });
+      document.addEventListener('touchend', onTouchEndDoc);
+      document.addEventListener('touchcancel', onTouchEndDoc);
+      document.addEventListener('mousemove', onMouseMoveDoc);
+      document.addEventListener('mouseup', onMouseUpDoc);
       sessionCleanupRef.current = () => {
-        document.removeEventListener('touchmove', onMove);
-        document.removeEventListener('touchend', onEnd);
-        document.removeEventListener('touchcancel', onEnd);
+        document.removeEventListener('touchmove', onTouchMoveDoc);
+        document.removeEventListener('touchend', onTouchEndDoc);
+        document.removeEventListener('touchcancel', onTouchEndDoc);
+        document.removeEventListener('mousemove', onMouseMoveDoc);
+        document.removeEventListener('mouseup', onMouseUpDoc);
       };
     },
     [clearOpenDefer, clearTimer, finish, setLiftedState]
@@ -297,7 +312,11 @@ export function HoldDragSurface({
       };
 
       const onMouseMove = (ev: MouseEvent) => {
-        if (phaseRef.current === 'lifted') return;
+        if (phaseRef.current === 'lifted') {
+          movedRef.current = true;
+          onDragMoveRef.current?.(ev.clientX, ev.clientY);
+          return;
+        }
         movePending(ev.clientX, ev.clientY);
       };
 
