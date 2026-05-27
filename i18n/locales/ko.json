@@ -64,7 +64,8 @@
     "previewEmpty": "사진 없음",
     "photos": "{{count}}장",
     "deleteFolderTitle": "폴더를 삭제할까요?",
-    "deleteFolderMessage": "\"{{name}}\" 폴더와 모든 사진이 휴지통으로 이동합니다."
+    "deleteFolderMessage": "\"{{name}}\" 폴더와 모든 사진이 휴지통으로 이동합니다.",
+    "deleteFolderAction": "과목 삭제하기"
   },
   "capture": {
     "title": "촬영",

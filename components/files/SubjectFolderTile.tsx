@@ -22,7 +22,7 @@ type Props = {
   onLiftForReorder: () => void;
   onReorderDragMove?: (pageX: number, pageY: number) => void;
   onReorderDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
-  onDeleteHold?: () => void;
+  onHoldMenu?: () => void;
   onPreviewGestureLock: (locked: boolean) => void;
 };
 
@@ -35,7 +35,7 @@ export function SubjectFolderTile({
   onLiftForReorder,
   onReorderDragMove,
   onReorderDragEnd,
-  onDeleteHold,
+  onHoldMenu,
   onPreviewGestureLock,
 }: Props) {
   const { t } = useTranslation();
@@ -101,7 +101,7 @@ export function SubjectFolderTile({
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
           onPress={openFolder}
-          onDeleteHold={onDeleteHold}
+          onHoldMenu={onHoldMenu}
           onGestureActiveChange={onPreviewGestureLock}
           style={[
             styles.dragSurface,
@@ -116,7 +116,7 @@ export function SubjectFolderTile({
               emptyHint={t('vault.previewEmpty')}
               passthroughGestures
               onOpen={openFolder}
-              onLongPress={handleLift}
+              onLongPress={onHoldMenu ? undefined : handleLift}
               onGestureLock={onPreviewGestureLock}
             />
           </View>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
+import { SubjectFolderHoldMenuSheet } from '@/components/files/SubjectFolderHoldMenuSheet';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
@@ -39,6 +40,10 @@ export default function FilesScreen() {
   const [panelWidth, setPanelWidth] = useState(0);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
   const [folderTouchActive, setFolderTouchActive] = useState(false);
+  const [holdMenuSubject, setHoldMenuSubject] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const lockFolderTouch = useCallback((locked: boolean) => {
     setFolderTouchActive(locked);
@@ -82,6 +87,13 @@ export default function FilesScreen() {
       noLabel: t('common.no'),
       onYes: () => deleteSubject(subjectId),
     });
+  };
+
+  const startHoldMenuReorder = () => {
+    if (!holdMenuSubject) return;
+    const { id } = holdMenuSubject;
+    setHoldMenuSubject(null);
+    startSubjectReorder(id);
   };
 
   const onSubjectReorderMove = (pageX: number, pageY: number) => {
@@ -141,10 +153,27 @@ export default function FilesScreen() {
             onSubjectReorderMove={onSubjectReorderMove}
             onSubjectReorderEnd={onSubjectReorderEnd}
             onFolderGestureLock={lockFolderTouch}
-            onSubjectDeleteHold={confirmDeleteSubject}
+            onSubjectHoldMenu={(subjectId, subjectName) =>
+              setHoldMenuSubject({ id: subjectId, name: subjectName })
+            }
           />
         </View>
       </View>
+
+      <SubjectFolderHoldMenuSheet
+        visible={holdMenuSubject !== null}
+        deleteLabel={t('vault.deleteFolderAction')}
+        reorderLabel={t('folder.holdMenuReorder')}
+        cancelLabel={t('common.cancel')}
+        onDelete={() => {
+          if (!holdMenuSubject) return;
+          const { id, name } = holdMenuSubject;
+          setHoldMenuSubject(null);
+          confirmDeleteSubject(id, name);
+        }}
+        onReorder={startHoldMenuReorder}
+        onClose={() => setHoldMenuSubject(null)}
+      />
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
 

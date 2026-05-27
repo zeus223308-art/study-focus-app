@@ -64,7 +64,8 @@
     "previewEmpty": "No photos",
     "photos": "{{count}} photos",
     "deleteFolderTitle": "Delete this folder?",
-    "deleteFolderMessage": "\"{{name}}\" and all its photos will move to Trash."
+    "deleteFolderMessage": "\"{{name}}\" and all its photos will move to Trash.",
+    "deleteFolderAction": "Delete subject"
   },
   "capture": {
     "title": "Capture",
