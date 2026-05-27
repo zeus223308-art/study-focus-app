@@ -52,6 +52,9 @@ export function SubjectFolderTile({
   const isActive = reorderingSubjectId === subjectId;
   const reorderHover = reorderHoverSubjectId === subjectId && !isActive;
   const dragEnabled = !movingBundleId && Boolean(onReorderDragMove) && !nameEditing;
+  const isEmptyPreview = previewItems.length === 0;
+  /** Empty card long-press → menu (delete); card with photos long-press → drag only. */
+  const cardHoldMenu = onHoldMenu && isEmptyPreview ? onHoldMenu : undefined;
 
   const tryDropHere = () => {
     if (!movingBundleId || subjectId === dragSourceSubjectId) return;
@@ -103,6 +106,7 @@ export function SubjectFolderTile({
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
           onPress={openFolder}
+          onHoldMenu={cardHoldMenu}
           onGestureActiveChange={onPreviewGestureLock}
           style={[
             styles.dragSurface,

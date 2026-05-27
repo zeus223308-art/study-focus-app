@@ -32,11 +32,11 @@ export function SubjectFolderHoldMenuSheet({
           style={[styles.sheet, { paddingBottom: Math.max(28, insets.bottom + 12) }]}
           onPress={() => {}}>
           <View style={styles.handle} />
-          <Pressable style={styles.row} onPress={onReorder}>
-            <Text style={styles.rowText}>{reorderLabel}</Text>
-          </Pressable>
-          <Pressable style={[styles.row, styles.rowBorder]} onPress={onDelete}>
+          <Pressable style={styles.row} onPress={onDelete}>
             <Text style={[styles.rowText, styles.deleteText]}>{deleteLabel}</Text>
+          </Pressable>
+          <Pressable style={[styles.row, styles.rowBorder]} onPress={onReorder}>
+            <Text style={styles.rowText}>{reorderLabel}</Text>
           </Pressable>
           <Pressable style={styles.cancelRow} onPress={onClose}>
             <Text style={styles.cancelText}>{cancelLabel}</Text>
