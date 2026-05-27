@@ -28,7 +28,7 @@ import { useApp, useLanguage } from '@/context/AppContext';
 import { groupSubjectProblemsByDate, listSubjectProblems } from '@/lib/grouping/bundles';
 import type { SubjectProblemItem } from '@/lib/grouping/bundles';
 import { pickForImport } from '@/lib/import/pick-for-import';
-import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
+import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -124,12 +124,12 @@ export default function FolderScreen() {
   };
 
   const confirmDeleteProblem = (bundleId: string, pageId: string) => {
-    confirmDestructive({
+    confirmChoice({
       title: t('item.deletePhotoTitle'),
       message: t('item.deletePhotoMessage'),
-      cancelLabel: t('common.cancel'),
-      confirmLabel: t('item.deletePhoto'),
-      onConfirm: () => deletePage(bundleId, pageId),
+      yesLabel: t('common.yes'),
+      noLabel: t('common.no'),
+      onYes: () => deletePage(bundleId, pageId),
     });
   };
 
@@ -248,10 +248,12 @@ export default function FolderScreen() {
                     params: { id: bundleId, pageId },
                   })
                 }
-                onDelete={archiveSelectMode ? undefined : confirmDeleteProblem}
+                onDeleteRequest={archiveSelectMode ? undefined : confirmDeleteProblem}
                 onDragMove={archiveSelectMode ? undefined : onDragMove}
                 onDragEnd={archiveSelectMode ? undefined : onDragEnd}
-                onPhotoAction={(item) => setActionItem(item)}
+                onPhotoAction={
+                  archiveSelectMode ? undefined : (item) => setActionItem(item)
+                }
                 selectionMode={archiveSelectMode ? 'pick' : null}
                 selectedKeys={selectedKeys}
                 onToggleSelect={toggleArchiveSelect}

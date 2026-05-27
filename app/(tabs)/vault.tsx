@@ -13,6 +13,7 @@ import { useApp } from '@/context/AppContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
+import { confirmChoice } from '@/lib/ui/confirm';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const PANEL_PAD = 14;
@@ -20,7 +21,7 @@ const PANEL_PAD = 14;
 export default function FilesScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, addSubject, movingBundleId } = useApp();
+  const { data, addSubject, deleteSubject, movingBundleId } = useApp();
   const { width: windowWidth } = useWindowDimensions();
   const viewport = useViewportLayout();
   const [adding, setAdding] = useState(false);
@@ -52,6 +53,16 @@ export default function FilesScreen() {
     addSubject(newName, data.settings.activeScheduleIds[0] ?? data.schedules[0].id);
     setNewName('');
     setAdding(false);
+  };
+
+  const confirmDeleteSubject = (subjectId: string, subjectName: string) => {
+    confirmChoice({
+      title: t('vault.deleteFolderTitle'),
+      message: t('vault.deleteFolderMessage', { name: subjectName }),
+      yesLabel: t('common.yes'),
+      noLabel: t('common.no'),
+      onYes: () => deleteSubject(subjectId),
+    });
   };
 
   return (
@@ -95,6 +106,7 @@ export default function FilesScreen() {
               onSubjectArchivePress={(subjectId, subjectName) =>
                 setArchiveSubject({ id: subjectId, name: subjectName })
               }
+              onSubjectDeletePress={confirmDeleteSubject}
               swipeHint={subjectPages.length > 1 ? t('vault.swipeHint') : undefined}
             />
           )}

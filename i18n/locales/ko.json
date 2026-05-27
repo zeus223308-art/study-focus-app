@@ -58,7 +58,9 @@
     "totalPages": "총 {{count}}장",
     "swipeHint": "밀어서 더 보기",
     "previewEmpty": "사진 없음",
-    "photos": "{{count}}장"
+    "photos": "{{count}}장",
+    "deleteFolderTitle": "폴더를 삭제할까요?",
+    "deleteFolderMessage": "\"{{name}}\" 폴더와 모든 사진이 휴지통으로 이동합니다."
   },
   "capture": {
     "title": "촬영",
@@ -410,6 +412,8 @@
   "common": {
     "back": "뒤로",
     "cancel": "취소",
+    "yes": "예",
+    "no": "아니오",
     "save": "저장",
     "done": "완료",
     "default": "기본",

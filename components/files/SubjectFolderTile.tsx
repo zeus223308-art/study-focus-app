@@ -16,6 +16,7 @@ type Props = {
   previewItems: SubjectPreviewItem[];
   onPress: () => void;
   onArchivePress: () => void;
+  onDeletePress: () => void;
   onPreviewGestureLock: (locked: boolean) => void;
 };
 
@@ -27,6 +28,7 @@ export function SubjectFolderTile({
   previewItems,
   onPress,
   onArchivePress,
+  onDeletePress,
   onPreviewGestureLock,
 }: Props) {
   const { t } = useTranslation();
@@ -44,9 +46,15 @@ export function SubjectFolderTile({
   return (
     <SubjectDropTarget subjectId={subjectId} style={styles.wrap}>
       <View style={styles.nameRow}>
-        <Text style={styles.name} numberOfLines={1}>
-          {name}
-        </Text>
+        <Pressable
+          style={styles.namePress}
+          onLongPress={onDeletePress}
+          delayLongPress={450}
+          onPress={onPress}>
+          <Text style={styles.name} numberOfLines={1}>
+            {name}
+          </Text>
+        </Pressable>
         <SubjectArchiveHeaderButton label={t('folder.archive')} onPress={onArchivePress} />
       </View>
       <View ref={cardRef} collapsable={false}>
@@ -62,6 +70,7 @@ export function SubjectFolderTile({
             }
             onPress();
           }}
+          onLongPress={onDeletePress}
           onGestureLock={onPreviewGestureLock}
         />
       </View>
@@ -89,5 +98,9 @@ const styles = StyleSheet.create({
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.black,
+  },
+  namePress: {
+    flex: 1,
+    minWidth: 0,
   },
 });

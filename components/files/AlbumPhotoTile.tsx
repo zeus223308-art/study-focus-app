@@ -28,8 +28,9 @@ type Props = {
   onOpen: () => void;
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (pageX: number, pageY: number) => void;
-  onDelete?: () => void;
-  /** Long-press / double-tap menu (archive, restore). */
+  /** Long-press → yes/no delete confirm. */
+  onDeleteRequest?: () => void;
+  /** Double-tap menu (archive, restore). */
   onPhotoAction?: () => void;
   pickMode?: boolean;
   pickSelected?: boolean;
@@ -46,7 +47,7 @@ export function AlbumPhotoTile({
   onOpen,
   onDragMove,
   onDragEnd,
-  onDelete,
+  onDeleteRequest,
   onPhotoAction,
   pickMode,
   pickSelected,
@@ -61,12 +62,16 @@ export function AlbumPhotoTile({
 
   const onLongPress = useCallback(() => {
     if (pickMode) return;
+    if (onDeleteRequest) {
+      onDeleteRequest();
+      return;
+    }
     if (onPhotoAction) {
       onPhotoAction();
       return;
     }
     startMovingBundle(bundleId, sourceSubjectId);
-  }, [pickMode, onPhotoAction, bundleId, sourceSubjectId, startMovingBundle]);
+  }, [pickMode, onDeleteRequest, onPhotoAction, bundleId, sourceSubjectId, startMovingBundle]);
 
   const endDrag = useCallback(
     (pageX: number, pageY: number) => {
@@ -224,15 +229,6 @@ export function AlbumPhotoTile({
           </View>
         ) : null}
       </Pressable>
-      {!movingBundleId && !pickMode && onDelete ? (
-        <Pressable style={styles.deleteBtn} onPress={onDelete} hitSlop={6}>
-          <SymbolView
-            name={{ ios: 'xmark.circle.fill', android: 'close', web: 'close' }}
-            size={22}
-            tintColor={theme.white}
-          />
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -300,15 +296,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: theme.white,
-  },
-  deleteBtn: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    ...(IS_WEB ? ({ cursor: 'pointer' } as const) : null),
   },
 });

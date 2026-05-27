@@ -71,6 +71,7 @@ type AppContextValue = {
   ) => Promise<number>;
   importPhotosToBundle: (bundleId: string, imageUris: string[]) => Promise<number>;
   addSubject: (name: string, scheduleId: string) => void;
+  deleteSubject: (subjectId: string) => void;
   setSubjectSchedule: (subjectId: string, scheduleId: string) => void;
   toggleActiveSchedule: (id: string) => void;
   updateBundle: (id: string, patch: Partial<NoteBundle>) => void;
@@ -366,6 +367,20 @@ export function AppProvider({
     setData((prev) => (prev ? { ...prev, subjects: [...prev.subjects, subject] } : prev));
   }, [data?.subjects.length]);
 
+  const deleteSubject = useCallback((subjectId: string) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      const subjectBundles = prev.bundles.filter((b) => b.subjectId === subjectId);
+      const otherBundles = prev.bundles.filter((b) => b.subjectId !== subjectId);
+      return {
+        ...prev,
+        subjects: prev.subjects.filter((s) => s.id !== subjectId),
+        bundles: otherBundles,
+        trash: [...subjectBundles.map((b) => createTrashLifecycle(b)), ...prev.trash],
+      };
+    });
+  }, []);
+
   const setSubjectSchedule = useCallback((subjectId: string, scheduleId: string) => {
     setData((prev) =>
       prev
@@ -638,6 +653,7 @@ export function AppProvider({
       importPhotosToSubject,
       importPhotosToBundle,
       addSubject,
+      deleteSubject,
       setSubjectSchedule,
       toggleActiveSchedule,
       updateBundle,
@@ -685,6 +701,7 @@ export function AppProvider({
     importPhotosToSubject,
     importPhotosToBundle,
     addSubject,
+    deleteSubject,
     setSubjectSchedule,
     toggleActiveSchedule,
     updateBundle,

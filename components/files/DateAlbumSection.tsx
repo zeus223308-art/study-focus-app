@@ -22,7 +22,7 @@ type Props = {
     problemLabel: (n: number) => string;
   };
   onOpen: (bundleId: string, pageId: string) => void;
-  onDelete?: (bundleId: string, pageId: string) => void;
+  onDeleteRequest?: (bundleId: string, pageId: string) => void;
   onDragMove?: (pageX: number, pageY: number) => void;
   onDragEnd?: (pageX: number, pageY: number) => void;
   onPhotoAction?: (item: SubjectProblemItem) => void;
@@ -44,7 +44,7 @@ export function DateAlbumSection({
   gap,
   labels,
   onOpen,
-  onDelete,
+  onDeleteRequest,
   onDragMove,
   onDragEnd,
   onPhotoAction,
@@ -79,7 +79,9 @@ export function DateAlbumSection({
               countLabel={countLabel}
               cellWidth={cellWidth}
               onOpen={() => onOpen(item.bundleId, item.pageId)}
-              onDelete={onDelete ? () => onDelete(item.bundleId, item.pageId) : undefined}
+              onDeleteRequest={
+                onDeleteRequest ? () => onDeleteRequest(item.bundleId, item.pageId) : undefined
+              }
               onDragMove={onDragMove}
               onDragEnd={onDragEnd}
               onPhotoAction={onPhotoAction ? () => onPhotoAction(item) : undefined}

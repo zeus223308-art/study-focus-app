@@ -13,6 +13,7 @@ import {
   listArchivedSubjectProblems,
   type SubjectProblemItem,
 } from '@/lib/grouping/bundles';
+import { confirmChoice } from '@/lib/ui/confirm';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const ALBUM_GAP = 8;
@@ -31,7 +32,7 @@ type Props = {
 export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }: Props) {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { data, unarchiveBundle } = useApp();
+  const { data, unarchiveBundle, deletePage } = useApp();
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
 
@@ -92,6 +93,16 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
     onClose();
   };
 
+  const confirmDeleteProblem = (bundleId: string, pageId: string) => {
+    confirmChoice({
+      title: t('item.deletePhotoTitle'),
+      message: t('item.deletePhotoMessage'),
+      yesLabel: t('common.yes'),
+      noLabel: t('common.no'),
+      onYes: () => deletePage(bundleId, pageId),
+    });
+  };
+
   return (
     <>
       <Modal
@@ -134,6 +145,9 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                     selectionMode={restoreSelectMode ? 'pick' : null}
                     selectedKeys={selectedKeys}
                     onToggleSelect={toggleSelect}
+                    onDeleteRequest={
+                      restoreSelectMode ? undefined : confirmDeleteProblem
+                    }
                     onPhotoAction={(item) => setActionItem(item)}
                     onOpen={() => {}}
                   />

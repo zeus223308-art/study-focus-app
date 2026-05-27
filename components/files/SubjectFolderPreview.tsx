@@ -24,6 +24,7 @@ type Props = {
   emptyHint: string;
   onOpen: () => void;
   onGestureLock: (locked: boolean) => void;
+  onLongPress?: () => void;
   variant?: PreviewVariant;
   /** Shown as small tag on top-left inside the card (dashboard). */
   subjectTag?: string;
@@ -39,6 +40,7 @@ export function SubjectFolderPreview({
   emptyHint,
   onOpen,
   onGestureLock,
+  onLongPress,
   variant = 'vault',
   subjectTag,
   onInteraction,
@@ -101,7 +103,7 @@ export function SubjectFolderPreview({
 
   if (items.length === 0) {
     return (
-      <Pressable style={emptyStyle} onPress={onOpen}>
+      <Pressable style={emptyStyle} onPress={onOpen} onLongPress={onLongPress} delayLongPress={450}>
         {subjectTag ? (
           <View style={styles.subjectTag}>
             <Text style={styles.subjectTagText}>{subjectTag}</Text>
@@ -114,7 +116,9 @@ export function SubjectFolderPreview({
   }
 
   return (
-    <View
+    <Pressable
+      onLongPress={onLongPress}
+      delayLongPress={450}
       style={cardStyle}
       onLayout={(e) => {
         const w = Math.round(e.nativeEvent.layout.width);
@@ -177,7 +181,7 @@ export function SubjectFolderPreview({
         hitSlop={8}>
         <Text style={styles.openFabText}>{t('common.arrowRight')}</Text>
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 

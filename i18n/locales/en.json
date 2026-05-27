@@ -58,7 +58,9 @@
     "totalPages": "Total {{count}}",
     "swipeHint": "Swipe for more",
     "previewEmpty": "No photos",
-    "photos": "{{count}} photos"
+    "photos": "{{count}} photos",
+    "deleteFolderTitle": "Delete this folder?",
+    "deleteFolderMessage": "\"{{name}}\" and all its photos will move to Trash."
   },
   "capture": {
     "title": "Capture",
@@ -410,6 +412,8 @@
   "common": {
     "back": "Back",
     "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
     "save": "Save",
     "done": "Done",
     "default": "Default",
