@@ -155,9 +155,7 @@ export default function FolderScreen() {
     setGhost({ x: pageX, y: pageY, visible: false });
     const moveTargetId = dragHoverSubjectId;
     const result = finishItemDrag(pageX, pageY, moved);
-    if (result === 'reordered') {
-      showMessage('', t('folder.reordered'));
-    } else if (result === 'moved') {
+    if (result === 'moved') {
       const name = data.subjects.find((s) => s.id === moveTargetId)?.name ?? '';
       Alert.alert('', t('folder.movedTo', { name }));
     }

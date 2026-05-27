@@ -11,7 +11,7 @@ import { useApp } from '@/context/AppContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
-import { showMessage } from '@/lib/ui/confirm';
+import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import {
   computeVaultFoldersPerPage,
   useViewportLayout,
@@ -25,6 +25,7 @@ export default function FilesScreen() {
   const {
     data,
     addSubject,
+    deleteSubject,
     movingBundleId,
     reorderingSubjectId,
     startSubjectReorder,
@@ -73,6 +74,16 @@ export default function FilesScreen() {
     setAdding(false);
   };
 
+  const confirmDeleteSubject = (subjectId: string, subjectName: string) => {
+    confirmChoice({
+      title: t('vault.deleteFolderTitle'),
+      message: t('vault.deleteFolderMessage', { name: subjectName }),
+      yesLabel: t('common.yes'),
+      noLabel: t('common.no'),
+      onYes: () => deleteSubject(subjectId),
+    });
+  };
+
   const onSubjectReorderMove = (pageX: number, pageY: number) => {
     setGhost({ x: pageX, y: pageY, visible: true });
     updateSubjectReorderHover(pageX, pageY);
@@ -86,76 +97,72 @@ export default function FilesScreen() {
     pageY: number
   ) => {
     setGhost({ x: pageX, y: pageY, visible: false });
-    const result = finishSubjectReorder(pageX, pageY, moved);
-    if (result === 'reordered') {
-      showMessage('', t('folder.reordered'));
-    }
+    finishSubjectReorder(pageX, pageY, moved);
   };
 
   return (
-    <>
-      <Screen scroll scrollEnabled={screenScrollEnabled} nestedScrollEnabled>
-        {movingBundleId ? (
-          <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
-        ) : null}
+    <Screen scroll scrollEnabled={screenScrollEnabled} nestedScrollEnabled>
+      {movingBundleId ? (
+        <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
+      ) : null}
 
-        <ScreenHeader
-          title={t('vault.title')}
-          showSettings={false}
-          right={
-            <Pressable onPress={() => router.push('/search')} hitSlop={8}>
-              <Text style={styles.headerAction}>{t('item.search')}</Text>
-            </Pressable>
-          }
-        />
+      <ScreenHeader
+        title={t('vault.title')}
+        showSettings={false}
+        right={
+          <Pressable onPress={() => router.push('/search')} hitSlop={8}>
+            <Text style={styles.headerAction}>{t('item.search')}</Text>
+          </Pressable>
+        }
+      />
 
-        <View style={styles.panel}>
-          <View
-            style={styles.carouselSlot}
-            onLayout={(e) => {
-              const w = Math.round(e.nativeEvent.layout.width);
-              if (w > 0 && w !== panelWidth) setPanelWidth(w);
-            }}>
-            <SubjectFilesCarousel
-              pages={subjectPages}
-              pageWidth={pageWidth}
-              foldersPerPage={foldersPerPage}
-              onAddFolder={() => setAdding(true)}
-              addFolderLabel={t('vault.addFolderCard')}
-              totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
-              previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
-              onSubjectPress={(subjectId) =>
-                router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
-              }
-              onSubjectLift={startSubjectReorder}
-              onSubjectReorderMove={onSubjectReorderMove}
-              onSubjectReorderEnd={onSubjectReorderEnd}
-              onFolderGestureLock={lockFolderTouch}
-            />
-          </View>
+      <View style={styles.panel}>
+        <View
+          style={styles.carouselSlot}
+          onLayout={(e) => {
+            const w = Math.round(e.nativeEvent.layout.width);
+            if (w > 0 && w !== panelWidth) setPanelWidth(w);
+          }}>
+          <SubjectFilesCarousel
+            pages={subjectPages}
+            pageWidth={pageWidth}
+            foldersPerPage={foldersPerPage}
+            onAddFolder={() => setAdding(true)}
+            addFolderLabel={t('vault.addFolderCard')}
+            totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
+            previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
+            onSubjectPress={(subjectId) =>
+              router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
+            }
+            onSubjectLift={startSubjectReorder}
+            onSubjectReorderMove={onSubjectReorderMove}
+            onSubjectReorderEnd={onSubjectReorderEnd}
+            onFolderGestureLock={lockFolderTouch}
+            onSubjectDeleteHold={confirmDeleteSubject}
+          />
         </View>
-
-        {adding ? (
-          <View style={styles.addBox}>
-            <TextInput value={newName} onChangeText={setNewName} style={styles.input} autoFocus />
-            <View style={styles.addActions}>
-              <Pressable onPress={() => setAdding(false)}>
-                <Text style={styles.cancel}>{t('common.cancel')}</Text>
-              </Pressable>
-              <Pressable onPress={confirmAdd}>
-                <Text style={styles.save}>{t('common.save')}</Text>
-              </Pressable>
-            </View>
-          </View>
-        ) : null}
-
-        <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
-          <Text style={styles.trash}>{t('trash.title')}</Text>
-        </Pressable>
-      </Screen>
+      </View>
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
-    </>
+
+      {adding ? (
+        <View style={styles.addBox}>
+          <TextInput value={newName} onChangeText={setNewName} style={styles.input} autoFocus />
+          <View style={styles.addActions}>
+            <Pressable onPress={() => setAdding(false)}>
+              <Text style={styles.cancel}>{t('common.cancel')}</Text>
+            </Pressable>
+            <Pressable onPress={confirmAdd}>
+              <Text style={styles.save}>{t('common.save')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
+        <Text style={styles.trash}>{t('trash.title')}</Text>
+      </Pressable>
+    </Screen>
   );
 }
 
