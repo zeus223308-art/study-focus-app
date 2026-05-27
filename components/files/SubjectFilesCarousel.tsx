@@ -212,11 +212,14 @@ export function SubjectFilesCarousel({
     </View>
   );
 
-  if (subjects.length === 0) {
-    return emptyLabel ? <Text style={styles.empty}>{emptyLabel}</Text> : null;
-  }
-
   if (pageWidth <= 0 || tileWidth <= 0) return null;
+
+  const addFolderTile =
+    onAddFolder && addFolderLabel ? (
+      <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+        <VaultAddFolderTile width={tileWidth} label={addFolderLabel} onPress={onAddFolder} />
+      </View>
+    ) : null;
 
   return (
     <View ref={panelRef} onLayout={measurePanelBounds} style={styles.wrap}>
@@ -232,15 +235,7 @@ export function SubjectFilesCarousel({
         scrollEventThrottle={16}
         onScroll={onScroll}
         contentContainerStyle={styles.listContent}
-        ListFooterComponent={
-          onAddFolder && addFolderLabel ? (
-            <VaultAddFolderTile
-              width={tileWidth}
-              label={addFolderLabel}
-              onPress={onAddFolder}
-            />
-          ) : null
-        }
+        ListFooterComponent={addFolderTile}
         getItemLayout={(_, index) => ({
           length: slotWidth,
           offset: slotWidth * index,

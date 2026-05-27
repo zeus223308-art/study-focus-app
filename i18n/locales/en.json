@@ -55,6 +55,7 @@
   "vault": {
     "title": "Files",
     "addFolder": "Add folder",
+    "addFolderCard": "Add subject",
     "totalPages": "Total {{count}}",
     "swipeHint": "Swipe for more",
     "reorderFolders": "Reorder folders",

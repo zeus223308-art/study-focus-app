@@ -55,6 +55,7 @@
   "vault": {
     "title": "파일",
     "addFolder": "폴더 추가",
+    "addFolderCard": "과목 추가하기",
     "totalPages": "총 {{count}}장",
     "swipeHint": "밀어서 더 보기",
     "reorderFolders": "순서 변경",

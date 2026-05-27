@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
-import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
@@ -132,30 +131,23 @@ export default function FilesScreen() {
             const w = Math.round(e.nativeEvent.layout.width);
             if (w > 0 && w !== panelWidth) setPanelWidth(w);
           }}>
-          {data.subjects.length === 0 ? (
-            <View style={styles.emptyVault}>
-              <Text style={styles.emptyVaultText}>{t('folder.empty')}</Text>
-              <Button label={t('vault.addFolder')} onPress={() => setAdding(true)} />
-            </View>
-          ) : (
-            <SubjectFilesCarousel
-              pages={subjectPages}
-              pageWidth={pageWidth}
-              foldersPerPage={foldersPerPage}
-              onAddFolder={() => setAdding(true)}
-              addFolderLabel={t('vault.addFolder')}
-              totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
-              previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
-              onSubjectPress={(subjectId) =>
-                router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
-              }
-              onSubjectLift={startSubjectReorder}
-              onSubjectReorderMove={onSubjectReorderMove}
-              onSubjectReorderEnd={onSubjectReorderEnd}
-              onFolderGestureLock={lockFolderTouch}
-              onSubjectDeleteHold={confirmDeleteSubject}
-            />
-          )}
+          <SubjectFilesCarousel
+            pages={subjectPages}
+            pageWidth={pageWidth}
+            foldersPerPage={foldersPerPage}
+            onAddFolder={() => setAdding(true)}
+            addFolderLabel={t('vault.addFolderCard')}
+            totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
+            previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
+            onSubjectPress={(subjectId) =>
+              router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
+            }
+            onSubjectLift={startSubjectReorder}
+            onSubjectReorderMove={onSubjectReorderMove}
+            onSubjectReorderEnd={onSubjectReorderEnd}
+            onFolderGestureLock={lockFolderTouch}
+            onSubjectDeleteHold={confirmDeleteSubject}
+          />
         </View>
       </View>
 
@@ -190,8 +182,6 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   headerAction: { fontSize: theme.font.bodySmall, color: theme.orange, fontWeight: '700' },
   search: { fontSize: theme.font.bodySmall, color: theme.orange, fontWeight: '700' },
-  emptyVault: { alignItems: 'center', paddingVertical: 32, gap: 14 },
-  emptyVaultText: { fontSize: theme.font.body, color: theme.gray, fontWeight: '600' },
   moveBanner: {
     fontSize: theme.font.caption,
     fontWeight: '700',

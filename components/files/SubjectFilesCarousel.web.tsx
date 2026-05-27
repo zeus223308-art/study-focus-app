@@ -204,10 +204,6 @@ export function SubjectFilesCarousel({
     if (reorderingSubjectId) bumpSubjectReorderMeasure();
   };
 
-  if (subjects.length === 0) {
-    return emptyLabel ? <Text style={styles.empty}>{emptyLabel}</Text> : null;
-  }
-
   if (pageWidth <= 0 || tileWidth <= 0) return null;
 
   const carouselMode = reorderingSubjectId ? 'reorder' : 'scroll';
@@ -252,7 +248,7 @@ export function SubjectFilesCarousel({
           </View>
         ))}
         {onAddFolder && addFolderLabel ? (
-          <View style={[styles.tileSlot, { width: tileWidth }]}>
+          <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
             <VaultAddFolderTile
               width={tileWidth}
               label={addFolderLabel}
