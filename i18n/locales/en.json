@@ -60,7 +60,6 @@
     "swipeHint": "Swipe for more",
     "reorderFolders": "Reorder folders",
     "reorderPickSource": "Tap the folder you want to move",
-    "reorderEdgeHint": "Drag to the screen edge to reveal more folders",
     "previewEmpty": "No photos",
     "photos": "{{count}} photos",
     "deleteFolderTitle": "Delete this folder?",
@@ -151,8 +150,6 @@
     "importUnsupportedOnly": "Images only",
     "importUnsupportedSkipped": "Skipped non-images",
     "dropHint": "Drag to move",
-    "reorderHint": "Hold, drag, and drop on another folder",
-    "reorderPhotoHint": "Hold, drag, and drop on another photo",
     "reordered": "Order updated",
     "movedTo": "Moved to {{name}}",
     "empty": "No photos",
@@ -173,7 +170,7 @@
     "sendToNewFolderHint": "Enter a name for the new subject folder, then tap Send.",
     "sendToNewFolderPlaceholder": "Folder name",
     "sendToNewFolderDone": "Moved to \"{{name}}\"",
-    "holdMenuReorder": "Reorder (drag to move)"
+    "holdMenuReorder": "Reorder"
   },
   "item": {
     "layers": "Layers",
