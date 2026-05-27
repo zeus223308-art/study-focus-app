@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { SymbolView } from 'expo-symbols';
 import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { AppUsageGuideModal } from '@/components/settings/AppUsageGuideModal';
 import { CloudBackupSettings } from '@/components/settings/CloudBackupSettings';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsGroup';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -74,14 +73,6 @@ export default function SettingsScreen() {
   return (
     <Screen scroll>
       <ScreenHeader title={t('settings.title')} showSettings={false} />
-
-      <SettingsGroup>
-        <SettingsRow
-          label={t('settings.appUsageGuide')}
-          onPress={openAppUsageGuide}
-          last
-        />
-      </SettingsGroup>
 
       <Text style={styles.sectionTitle}>{t('settings.reviewPattern')}</Text>
       <View style={styles.patternGroup}>
@@ -212,7 +203,12 @@ export default function SettingsScreen() {
       </SettingsGroup>
 
       <SettingsGroup>
-        <SettingsRow label={t('settings.ocr')} value={ocrStatusLabel} last />
+        <SettingsRow label={t('settings.ocr')} value={ocrStatusLabel} last={false} />
+        <SettingsRow
+          label={t('settings.appUsageGuide')}
+          onPress={openAppUsageGuide}
+          last
+        />
       </SettingsGroup>
     </Screen>
   );
