@@ -58,7 +58,17 @@ Built/refined: full app shell, vault/capture/review, DateRibbon, first-launch da
 
 - Firebase/GCS sync, real OCR, ads, drag-drop folders, EAS production builds.
 - Occasional TS noise on `DateRibbon` web `cursor` styles / `.expo/types/router.d.ts`.
-- GitHub push only when user asks.
+
+## Auto save, commit, push, deploy
+
+| Step | What |
+|------|------|
+| **Editor** | `.vscode/settings.json` — `files.autoSave` after 1s |
+| **Agent** | `.cursor/rules/auto-commit-deploy.mdc` + `memorysherpa-context.mdc` — after code changes in Cursor, commit + push `main` unless user says not to |
+| **CI** | `.github/workflows/deploy-web.yml` on push to `main` |
+| **Live URL** | https://zeus223308-art.github.io/study-focus-app/ |
+
+Local web preview: `npx expo start --web --port 8082`
 
 ## Dev commands
 
