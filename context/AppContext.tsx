@@ -54,7 +54,12 @@ import {
 } from '@/lib/trash/lifecycle';
 import { buildTrashEntriesForDeletedSubjects, trashEntriesForSubject } from '@/lib/trash/subject-trash';
 import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/google-session';
-import { checkFreemiumLimits, createStorageProvider } from '@/services/storage';
+import {
+  checkFreemiumLimits,
+  createStorageProvider,
+  remainingPhotoSlots,
+  type ImportPhotosResult,
+} from '@/services/storage';
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
 import { hasRecoverableContent } from '@/services/storage/data-safety';
 import { clearGuestSession } from '@/services/storage/guest-session';
@@ -87,8 +92,8 @@ type AppContextValue = {
     subjectId: string,
     imageUris: string[],
     studyDate?: string
-  ) => Promise<number>;
-  importPhotosToBundle: (bundleId: string, imageUris: string[]) => Promise<number>;
+  ) => Promise<ImportPhotosResult>;
+  importPhotosToBundle: (bundleId: string, imageUris: string[]) => Promise<ImportPhotosResult>;
   addSubject: (name: string, scheduleId: string) => void;
   renameSubject: (subjectId: string, name: string) => void;
   /** Create a new subject folder and move one photo into it. Returns new subject id. */
@@ -419,26 +424,26 @@ export function AppProvider({
   );
 
   const importPhotosToSubject = useCallback(
-    async (subjectId: string, imageUris: string[], studyDate?: string) => {
-      if (imageUris.length === 0) return 0;
+    async (subjectId: string, imageUris: string[], studyDate?: string): Promise<ImportPhotosResult> => {
+      if (imageUris.length === 0) return { saved: 0, skippedDueToLimit: 0 };
       let prev = dataRef.current;
-      if (!prev) return 0;
-
-      const chunks =
-        imageUris.length === 2
-          ? [{ front: imageUris[0], back: imageUris[1] }]
-          : imageUris.map((uri) => ({ front: uri, back: null as string | null }));
+      if (!prev) return { saved: 0, skippedDueToLimit: 0 };
 
       let saved = 0;
-      for (const chunk of chunks) {
+      let paywallShown = false;
+
+      for (let i = 0; i < imageUris.length; i++) {
         const check = checkFreemiumLimits(prev);
         if (!check.allowed) {
-          setPaywallVisible(true);
+          if (!paywallShown) {
+            setPaywallVisible(true);
+            paywallShown = true;
+          }
           break;
         }
         const result = await appendCaptureToData(storage, prev, {
-          imageUri: chunk.front,
-          answerImageUri: chunk.back,
+          imageUri: imageUris[i]!,
+          answerImageUri: null,
           subjectId,
           studyDate,
         });
@@ -447,7 +452,7 @@ export function AppProvider({
       }
 
       if (saved > 0) persist(prev);
-      return saved;
+      return { saved, skippedDueToLimit: imageUris.length - saved };
     },
     [storage, persist]
   );
@@ -455,7 +460,7 @@ export function AppProvider({
   const importPhotosToBundle = useCallback(
     async (bundleId: string, imageUris: string[]) => {
       const bundle = dataRef.current?.bundles.find((b) => b.id === bundleId);
-      if (!bundle || imageUris.length === 0) return 0;
+      if (!bundle || imageUris.length === 0) return { saved: 0, skippedDueToLimit: 0 };
       return importPhotosToSubject(bundle.subjectId, imageUris, bundle.studyDate);
     },
     [importPhotosToSubject]

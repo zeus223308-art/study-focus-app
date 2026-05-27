@@ -17,7 +17,7 @@ export async function createPageFromCapture(
     sortIndex: number;
   }
 ): Promise<NotePage> {
-  const pageId = `page_${Date.now()}_${params.sortIndex}`;
+  const pageId = `page_${Date.now()}_${params.sortIndex}_${Math.random().toString(36).slice(2, 9)}`;
   const masterUri = await persistOriginalCopy(params.imageUri, params.bundleId, pageId);
   const thumb = await storage.createThumbnail(masterUri, params.bundleId, pageId);
   const now = new Date().toISOString();
@@ -118,7 +118,7 @@ export async function appendCaptureToData(
   const scheduleId = subject?.reviewScheduleId ?? data.schedules[0].id;
 
   /** One capture/import = one problem card (new bundle), not merged into same-day stack. */
-  const bundleId = `bundle_${params.subjectId}_${studyDate}_${Date.now()}`;
+  const bundleId = `bundle_${params.subjectId}_${studyDate}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
   const page = await createPageFromCapture(storage, {
     imageUri: params.imageUri,
     answerImageUri: params.answerImageUri,

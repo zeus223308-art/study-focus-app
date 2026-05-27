@@ -3,7 +3,15 @@ export { LocalStorageProvider } from './local-provider';
 export {
   checkFreemiumLimits,
   countPages,
+  countUsedImages,
   findBundle,
   findPage,
+  remainingPhotoSlots,
 } from './types';
-export type { StorageProvider, FreemiumCheck, ThumbnailResult, UploadResult } from './types';
+export type {
+  StorageProvider,
+  FreemiumCheck,
+  ImportPhotosResult,
+  ThumbnailResult,
+  UploadResult,
+} from './types';

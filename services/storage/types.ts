@@ -31,8 +31,23 @@ export type FreemiumCheck = {
   usedMemos: number;
 };
 
+export function countUsedImages(data: AppData): number {
+  return data.bundles.reduce((n, b) => n + b.pages.length, 0);
+}
+
+/** How many more pages can be added on the free tier (unlimited on pro). */
+export function remainingPhotoSlots(data: AppData): number {
+  if (data.settings.tier === 'pro') return Number.MAX_SAFE_INTEGER;
+  return Math.max(0, data.settings.photoLimit - countUsedImages(data));
+}
+
+export type ImportPhotosResult = {
+  saved: number;
+  skippedDueToLimit: number;
+};
+
 export function checkFreemiumLimits(data: AppData): FreemiumCheck {
-  const usedImages = data.bundles.reduce((n, b) => n + b.pages.length, 0);
+  const usedImages = countUsedImages(data);
   const usedMemos = data.bundles.filter((b) =>
     b.pages.some((p) => p.textNote.trim().length > 0 || p.layers.some((l) => l.strokes.length > 0))
   ).length;

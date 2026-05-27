@@ -30,6 +30,7 @@ import type { PageRef } from '@/lib/domain/move-pages-batch';
 import { groupSubjectProblemsByDate, listSubjectProblems } from '@/lib/grouping/bundles';
 import type { SubjectProblemItem } from '@/lib/grouping/bundles';
 import { pickForImport } from '@/lib/import/pick-for-import';
+import { remainingPhotoSlots } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
@@ -66,6 +67,7 @@ export default function FolderScreen() {
     archiveBundle,
     moveProblemsToNewSubject,
     moveProblemsToSubject,
+    setPaywallVisible,
   } = useApp();
   const [importing, setImporting] = useState(false);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
@@ -140,6 +142,11 @@ export default function FolderScreen() {
   const importNewProblem = async () => {
     if (!subject || importing || pickMode) return;
 
+    if (remainingPhotoSlots(data) <= 0) {
+      setPaywallVisible(true);
+      return;
+    }
+
     const picked = await pickForImport({
       title: t('folder.importSourceTitle'),
       album: t('folder.importAlbum'),
@@ -157,13 +164,20 @@ export default function FolderScreen() {
 
     setImporting(true);
     try {
-      const saved = await importPhotosToSubject(
+      const { saved, skippedDueToLimit } = await importPhotosToSubject(
         subject.id,
         picked.files.map((f) => f.uri),
         localToday
       );
-      if (saved > 0) {
+      if (saved > 0 && skippedDueToLimit > 0) {
+        showMessage(
+          '',
+          t('folder.importPartialLimit', { saved, skipped: skippedDueToLimit })
+        );
+      } else if (saved > 0) {
         showMessage('', t('folder.importSaved', { count: saved }));
+      } else if (skippedDueToLimit > 0) {
+        showMessage('', t('folder.importLimitReached'));
       }
     } finally {
       setImporting(false);

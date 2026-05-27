@@ -157,6 +157,8 @@
     "importFiles": "Files",
     "importPermission": "Photo library access required",
     "importSaved": "Added {{count}}",
+    "importPartialLimit": "{{saved}} added · {{skipped}} skipped (storage limit)",
+    "importLimitReached": "Photo storage limit reached",
     "addProblem": "Import photos",
     "addProblemHint": "",
     "problemLabel": "Problem {{n}}",
