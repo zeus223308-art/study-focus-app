@@ -82,6 +82,7 @@ type AppContextValue = {
     newSubjectName: string
   ) => string | null;
   deleteSubject: (subjectId: string) => void;
+  deleteSubjects: (subjectIds: string[]) => void;
   setSubjectSchedule: (subjectId: string, scheduleId: string) => void;
   toggleActiveSchedule: (id: string) => void;
   updateBundle: (id: string, patch: Partial<NoteBundle>) => void;
@@ -466,6 +467,22 @@ export function AppProvider({
       return {
         ...prev,
         subjects: prev.subjects.filter((s) => s.id !== subjectId),
+        bundles: otherBundles,
+        trash: [...subjectBundles.map((b) => createTrashLifecycle(b)), ...prev.trash],
+      };
+    });
+  }, []);
+
+  const deleteSubjects = useCallback((subjectIds: string[]) => {
+    const idSet = new Set(subjectIds);
+    if (idSet.size === 0) return;
+    setData((prev) => {
+      if (!prev) return prev;
+      const subjectBundles = prev.bundles.filter((b) => idSet.has(b.subjectId));
+      const otherBundles = prev.bundles.filter((b) => !idSet.has(b.subjectId));
+      return {
+        ...prev,
+        subjects: prev.subjects.filter((s) => !idSet.has(s.id)),
         bundles: otherBundles,
         trash: [...subjectBundles.map((b) => createTrashLifecycle(b)), ...prev.trash],
       };
@@ -954,6 +971,7 @@ export function AppProvider({
       renameSubject,
       moveProblemToNewSubject,
       deleteSubject,
+      deleteSubjects,
       setSubjectSchedule,
       toggleActiveSchedule,
       updateBundle,
@@ -1020,6 +1038,7 @@ export function AppProvider({
     renameSubject,
     moveProblemToNewSubject,
     deleteSubject,
+    deleteSubjects,
     setSubjectSchedule,
     toggleActiveSchedule,
     updateBundle,

@@ -11,7 +11,7 @@ import { useApp } from '@/context/AppContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
-import { confirmChoice } from '@/lib/ui/confirm';
+import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import {
   computeVaultFoldersPerPage,
   useViewportLayout,
@@ -26,6 +26,7 @@ export default function FilesScreen() {
     data,
     addSubject,
     deleteSubject,
+    deleteSubjects,
     movingBundleId,
     reorderingSubjectId,
     startSubjectReorder,
@@ -39,12 +40,59 @@ export default function FilesScreen() {
   const [panelWidth, setPanelWidth] = useState(0);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
   const [folderTouchActive, setFolderTouchActive] = useState(false);
+  const [subjectDeleteMode, setSubjectDeleteMode] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(() => new Set());
 
   const lockFolderTouch = useCallback((locked: boolean) => {
     setFolderTouchActive(locked);
   }, []);
 
-  const screenScrollEnabled = !reorderingSubjectId && !folderTouchActive;
+  const screenScrollEnabled =
+    !reorderingSubjectId && !folderTouchActive && !subjectDeleteMode;
+
+  const toggleSubjectDeleteSelect = useCallback((subjectId: string) => {
+    setSelectedForDelete((prev) => {
+      const next = new Set(prev);
+      if (next.has(subjectId)) next.delete(subjectId);
+      else next.add(subjectId);
+      return next;
+    });
+  }, []);
+
+  const exitSubjectDeleteMode = useCallback(() => {
+    setSubjectDeleteMode(false);
+    setSelectedForDelete(new Set());
+  }, []);
+
+  const onDeleteSubjectsPress = useCallback(() => {
+    if (!subjectDeleteMode) {
+      setSubjectDeleteMode(true);
+      setSelectedForDelete(new Set());
+      return;
+    }
+    if (selectedForDelete.size === 0) {
+      exitSubjectDeleteMode();
+      return;
+    }
+    const count = selectedForDelete.size;
+    confirmChoice({
+      title: t('vault.deleteSubjectsConfirmTitle'),
+      message: t('vault.deleteSubjectsConfirmMessage', { count }),
+      yesLabel: t('common.yes'),
+      noLabel: t('common.no'),
+      onYes: () => {
+        deleteSubjects([...selectedForDelete]);
+        exitSubjectDeleteMode();
+        showMessage(t('vault.movedToTrashTitle'), t('vault.movedToTrashMessage'));
+      },
+    });
+  }, [
+    deleteSubjects,
+    exitSubjectDeleteMode,
+    selectedForDelete,
+    subjectDeleteMode,
+    t,
+  ]);
 
   const pageWidth = panelWidth > 0 ? panelWidth : Math.max(280, windowWidth - 40);
 
@@ -127,8 +175,11 @@ export default function FilesScreen() {
             pages={subjectPages}
             pageWidth={pageWidth}
             foldersPerPage={foldersPerPage}
-            onAddFolder={() => setAdding(true)}
-            addFolderLabel={t('vault.addFolderCard')}
+            onAddFolder={subjectDeleteMode ? undefined : () => setAdding(true)}
+            addFolderLabel={subjectDeleteMode ? undefined : t('vault.addFolderCard')}
+            subjectDeleteMode={subjectDeleteMode}
+            selectedSubjectIds={selectedForDelete}
+            onToggleSubjectDelete={toggleSubjectDeleteSelect}
             totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
             previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
             onSubjectPress={(subjectId) =>
@@ -158,6 +209,22 @@ export default function FilesScreen() {
           </View>
         </View>
       ) : null}
+
+      {subjectDeleteMode ? (
+        <Text style={styles.deleteHint}>{t('vault.deleteSubjectsHint')}</Text>
+      ) : null}
+
+      <Pressable onPress={onDeleteSubjectsPress} style={styles.deleteSubjectsLink}>
+        <Text
+          style={[
+            styles.deleteSubjects,
+            subjectDeleteMode && selectedForDelete.size > 0 && styles.deleteSubjectsActive,
+          ]}>
+          {subjectDeleteMode && selectedForDelete.size > 0
+            ? t('vault.deleteSubjectsConfirmAction', { count: selectedForDelete.size })
+            : t('vault.deleteSubjects')}
+        </Text>
+      </Pressable>
 
       <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
         <Text style={styles.trash}>{t('trash.title')}</Text>
@@ -199,6 +266,19 @@ const styles = StyleSheet.create({
   addActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 12 },
   cancel: { color: theme.gray },
   save: { color: theme.orange, fontWeight: '800' },
-  trashLink: { marginTop: 24 },
+  deleteHint: {
+    marginTop: 20,
+    fontSize: theme.font.caption,
+    color: theme.gray,
+    textAlign: 'center',
+  },
+  deleteSubjectsLink: { marginTop: 16, alignSelf: 'center' },
+  deleteSubjects: {
+    color: theme.gray,
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+  },
+  deleteSubjectsActive: { color: theme.orange },
+  trashLink: { marginTop: 12 },
   trash: { color: theme.gray, fontSize: theme.font.caption },
 });

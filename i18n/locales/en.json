@@ -60,11 +60,18 @@
     "swipeHint": "Swipe for more",
     "reorderFolders": "Reorder folders",
     "reorderPickSource": "Tap the folder you want to move",
+    "reorderEdgeHint": "Drag to the screen edge to reveal more folders",
     "previewEmpty": "No photos",
     "photos": "{{count}} photos",
     "deleteFolderTitle": "Delete this folder?",
     "deleteFolderMessage": "\"{{name}}\" and all its photos will move to Trash.",
-    "deleteFolderAction": "Delete subject"
+    "deleteSubjects": "Delete subjects",
+    "deleteSubjectsHint": "Select subjects, then tap again",
+    "deleteSubjectsConfirmAction": "Delete selected ({{count}})",
+    "deleteSubjectsConfirmTitle": "Delete selected subjects?",
+    "deleteSubjectsConfirmMessage": "{{count}} subject(s) and all photos will move to Trash.",
+    "movedToTrashTitle": "Moved to Trash.",
+    "movedToTrashMessage": "If not restored within 3 days, they will be permanently deleted."
   },
   "capture": {
     "title": "Capture",
@@ -150,6 +157,8 @@
     "importUnsupportedOnly": "Images only",
     "importUnsupportedSkipped": "Skipped non-images",
     "dropHint": "Drag to move",
+    "reorderHint": "Hold, drag, and drop on another folder",
+    "reorderPhotoHint": "Hold, drag, and drop on another photo",
     "reordered": "Order updated",
     "movedTo": "Moved to {{name}}",
     "empty": "No photos",
@@ -170,7 +179,7 @@
     "sendToNewFolderHint": "Enter a name for the new subject folder, then tap Send.",
     "sendToNewFolderPlaceholder": "Folder name",
     "sendToNewFolderDone": "Moved to \"{{name}}\"",
-    "holdMenuReorder": "Reorder"
+    "holdMenuReorder": "Reorder (drag to move)"
   },
   "item": {
     "layers": "Layers",

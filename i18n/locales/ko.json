@@ -60,11 +60,18 @@
     "swipeHint": "밀어서 더 보기",
     "reorderFolders": "순서 변경",
     "reorderPickSource": "옮길 폴더를 탭하세요",
+    "reorderEdgeHint": "끝까지 끌면 다른 페이지 폴더가 나타납니다",
     "previewEmpty": "사진 없음",
     "photos": "{{count}}장",
     "deleteFolderTitle": "폴더를 삭제할까요?",
     "deleteFolderMessage": "\"{{name}}\" 폴더와 모든 사진이 휴지통으로 이동합니다.",
-    "deleteFolderAction": "과목 삭제하기"
+    "deleteSubjects": "과목 삭제",
+    "deleteSubjectsHint": "삭제할 과목을 선택한 뒤 다시 누르세요",
+    "deleteSubjectsConfirmAction": "선택 삭제 ({{count}})",
+    "deleteSubjectsConfirmTitle": "선택한 과목을 삭제할까요?",
+    "deleteSubjectsConfirmMessage": "{{count}}개 과목과 모든 사진이 휴지통으로 이동합니다.",
+    "movedToTrashTitle": "휴지통으로 이동되었습니다.",
+    "movedToTrashMessage": "3일 이내 복원을 하지 않을 시 영구적으로 삭제 됩니다."
   },
   "capture": {
     "title": "촬영",
@@ -150,6 +157,8 @@
     "importUnsupportedOnly": "이미지만 가능",
     "importUnsupportedSkipped": "이미지 아님 · 건너뜀",
     "dropHint": "드래그하여 이동",
+    "reorderHint": "꾹 누른 채 끌어 다른 폴더 위에 놓으세요",
+    "reorderPhotoHint": "꾹 누른 채 끌어 다른 사진 위에 놓으세요",
     "reordered": "순서를 변경했습니다",
     "movedTo": "「{{name}}」으로 이동",
     "empty": "사진 없음",
@@ -170,7 +179,7 @@
     "sendToNewFolderHint": "새 과목 폴더 이름을 입력한 뒤 보내기를 누르세요.",
     "sendToNewFolderPlaceholder": "폴더 이름",
     "sendToNewFolderDone": "「{{name}}」 폴더로 보냈습니다",
-    "holdMenuReorder": "순서 변경"
+    "holdMenuReorder": "순서 변경 (끌어서 이동)"
   },
   "item": {
     "layers": "레이어",

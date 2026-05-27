@@ -40,8 +40,12 @@ type Props = {
   ) => void;
   emptyLabel?: string;
   onFolderGestureLock?: (locked: boolean) => void;
+  onSubjectDeleteHold?: (subjectId: string, subjectName: string) => void;
   onAddFolder?: () => void;
   addFolderLabel?: string;
+  subjectDeleteMode?: boolean;
+  selectedSubjectIds?: Set<string>;
+  onToggleSubjectDelete?: (subjectId: string) => void;
 };
 
 export function SubjectFilesCarousel({
@@ -56,8 +60,12 @@ export function SubjectFilesCarousel({
   onSubjectReorderEnd,
   emptyLabel,
   onFolderGestureLock,
+  onSubjectDeleteHold,
   onAddFolder,
   addFolderLabel,
+  subjectDeleteMode = false,
+  selectedSubjectIds,
+  onToggleSubjectDelete,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const scrollDomRef = useRef<HTMLElement | null>(null);
@@ -103,9 +111,11 @@ export function SubjectFilesCarousel({
   const setPreviewGestureLock = useCallback(
     (locked: boolean) => {
       onFolderGestureLock?.(locked);
-      setListScrollEnabled(subjects.length > 1 && !locked && !reorderingSubjectId);
+      setListScrollEnabled(
+        subjects.length > 1 && !locked && !reorderingSubjectId && !subjectDeleteMode
+      );
     },
-    [onFolderGestureLock, reorderingSubjectId, subjects.length]
+    [onFolderGestureLock, reorderingSubjectId, subjectDeleteMode, subjects.length]
   );
 
   const measurePanelBounds = useCallback(() => {
@@ -223,7 +233,7 @@ export function SubjectFilesCarousel({
         style={styles.scroller}
         contentContainerStyle={styles.row}>
         {subjects.map((subject) => (
-          <View key={subject.id} style={[styles.tileSlot, { width: tileWidth }]}>
+          <View key={subject.id} style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
             <SubjectFolderTile
               subjectId={subject.id}
               name={subject.name}
@@ -237,12 +247,26 @@ export function SubjectFilesCarousel({
                 stopAutoScroll();
                 onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
               }}
+              onDeleteHold={
+                subjectDeleteMode || !onSubjectDeleteHold
+                  ? undefined
+                  : () => onSubjectDeleteHold(subject.id, subject.name)
+              }
+              selectionMode={subjectDeleteMode}
+              selected={selectedSubjectIds?.has(subject.id) ?? false}
+              onToggleSelect={
+                onToggleSubjectDelete ? () => onToggleSubjectDelete(subject.id) : undefined
+              }
             />
           </View>
         ))}
         {onAddFolder && addFolderLabel ? (
-          <View style={[styles.tileSlot, styles.addSlot, { width: tileWidth }]}>
-            <VaultAddFolderTile label={addFolderLabel} onPress={onAddFolder} />
+          <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+            <VaultAddFolderTile
+              width={tileWidth}
+              label={addFolderLabel}
+              onPress={onAddFolder}
+            />
           </View>
         ) : null}
       </ScrollView>
@@ -270,10 +294,6 @@ const styles = StyleSheet.create({
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
-    marginRight: TILE_GAP,
-  },
-  addSlot: {
-    marginRight: 0,
   },
   empty: {
     paddingHorizontal: PANEL_PAD,

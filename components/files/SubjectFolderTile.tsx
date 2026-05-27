@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { SymbolView } from 'expo-symbols';
 
 import { SubjectDropTarget } from '@/components/files/SubjectDropTarget';
 import { SubjectFolderName } from '@/components/files/SubjectFolderName';
@@ -22,7 +23,11 @@ type Props = {
   onLiftForReorder: () => void;
   onReorderDragMove?: (pageX: number, pageY: number) => void;
   onReorderDragEnd?: (moved: boolean, pageX: number, pageY: number) => void;
+  onDeleteHold?: () => void;
   onPreviewGestureLock: (locked: boolean) => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 };
 
 export function SubjectFolderTile({
@@ -34,7 +39,11 @@ export function SubjectFolderTile({
   onLiftForReorder,
   onReorderDragMove,
   onReorderDragEnd,
+  onDeleteHold,
   onPreviewGestureLock,
+  selectionMode = false,
+  selected = false,
+  onToggleSelect,
 }: Props) {
   const { t } = useTranslation();
   const {
@@ -49,7 +58,8 @@ export function SubjectFolderTile({
   const [nameEditing, setNameEditing] = useState(false);
   const isActive = reorderingSubjectId === subjectId;
   const reorderHover = reorderHoverSubjectId === subjectId && !isActive;
-  const dragEnabled = !movingBundleId && Boolean(onReorderDragMove) && !nameEditing;
+  const dragEnabled =
+    !selectionMode && !movingBundleId && Boolean(onReorderDragMove) && !nameEditing;
 
   const tryDropHere = () => {
     if (!movingBundleId || subjectId === dragSourceSubjectId) return;
@@ -60,13 +70,17 @@ export function SubjectFolderTile({
   };
 
   const openFolder = useCallback(() => {
+    if (selectionMode) {
+      onToggleSelect?.();
+      return;
+    }
     if (movingBundleId) {
       tryDropHere();
       return;
     }
     if (reorderingSubjectId) return;
     onPress();
-  }, [movingBundleId, onPress, reorderingSubjectId]);
+  }, [movingBundleId, onPress, onToggleSelect, reorderingSubjectId, selectionMode]);
 
   const handleLift = useCallback(() => {
     onLiftForReorder();
@@ -90,30 +104,52 @@ export function SubjectFolderTile({
           subjectId={subjectId}
           name={name}
           lifted={isActive}
-          disabled={Boolean(movingBundleId) || Boolean(reorderingSubjectId)}
+          disabled={
+            selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)
+          }
           onEditingChange={setNameEditing}
         />
         <HoldDragSurface
           enabled={dragEnabled}
-          instantDrag={isActive}
           onLift={handleLift}
           onDragMove={onReorderDragMove}
           onDragEnd={handleDragEnd}
           onPress={openFolder}
+          onDeleteHold={selectionMode ? undefined : onDeleteHold}
           onGestureActiveChange={onPreviewGestureLock}
           style={[
             styles.dragSurface,
             isActive && styles.dragSurfaceLifted,
             reorderHover && styles.dragSurfaceHover,
+            selectionMode && selected && styles.dragSurfaceSelected,
           ]}>
-          <View ref={cardRef} collapsable={false} pointerEvents="box-none">
+          <View ref={cardRef} collapsable={false} pointerEvents="box-none" style={styles.previewWrap}>
+            {selectionMode ? (
+              <Pressable
+                onPress={onToggleSelect}
+                style={[styles.checkHit, selected && styles.checkHitOn]}
+                hitSlop={6}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}>
+                <View style={[styles.checkbox, selected && styles.checkboxOn]}>
+                  {selected ? (
+                    <SymbolView
+                      name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                      size={14}
+                      tintColor={theme.white}
+                    />
+                  ) : null}
+                </View>
+              </Pressable>
+            ) : null}
             <SubjectFolderPreview
               variant="vault"
               items={previewItems}
               totalLabel={totalLabel}
               emptyHint={t('vault.previewEmpty')}
-              passthroughGestures
+              passthroughGestures={!selectionMode}
               onOpen={openFolder}
+              onLongPress={selectionMode ? undefined : handleLift}
               onGestureLock={onPreviewGestureLock}
             />
           </View>
@@ -145,5 +181,35 @@ const styles = StyleSheet.create({
     borderColor: theme.orange,
     backgroundColor: theme.orangeMuted,
     ...theme.cardShadow,
+  },
+  dragSurfaceSelected: {
+    borderWidth: 2,
+    borderColor: theme.orange,
+    backgroundColor: theme.orangeMuted,
+  },
+  previewWrap: {
+    position: 'relative',
+    width: '100%',
+  },
+  checkHit: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    zIndex: 6,
+  },
+  checkHitOn: {},
+  checkbox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    borderColor: theme.grayLight,
+    backgroundColor: theme.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxOn: {
+    backgroundColor: theme.orange,
+    borderColor: theme.orange,
   },
 });
