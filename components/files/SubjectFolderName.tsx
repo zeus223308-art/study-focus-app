@@ -8,9 +8,9 @@ import {
   View,
 } from 'react-native';
 
-import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useWebLongPress } from '@/hooks/useWebLongPress';
 
 const DOUBLE_TAP_MS = 320;
 
@@ -33,9 +33,17 @@ export function SubjectFolderName({
   onLongPressMenu,
 }: Props) {
   const { renameSubject } = useApp();
+  const hostRef = useRef<View>(null);
   const lastTapRef = useRef(0);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
+
+  const menuEnabled = Boolean(onLongPressMenu) && !disabled && !editing;
+
+  useWebLongPress(hostRef, {
+    enabled: Platform.OS === 'web' && menuEnabled,
+    onLongPress: () => onLongPressMenu?.(),
+  });
 
   useEffect(() => {
     setDraft(name);
@@ -96,41 +104,21 @@ export function SubjectFolderName({
     );
   }
 
-  const nameText = (
-    <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
-      {name}
-    </Text>
-  );
-
-  if (onLongPressMenu) {
-    return (
-      <HoldDragSurface
-        enabled={!disabled}
-        onLift={() => {}}
-        onHoldMenu={onLongPressMenu}
-        onPress={handlePress}
-        style={[styles.nameRow, styles.nameGestureHost]}>
-        <View
-          pointerEvents="none"
-          accessibilityRole="button"
-          accessibilityLabel={name}
-          accessibilityHint="Double tap to rename; long press for menu">
-          {nameText}
-        </View>
-      </HoldDragSurface>
-    );
-  }
-
   return (
     <Pressable
+      ref={hostRef}
       onPress={handlePress}
+      onLongPress={Platform.OS === 'web' ? undefined : onLongPressMenu}
+      delayLongPress={500}
       disabled={disabled}
       hitSlop={8}
       style={styles.nameRow}
       accessibilityRole="button"
       accessibilityLabel={name}
-      accessibilityHint="Double tap to rename">
-      {nameText}
+      accessibilityHint="Double tap to rename; long press for menu">
+      <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
+        {name}
+      </Text>
     </Pressable>
   );
 }
@@ -142,12 +130,6 @@ const styles = StyleSheet.create({
     marginRight: 2,
     minHeight: 24,
     justifyContent: 'center',
-  },
-  nameGestureHost: {
-    minHeight: 28,
-    ...(Platform.OS === 'web'
-      ? ({ touchAction: 'manipulation', cursor: 'default' } as object)
-      : null),
   },
   name: {
     fontSize: theme.font.body,

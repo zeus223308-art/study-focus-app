@@ -72,6 +72,7 @@ export function HoldDragSurface({
   const openDeferRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionCleanupRef = useRef<(() => void) | null>(null);
   const deleteHoldRef = useRef(false);
+  const holdMenuFiredRef = useRef(false);
   const lastReleaseAtRef = useRef(0);
 
   const onLiftRef = useRef(onLift);
@@ -139,13 +140,15 @@ export function HoldDragSurface({
       phaseRef.current = 'idle';
       movedRef.current = false;
       deleteHoldRef.current = false;
+      const skipPress = holdMenuFiredRef.current;
+      holdMenuFiredRef.current = false;
       setLiftedState(false);
 
       if (phase === 'lifted') {
         onDragEndRef.current?.(moved, pageX, pageY);
         return;
       }
-      if (phase !== 'pending') return;
+      if (phase !== 'pending' || skipPress) return;
 
       const dx = Math.abs(pageX - startRef.current.pageX);
       const dy = Math.abs(pageY - startRef.current.pageY);
@@ -171,6 +174,7 @@ export function HoldDragSurface({
 
       if (onHoldMenuRef.current) {
         phaseRef.current = 'idle';
+        holdMenuFiredRef.current = true;
         clearTimer();
         clearOpenDefer();
         onHoldMenuRef.current();
@@ -446,7 +450,7 @@ export function HoldDragSurface({
       onTouchMove={enabled ? onTouchMoveRn : undefined}
       onTouchEnd={enabled ? onTouchEndRn : undefined}
       onTouchCancel={enabled ? onTouchEndRn : undefined}
-      style={[style, styles.host, lifted && styles.hostLifted]}
+      style={[styles.host, lifted && styles.hostLifted, style]}
       collapsable={false}
       {...({ 'data-hold-drag': lifted ? 'active' : 'idle', 'data-vault-tile': '1' } as object)}>
       {children}

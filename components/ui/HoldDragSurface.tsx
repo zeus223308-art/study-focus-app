@@ -60,6 +60,7 @@ export function HoldDragSurface({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openDeferRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deleteHoldRef = useRef(false);
+  const holdMenuFiredRef = useRef(false);
   const lastReleaseAtRef = useRef(0);
 
   const clearTimer = useCallback(() => {
@@ -104,13 +105,15 @@ export function HoldDragSurface({
       phaseRef.current = 'idle';
       movedRef.current = false;
       deleteHoldRef.current = false;
+      const skipPress = holdMenuFiredRef.current;
+      holdMenuFiredRef.current = false;
       setActive(false);
 
       if (phase === 'lifted') {
         onDragEnd?.(moved, pageX, pageY);
         return;
       }
-      if (phase !== 'pending') return;
+      if (phase !== 'pending' || skipPress) return;
 
       const dx = Math.abs(pageX - startRef.current.pageX);
       const dy = Math.abs(pageY - startRef.current.pageY);
@@ -137,6 +140,7 @@ export function HoldDragSurface({
 
       if (onHoldMenu) {
         phaseRef.current = 'idle';
+        holdMenuFiredRef.current = true;
         clearTimer();
         clearOpenDefer();
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
