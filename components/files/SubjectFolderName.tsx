@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 
+import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 
@@ -95,20 +96,41 @@ export function SubjectFolderName({
     );
   }
 
+  const nameText = (
+    <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
+      {name}
+    </Text>
+  );
+
+  if (onLongPressMenu) {
+    return (
+      <HoldDragSurface
+        enabled={!disabled}
+        onLift={() => {}}
+        onHoldMenu={onLongPressMenu}
+        onPress={handlePress}
+        style={[styles.nameRow, styles.nameGestureHost]}>
+        <View
+          pointerEvents="none"
+          accessibilityRole="button"
+          accessibilityLabel={name}
+          accessibilityHint="Double tap to rename; long press for menu">
+          {nameText}
+        </View>
+      </HoldDragSurface>
+    );
+  }
+
   return (
     <Pressable
       onPress={handlePress}
-      onLongPress={onLongPressMenu}
-      delayLongPress={500}
       disabled={disabled}
       hitSlop={8}
       style={styles.nameRow}
       accessibilityRole="button"
       accessibilityLabel={name}
       accessibilityHint="Double tap to rename">
-      <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
-        {name}
-      </Text>
+      {nameText}
     </Pressable>
   );
 }
@@ -120,6 +142,12 @@ const styles = StyleSheet.create({
     marginRight: 2,
     minHeight: 24,
     justifyContent: 'center',
+  },
+  nameGestureHost: {
+    minHeight: 28,
+    ...(Platform.OS === 'web'
+      ? ({ touchAction: 'manipulation', cursor: 'default' } as object)
+      : null),
   },
   name: {
     fontSize: theme.font.body,

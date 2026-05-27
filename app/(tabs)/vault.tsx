@@ -116,6 +116,7 @@ export default function FilesScreen() {
   };
 
   return (
+    <>
     <Screen scroll scrollEnabled={screenScrollEnabled} nestedScrollEnabled>
       {movingBundleId ? (
         <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
@@ -160,23 +161,6 @@ export default function FilesScreen() {
         </View>
       </View>
 
-      <SubjectFolderHoldMenuSheet
-        visible={holdMenuSubject !== null}
-        reorderLabel={t('folder.holdMenuReorder')}
-        deleteLabel={t('vault.deleteFolderAction')}
-        cancelLabel={t('common.cancel')}
-        onReorder={startHoldMenuReorder}
-        onDelete={() => {
-          if (!holdMenuSubject) return;
-          const { id, name } = holdMenuSubject;
-          setHoldMenuSubject(null);
-          confirmDeleteSubject(id, name);
-        }}
-        onClose={() => setHoldMenuSubject(null)}
-      />
-
-      <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
-
       {adding ? (
         <View style={styles.addBox}>
           <TextInput value={newName} onChangeText={setNewName} style={styles.input} autoFocus />
@@ -195,6 +179,24 @@ export default function FilesScreen() {
         <Text style={styles.trash}>{t('trash.title')}</Text>
       </Pressable>
     </Screen>
+
+    <SubjectFolderHoldMenuSheet
+      visible={holdMenuSubject !== null}
+      reorderLabel={t('folder.holdMenuReorder')}
+      deleteLabel={t('vault.deleteFolderAction')}
+      cancelLabel={t('common.cancel')}
+      onReorder={startHoldMenuReorder}
+      onDelete={() => {
+        if (!holdMenuSubject) return;
+        const { id, name } = holdMenuSubject;
+        setHoldMenuSubject(null);
+        confirmDeleteSubject(id, name);
+      }}
+      onClose={() => setHoldMenuSubject(null)}
+    />
+
+    <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
+    </>
   );
 }
 
