@@ -11,7 +11,7 @@ import { useApp } from '@/context/AppContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
-import { confirmChoice, showMessage } from '@/lib/ui/confirm';
+import { confirmChoice } from '@/lib/ui/confirm';
 import {
   computeVaultFoldersPerPage,
   useViewportLayout,
