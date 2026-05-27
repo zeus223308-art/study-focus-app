@@ -8,7 +8,6 @@ import {
   type DashboardSubjectEntry,
 } from '@/components/dashboard/DashboardReviewPicker';
 import { DashboardCalendar } from '@/components/dashboard/DashboardCalendar';
-import { MobileWebLoginBanner } from '@/components/settings/MobileWebLoginBanner';
 import { DateRibbon } from '@/components/dashboard/DateRibbon';
 import { SpringPressable } from '@/components/ui/SpringPressable';
 import { Button } from '@/components/ui/Button';
@@ -110,8 +109,6 @@ export default function DashboardScreen() {
   return (
     <Screen scroll nestedScrollEnabled>
       <ScreenHeader title={t('dashboard.title')} showSettings />
-
-      <MobileWebLoginBanner />
 
       <View style={styles.calendarSection}>
         <DashboardCalendar
