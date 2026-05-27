@@ -779,10 +779,11 @@ export function AppProvider({
   }, []);
 
   const syncCloud = useCallback(async () => {
-    if (!data) return;
-    const next = await storage.syncAllPending(data);
+    const current = dataRef.current;
+    if (!current) return;
+    const next = await storage.syncAllPending(current);
     persist(next);
-  }, [data, storage, persist]);
+  }, [storage, persist]);
 
   const restoreFromCloudBackup = useCallback(async () => {
     const restored = await storage.restoreFromCloudBackup();

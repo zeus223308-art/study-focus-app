@@ -26,8 +26,7 @@ import { countAppPages } from '@/services/storage';
 export function CloudBackupSettings() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, updateSettings, refresh, reloadAccountData, syncCloud, restoreFromCloudBackup, restoreLocalBackup } =
-    useApp();
+  const { data, updateSettings, refresh, reloadAccountData, restoreFromCloudBackup } = useApp();
   const {
     configured,
     session,
@@ -47,21 +46,6 @@ export function CloudBackupSettings() {
   const inAppBrowserBlocked = useInAppBrowserBlocked();
 
   const authPreparing = configured && !requestReady;
-
-  const runSync = useCallback(async () => {
-    setBusy(true);
-    setNotice(null);
-    try {
-      await syncCloud();
-      await refresh();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : t('settings.cloudSyncError');
-      setNotice(message);
-      showMessage(t('settings.cloud'), message);
-    } finally {
-      setBusy(false);
-    }
-  }, [refresh, syncCloud, t]);
 
   const handleConnect = useCallback(async () => {
     setNotice(null);
@@ -147,7 +131,8 @@ export function CloudBackupSettings() {
           const ok = await restoreFromCloudBackup();
           if (ok) {
             await refresh();
-            setNotice(t('settings.cloudRestoreDriveOk'));
+            showMessage(t('settings.cloud'), t('settings.cloudRestoreDriveOk'));
+            setNotice(null);
           } else {
             setNotice(t('settings.cloudRestoreFailed'));
           }
@@ -157,29 +142,6 @@ export function CloudBackupSettings() {
       },
     });
   }, [refresh, restoreFromCloudBackup, session, t]);
-
-  const handleRestoreLocal = useCallback(() => {
-    confirmDestructive({
-      title: t('settings.cloudRestoreLocal'),
-      message: t('settings.cloudRestoreConfirmLocal'),
-      cancelLabel: t('common.cancel'),
-      confirmLabel: t('settings.cloudRestoreLocal'),
-      onConfirm: async () => {
-        setBusy(true);
-        try {
-          const ok = await restoreLocalBackup();
-          if (ok) {
-            await refresh();
-            setNotice(t('settings.cloudRestoreLocalOk'));
-          } else {
-            setNotice(t('settings.cloudRestoreFailed'));
-          }
-        } finally {
-          setBusy(false);
-        }
-      },
-    });
-  }, [refresh, restoreLocalBackup, t]);
 
   const handleDisconnect = useCallback(async () => {
     setBusy(true);
@@ -282,31 +244,21 @@ export function CloudBackupSettings() {
             last={false}
           />
           <SettingsRow
-            label={t('settings.cloudLastSync')}
-            value={syncLabel}
-            onPress={busy ? undefined : runSync}
+            label={t('settings.cloudAutoSync')}
+            value={t('settings.cloudAutoSyncValue')}
             last={false}
           />
-          <Pressable
-            onPress={busy ? undefined : runSync}
-            style={[styles.actionRow, styles.rowBorder]}
-            disabled={busy}>
-            <Text style={styles.actionText}>
-              {busy ? t('settings.cloudSyncing') : t('settings.cloudSyncNow')}
-            </Text>
-            {busy && <ActivityIndicator color={theme.orange} />}
-          </Pressable>
+          <SettingsRow
+            label={t('settings.cloudLastSync')}
+            value={busy ? t('settings.cloudSyncing') : syncLabel}
+            last={false}
+          />
           <Pressable
             onPress={busy ? undefined : handleRestoreDrive}
             style={[styles.actionRow, styles.rowBorder]}
             disabled={busy}>
             <Text style={styles.actionText}>{t('settings.cloudRestoreDrive')}</Text>
-          </Pressable>
-          <Pressable
-            onPress={busy ? undefined : handleRestoreLocal}
-            style={[styles.actionRow, styles.rowBorder]}
-            disabled={busy}>
-            <Text style={styles.actionText}>{t('settings.cloudRestoreLocal')}</Text>
+            {busy && <ActivityIndicator color={theme.orange} />}
           </Pressable>
           <Pressable
             onPress={busy ? undefined : handleDisconnect}
