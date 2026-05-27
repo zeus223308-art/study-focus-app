@@ -253,13 +253,14 @@ const styles = StyleSheet.create({
   },
   rowSlot: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'flex-start',
     flexGrow: 0,
     flexShrink: 0,
   },
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
+    alignItems: 'stretch',
   },
   empty: {
     paddingHorizontal: PANEL_PAD,

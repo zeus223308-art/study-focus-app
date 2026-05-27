@@ -33,7 +33,10 @@ export function DockTabBar({ state, navigation }: BottomTabBarProps) {
 
   return (
     <View
-      style={[styles.wrapper, { paddingTop: insets.top + DOCK_EDGE_GAP }]}
+      style={[
+        styles.wrapper,
+        { paddingTop: insets.top + DOCK_EDGE_GAP, paddingHorizontal: DOCK_EDGE_GAP },
+      ]}
       pointerEvents="box-none">
       <View style={styles.dock}>
         {items.map((item, index) => {
@@ -86,7 +89,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'flex-start',
     zIndex: 90,
     elevation: 90,
@@ -94,13 +97,15 @@ const styles = StyleSheet.create({
   dock: {
     flexDirection: 'row',
     alignItems: 'stretch',
+    alignSelf: 'stretch',
+    width: '100%',
     backgroundColor: theme.dock,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.dockDivider,
     minHeight: DOCK_HEIGHT,
     overflow: 'hidden',
-    paddingHorizontal: 2,
+    paddingHorizontal: 4,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -114,16 +119,18 @@ const styles = StyleSheet.create({
     }),
   },
   segmentWrap: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'stretch',
   },
   segment: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    minWidth: 88,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
   },
   dividerTrack: {
     justifyContent: 'center',
@@ -140,9 +147,11 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   label: {
-    fontSize: 16,
+    width: '100%',
+    fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.2,
+    textAlign: 'center',
   },
   labelFocused: {
     fontWeight: '800',

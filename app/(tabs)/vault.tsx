@@ -105,12 +105,6 @@ export default function FilesScreen() {
       const lift = { x: pageX, y: pageY };
       liftRef.current = lift;
       dragActiveRef.current = true;
-      if (Platform.OS === 'web') {
-        setVaultTrashDom(true, false, {
-          title: t('trash.title'),
-          hint: t('vault.dragTrashKeepPull'),
-        });
-      }
       setDragSession({ subjectId, subjectName, lift });
       setGhost({ x: pageX, y: pageY, visible: true });
       startSubjectReorder(subjectId, lift);
@@ -146,10 +140,7 @@ export default function FilesScreen() {
     if (!dragSession || !ghost.visible) {
       return { show: false, ready: false };
     }
-    const { lift } = dragSession;
-    if (Platform.OS === 'web') {
-      return { show: true, ready: trashReady };
-    }
+    const lift = liftRef.current ?? dragSession.lift;
     return {
       show: shouldShowVaultTrashPopup(ghost.y, lift, windowHeight),
       ready: trashReady,
@@ -158,14 +149,14 @@ export default function FilesScreen() {
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-    if (!dragSession) {
+    if (!trashUi.show) {
       hideVaultTrashDom();
       return;
     }
-    const hint = trashReady ? t('vault.dragTrashRelease') : t('vault.dragTrashKeepPull');
-    setVaultTrashDom(true, trashReady, { title: t('trash.title'), hint });
+    const hint = trashUi.ready ? t('vault.dragTrashRelease') : t('vault.dragTrashKeepPull');
+    setVaultTrashDom(true, trashUi.ready, { title: t('trash.title'), hint });
     return () => hideVaultTrashDom();
-  }, [dragSession, trashReady, t]);
+  }, [trashUi.show, trashUi.ready, t]);
 
   const onSubjectReorderEnd = (
     subjectId: string,
@@ -212,15 +203,6 @@ export default function FilesScreen() {
           {dragSession ? (
             <Text style={styles.moveBanner}>{t('vault.dragSubjectHint')}</Text>
           ) : null}
-          {dragSession && Platform.OS === 'web' ? (
-            <View style={styles.webTrashBanner} pointerEvents="none">
-              <Text style={styles.webTrashBannerIcon}>🗑</Text>
-              <Text style={styles.webTrashBannerText}>
-                {trashReady ? t('vault.dragTrashRelease') : t('vault.dragTrashKeepPull')}
-              </Text>
-            </View>
-          ) : null}
-
           <ScreenHeader
             title={t('vault.title')}
             showSettings={false}
@@ -294,9 +276,9 @@ export default function FilesScreen() {
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
 
-      {Platform.OS === 'web' ? (
+      {Platform.OS === 'web' && trashUi.show ? (
         <Modal
-          visible={dragSession != null}
+          visible
           transparent
           animationType="fade"
           presentationStyle="overFullScreen"
@@ -339,29 +321,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
     paddingHorizontal: 12,
-  },
-  webTrashBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: theme.radius.md,
-    borderWidth: 2,
-    borderColor: theme.orange,
-    backgroundColor: theme.orangeMuted,
-  },
-  webTrashBannerIcon: {
-    fontSize: 22,
-  },
-  webTrashBannerText: {
-    flex: 1,
-    fontSize: theme.font.body,
-    fontWeight: '800',
-    color: theme.orange,
-    textAlign: 'center',
   },
   webTrashModalBackdrop: {
     flex: 1,

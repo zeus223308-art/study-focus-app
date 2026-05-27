@@ -130,16 +130,20 @@ export function SubjectFolderName({
 
 const styles = StyleSheet.create({
   nameRow: {
+    width: '100%',
+    alignSelf: 'stretch',
     marginBottom: 8,
-    marginLeft: 2,
-    marginRight: 2,
+    paddingHorizontal: 4,
     minHeight: 24,
     justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   name: {
+    width: '100%',
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.black,
+    textAlign: 'left',
   },
   nameLifted: {
     color: theme.orange,

@@ -125,9 +125,11 @@ const styles = StyleSheet.create({
   wrap: {
     width: '100%',
     minWidth: 0,
+    alignSelf: 'flex-start',
   },
   tileBody: {
     width: '100%',
+    alignItems: 'stretch',
   },
   dragSurface: {
     width: '100%',
