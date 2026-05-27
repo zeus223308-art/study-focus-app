@@ -1,5 +1,4 @@
-import { getLocales } from 'expo-localization';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,10 +13,9 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
-import en from '@/i18n/locales/en.json';
-import ko from '@/i18n/locales/ko.json';
 
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
+const SPLASH_TAGLINE = 'Conquer your memory';
 
 type Props = {
   onFinish: () => void;
@@ -35,15 +33,8 @@ const T = {
   allOut: 600,
 };
 
-function splashTagline(): string {
-  const code = getLocales()[0]?.languageCode ?? 'ko';
-  return code === 'ko' ? ko.splashTagline : en.splashTagline;
-}
-
 export function SplashBrand({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
-  const tagline = useMemo(() => splashTagline(), []);
-
   useEffect(() => {
     if (Platform.OS === 'ios') {
       SplashScreen.setOptions({ duration: 280, fade: true });
@@ -120,7 +111,7 @@ export function SplashBrand({ onFinish }: Props) {
         </Animated.View>
 
         <Animated.View style={[styles.taglineWrap, taglineStyle]}>
-          <Text style={styles.tagline}>{tagline}</Text>
+          <Text style={styles.tagline}>{SPLASH_TAGLINE}</Text>
         </Animated.View>
       </View>
 
