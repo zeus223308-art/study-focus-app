@@ -170,6 +170,7 @@
     "reordered": "Order updated",
     "movedTo": "Moved to {{name}}",
     "empty": "No photos",
+    "emptyDate": "No photos saved on this date",
     "dateToday": "Today",
     "dateYesterday": "Yesterday",
     "photoCount": "{{count}} photos",

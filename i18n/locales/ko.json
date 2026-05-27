@@ -170,6 +170,7 @@
     "reordered": "순서를 변경했습니다",
     "movedTo": "「{{name}}」으로 이동",
     "empty": "사진 없음",
+    "emptyDate": "이 날짜에 저장된 사진이 없습니다",
     "dateToday": "오늘",
     "dateYesterday": "어제",
     "photoCount": "{{count}}장",

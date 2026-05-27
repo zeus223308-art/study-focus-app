@@ -1,4 +1,7 @@
-import type { NoteBundle, NotePage } from '@/lib/domain/types';
+import { format } from 'date-fns';
+
+import { buildRibbonDays } from '@/lib/domain/dates';
+import type { DateRibbonMark, NoteBundle, NotePage } from '@/lib/domain/types';
 import { mergeItemOrder } from '@/lib/domain/reorder';
 
 export type BundleStack = {
@@ -78,6 +81,35 @@ export function listArchivedSubjectProblems(
 
 export function problemStudyDate(item: SubjectProblemItem): string {
   return item.page.studyDate || item.bundle.studyDate;
+}
+
+export function filterProblemsByStudyDate(
+  problems: SubjectProblemItem[],
+  studyDate: string
+): SubjectProblemItem[] {
+  return problems.filter((p) => problemStudyDate(p) === studyDate);
+}
+
+/** Ribbon dots: days this subject has saved photos. */
+export function buildSubjectStudyDateMarks(
+  problems: SubjectProblemItem[],
+  firstLaunchDate: string
+): DateRibbonMark[] {
+  const countByDate = new Map<string, number>();
+  for (const item of problems) {
+    const d = problemStudyDate(item);
+    countByDate.set(d, (countByDate.get(d) ?? 0) + 1);
+  }
+
+  return buildRibbonDays(firstLaunchDate).map((date) => {
+    const key = format(date, 'yyyy-MM-dd');
+    const count = countByDate.get(key) ?? 0;
+    return {
+      date: key,
+      status: count > 0 ? 'upcoming' : 'none',
+      bundleCount: count,
+    };
+  });
 }
 
 export type ProblemDateSection = {

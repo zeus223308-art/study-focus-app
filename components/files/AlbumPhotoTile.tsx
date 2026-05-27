@@ -142,9 +142,7 @@ export function AlbumPhotoTile({
 }
 
 const styles = StyleSheet.create({
-  cell: {
-    marginBottom: 8,
-  },
+  cell: {},
   tile: {
     width: '100%',
     aspectRatio: 1,

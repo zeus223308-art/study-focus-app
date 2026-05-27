@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { DateRibbon } from '@/components/dashboard/DateRibbon';
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
@@ -27,7 +28,12 @@ import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
 import type { PageRef } from '@/lib/domain/move-pages-batch';
-import { groupSubjectProblemsByDate, listSubjectProblems } from '@/lib/grouping/bundles';
+import {
+  buildSubjectStudyDateMarks,
+  filterProblemsByStudyDate,
+  groupSubjectProblemsByDate,
+  listSubjectProblems,
+} from '@/lib/grouping/bundles';
 import type { SubjectProblemItem } from '@/lib/grouping/bundles';
 import { pickForImport } from '@/lib/import/pick-for-import';
 import { remainingPhotoSlots } from '@/services/storage';
@@ -35,7 +41,7 @@ import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
-const ALBUM_GAP = 8;
+const ALBUM_GAP = 2;
 
 function itemKey(item: SubjectProblemItem) {
   return `${item.bundleId}:${item.pageId}`;
@@ -69,6 +75,7 @@ export default function FolderScreen() {
     moveProblemsToSubject,
     setPaywallVisible,
   } = useApp();
+  const [albumFilterDate, setAlbumFilterDate] = useState(localToday);
   const [importing, setImporting] = useState(false);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
   const [sendModalOpen, setSendModalOpen] = useState(false);
@@ -89,7 +96,24 @@ export default function FolderScreen() {
     () => listSubjectProblems(data.bundles, id ?? '', subject?.itemOrder),
     [data.bundles, id, subject?.itemOrder]
   );
-  const dateSections = useMemo(() => groupSubjectProblemsByDate(problems), [problems]);
+  useEffect(() => {
+    setAlbumFilterDate(localToday);
+  }, [id, localToday]);
+
+  const subjectRibbonMarks = useMemo(
+    () => buildSubjectStudyDateMarks(problems, data.settings.firstLaunchDate),
+    [problems, data.settings.firstLaunchDate]
+  );
+
+  const filteredProblems = useMemo(
+    () => filterProblemsByStudyDate(problems, albumFilterDate),
+    [problems, albumFilterDate]
+  );
+
+  const dateSections = useMemo(
+    () => groupSubjectProblemsByDate(filteredProblems),
+    [filteredProblems]
+  );
 
   const pickMode = exportSelectMode || archiveSelectMode;
   const activeSelectedKeys = exportSelectMode ? exportSelectedKeys : archiveSelectedKeys;
@@ -345,6 +369,15 @@ export default function FolderScreen() {
             </Pressable>
           )}
         </View>
+        <View style={styles.ribbonWrap}>
+          <DateRibbon
+            marks={subjectRibbonMarks}
+            selectedDate={albumFilterDate}
+            firstLaunchDate={data.settings.firstLaunchDate}
+            localToday={localToday}
+            onSelectDate={setAlbumFilterDate}
+          />
+        </View>
         <ScrollView
           scrollEnabled={albumScrollEnabled}
           contentContainerStyle={[
@@ -359,8 +392,10 @@ export default function FolderScreen() {
           showsVerticalScrollIndicator={false}>
           {dateSections.length === 0 ? (
             <View style={styles.emptyBlock}>
-              <Text style={styles.empty}>{t('folder.empty')}</Text>
-              {addProblemZone}
+              <Text style={styles.empty}>
+                {problems.length === 0 ? t('folder.empty') : t('folder.emptyDate')}
+              </Text>
+              {problems.length === 0 ? addProblemZone : null}
             </View>
           ) : (
             dateSections.map((section) => (
@@ -372,6 +407,8 @@ export default function FolderScreen() {
                 albumColumns={viewport.albumNumColumns}
                 contentWidth={albumContentWidth}
                 gap={ALBUM_GAP}
+                hideHeader
+                sectionMarginBottom={8}
                 labels={albumLabels}
                 onOpen={(bundleId, pageId) =>
                   router.push({
@@ -493,6 +530,7 @@ export default function FolderScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 20 },
+  ribbonWrap: { marginBottom: 8, marginHorizontal: -4 },
   exportHint: {
     fontSize: theme.font.caption,
     color: theme.gray,

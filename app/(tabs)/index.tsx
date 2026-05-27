@@ -8,7 +8,6 @@ import {
   type DashboardSubjectEntry,
 } from '@/components/dashboard/DashboardReviewPicker';
 import { DashboardCalendar } from '@/components/dashboard/DashboardCalendar';
-import { DateRibbon } from '@/components/dashboard/DateRibbon';
 import { SpringPressable } from '@/components/ui/SpringPressable';
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -120,17 +119,6 @@ export default function DashboardScreen() {
         />
       </View>
 
-      <Text style={styles.ribbonCaption}>{t('dashboard.ribbonCaption')}</Text>
-      <View style={styles.ribbonBlock}>
-        <DateRibbon
-          marks={ribbonMarks}
-          selectedDate={selectedDate}
-          firstLaunchDate={data.settings.firstLaunchDate}
-          localToday={localToday}
-          onSelectDate={setSelectedDate}
-        />
-      </View>
-
       {subjectEntries.length === 0 ? (
         <View style={styles.emptyBlock}>
           <Text style={styles.empty}>{t('dashboard.noSubjects')}</Text>
@@ -185,14 +173,6 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   calendarSection: { marginBottom: 8 },
-  ribbonCaption: {
-    fontSize: theme.font.caption,
-    fontWeight: '700',
-    color: theme.graySecondary,
-    marginBottom: 6,
-    marginLeft: 4,
-  },
-  ribbonBlock: { marginBottom: 4 },
   emptyBlock: {
     marginVertical: 24,
     gap: 12,

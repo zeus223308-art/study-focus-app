@@ -34,6 +34,9 @@ type Props = {
   onToggleSelect?: (item: SubjectProblemItem) => void;
   reorderEnabled?: boolean;
   onGestureActiveChange?: (active: boolean) => void;
+  /** Hide date heading when filtering via date ribbon above the album. */
+  hideHeader?: boolean;
+  sectionMarginBottom?: number;
 };
 
 function itemKey(item: SubjectProblemItem) {
@@ -59,6 +62,8 @@ export function DateAlbumSection({
   onToggleSelect,
   reorderEnabled,
   onGestureActiveChange,
+  hideHeader = false,
+  sectionMarginBottom = 20,
 }: Props) {
   const { registerItemDropZone, dragHoverItemKey } = useApp();
   const cellWidth = Math.floor((contentWidth - gap * (albumColumns - 1)) / albumColumns);
@@ -69,11 +74,13 @@ export function DateAlbumSection({
   const pickMode = selectionMode === 'pick';
 
   return (
-    <View style={styles.section}>
-      <View style={styles.header}>
-        <Text style={styles.heading}>{heading}</Text>
-        <Text style={styles.count}>{labels.photoCount(section.items.length)}</Text>
-      </View>
+    <View style={[styles.section, { marginBottom: sectionMarginBottom }]}>
+      {!hideHeader ? (
+        <View style={styles.header}>
+          <Text style={styles.heading}>{heading}</Text>
+          <Text style={styles.count}>{labels.photoCount(section.items.length)}</Text>
+        </View>
+      ) : null}
       <View style={[styles.grid, { gap }]}>
         {section.items.map((item, index) => {
           const title = bundleDisplayTitle(item.bundle);
@@ -123,9 +130,7 @@ export function DateAlbumSection({
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: 20,
-  },
+  section: {},
   header: {
     flexDirection: 'row',
     alignItems: 'baseline',
