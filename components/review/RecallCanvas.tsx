@@ -34,6 +34,8 @@ type Props = {
   onStrokesChange: (strokes: InkStroke[]) => void;
   tool: RecallTool;
   fullScreen?: boolean;
+  /** Vertical drags scroll the parent instead of drawing */
+  allowVerticalScrollPassthrough?: boolean;
   onTouchStart?: () => void;
   onTouchEnd?: () => void;
 };
@@ -44,6 +46,7 @@ export function RecallCanvas({
   onStrokesChange,
   tool,
   fullScreen,
+  allowVerticalScrollPassthrough = false,
   onTouchStart,
   onTouchEnd,
 }: Props) {
@@ -81,10 +84,19 @@ export function RecallCanvas({
     bump((n) => n + 1);
   }, [onStrokesChange]);
 
+  const scrollPassthroughRef = useRef(allowVerticalScrollPassthrough);
+  scrollPassthroughRef.current = allowVerticalScrollPassthrough;
+
   const pan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gesture) => {
+        if (scrollPassthroughRef.current) {
+          const { dx, dy } = gesture;
+          if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 6) return false;
+        }
+        return true;
+      },
       onPanResponderGrant: (evt: GestureResponderEvent) => {
         touchStartRef.current?.();
         const activeTool = toolRef.current;

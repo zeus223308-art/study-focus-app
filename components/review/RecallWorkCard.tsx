@@ -32,7 +32,6 @@ type Props = {
   onStrokesChange: (strokes: InkStroke[]) => void;
   textBoxes: ScratchTextBox[];
   onTextBoxesChange: (boxes: ScratchTextBox[]) => void;
-  onCanvasTouchChange?: (active: boolean) => void;
 };
 
 function DraggableTextBox({
@@ -143,7 +142,6 @@ export function RecallWorkCard({
   onStrokesChange,
   textBoxes,
   onTextBoxesChange,
-  onCanvasTouchChange,
 }: Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<WorkMode>('draw');
@@ -211,13 +209,12 @@ export function RecallWorkCard({
           <View
             style={[styles.canvasLayer, { width, height: surfaceH }]}
             pointerEvents={canvasInteractive ? 'auto' : 'none'}>
-            <RecallCanvas
-              strokes={strokes}
-              onStrokesChange={onStrokesChange}
-              tool={recallTool}
-              onTouchStart={() => onCanvasTouchChange?.(true)}
-              onTouchEnd={() => onCanvasTouchChange?.(false)}
-            />
+        <RecallCanvas
+          strokes={strokes}
+          onStrokesChange={onStrokesChange}
+          tool={recallTool}
+          allowVerticalScrollPassthrough
+        />
           </View>
           {editingText ? (
             <Pressable style={styles.dismissBackdrop} onPress={dismissTextEditing} />

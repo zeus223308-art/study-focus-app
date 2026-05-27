@@ -110,10 +110,14 @@ export default function ReviewSessionScreen() {
   const frontFade = useRef(new Animated.Value(1)).current;
   const problemShift = useRef(new Animated.Value(0)).current;
   const viewport = useViewportLayout();
-  const workCardW = viewport.width - viewport.horizontalPadding * 2;
+  const RECALL_SIDE_PAD = 20;
+  const [recallViewW, setRecallViewW] = useState(0);
+  const workCardW = Math.max(
+    260,
+    (recallViewW > 0 ? recallViewW : viewport.width) - RECALL_SIDE_PAD * 2
+  );
   const problemCardH = Math.round(workCardW * 0.46);
-  const workCardH = Math.round(workCardW * 2.0);
-  const [recallScrollLocked, setRecallScrollLocked] = useState(false);
+  const workCardH = Math.round(workCardW * 1.75);
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
   const recallCountdownSec = 3;
@@ -183,12 +187,6 @@ export default function ReviewSessionScreen() {
   useEffect(() => {
     resetSlide();
   }, [index, resetSlide]);
-
-  useEffect(() => {
-    if (phase !== 'recall-work' && phase !== 'countdown') {
-      setRecallScrollLocked(false);
-    }
-  }, [phase]);
 
   const effectiveSlideMs = useCallback(
     (page: NotePage, side: SlideSide) => {
@@ -467,12 +465,15 @@ export default function ReviewSessionScreen() {
           style={styles.recallScroll}
           contentContainerStyle={[
             styles.recallFull,
-            { paddingTop: 8, paddingBottom: 32, paddingHorizontal: 6 },
+            { paddingBottom: insets.bottom + 40 },
           ]}
           keyboardShouldPersistTaps="handled"
-          scrollEnabled={!recallScrollLocked}
           showsVerticalScrollIndicator
-          nestedScrollEnabled>
+          nestedScrollEnabled
+          onLayout={(e) => {
+            const w = e.nativeEvent.layout.width;
+            if (w > 0) setRecallViewW(w);
+          }}>
           <Animated.View
             style={[
               styles.problemStage,
@@ -503,7 +504,6 @@ export default function ReviewSessionScreen() {
                 onStrokesChange={setRecallStrokes}
                 textBoxes={textBoxes}
                 onTextBoxesChange={setTextBoxes}
-                onCanvasTouchChange={setRecallScrollLocked}
               />
               {!hasAnswer ? <Text style={styles.warn}>{t('review.noBackPhoto')}</Text> : null}
               <View style={styles.recallActions}>
@@ -712,9 +712,9 @@ const styles = StyleSheet.create({
   backBadge: { backgroundColor: 'rgba(37,99,235,0.92)' },
   recallScroll: { flex: 1 },
   recallFull: {
-    paddingHorizontal: 6,
-    paddingBottom: 24,
-    gap: 10,
+    paddingTop: 8,
+    paddingHorizontal: 20,
+    gap: 12,
     alignItems: 'center',
   },
   problemStage: {
