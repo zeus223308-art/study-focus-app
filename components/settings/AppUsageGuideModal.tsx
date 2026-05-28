@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
+import { guideFontMetrics, splitGuideSentences } from '@/lib/ui/format-guide-text';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const STEPS = ['step1', 'step2', 'step3', 'step4'] as const;
@@ -18,6 +20,13 @@ export function AppUsageGuideModal({ visible, onClose }: Props) {
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
   const cardWidth = Math.min(viewport.width - 56, 400);
+
+  const hiddenLines = useMemo(
+    () => splitGuideSentences(t('appUsageGuide.hiddenTips')),
+    [t]
+  );
+  const lineCount = STEPS.length + hiddenLines.length;
+  const metrics = useMemo(() => guideFontMetrics(lineCount), [lineCount]);
 
   return (
     <Modal
@@ -37,17 +46,59 @@ export function AppUsageGuideModal({ visible, onClose }: Props) {
               maxHeight: viewport.height - insets.top - insets.bottom - 48,
             },
           ]}>
-          <Text style={styles.title}>{t('appUsageGuide.title')}</Text>
+          <Text style={[styles.title, lineCount > 12 && styles.titleCompact]}>
+            {t('appUsageGuide.title')}
+          </Text>
           <ScrollView
             style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator
             bounces={false}
             nestedScrollEnabled>
+            <Text
+              style={[
+                styles.sectionLabel,
+                { fontSize: metrics.sectionSize, marginBottom: metrics.rowPadding * 0.5 },
+              ]}>
+              {t('appUsageGuide.sectionBasic')}
+            </Text>
             {STEPS.map((key, index) => (
-              <View key={key} style={styles.stepRow}>
-                <Text style={styles.stepNum}>{index + 1}</Text>
-                <Text style={styles.stepText}>{t(`appUsageGuide.${key}`)}</Text>
+              <View
+                key={key}
+                style={[styles.row, { padding: metrics.rowPadding, marginBottom: metrics.rowPadding * 0.65 }]}>
+                <Text style={[styles.stepNum, { fontSize: metrics.fontSize }]}>{index + 1}</Text>
+                <Text
+                  style={[
+                    styles.rowText,
+                    { fontSize: metrics.fontSize, lineHeight: metrics.lineHeight },
+                  ]}>
+                  {t(`appUsageGuide.${key}`)}
+                </Text>
+              </View>
+            ))}
+
+            <Text
+              style={[
+                styles.sectionLabel,
+                styles.sectionLabelGap,
+                { fontSize: metrics.sectionSize, marginTop: metrics.rowPadding, marginBottom: metrics.rowPadding * 0.5 },
+              ]}>
+              {t('appUsageGuide.sectionHidden')}
+            </Text>
+            {hiddenLines.map((line, index) => (
+              <View
+                key={`hidden-${index}`}
+                style={[styles.row, { padding: metrics.rowPadding, marginBottom: metrics.rowPadding * 0.5 }]}>
+                <Text style={[styles.bullet, { fontSize: metrics.fontSize, lineHeight: metrics.lineHeight }]}>
+                  ·
+                </Text>
+                <Text
+                  style={[
+                    styles.rowText,
+                    { fontSize: metrics.fontSize, lineHeight: metrics.lineHeight },
+                  ]}>
+                  {line}
+                </Text>
               </View>
             ))}
           </ScrollView>
@@ -84,38 +135,48 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
+  titleCompact: {
+    fontSize: theme.font.body,
+    marginBottom: 12,
+  },
   scroll: {
     flexGrow: 0,
   },
   scrollContent: {
-    gap: 14,
     paddingBottom: 4,
   },
-  stepRow: {
+  sectionLabel: {
+    fontWeight: '800',
+    color: theme.orange,
+  },
+  sectionLabelGap: {},
+  row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 10,
     backgroundColor: theme.surface,
     borderRadius: theme.radius.sm,
     borderWidth: 1,
     borderColor: theme.grayLight,
-    padding: 16,
   },
   stepNum: {
-    width: 24,
-    fontSize: theme.font.body,
+    width: 22,
     fontWeight: '800',
     color: theme.orange,
     textAlign: 'center',
   },
-  stepText: {
+  bullet: {
+    width: 14,
+    fontWeight: '800',
+    color: theme.gray,
+    textAlign: 'center',
+  },
+  rowText: {
     flex: 1,
-    fontSize: theme.font.body,
-    lineHeight: 24,
     color: theme.black,
     fontWeight: '500',
   },
   closeBtn: {
-    marginTop: 20,
+    marginTop: 16,
   },
 });

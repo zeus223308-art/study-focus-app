@@ -467,10 +467,13 @@
   },
   "appUsageGuide": {
     "title": "How to use the app",
+    "sectionBasic": "Basics",
+    "sectionHidden": "Hidden features",
     "step1": "Capture problems and review them today.",
     "step2": "Save photos in Files.",
     "step3": "Apply a review pattern and start reviewing from today.",
     "step4": "Items in Archive are excluded from review.",
+    "hiddenTips": "On the save sheet, tap + next to tags to add a new tag. Long-press a tag you added to remove it from the list. The default Before exam tag cannot be deleted. On Files, long-press a subject folder to reorder; drag between folders to change order. Dropping on another folder can merge subjects. Drag to the screen edge to reveal folders on the next page. Inside a folder, long-press a photo to reorder. Long-press also starts multi-select to send photos to another subject. On the dashboard, swipe the date ribbon to browse days; tap only changes the selected day. On a problem card, use the memo button to attach notes on the photo. If you leave mid-capture, reopen the Camera tab to restore unsaved shots.",
     "close": "Close"
   },
   "paywall": {
