@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ReactNode,
+  type SetStateAction,
 } from 'react';
 
 import { theme } from '@/constants/theme';
@@ -202,7 +203,7 @@ export function AppProvider({
 }) {
   const storage = useMemo(() => createStorageProvider(), []);
   const [ready, setReady] = useState(false);
-  const [data, setData] = useState<AppData | null>(null);
+  const [data, setDataState] = useState<AppData | null>(null);
   const localToday = useLocalCalendarDay();
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const [activeFolderCapture, setActiveFolderCapture] = useState<{
@@ -241,6 +242,16 @@ export function AppProvider({
   const prevLocalTodayRef = useRef(localToday);
   const dataRef = useRef<AppData | null>(null);
   const skipPersistRef = useRef(false);
+  const saveGenRef = useRef(0);
+  const storageEpochRef = useRef(0);
+
+  const setData = useCallback((action: SetStateAction<AppData | null>) => {
+    setDataState((prev) => {
+      const next = typeof action === 'function' ? action(prev) : action;
+      dataRef.current = next;
+      return next;
+    });
+  }, []);
   const reorderHoverRef = useRef<string | null>(null);
   const reorderInsertIndexRef = useRef<number | null>(null);
   const reorderInsertLineXRef = useRef<number | null>(null);
@@ -330,10 +341,12 @@ export function AppProvider({
 
   const reloadAccountData = useCallback(async () => {
     skipPersistRef.current = true;
+    storageEpochRef.current += 1;
     try {
       const { next, recoveryNotice } = await hydrateFromStorage({ clearGuestFirst: true });
       applyLoadedData(next, recoveryNotice);
     } finally {
+      storageEpochRef.current += 1;
       skipPersistRef.current = false;
     }
   }, [hydrateFromStorage, applyLoadedData]);
@@ -375,14 +388,25 @@ export function AppProvider({
   }, [localToday]);
 
   useEffect(() => {
-    dataRef.current = data;
-  }, [data]);
-
-  useEffect(() => {
     if (!ready || !data || skipPersistRef.current) return;
-    void storage.saveAppData(data).catch((err) => {
-      console.warn('[storage] saveAppData failed', err);
-    });
+    const epoch = storageEpochRef.current;
+    const gen = ++saveGenRef.current;
+    void (async () => {
+      try {
+        let snapshot = dataRef.current ?? data;
+        await storage.saveAppData(snapshot);
+        while (gen < saveGenRef.current && storageEpochRef.current === epoch) {
+          const latestGen = saveGenRef.current;
+          const retry = dataRef.current;
+          if (!retry) return;
+          snapshot = retry;
+          await storage.saveAppData(snapshot);
+          if (latestGen === saveGenRef.current) break;
+        }
+      } catch (err) {
+        console.warn('[storage] saveAppData failed', err);
+      }
+    })();
   }, [data, ready, storage]);
 
   const maintenanceStartedRef = useRef(false);
@@ -1218,8 +1242,9 @@ export function AppProvider({
           break;
         }
       }
-      if (target && target !== dragSourceSubjectId && data) {
-        const next = moveBundleToSubjectData(data, movingBundleId, target);
+      const current = dataRef.current;
+      if (target && target !== dragSourceSubjectId && current) {
+        const next = moveBundleToSubjectData(current, movingBundleId, target);
         persist(next);
         cancelMovingBundle();
         return 'moved';
@@ -1230,7 +1255,6 @@ export function AppProvider({
     },
     [
       cancelMovingBundle,
-      data,
       dragHoverItemKey,
       dragSourceSubjectId,
       draggingItemKey,
@@ -1277,7 +1301,8 @@ export function AppProvider({
 
   const finishBundleDrop = useCallback(
     (pageX: number, pageY: number) => {
-      if (!data || !movingBundleId) return null;
+      const current = dataRef.current;
+      if (!current || !movingBundleId) return null;
       let target: string | null = null;
       for (const [subjectId, rect] of dropZonesRef.current.entries()) {
         if (
@@ -1294,13 +1319,13 @@ export function AppProvider({
         cancelMovingBundle();
         return null;
       }
-      const next = moveBundleToSubjectData(data, movingBundleId, target);
+      const next = moveBundleToSubjectData(current, movingBundleId, target);
       persist(next);
-      const name = data.subjects.find((s) => s.id === target)?.name ?? null;
+      const name = current.subjects.find((s) => s.id === target)?.name ?? null;
       cancelMovingBundle();
       return name;
     },
-    [cancelMovingBundle, data, dragSourceSubjectId, movingBundleId, persist]
+    [cancelMovingBundle, dragSourceSubjectId, movingBundleId, persist]
   );
 
   const value = useMemo<AppContextValue | null>(() => {

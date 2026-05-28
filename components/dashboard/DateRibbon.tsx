@@ -235,19 +235,33 @@ export function DateRibbon({ marks, selectedDate, firstLaunchDate, localToday, o
 
   const mountedRef = useRef(false);
   const prevLocalTodayRef = useRef(localToday);
+  const prevSelectedDateRef = useRef(selectedDate);
+  const skipScrollOnSelectRef = useRef(false);
 
   useEffect(() => {
     if (listWidth <= 0) return;
     if (!mountedRef.current) {
       mountedRef.current = true;
       scrollToDate(selectedDate, false);
+      prevSelectedDateRef.current = selectedDate;
+      return;
+    }
+    if (skipScrollOnSelectRef.current) {
+      skipScrollOnSelectRef.current = false;
+      prevSelectedDateRef.current = selectedDate;
+      return;
+    }
+    if (prevSelectedDateRef.current !== selectedDate) {
+      prevSelectedDateRef.current = selectedDate;
+      scrollToDate(selectedDate, false);
     }
   }, [listWidth, scrollToDate, selectedDate]);
 
   useEffect(() => {
     if (listWidth <= 0 || prevLocalTodayRef.current === localToday) return;
+    const prev = prevLocalTodayRef.current;
     prevLocalTodayRef.current = localToday;
-    if (selectedDate === localToday) {
+    if (selectedDate === localToday || selectedDate === prev) {
       scrollToDate(localToday, true);
     }
   }, [localToday, listWidth, scrollToDate, selectedDate]);
@@ -264,6 +278,7 @@ export function DateRibbon({ marks, selectedDate, firstLaunchDate, localToday, o
       didDragRef.current = false;
       return;
     }
+    skipScrollOnSelectRef.current = true;
     selectDateKey(key);
   };
 

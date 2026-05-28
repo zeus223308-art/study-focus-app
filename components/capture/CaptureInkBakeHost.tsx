@@ -51,7 +51,10 @@ export function CaptureInkBakeHost({ job, onComplete, onError }: Props) {
         runningRef.current = false;
       }
     }, 80);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      runningRef.current = false;
+    };
   }, [job, onComplete, onError]);
 
   if (!job) return null;

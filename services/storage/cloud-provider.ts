@@ -37,6 +37,9 @@ export class CloudStorageProvider implements StorageProvider {
 
   private pushInFlight = false;
 
+  /** Latest in-memory snapshot from saveAppData (disk may lag debounced persist). */
+  private lastSavedData: AppData | null = null;
+
 
 
   async loadAppData(): Promise<AppData> {
@@ -92,7 +95,7 @@ export class CloudStorageProvider implements StorageProvider {
 
 
   async saveAppData(data: AppData): Promise<void> {
-
+    this.lastSavedData = data;
     await this.local.saveAppData(data);
 
     void this.scheduleDrivePush();
@@ -241,7 +244,7 @@ export class CloudStorageProvider implements StorageProvider {
 
     try {
 
-      const latest = await this.local.loadAppData();
+      const latest = this.lastSavedData ?? (await this.local.loadAppData());
 
       if (!shouldUploadDriveBackup(latest)) return;
 

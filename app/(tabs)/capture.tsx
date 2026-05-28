@@ -88,10 +88,14 @@ export default function CaptureTabScreen() {
   const hasSubjects = data.subjects.length > 0;
 
   const hasPendingCapture = step !== 'camera' || Boolean(frontUri || backUri);
+  const folderCaptureSyncKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!activeFolderCapture?.subjectId) return;
+    const syncKey = `${activeFolderCapture.subjectId}:${activeFolderCapture.studyDate}`;
+    if (folderCaptureSyncKeyRef.current === syncKey) return;
     const exists = data.subjects.some((s) => s.id === activeFolderCapture.subjectId);
     if (!exists) return;
+    folderCaptureSyncKeyRef.current = syncKey;
     setSubjectId(activeFolderCapture.subjectId);
     setStudyDate(activeFolderCapture.studyDate);
   }, [activeFolderCapture, data.subjects]);
@@ -143,6 +147,7 @@ export default function CaptureTabScreen() {
     side === 'back' ? 'save-sheet' : 'answer-prompt';
 
   const draftRestoreOnce = useRef(false);
+  const draftRestoreDoneRef = useRef(isImportEntry);
   const importEntryLaunched = useRef(false);
   const captureProgressRef = useRef({ front: false, back: false });
   const afterEditStepRef = useRef<Step>('answer-prompt');
@@ -155,24 +160,33 @@ export default function CaptureTabScreen() {
   }, [frontUri, backUri]);
 
   useEffect(() => {
-    if (draftRestoreOnce.current || isImportEntry) return;
+    if (draftRestoreOnce.current || isImportEntry) {
+      draftRestoreDoneRef.current = true;
+      return;
+    }
     draftRestoreOnce.current = true;
     let cancelled = false;
     void (async () => {
-      const draft = await readCaptureDraft();
-      if (cancelled || !draft?.frontUri) return;
-      let didRestore = false;
-      setFrontUri((cur) => {
-        if (cur) return cur;
-        didRestore = true;
-        return draft.frontUri;
-      });
-      setBackUri((cur) => cur ?? draft.backUri);
-      setSubjectId((cur) => (cur && data.subjects.some((s) => s.id === cur) ? cur : draft.subjectId));
-      setStudyDate((cur) => cur || draft.studyDate);
-      setSelectedTags((cur) => (cur.length > 0 ? cur : draft.selectedTags ?? []));
-      setStep(draft.step === 'save-sheet' ? 'save-sheet' : 'answer-prompt');
-      if (didRestore) showMessage(t('capture.draftRestored'));
+      try {
+        const draft = await readCaptureDraft();
+        if (cancelled || !draft?.frontUri) return;
+        let didRestore = false;
+        setFrontUri((cur) => {
+          if (cur) return cur;
+          didRestore = true;
+          return draft.frontUri;
+        });
+        setBackUri((cur) => cur ?? draft.backUri);
+        setSubjectId((cur) =>
+          cur && data.subjects.some((s) => s.id === cur) ? cur : draft.subjectId
+        );
+        setStudyDate((cur) => cur || draft.studyDate);
+        setSelectedTags((cur) => (cur.length > 0 ? cur : draft.selectedTags ?? []));
+        setStep(draft.step === 'save-sheet' ? 'save-sheet' : 'answer-prompt');
+        if (didRestore) showMessage(t('capture.draftRestored'));
+      } finally {
+        if (!cancelled) draftRestoreDoneRef.current = true;
+      }
     })();
     return () => {
       cancelled = true;
@@ -180,6 +194,7 @@ export default function CaptureTabScreen() {
   }, [data.subjects, isImportEntry, t]);
 
   useEffect(() => {
+    if (!draftRestoreDoneRef.current) return;
     if (!frontUri) {
       void clearCaptureDraft();
       return;
@@ -250,7 +265,7 @@ export default function CaptureTabScreen() {
     if (editSource === 'gallery') {
       const existingUri = editSide === 'front' ? frontUri : backUri;
       if (existingUri) {
-        setStep(editSide === 'back' ? 'save-sheet' : 'answer-prompt');
+        setStep(backUri ? 'save-sheet' : 'answer-prompt');
         return;
       }
       void pickFromGallery(editSide, { keepDraftOnCancel: true });
@@ -328,11 +343,15 @@ export default function CaptureTabScreen() {
         void clearCaptureDraft();
       }
 
-      const id = setTimeout(
-        () => void pickFromGallery('front', { backOnCancel: true }),
-        isWeb ? 0 : 350
-      );
-      return () => clearTimeout(id);
+      let pickerStarted = false;
+      const id = setTimeout(() => {
+        pickerStarted = true;
+        void pickFromGallery('front', { backOnCancel: true });
+      }, isWeb ? 0 : 350);
+      return () => {
+        clearTimeout(id);
+        if (!pickerStarted) importEntryLaunched.current = false;
+      };
     }, [isImportEntry, isImportFresh, isWeb, pickFromGallery])
   );
 
@@ -349,7 +368,7 @@ export default function CaptureTabScreen() {
   };
 
   const startBackCapture = async () => {
-    if (isWeb) {
+    if (isWeb || !permission?.granted) {
       await pickFromGallery('back');
       return;
     }
@@ -623,7 +642,7 @@ export default function CaptureTabScreen() {
     );
   }
 
-  const needsCameraPermission = !permission?.granted && step === 'camera' && !inPostEditFlow;
+  const needsCameraPermission = !permission?.granted && step === 'camera';
 
   if (needsCameraPermission) {
     return (

@@ -191,17 +191,15 @@ export class LocalStorageProvider implements StorageProvider {
         return structuredClone(DEFAULT_DATA);
       }
 
-      if (!hasRecoverableContent(accepted)) {
-
-        const fromBackup = await this.loadFromLocalBackupRaw();
-
-        if (fromBackup) return fromBackup;
-
+      let chosen = accepted;
+      const fromBackup = await this.loadFromLocalBackupRaw();
+      if (fromBackup) {
+        chosen = this.pickNewerAppData(accepted, fromBackup);
+      } else if (!hasRecoverableContent(accepted)) {
+        return structuredClone(DEFAULT_DATA);
       }
 
-
-
-      return this.finalizeLoaded(accepted);
+      return this.finalizeLoaded(chosen);
 
     } catch {
 
@@ -216,6 +214,17 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
 
+
+  /** Prefer backup when it has a newer save stamp than main (quota may have failed main write). */
+  private pickNewerAppData(main: AppData, backup: AppData): AppData {
+    const mainAt = main.settings.lastSavedAt ?? '';
+    const backupAt = backup.settings.lastSavedAt ?? '';
+    if (backupAt > mainAt) return backup;
+    const mainPages = main.settings.lastSavedPageCount ?? 0;
+    const backupPages = backup.settings.lastSavedPageCount ?? 0;
+    if (backupPages > mainPages) return backup;
+    return main;
+  }
 
   private async finalizeLoaded(data: AppData): Promise<AppData> {
     const before = JSON.stringify(data.bundles);
@@ -361,7 +370,7 @@ export class LocalStorageProvider implements StorageProvider {
         msg.includes('exceeded');
       if (quota) {
         console.warn('[storage] persistLocal quota exceeded');
-        return;
+        throw new Error('QuotaExceeded');
       }
       throw err;
     }
