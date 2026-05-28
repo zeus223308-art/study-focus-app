@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import { HIGHLIGHTER_TOOLS, PEN_TOOLS } from '@/lib/domain/defaults';
+import { HIGHLIGHTER_TOOLS } from '@/lib/domain/defaults';
 import { inkToolKind, inkToolLabelKey } from '@/lib/domain/ink-tool-labels';
 import {
   ERASER_WIDTHS,
@@ -28,6 +28,7 @@ type Props = {
 };
 
 type PickerTarget = InkToolId | null;
+const PEN_COLOR_IDS: InkToolId[] = ['pen-black', 'pen-white', 'pen-red', 'pen-blue'];
 
 function colorForTool(id: InkToolId): string {
   if (id === 'pen-black') return '#101214';
@@ -134,7 +135,7 @@ export function InkToolBar({
     <View style={styles.wrap}>
       <View style={styles.group}>
         <Text style={styles.groupTitle}>{t('item.inkGroupPen')}</Text>
-        <View style={styles.colorRow}>{PEN_TOOLS.map(renderColorChip)}</View>
+        <View style={styles.colorRow}>{PEN_COLOR_IDS.map((id) => renderColorChip({ id }))}</View>
       </View>
 
       <View style={styles.group}>

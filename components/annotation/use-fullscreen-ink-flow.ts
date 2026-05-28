@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { PEN_TOOLS, HIGHLIGHTER_TOOLS } from '@/lib/domain/defaults';
+import { HIGHLIGHTER_TOOLS } from '@/lib/domain/defaults';
 import { inkToolKind } from '@/lib/domain/ink-tool-labels';
 import type { InkToolId } from '@/lib/domain/types';
 
@@ -46,7 +46,7 @@ export function useFullscreenInkFlow({
       return;
     }
     if (kind === 'pen') {
-      const nextPenTool = inkToolKind(tool) === 'pen' ? tool : PEN_TOOLS[0].id;
+      const nextPenTool = inkToolKind(tool) === 'pen' ? tool : 'pen-black';
       onToolChange(nextPenTool);
       setFlow({ kind: 'pen', step: 'color' });
       return;

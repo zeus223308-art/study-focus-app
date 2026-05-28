@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import { HIGHLIGHTER_TOOLS, PEN_TOOLS } from '@/lib/domain/defaults';
+import { HIGHLIGHTER_TOOLS } from '@/lib/domain/defaults';
 import { inkToolKind, inkToolLabelKey } from '@/lib/domain/ink-tool-labels';
 import { widthOptionsForTool } from '@/lib/domain/ink-sizes';
 import type { InkToolId } from '@/lib/domain/types';
@@ -43,6 +43,8 @@ function colorForTool(id: InkToolId): string {
   if (hi) return hi.color;
   return theme.gray;
 }
+
+const PEN_COLOR_IDS: InkToolId[] = ['pen-black', 'pen-white', 'pen-red', 'pen-blue'];
 
 export function FullscreenInkControls({
   tool,
@@ -126,11 +128,11 @@ export function FullscreenInkControls({
     return <View style={styles.kindOnlyWrap}>{kindRow}</View>;
   }
 
-  const colorTools =
+  const colorTools: { id: InkToolId }[] =
     flow?.step === 'color' && flow.kind === 'pen'
-      ? PEN_TOOLS
+      ? PEN_COLOR_IDS.map((id) => ({ id }))
       : flow?.step === 'color' && flow.kind === 'highlighter'
-        ? HIGHLIGHTER_TOOLS
+        ? HIGHLIGHTER_TOOLS.map((h) => ({ id: h.id }))
         : [];
 
   const sizeToolId = flow?.step === 'size' ? flow.toolId : tool;
