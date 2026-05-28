@@ -174,6 +174,7 @@ export function ProblemPhotoModal({
             <ScrollView
               horizontal
               pagingEnabled
+              scrollEnabled={inkKind === null}
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={onScrollEnd}
               scrollEventThrottle={16}
