@@ -1,19 +1,13 @@
 import { Platform } from 'react-native';
 
-import { styleForStroke } from '@/lib/domain/ink-stroke-style';
-import type { InkPoint, InkStroke } from '@/lib/domain/types';
+import { drawInkStrokeOnCanvas, inkPointsToPath } from '@/lib/domain/draw-ink-stroke';
+import type { InkStroke } from '@/lib/domain/types';
 
 import {
   cropRegionFromSelection,
   imageDisplayRect,
   type CropSelection,
 } from './interactive-crop';
-
-function pointsToPath(points: InkPoint[]): string {
-  if (points.length === 0) return '';
-  const [first, ...rest] = points;
-  return `M ${first.x} ${first.y} ${rest.map((p) => `L ${p.x} ${p.y}`).join(' ')}`;
-}
 
 /** Map overlay strokes (0..displayW) into cropped image pixel coordinates. */
 export function mapStrokesToCroppedImage(
@@ -40,24 +34,6 @@ export function mapStrokesToCroppedImage(
         };
       }),
     }));
-}
-
-function drawStroke(
-  ctx: CanvasRenderingContext2D,
-  stroke: InkStroke,
-  scale: number
-) {
-  const spec = styleForStroke(stroke);
-  if (stroke.points.length < 2) return;
-  ctx.save();
-  ctx.strokeStyle = spec.color;
-  ctx.lineWidth = stroke.width * scale;
-  ctx.globalAlpha = stroke.opacity;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  const path = new Path2D(pointsToPath(stroke.points));
-  ctx.stroke(path);
-  ctx.restore();
 }
 
 async function loadHtmlImage(uri: string): Promise<HTMLImageElement> {
@@ -91,7 +67,7 @@ export async function bakeStrokesOntoImageUri(
 
   ctx.drawImage(img, 0, 0, imageWidth, imageHeight);
   for (const stroke of strokes) {
-    drawStroke(ctx, stroke, 1);
+    drawInkStrokeOnCanvas(ctx, stroke, 1);
   }
 
   const blob = await new Promise<Blob | null>((resolve) => {

@@ -12,6 +12,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 
 import { InkStrokePath } from '@/components/annotation/InkStrokePath';
+import { WebInkCanvasOverlay } from '@/components/annotation/WebInkCanvasOverlay';
 import { theme } from '@/constants/theme';
 import { INK_STROKE_STYLES, strokeStyleForTool } from '@/lib/domain/ink-stroke-style';
 import { scaleStrokesToViewport } from '@/lib/files/bake-capture-ink';
@@ -198,29 +199,38 @@ export function AnnotationCanvas({
       onLayout={onLayout}
       {...pan.panHandlers}
       {...(Platform.OS === 'web' ? { dataSet: { inkCanvas: '1' } } : {})}>
-      <Svg width={size.w} height={size.h} style={StyleSheet.absoluteFill}>
-        {display.map((s) => (
-          <InkStrokePath
-            key={s.id}
-            id={s.id}
-            tool={s.tool}
-            points={s.points}
-            width={s.width}
-            opacity={s.opacity}
-          />
-        ))}
-        {eraserPreview && (
-          <Path
-            d={pointsToPath(eraserPreview.points)}
-            stroke={INK_STROKE_STYLES.eraser.color}
-            strokeWidth={eraserPreview.width}
-            strokeOpacity={eraserPreview.opacity}
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-      </Svg>
+      {Platform.OS === 'web' ? (
+        <WebInkCanvasOverlay
+          width={size.w}
+          height={size.h}
+          strokes={display}
+          eraserPreview={eraserPreview}
+        />
+      ) : (
+        <Svg width={size.w} height={size.h} style={StyleSheet.absoluteFill}>
+          {display.map((s) => (
+            <InkStrokePath
+              key={s.id}
+              id={s.id}
+              tool={s.tool}
+              points={s.points}
+              width={s.width}
+              opacity={s.opacity}
+            />
+          ))}
+          {eraserPreview && (
+            <Path
+              d={pointsToPath(eraserPreview.points)}
+              stroke={INK_STROKE_STYLES.eraser.color}
+              strokeWidth={eraserPreview.width}
+              strokeOpacity={eraserPreview.opacity}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+        </Svg>
+      )}
     </View>
   );
 }

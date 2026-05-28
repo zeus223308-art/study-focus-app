@@ -110,34 +110,15 @@ body {
   touch-action: none !important;
 }
 /* Pen ink — prevent mobile web dark-mode inversion of pure black/white */
-[data-ink-swatch="pen-black"],
-[data-ink-stroke="pen-black"] {
-  background-color: rgb(0, 0, 0) !important;
-  stroke: rgb(0, 0, 0) !important;
-  forced-color-adjust: none !important;
-  color-scheme: only light;
-}
-[data-ink-swatch="pen-white"],
-[data-ink-stroke="pen-white"] {
-  background-color: rgb(255, 255, 255) !important;
-  border: 2px solid rgb(102, 102, 102) !important;
-  stroke: rgb(255, 255, 255) !important;
-  forced-color-adjust: none !important;
-  color-scheme: only light;
-}
-[data-ink-stroke="pen-red"] {
-  stroke: rgb(220, 38, 38) !important;
+[data-ink-swatch="pen-black"] {
+  background-color: #000000 !important;
   forced-color-adjust: none !important;
 }
-[data-ink-stroke="pen-blue"] {
-  stroke: rgb(37, 99, 235) !important;
+[data-ink-swatch="pen-white"] {
+  border-color: #666666 !important;
   forced-color-adjust: none !important;
 }
-[data-ink-canvas="1"] {
-  forced-color-adjust: none !important;
-  color-scheme: only light;
-}
-[data-ink-canvas="1"] svg path {
+[data-ink-canvas="1"] canvas {
   forced-color-adjust: none !important;
 }
 `;

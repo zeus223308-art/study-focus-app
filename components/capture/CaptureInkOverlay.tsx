@@ -1,14 +1,9 @@
-import { StyleSheet } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Platform, StyleSheet, View } from 'react-native';
+import Svg from 'react-native-svg';
 
-import { styleForStroke } from '@/lib/domain/ink-stroke-style';
-import type { InkPoint, InkStroke } from '@/lib/domain/types';
-
-function pointsToPath(points: InkPoint[]): string {
-  if (points.length === 0) return '';
-  const [first, ...rest] = points;
-  return `M ${first.x} ${first.y} ${rest.map((p) => `L ${p.x} ${p.y}`).join(' ')}`;
-}
+import { InkStrokePath } from '@/components/annotation/InkStrokePath';
+import { WebInkCanvasOverlay } from '@/components/annotation/WebInkCanvasOverlay';
+import type { InkStroke } from '@/lib/domain/types';
 
 type Rect = { left: number; top: number; width: number; height: number };
 
@@ -23,33 +18,41 @@ export function CaptureInkOverlay({ strokes, displayRect }: Props) {
     return null;
   }
 
+  const overlayStyle = [
+    styles.overlay,
+    {
+      left: displayRect.left,
+      top: displayRect.top,
+      width: displayRect.width,
+      height: displayRect.height,
+    },
+  ];
+
+  if (Platform.OS === 'web') {
+    return (
+      <View pointerEvents="none" style={overlayStyle}>
+        <WebInkCanvasOverlay
+          width={displayRect.width}
+          height={displayRect.height}
+          strokes={strokes.filter((s) => s.tool !== 'eraser' && s.points.length >= 2)}
+          eraserPreview={null}
+        />
+      </View>
+    );
+  }
+
   return (
-    <Svg
-      pointerEvents="none"
-      width={displayRect.width}
-      height={displayRect.height}
-      style={[
-        styles.overlay,
-        {
-          left: displayRect.left,
-          top: displayRect.top,
-          width: displayRect.width,
-          height: displayRect.height,
-        },
-      ]}>
+    <Svg pointerEvents="none" width={displayRect.width} height={displayRect.height} style={overlayStyle}>
       {strokes.map((stroke) => {
-        const spec = styleForStroke(stroke);
-        if (stroke.points.length < 2) return null;
+        if (stroke.points.length < 2 || stroke.tool === 'eraser') return null;
         return (
-          <Path
+          <InkStrokePath
             key={stroke.id}
-            d={pointsToPath(stroke.points)}
-            stroke={spec.color}
-            strokeWidth={stroke.width}
-            strokeOpacity={stroke.opacity}
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+            id={stroke.id}
+            tool={stroke.tool}
+            points={stroke.points}
+            width={stroke.width}
+            opacity={stroke.opacity}
           />
         );
       })}

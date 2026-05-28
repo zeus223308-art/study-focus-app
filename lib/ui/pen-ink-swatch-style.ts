@@ -8,31 +8,31 @@ export function penSwatchStyle(tool: PenToolId): ViewStyle {
     case 'pen-black':
       return {
         backgroundColor: PEN_INK_COLORS['pen-black'],
-        borderColor: 'rgb(136, 136, 136)',
+        borderColor: '#888888',
         borderWidth: 2,
       };
     case 'pen-white':
       return {
         backgroundColor: PEN_INK_COLORS['pen-white'],
-        borderColor: 'rgb(102, 102, 102)',
+        borderColor: '#666666',
         borderWidth: 2,
       };
     case 'pen-red':
       return {
         backgroundColor: PEN_INK_COLORS['pen-red'],
-        borderColor: 'rgb(185, 28, 28)',
+        borderColor: '#B91C1C',
         borderWidth: 1,
       };
     case 'pen-blue':
       return {
         backgroundColor: PEN_INK_COLORS['pen-blue'],
-        borderColor: 'rgb(29, 78, 216)',
+        borderColor: '#1D4ED8',
         borderWidth: 1,
       };
     default:
       return {
         backgroundColor: PEN_INK_COLORS['pen-black'],
-        borderColor: 'rgb(136, 136, 136)',
+        borderColor: '#888888',
         borderWidth: 2,
       };
   }

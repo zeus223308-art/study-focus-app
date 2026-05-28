@@ -1,11 +1,11 @@
 import type { InkToolId, PenToolId } from '@/lib/domain/types';
 
-/** Ink colors as rgb() — mobile web handles these more reliably than #000 / #fff. */
+/** Canonical pen ink colors (hex — used by canvas, SVG, and swatches). */
 export const PEN_INK_COLORS: Record<PenToolId, string> = {
-  'pen-black': 'rgb(0, 0, 0)',
-  'pen-white': 'rgb(255, 255, 255)',
-  'pen-red': 'rgb(220, 38, 38)',
-  'pen-blue': 'rgb(37, 99, 235)',
+  'pen-black': '#000000',
+  'pen-white': '#FFFFFF',
+  'pen-red': '#DC2626',
+  'pen-blue': '#2563EB',
 };
 
 export const PEN_INK_ORDER: PenToolId[] = ['pen-black', 'pen-white', 'pen-red', 'pen-blue'];
