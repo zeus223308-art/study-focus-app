@@ -13,7 +13,7 @@
     "empty": "Nothing due today",
     "emptyDate": "{{date}} · nothing due",
     "pickSubjects": "Subjects",
-    "pickSubjectsHint": "",
+    "pickSubjectsHint": "Swipe each card to pick which problem to review",
     "dueToday": "Due {{count}}",
     "noSubjects": "No photos to review",
     "addPhotos": "Add photos",

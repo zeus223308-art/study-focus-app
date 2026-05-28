@@ -31,6 +31,9 @@ export default function DashboardScreen() {
   } = useApp();
 
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<string>>(new Set());
+  const [previewIndexBySubject, setPreviewIndexBySubject] = useState<Record<string, number>>(
+    {}
+  );
 
   const subjectEntries = useMemo((): DashboardSubjectEntry[] => {
     const dueIds = new Set(dueSelected.map((b) => b.id));
@@ -38,19 +41,31 @@ export default function DashboardScreen() {
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((subject) => {
         const bundles = data.bundles.filter((b) => b.subjectId === subject.id && !b.archived);
+        const dueBundles = bundles.filter((b) => dueIds.has(b.id));
+        const previewBundles = dueBundles.length > 0 ? dueBundles : bundles;
         const totalPages = bundles.reduce((n, b) => n + totalPagesInBundle(b), 0);
-        const duePages = bundles
-          .filter((b) => dueIds.has(b.id))
-          .reduce((n, b) => n + totalPagesInBundle(b), 0);
+        const duePages = dueBundles.reduce((n, b) => n + totalPagesInBundle(b), 0);
         return {
           subject,
           totalPages,
           duePages,
-          previews: getBundlesFrontPreviews(bundles),
+          previews: getBundlesFrontPreviews(previewBundles),
         };
       })
       .filter((e) => e.totalPages > 0);
   }, [data.subjects, data.bundles, dueSelected]);
+
+  useEffect(() => {
+    setPreviewIndexBySubject((prev) => {
+      const next: Record<string, number> = {};
+      for (const entry of subjectEntries) {
+        const max = Math.max(0, entry.previews.length - 1);
+        const cur = prev[entry.subject.id] ?? 0;
+        next[entry.subject.id] = Math.min(cur, max);
+      }
+      return next;
+    });
+  }, [subjectEntries]);
 
   useEffect(() => {
     const dueSubjectIds = subjectEntries
@@ -84,15 +99,26 @@ export default function DashboardScreen() {
     setSelectedSubjectIds(new Set());
   }, []);
 
+  const setPreviewIndex = useCallback((subjectId: string, index: number) => {
+    setPreviewIndexBySubject((prev) => ({ ...prev, [subjectId]: index }));
+  }, []);
+
   const canStart = selectedSubjectIds.size > 0;
 
   const openReview = () => {
     if (!canStart) return;
-    const ids = Array.from(selectedSubjectIds);
-    const hasPages = data.bundles.some(
-      (b) => !b.archived && ids.includes(b.subjectId) && b.pages.length > 0
-    );
-    if (!hasPages) {
+    const reviewPages: string[] = [];
+    for (const subjectId of selectedSubjectIds) {
+      const entry = subjectEntries.find((e) => e.subject.id === subjectId);
+      if (!entry || entry.previews.length === 0) continue;
+      const idx = Math.min(
+        previewIndexBySubject[subjectId] ?? 0,
+        entry.previews.length - 1
+      );
+      const pick = entry.previews[idx];
+      reviewPages.push(`${pick.bundleId}:${pick.pageId}`);
+    }
+    if (reviewPages.length === 0) {
       showMessage('', t('dashboard.noReviewPages'));
       return;
     }
@@ -100,7 +126,7 @@ export default function DashboardScreen() {
       pathname: '/review/session',
       params: {
         blackout: '1',
-        subjectIds: ids.join(','),
+        reviewPages: reviewPages.join(','),
       },
     });
   };
@@ -147,7 +173,9 @@ export default function DashboardScreen() {
           <DashboardReviewPicker
             entries={subjectEntries}
             selectedIds={selectedSubjectIds}
+            previewIndexBySubject={previewIndexBySubject}
             onToggle={toggleSubject}
+            onPreviewIndexChange={setPreviewIndex}
             onSelectAll={selectAll}
             onClearAll={clearAll}
           />

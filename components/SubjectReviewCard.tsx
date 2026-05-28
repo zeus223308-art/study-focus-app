@@ -10,7 +10,8 @@ type Props = {
   totalLabel: string;
   emptyHint: string;
   selected?: boolean;
-  onPress: () => void;
+  previewIndex?: number;
+  onPreviewIndexChange?: (index: number) => void;
 };
 
 /** Dashboard due card — subject tag + swipeable problem previews. */
@@ -20,7 +21,8 @@ export function SubjectReviewCard({
   totalLabel,
   emptyHint,
   selected,
-  onPress,
+  previewIndex,
+  onPreviewIndexChange,
 }: Props) {
   return (
     <View style={[styles.wrap, selected && styles.wrapSelected]}>
@@ -30,8 +32,10 @@ export function SubjectReviewCard({
         items={previewItems}
         totalLabel={totalLabel}
         emptyHint={emptyHint}
-        onOpen={onPress}
+        onOpen={() => {}}
         onGestureLock={() => {}}
+        previewIndex={previewIndex}
+        onPreviewIndexChange={onPreviewIndexChange}
       />
     </View>
   );

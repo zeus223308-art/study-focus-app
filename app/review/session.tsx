@@ -54,6 +54,7 @@ export default function ReviewSessionScreen() {
     bundleId?: string;
     subjectId?: string;
     subjectIds?: string;
+    reviewPages?: string;
     slideshow?: string;
     blackout?: string;
   }>();
@@ -63,6 +64,9 @@ export default function ReviewSessionScreen() {
   const slides = useMemo<Slide[]>(() => {
     const pickedSubjectIds =
       params.subjectIds?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+    const pickedPageKeys = new Set(
+      (params.reviewPages?.split(',').map((s) => s.trim()).filter(Boolean) ?? [])
+    );
 
     let bundles = params.bundleId
       ? data.bundles.filter((b) => b.id === params.bundleId)
@@ -78,6 +82,9 @@ export default function ReviewSessionScreen() {
     const list: Slide[] = [];
     for (const bundle of bundles) {
       for (const page of bundle.pages) {
+        if (pickedPageKeys.size > 0 && !pickedPageKeys.has(`${bundle.id}:${page.id}`)) {
+          continue;
+        }
         list.push({ bundle, page, side: 'front' });
         if (isSlideshow && getAnswerImageUri(page)) {
           list.push({ bundle, page, side: 'back' });
@@ -89,6 +96,7 @@ export default function ReviewSessionScreen() {
     params.bundleId,
     params.subjectId,
     params.subjectIds,
+    params.reviewPages,
     params.slideshow,
     dueSelected,
     dueToday,

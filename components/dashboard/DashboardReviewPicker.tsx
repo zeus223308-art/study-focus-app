@@ -19,7 +19,9 @@ export type DashboardSubjectEntry = {
 type Props = {
   entries: DashboardSubjectEntry[];
   selectedIds: Set<string>;
+  previewIndexBySubject: Record<string, number>;
   onToggle: (subjectId: string) => void;
+  onPreviewIndexChange: (subjectId: string, index: number) => void;
   onSelectAll: () => void;
   onClearAll: () => void;
 };
@@ -27,7 +29,9 @@ type Props = {
 export function DashboardReviewPicker({
   entries,
   selectedIds,
+  previewIndexBySubject,
   onToggle,
+  onPreviewIndexChange,
   onSelectAll,
   onClearAll,
 }: Props) {
@@ -44,7 +48,10 @@ export function DashboardReviewPicker({
   return (
     <View style={styles.wrap}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('dashboard.pickSubjects')}</Text>
+        <View style={styles.titleCol}>
+          <Text style={styles.title}>{t('dashboard.pickSubjects')}</Text>
+          <Text style={styles.hint}>{t('dashboard.pickSubjectsHint')}</Text>
+        </View>
         <Pressable onPress={allSelected ? onClearAll : onSelectAll} hitSlop={8}>
           <Text style={styles.selectAll}>
             {allSelected ? t('dashboard.deselectAll') : t('dashboard.selectAll')}
@@ -84,14 +91,21 @@ export function DashboardReviewPicker({
                     </Text>
                   </View>
                 ) : null}
-                <SubjectReviewCard
-                  subjectTag={entry.subject.name}
-                  previewItems={entry.previews}
-                  totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
-                  emptyHint={t('dashboard.previewEmpty')}
-                  selected={checked}
+                <Pressable
                   onPress={() => onToggle(entry.subject.id)}
-                />
+                  style={styles.cardPress}>
+                  <SubjectReviewCard
+                    subjectTag={entry.subject.name}
+                    previewItems={entry.previews}
+                    totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
+                    emptyHint={t('dashboard.previewEmpty')}
+                    selected={checked}
+                    previewIndex={previewIndexBySubject[entry.subject.id] ?? 0}
+                    onPreviewIndexChange={(index) =>
+                      onPreviewIndexChange(entry.subject.id, index)
+                    }
+                  />
+                </Pressable>
               </View>
             );
           })}
@@ -112,14 +126,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 4,
   },
+  titleCol: { flex: 1, marginRight: 8 },
   title: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
-  selectAll: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   hint: {
     fontSize: theme.font.caption,
     color: theme.gray,
-    marginBottom: 12,
-    lineHeight: 18,
+    marginTop: 2,
+    lineHeight: 16,
   },
+  selectAll: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   cardRow: {
     flexDirection: 'row',
     gap: 12,
@@ -129,6 +144,7 @@ const styles = StyleSheet.create({
   },
   cardRowSingle: { marginBottom: 12, width: '100%' },
   cell: { flex: 1, minWidth: 0, position: 'relative', alignSelf: 'stretch' },
+  cardPress: { flex: 1, minWidth: 0 },
   cellLandscape: { aspectRatio: LANDSCAPE_CARD_RATIO },
   spacer: { flex: 1 },
   checkHit: {

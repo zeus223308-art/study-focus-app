@@ -33,6 +33,9 @@ type Props = {
   /** Shown as small tag on top-left inside the card (dashboard). */
   subjectTag?: string;
   onInteraction?: () => void;
+  /** Controlled carousel index (dashboard problem picker). */
+  previewIndex?: number;
+  onPreviewIndexChange?: (index: number) => void;
 };
 
 const VAULT_HEIGHT = 112;
@@ -49,13 +52,21 @@ export function SubjectFolderPreview({
   variant = 'vault',
   subjectTag,
   onInteraction,
+  previewIndex: previewIndexProp,
+  onPreviewIndexChange,
 }: Props) {
   const { t } = useTranslation();
   const viewport = useViewportLayout();
   const portraitHeight = variant === 'dashboard' ? DASHBOARD_HEIGHT : VAULT_HEIGHT;
   const [cardWidth, setCardWidth] = useState(0);
-  const [index, setIndex] = useState(0);
+  const [internalIndex, setInternalIndex] = useState(0);
+  const listRef = useRef<FlatList<SubjectPreviewItem> | null>(null);
   const didSwipeRef = useRef(false);
+  const isDashboard = variant === 'dashboard';
+  const index =
+    previewIndexProp !== undefined
+      ? Math.max(0, Math.min(previewIndexProp, Math.max(0, items.length - 1)))
+      : internalIndex;
 
   const lock = useCallback(() => onGestureLock(true), [onGestureLock]);
   const unlock = useCallback(() => onGestureLock(false), [onGestureLock]);
@@ -68,9 +79,17 @@ export function SubjectFolderPreview({
   }, [unlock]);
 
   const setIndexAndNotify = (i: number) => {
-    setIndex(i);
-    onInteraction?.();
+    const clamped = Math.max(0, Math.min(i, Math.max(0, items.length - 1)));
+    if (previewIndexProp === undefined) setInternalIndex(clamped);
+    onPreviewIndexChange?.(clamped);
+    if (!isDashboard) onInteraction?.();
   };
+
+  useEffect(() => {
+    if (previewIndexProp === undefined || cardWidth <= 0 || items.length === 0) return;
+    const clamped = Math.max(0, Math.min(previewIndexProp, items.length - 1));
+    listRef.current?.scrollToOffset({ offset: cardWidth * clamped, animated: false });
+  }, [previewIndexProp, cardWidth, items.length]);
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (cardWidth <= 0) return;
@@ -108,7 +127,7 @@ export function SubjectFolderPreview({
         <ResolvedImage uri={item.thumbnailUri} style={styles.image} resizeMode="cover" />
       </View>
     );
-    if (passthroughGestures) return slide;
+    if (passthroughGestures || isDashboard) return slide;
     return (
       <Pressable
         style={[styles.slide, { width: cardWidth, height: slideHeight }]}
@@ -190,31 +209,36 @@ export function SubjectFolderPreview({
     );
   }
 
-  const CardWrap = Pressable;
+  const CardWrap = isDashboard ? View : Pressable;
+  const cardWrapProps = isDashboard
+    ? {}
+    : {
+        onLongPress,
+        delayLongPress: 450 as const,
+        onTouchStart: () => {
+          lock();
+          onInteraction?.();
+        },
+        onTouchEnd: unlock,
+        onTouchCancel: unlock,
+        ...(Platform.OS === 'web'
+          ? {
+              onMouseDown: () => {
+                lock();
+                onInteraction?.();
+              },
+            }
+          : {}),
+      };
 
   return (
     <CardWrap
-      onLongPress={onLongPress}
-      delayLongPress={450}
+      {...cardWrapProps}
       style={cardStyle}
       onLayout={(e) => {
         const w = Math.round(e.nativeEvent.layout.width);
         if (w > 0 && w !== cardWidth) setCardWidth(w);
-      }}
-      onTouchStart={() => {
-        lock();
-        onInteraction?.();
-      }}
-      onTouchEnd={unlock}
-      onTouchCancel={unlock}
-      {...(Platform.OS === 'web'
-        ? {
-            onMouseDown: () => {
-              lock();
-              onInteraction?.();
-            },
-          }
-        : {})}>
+      }}>
       {subjectTag ? (
         <View style={styles.subjectTag} pointerEvents="none">
           <Text style={styles.subjectTagText} numberOfLines={1}>
@@ -224,6 +248,7 @@ export function SubjectFolderPreview({
       ) : null}
       {cardWidth > 0 && (
         <FlatList
+          ref={listRef}
           data={items}
           horizontal
           pagingEnabled
@@ -233,6 +258,7 @@ export function SubjectFolderPreview({
           keyExtractor={(it) => `${it.bundleId}-${it.pageId}`}
           renderItem={renderItem}
           onMomentumScrollEnd={onScrollEnd}
+          onScrollEndDrag={onScrollEnd}
           style={styles.list}
           getItemLayout={(_, i) => ({
             length: cardWidth,
@@ -244,20 +270,22 @@ export function SubjectFolderPreview({
       <View style={styles.overlay} pointerEvents="none">
         <Text style={styles.badge}>{totalLabel}</Text>
         {items.length > 1 ? (
-          <Text style={styles.counter}>
+          <Text style={[styles.counter, isDashboard && styles.counterPick]}>
             {index + 1} / {items.length}
           </Text>
         ) : null}
       </View>
-      <Pressable
-        style={styles.openFab}
-        onPress={() => {
-          onInteraction?.();
-          onOpen();
-        }}
-        hitSlop={8}>
-        <Text style={styles.openFabText}>{t('common.arrowRight')}</Text>
-      </Pressable>
+      {!isDashboard ? (
+        <Pressable
+          style={styles.openFab}
+          onPress={() => {
+            onInteraction?.();
+            onOpen();
+          }}
+          hitSlop={8}>
+          <Text style={styles.openFabText}>{t('common.arrowRight')}</Text>
+        </Pressable>
+      ) : null}
     </CardWrap>
   );
 }
@@ -328,6 +356,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     color: theme.orangeSoft,
+  },
+  counterPick: {
+    color: theme.orange,
   },
   openFab: {
     position: 'absolute',

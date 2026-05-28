@@ -13,7 +13,7 @@
     "empty": "오늘 복습 없음",
     "emptyDate": "{{date}} · 복습 없음",
     "pickSubjects": "과목 선택",
-    "pickSubjectsHint": "",
+    "pickSubjectsHint": "카드를 옆으로 밀어 풀 문제를 고르세요",
     "dueToday": "오늘 {{count}}장",
     "noSubjects": "복습할 사진 없음",
     "addPhotos": "사진 추가",
