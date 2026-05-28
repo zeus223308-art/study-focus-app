@@ -1,9 +1,12 @@
 import type { PenToolId } from '@/lib/domain/types';
 
-/** 1×1 PNG data URIs for black/white — immune to CSS forced-color on mobile web. */
+/**
+ * 1×1 RGB PNG data URIs (generated programmatically — exact #000 / #fff).
+ * Previous placeholder PNGs rendered red / yellow on mobile web.
+ */
 export const PEN_SWATCH_DATA_URI: Partial<Record<PenToolId, string>> = {
   'pen-black':
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwDA8ABlqKAz7TxQAAAABJRU5ErkJggg==',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC',
   'pen-white':
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC',
 };
