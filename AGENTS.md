@@ -59,16 +59,19 @@ Built/refined: full app shell, vault/capture/review, DateRibbon, first-launch da
 - Firebase/GCS sync, real OCR, ads, drag-drop folders, EAS production builds.
 - Occasional TS noise on `DateRibbon` web `cursor` styles / `.expo/types/router.d.ts`.
 
-## Auto save, commit, push, deploy (standing user policy)
+## 에이전트 자동화 (고정 정책 — 매번 말 안 해도 됨)
 
-| Step | What |
+| 항목 | 설정 |
 |------|------|
-| **Editor** | `.vscode/settings.json` — auto-save after 1s |
-| **Agent** | `.cursor/rules/auto-commit-deploy.mdc` — after every change: commit → push → **wait for Deploy Web success** |
-| **CI** | `.github/workflows/deploy-web.yml` on `main` (deploy queue does not cancel in-progress) |
-| **Live URL** | https://zeus223308-art.github.io/study-focus-app/ |
+| **자동 저장** | `.vscode/settings.json` — 1초 후 auto-save |
+| **커밋·푸시·배포** | `.cursor/rules/agent-automation.mdc` — 코드 바꾸면 **에이전트가 알아서** commit → push → Deploy Web 확인 |
+| **백그라운드 실행** | 배포 대기·expo·긴 명령 — **물어보지 않고** 백그라운드 실행 |
+| **라이브 URL** | https://zeus223308-art.github.io/study-focus-app/ |
 
-**Platforms (same web app):** iPhone Safari, Android Chrome, desktop browsers. UI must use viewport + safe-area patterns; modals at root/tab level.
+“커밋/배포 해줘”, “run in background”라고 **안 말해도** 기본 동작입니다.  
+**예외:** “커밋하지 마” / “푸시하지 마”라고 할 때만 생략.
+
+**플랫폼:** iPhone·Android 브라우저 + PC 웹 (같은 GitHub Pages 빌드). UI는 viewport·safe-area·모달은 ScrollView 밖.
 
 Local preview: `npx expo start --web --port 8082`
 

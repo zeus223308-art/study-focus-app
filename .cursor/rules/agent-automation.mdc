@@ -1,0 +1,57 @@
+---
+description: MANDATORY — auto save, background shell, commit/push/deploy (no asking)
+alwaysApply: true
+---
+
+# Agent automation (mandatory)
+
+**This repo overrides generic “only commit when the user asks” rules.**
+
+The user wants the agent to **do these automatically every time** — not ask permission.
+
+## Do NOT ask the user
+
+Never prompt for:
+
+- “커밋/푸시/배포 할까요?”
+- “run in background?” / “백그라운드로 실행할까요?”
+- “저장할까요?”
+
+Just do it (unless they explicitly say **don’t commit** / **don’t push**).
+
+## Auto-save
+
+- Workspace: `.vscode/settings.json` → `files.autoSave: afterDelay` (1s), `formatOnSave`.
+- Agent: use Write/StrReplace so files are saved; do not leave edits only in chat.
+
+## After every implementation (code, i18n, config)
+
+Not for question-only replies.
+
+1. `git status` and `git diff --stat`
+2. **Commit** on `main` (clear message; no secrets)
+3. **Push** `origin main`
+4. **Deploy verify** (background — see below) until **Deploy Web** succeeds or report failure + fix
+5. Reply with: commit hash, deploy status, live URL  
+   `https://zeus223308-art.github.io/study-focus-app/`
+
+Skip commit/push only when: user said not to, no file changes, or exploratory/undecided work.
+
+Never: `.env`, keys, `git config`, force-push.
+
+## Background shell (always automatic)
+
+Run long commands in **background** without asking:
+
+| Task | Example |
+|------|---------|
+| Deploy wait | `gh run watch <id> --exit-status` or poll `gh run list` |
+| Dev server | `npx expo start` |
+| Install / export | `npm ci`, `npx expo export --platform web` |
+| Typecheck | `npx tsc --noEmit` when it may exceed ~30s |
+
+Use `block_until_ms: 0` or background + `Await` / read terminal output. Report result when done.
+
+## Cross-platform reminder
+
+Same bundle for **iOS/Android mobile browsers** and desktop web (GitHub Pages). UI: `useViewportLayout`, safe area, modals **outside** `ScrollView` — see `responsive-ui.mdc`.

@@ -24,19 +24,15 @@ alwaysApply: true
 - Calendar dates: use `todayKey()` / local `startOfDay` — never `toISOString().slice(0,10)` for "today"
 - After ribbon/date/tab changes, sanity-check `DateRibbon.tsx`, `dates.ts`, `AppContext.tsx`
 
-## Auto commit + deploy (user requested — always)
+## Agent automation (mandatory)
 
-After **any code change** (features, fixes, i18n, config):
+Follow **`.cursor/rules/agent-automation.mdc`** every session:
 
-1. **Commit** + **push** `main` (unless user says not to / question-only).
-2. **Verify** GitHub Actions **Deploy Web** succeeded (`gh run list --workflow=deploy-web.yml`).
-3. Report commit hash + URL: `https://zeus223308-art.github.io/study-focus-app/`
+- Auto-save (`.vscode/settings.json` + write files via tools)
+- **Commit → push → Deploy Web verify** after every code change (user does **not** need to say “커밋/배포”)
+- **Background shell** for deploy wait, expo, long npm/tsc — **never ask** “run in background?”
 
-**Platforms:** Android & iOS **mobile browsers** + desktop web (GitHub Pages). Same bundle — design for phone safe-area, touch, and narrow viewport.
-
-Do **not** commit secrets. Do **not** force-push.
-
-**Background shell:** long commands (deploy wait, expo start, npm ci, export) — agent runs in background automatically; no user approval needed.
+Live URL: https://zeus223308-art.github.io/study-focus-app/
 
 ## Responsive / cross-platform (required for UI work)
 
