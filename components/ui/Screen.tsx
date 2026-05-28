@@ -1,9 +1,9 @@
 import { forwardRef, ReactNode } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dockTopContentInset } from '@/components/DockTabBar';
-import { theme } from '@/constants/theme';
+import { screenLayoutStyles } from '@/lib/ui/screen-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const SCROLL_BOTTOM_PAD = 24;
@@ -37,7 +37,7 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
     <View
       style={[
         { paddingTop: dockTopContentInset(insets.top), paddingHorizontal: pad },
-        fill && styles.fill,
+        fill && screenLayoutStyles.fillColumn,
         style,
       ]}>
       {children}
@@ -62,22 +62,21 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
     return (
       <ScrollView
         ref={ref}
-        style={styles.root}
+        style={[screenLayoutStyles.root, fill && screenLayoutStyles.rootFill]}
         scrollEnabled={scrollEnabled}
         contentContainerStyle={{
           paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD + (viewport.isLandscape ? 32 : 0),
         }}
-        showsVerticalScrollIndicator={viewport.isLandscape}
+        showsVerticalScrollIndicator
         nestedScrollEnabled={nestedScrollEnabled}
         keyboardShouldPersistTaps="handled">
         {inner}
       </ScrollView>
     );
   }
-  return <View style={[styles.root, { paddingBottom: insets.bottom }]}>{inner}</View>;
-});
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.beige },
-  fill: { flex: 1 },
+  return (
+    <View style={[screenLayoutStyles.root, fill && screenLayoutStyles.rootFill, { paddingBottom: insets.bottom }]}>
+      {inner}
+    </View>
+  );
 });

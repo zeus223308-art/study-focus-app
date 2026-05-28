@@ -8,7 +8,7 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
-import { landscapeCardAspectRatio } from '@/lib/ui/landscape-card-layout';
+import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
@@ -61,7 +61,9 @@ export function AlbumPhotoTile({
 }: Props) {
   const { movingBundleId, draggingItemKey, dragHoverItemKey } = useApp();
   const viewport = useViewportLayout();
-  const tileAspect = landscapeCardAspectRatio(viewport.isLandscape);
+  const landscapeTileH = viewport.isLandscape
+    ? heightForLandscapeCardWidth(cellWidth, true)
+    : undefined;
   const memoBadge = albumMemoBadgeMetrics(cellWidth);
   const contextLifted = movingBundleId === bundleId && draggingItemKey === itemDragKey;
   const itemHover = dragHoverItemKey === itemDragKey && !contextLifted;
@@ -117,7 +119,11 @@ export function AlbumPhotoTile({
       <View style={[styles.cell, { width: cellWidth }, style]}>
         <Pressable
           onPress={handlePress}
-          style={[styles.tile, { aspectRatio: tileAspect }, tileHighlighted && styles.tileSelected]}>
+          style={[
+            styles.tile,
+            landscapeTileH ? { height: landscapeTileH } : styles.tilePortrait,
+            tileHighlighted && styles.tileSelected,
+          ]}>
           <ResolvedImage uri={thumbnailUri} asset={asset} style={styles.image} resizeMode="cover" />
           {memoBadgeEl}
           <View style={[styles.pickBadge, pickSelected && styles.pickBadgeOn]}>
@@ -147,7 +153,7 @@ export function AlbumPhotoTile({
         onGestureActiveChange={onGestureActiveChange}
         style={[
           styles.tile,
-          { aspectRatio: tileAspect },
+          landscapeTileH ? { height: landscapeTileH } : styles.tilePortrait,
           tileHighlighted && styles.tileSelected,
           showLifted && styles.tileLifted,
           showLifted && styles.tileLiftedShadow,
@@ -180,6 +186,10 @@ export function AlbumPhotoTile({
 
 const styles = StyleSheet.create({
   cell: {},
+  tilePortrait: {
+    width: '100%',
+    aspectRatio: 1,
+  },
   tile: {
     width: '100%',
     borderRadius: 2,

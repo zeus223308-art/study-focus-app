@@ -322,7 +322,7 @@ export default function FolderScreen() {
   return (
     <View style={styles.root}>
       <Screen padded={false} fill>
-        <View style={styles.header}>
+        <View style={[styles.header, styles.shrink0]}>
           <ScreenHeader
             title={subject.name}
             showBack
@@ -506,7 +506,8 @@ export default function FolderScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, minHeight: 0 },
+  shrink0: { flexShrink: 0 },
   header: { paddingHorizontal: 20 },
   ribbonWrap: { marginBottom: 8, marginHorizontal: -4 },
   exportHint: {
@@ -517,7 +518,7 @@ const styles = StyleSheet.create({
   },
   cancelMove: { alignSelf: 'flex-end', marginTop: -12, marginBottom: 8 },
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
-  albumScroll: { flex: 1 },
+  albumScroll: { flex: 1, minHeight: 0 },
   scroll: { paddingHorizontal: 16, paddingBottom: 120 },
   scrollEmpty: { flexGrow: 1, justifyContent: 'center' },
   emptyBlock: { alignItems: 'center', gap: 20, paddingVertical: 40 },

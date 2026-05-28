@@ -5,6 +5,7 @@ import { SymbolView } from 'expo-symbols';
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
+import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import type { CloudAsset, InkToolId, NoteLayer } from '@/lib/domain/types';
 import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
 
@@ -65,7 +66,10 @@ export function BundlePhotoBlock({
   }, [uri]);
 
   const width = fillWidth && measuredW > 0 ? measuredW : maxWidth;
-  const height = Math.min(maxHeight, Math.max(72, Math.round(width * aspect)));
+  const landscapeH = Math.round(width / LANDSCAPE_CARD_RATIO);
+  const height = fillWidth
+    ? Math.min(maxHeight, Math.max(72, landscapeH))
+    : Math.min(maxHeight, Math.max(72, Math.round(width * aspect)));
 
   const onWrapLayout = useCallback(
     (w: number) => {

@@ -659,7 +659,7 @@ export default function ReviewSessionScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.blackPure },
+  root: { flex: 1, minHeight: 0, backgroundColor: theme.blackPure },
   rootRecall: { backgroundColor: theme.beige },
   topBar: {
     flexDirection: 'row',
@@ -715,7 +715,7 @@ const styles = StyleSheet.create({
   },
   frontBadgeText: { color: theme.white, fontWeight: '800', fontSize: 11 },
   backBadge: { backgroundColor: 'rgba(37,99,235,0.92)' },
-  recallScroll: { flex: 1 },
+  recallScroll: { flex: 1, minHeight: 0 },
   recallFull: {
     flexGrow: 1,
     paddingTop: 8,

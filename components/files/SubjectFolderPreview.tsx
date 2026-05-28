@@ -15,7 +15,7 @@ import {
 
 import { theme } from '@/constants/theme';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
-import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
+import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export type PreviewVariant = 'vault' | 'dashboard';
@@ -83,36 +83,35 @@ export function SubjectFolderPreview({
     }, 120);
   };
 
-  const cardHeight =
-    cardWidth > 0 && viewport.isLandscape
-      ? heightForLandscapeCardWidth(cardWidth, true)
-      : portraitHeight;
-
   const cardStyle = [
     styles.cardBase,
     variant === 'vault' ? styles.cardVault : styles.cardDashboard,
-    viewport.isLandscape && cardWidth > 0
-      ? { height: cardHeight }
+    viewport.isLandscape
+      ? styles.cardLandscape
       : { minHeight: portraitHeight, height: portraitHeight },
   ];
   const emptyStyle = [
     styles.emptyCardBase,
     variant === 'vault' ? styles.cardVault : styles.cardDashboard,
-    viewport.isLandscape && cardWidth > 0
-      ? { height: cardHeight }
+    viewport.isLandscape
+      ? styles.cardLandscape
       : { minHeight: portraitHeight },
   ];
+  const slideHeight =
+    viewport.isLandscape && cardWidth > 0
+      ? Math.round(cardWidth / LANDSCAPE_CARD_RATIO)
+      : portraitHeight;
 
   const renderItem = ({ item }: ListRenderItemInfo<SubjectPreviewItem>) => {
     const slide = (
-      <View style={[styles.slide, { width: cardWidth, height: cardHeight }]}>
+      <View style={[styles.slide, { width: cardWidth, height: slideHeight }]}>
         <ResolvedImage uri={item.thumbnailUri} style={styles.image} resizeMode="cover" />
       </View>
     );
     if (passthroughGestures) return slide;
     return (
       <Pressable
-        style={[styles.slide, { width: cardWidth, height: cardHeight }]}
+        style={[styles.slide, { width: cardWidth, height: slideHeight }]}
         onPress={() => {
           if (!didSwipeRef.current) {
             onInteraction?.();
@@ -176,7 +175,7 @@ export function SubjectFolderPreview({
             </Text>
           </View>
         ) : null}
-        <View style={[styles.slide, { height: cardHeight }]}>
+        <View style={[styles.slide, { height: slideHeight }]}>
           <ResolvedImage uri={first.thumbnailUri} style={styles.image} resizeMode="cover" />
         </View>
         <View style={styles.overlay}>
@@ -282,6 +281,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.grayLight,
     ...theme.cardShadow,
+  },
+  cardLandscape: {
+    width: '100%',
+    aspectRatio: LANDSCAPE_CARD_RATIO,
   },
   list: { flex: 1 },
   slide: {

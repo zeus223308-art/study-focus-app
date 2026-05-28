@@ -97,6 +97,26 @@ export function vaultCarouselScrollWidth(subjectCount: number, tileWidth: number
   return subjectCount * tileWidth + subjectCount * VAULT_TILE_GAP;
 }
 
+/** Uniform album tile width in landscape (avoid 14+ tiny mismatched columns). */
+export function computeAlbumNumColumns(
+  width: number,
+  isLandscape: boolean,
+  deviceClass: DeviceClass,
+  horizontalPad = 32
+): number {
+  const innerW = Math.max(0, width - horizontalPad);
+  if (!isLandscape) {
+    if (deviceClass === 'phone') return 7;
+    if (deviceClass === 'tablet') return 8;
+    return 11;
+  }
+  const targetCell =
+    deviceClass === 'phone' ? 76 : deviceClass === 'tablet' ? 88 : 100;
+  const cols = Math.floor((innerW + ALBUM_TILE_GAP) / (targetCell + ALBUM_TILE_GAP));
+  const maxCols = deviceClass === 'phone' ? 8 : deviceClass === 'tablet' ? 10 : 12;
+  return Math.max(4, Math.min(maxCols, cols));
+}
+
 export function computeContentMaxWidth(
   width: number,
   height: number,
@@ -174,20 +194,9 @@ export function useViewportLayout(): ViewportLayout {
     const pagerSize = computePagerSize(width, height, deviceClass);
 
     const listNumColumns = isPhone ? 1 : 2;
-    const albumNumColumns = isLandscape
-      ? deviceClass === 'phone'
-        ? Math.min(14, Math.max(9, Math.floor(width / 56)))
-        : deviceClass === 'tablet'
-          ? Math.min(16, Math.max(10, Math.floor(width / 64)))
-          : Math.min(18, Math.max(12, Math.floor(width / 72)))
-      : deviceClass === 'phone'
-        ? 7
-        : deviceClass === 'tablet'
-          ? 8
-          : 11;
+    const albumNumColumns = computeAlbumNumColumns(width, isLandscape, deviceClass);
     const vaultFoldersPerPage = computeVaultFoldersPerPage(width);
-    const dashboardCardsPerRow =
-      isLandscape && deviceClass !== 'phone' ? 3 : isPhone && !isLandscape ? 1 : 2;
+    const dashboardCardsPerRow = isPhone && !isLandscape ? 1 : isLandscape ? 2 : 2;
 
     return {
       width,

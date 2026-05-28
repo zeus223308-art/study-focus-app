@@ -6,6 +6,7 @@ import { SubjectReviewCard } from '@/components/SubjectReviewCard';
 import { theme } from '@/constants/theme';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
+import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export type DashboardSubjectEntry = {
@@ -57,7 +58,9 @@ export function DashboardReviewPicker({
           {row.map((entry) => {
             const checked = selectedIds.has(entry.subject.id);
             return (
-              <View key={entry.subject.id} style={styles.cell}>
+              <View
+                key={entry.subject.id}
+                style={[styles.cell, viewport.isLandscape && styles.cellLandscape]}>
                 <Pressable
                   onPress={() => onToggle(entry.subject.id)}
                   style={[styles.checkHit, checked && styles.checkHitOn]}
@@ -127,6 +130,7 @@ const styles = StyleSheet.create({
   },
   cardRowSingle: { marginBottom: 12, width: '100%' },
   cell: { flex: 1, minWidth: 0, position: 'relative', alignSelf: 'stretch' },
+  cellLandscape: { aspectRatio: LANDSCAPE_CARD_RATIO },
   spacer: { flex: 1 },
   checkHit: {
     position: 'absolute',

@@ -1,8 +1,8 @@
 import { forwardRef, ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
+import { ScrollView, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dockTopContentInset } from '@/components/DockTabBar';
-import { theme } from '@/constants/theme';
+import { screenLayoutStyles } from '@/lib/ui/screen-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const SCROLL_BOTTOM_PAD = 24;
@@ -34,7 +34,11 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
 
   const innerBody = (
     <View
-      style={[{ paddingTop: dockTopContentInset(insets.top), paddingHorizontal: pad }, style]}>
+      style={[
+        { paddingTop: dockTopContentInset(insets.top), paddingHorizontal: pad },
+        fill && screenLayoutStyles.fillColumn,
+        style,
+      ]}>
       {children}
     </View>
   );
@@ -57,26 +61,21 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
     return (
       <ScrollView
         ref={ref}
-        style={styles.root}
+        style={[screenLayoutStyles.root, fill && screenLayoutStyles.rootFill]}
         scrollEnabled={scrollEnabled}
         contentContainerStyle={{
           paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD + (viewport.isLandscape ? 32 : 0),
         }}
-        showsVerticalScrollIndicator={viewport.isLandscape}
+        showsVerticalScrollIndicator
         nestedScrollEnabled
         keyboardShouldPersistTaps="handled">
         {inner}
       </ScrollView>
     );
   }
-  return <View style={[styles.root, { paddingBottom: insets.bottom }]}>{inner}</View>;
-});
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.beige,
-    WebkitOverflowScrolling: 'touch',
-  } as ViewStyle,
-  fill: { flex: 1 },
+  return (
+    <View style={[screenLayoutStyles.root, fill && screenLayoutStyles.rootFill, { paddingBottom: insets.bottom }]}>
+      {inner}
+    </View>
+  );
 });

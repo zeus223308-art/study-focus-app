@@ -60,12 +60,14 @@ export function MobileWebFrame({ children }: Props) {
 const styles = StyleSheet.create({
   shell: {
     flex: 1,
+    minHeight: 0,
     width: '100%',
     backgroundColor: '#2A2826',
     alignItems: 'center',
   },
   frame: {
     flex: 1,
+    minHeight: 0,
     backgroundColor: theme.beige,
     overflow: 'hidden',
   },
