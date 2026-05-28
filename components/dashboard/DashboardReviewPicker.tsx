@@ -91,21 +91,17 @@ export function DashboardReviewPicker({
                     </Text>
                   </View>
                 ) : null}
-                <Pressable
-                  onPress={() => onToggle(entry.subject.id)}
-                  style={styles.cardPress}>
-                  <SubjectReviewCard
-                    subjectTag={entry.subject.name}
-                    previewItems={entry.previews}
-                    totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
-                    emptyHint={t('dashboard.previewEmpty')}
-                    selected={checked}
-                    previewIndex={previewIndexBySubject[entry.subject.id] ?? 0}
-                    onPreviewIndexChange={(index) =>
-                      onPreviewIndexChange(entry.subject.id, index)
-                    }
-                  />
-                </Pressable>
+                <SubjectReviewCard
+                  subjectTag={entry.subject.name}
+                  previewItems={entry.previews}
+                  totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
+                  emptyHint={t('dashboard.previewEmpty')}
+                  selected={checked}
+                  previewIndex={previewIndexBySubject[entry.subject.id] ?? 0}
+                  onPreviewIndexChange={(index) =>
+                    onPreviewIndexChange(entry.subject.id, index)
+                  }
+                />
               </View>
             );
           })}
@@ -144,7 +140,6 @@ const styles = StyleSheet.create({
   },
   cardRowSingle: { marginBottom: 12, width: '100%' },
   cell: { flex: 1, minWidth: 0, position: 'relative', alignSelf: 'stretch' },
-  cardPress: { flex: 1, minWidth: 0 },
   cellLandscape: { aspectRatio: LANDSCAPE_CARD_RATIO },
   spacer: { flex: 1 },
   checkHit: {

@@ -42,14 +42,14 @@ export default function DashboardScreen() {
       .map((subject) => {
         const bundles = data.bundles.filter((b) => b.subjectId === subject.id && !b.archived);
         const dueBundles = bundles.filter((b) => dueIds.has(b.id));
-        const previewBundles = dueBundles.length > 0 ? dueBundles : bundles;
         const totalPages = bundles.reduce((n, b) => n + totalPagesInBundle(b), 0);
         const duePages = dueBundles.reduce((n, b) => n + totalPagesInBundle(b), 0);
         return {
           subject,
           totalPages,
           duePages,
-          previews: getBundlesFrontPreviews(previewBundles),
+          /** All pages in subject — swipe 1/N on card (not due-only subset). */
+          previews: getBundlesFrontPreviews(bundles),
         };
       })
       .filter((e) => e.totalPages > 0);
@@ -107,18 +107,11 @@ export default function DashboardScreen() {
 
   const openReview = () => {
     if (!canStart) return;
-    const reviewPages: string[] = [];
-    for (const subjectId of selectedSubjectIds) {
-      const entry = subjectEntries.find((e) => e.subject.id === subjectId);
-      if (!entry || entry.previews.length === 0) continue;
-      const idx = Math.min(
-        previewIndexBySubject[subjectId] ?? 0,
-        entry.previews.length - 1
-      );
-      const pick = entry.previews[idx];
-      reviewPages.push(`${pick.bundleId}:${pick.pageId}`);
-    }
-    if (reviewPages.length === 0) {
+    const ids = Array.from(selectedSubjectIds);
+    const pageCount = subjectEntries
+      .filter((e) => ids.includes(e.subject.id))
+      .reduce((n, e) => n + e.previews.length, 0);
+    if (pageCount === 0) {
       showMessage('', t('dashboard.noReviewPages'));
       return;
     }
@@ -126,8 +119,15 @@ export default function DashboardScreen() {
       pathname: '/review/session',
       params: {
         blackout: '1',
-        reviewPages: reviewPages.join(','),
-        subjectIds: Array.from(selectedSubjectIds).join(','),
+        subjectIds: ids.join(','),
+        startPage: String(
+          ids.length === 1
+            ? Math.min(
+                previewIndexBySubject[ids[0]] ?? 0,
+                (subjectEntries.find((e) => e.subject.id === ids[0])?.previews.length ?? 1) - 1
+              )
+            : 0
+        ),
       },
     });
   };

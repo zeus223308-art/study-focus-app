@@ -252,8 +252,9 @@ export function SubjectFolderPreview({
           data={items}
           horizontal
           pagingEnabled
-          scrollEnabled={!passthroughGestures}
+          scrollEnabled={!passthroughGestures && items.length > 1}
           nestedScrollEnabled={!passthroughGestures}
+          directionalLockEnabled
           showsHorizontalScrollIndicator={false}
           keyExtractor={(it) => `${it.bundleId}-${it.pageId}`}
           renderItem={renderItem}

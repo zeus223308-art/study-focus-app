@@ -6,6 +6,7 @@ import {
   Animated,
   Image,
   Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -60,6 +61,7 @@ export default function ReviewSessionScreen() {
     subjectId?: string;
     subjectIds?: string;
     reviewPages?: string;
+    startPage?: string;
     slideshow?: string;
     blackout?: string;
   }>();
@@ -117,8 +119,26 @@ export default function ReviewSessionScreen() {
     data.bundles,
   ]);
 
+  const initialSlideIndex = useMemo(() => {
+    const n = Number.parseInt(routeParamString(params.startPage), 10);
+    if (!Number.isFinite(n) || n < 0) return 0;
+    return n;
+  }, [params.startPage]);
+
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('front');
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  const slideCountRef = useRef(slides.length);
+  slideCountRef.current = slides.length;
+
+  useEffect(() => {
+    if (slides.length === 0) {
+      setIndex(0);
+      return;
+    }
+    setIndex(Math.min(initialSlideIndex, slides.length - 1));
+  }, [slides.length, initialSlideIndex]);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [recallStrokes, setRecallStrokes] = useState<InkStroke[]>([]);
   const [textBoxes, setTextBoxes] = useState<ScratchTextBox[]>([]);
@@ -152,6 +172,28 @@ export default function ReviewSessionScreen() {
   const [slideRemainingSec, setSlideRemainingSec] = useState(0);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const adTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const goPrevSlide = useCallback(() => {
+    setIndex((i) => Math.max(0, i - 1));
+  }, []);
+
+  const goNextSlide = useCallback(() => {
+    setIndex((i) => Math.min(slideCountRef.current - 1, i + 1));
+  }, []);
+
+  const slideSwipePan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) =>
+        phaseRef.current === 'front' &&
+        slideCountRef.current > 1 &&
+        Math.abs(g.dx) > 16 &&
+        Math.abs(g.dx) > Math.abs(g.dy) * 1.25,
+      onPanResponderRelease: (_, g) => {
+        if (g.dx < -48) goNextSlide();
+        else if (g.dx > 48) goPrevSlide();
+      },
+    })
+  ).current;
 
   useEffect(() => {
     return () => {
@@ -548,7 +590,9 @@ export default function ReviewSessionScreen() {
         </ScrollView>
       ) : (
         <>
-          <View style={styles.stage}>
+          <View
+            style={styles.stage}
+            {...(phase === 'front' && slides.length > 1 ? slideSwipePan.panHandlers : {})}>
             <Animated.View style={[styles.imageWrap, { opacity: showAnswerOverlay ? 0 : frontFade }]}>
               {displayUri ? (
                 <Image source={{ uri: displayUri }} style={styles.image} resizeMode="contain" />
@@ -590,10 +634,39 @@ export default function ReviewSessionScreen() {
 
           {phase === 'front' && !auto && (
         <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
-          <Text style={styles.progress}>
-            {index + 1} / {slides.length}
-            {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
-          </Text>
+          {slides.length > 1 ? (
+            <View style={styles.slidePager}>
+              <Pressable
+                onPress={goPrevSlide}
+                disabled={index === 0}
+                style={[styles.pagerBtn, index === 0 && styles.pagerBtnDisabled]}
+                hitSlop={10}>
+                <Text style={styles.pagerBtnText}>‹</Text>
+              </Pressable>
+              <Text style={styles.progress}>
+                {index + 1} / {slides.length}
+                {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
+              </Text>
+              <Pressable
+                onPress={goNextSlide}
+                disabled={index >= slides.length - 1}
+                style={[
+                  styles.pagerBtn,
+                  index >= slides.length - 1 && styles.pagerBtnDisabled,
+                ]}
+                hitSlop={10}>
+                <Text style={styles.pagerBtnText}>›</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={styles.progress}>
+              {index + 1} / {slides.length}
+              {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
+            </Text>
+          )}
+          {slides.length > 1 ? (
+            <Text style={styles.swipeHint}>{t('review.swipeProblems')}</Text>
+          ) : null}
           <Button label={t('review.startCountdown')} onPress={startCountdown} />
         </View>
           )}
@@ -818,7 +891,30 @@ const styles = StyleSheet.create({
   hintLink: { color: theme.orange, fontWeight: '700', textAlign: 'center', marginTop: 4 },
   hintDisabled: { opacity: 0.4 },
   footer: { paddingTop: 20, paddingHorizontal: 20, backgroundColor: theme.beige, gap: 8 },
-  progress: { textAlign: 'center', color: theme.gray },
+  progress: { textAlign: 'center', color: theme.gray, fontWeight: '700', flex: 1 },
+  slidePager: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    width: '100%',
+  },
+  pagerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pagerBtnDisabled: { opacity: 0.35 },
+  pagerBtnText: { color: theme.white, fontSize: 28, fontWeight: '300', marginTop: -2 },
+  swipeHint: {
+    color: theme.grayMuted,
+    fontSize: theme.font.caption,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
   passOverlay: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
