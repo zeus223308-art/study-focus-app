@@ -44,11 +44,11 @@ function colorForTool(id: InkToolId): string {
   return theme.gray;
 }
 
-const PEN_COLOR_CHOICES: { id: InkToolId; color: string }[] = [
-  { id: 'pen-black', color: '#000000' },
-  { id: 'pen-white', color: '#FFFFFF' },
-  { id: 'pen-red', color: '#DC2626' },
-  { id: 'pen-blue', color: '#2563EB' },
+const PEN_COLOR_CHOICES: { id: InkToolId; color: string; labelKey: string }[] = [
+  { id: 'pen-black', color: '#000000', labelKey: 'item.inkPenBlack' },
+  { id: 'pen-white', color: '#FFFFFF', labelKey: 'item.inkPenWhite' },
+  { id: 'pen-red', color: '#DC2626', labelKey: 'item.inkPenRed' },
+  { id: 'pen-blue', color: '#2563EB', labelKey: 'item.inkPenBlue' },
 ];
 
 export function FullscreenInkControls({
@@ -133,13 +133,12 @@ export function FullscreenInkControls({
     return <View style={styles.kindOnlyWrap}>{kindRow}</View>;
   }
 
-  const colorTools: { id: InkToolId }[] =
+  const colorTools: { id: InkToolId; labelKey: string }[] =
     flow?.step === 'color' && flow.kind === 'pen'
-      ? PEN_COLOR_CHOICES.map((c) => ({ id: c.id }))
+      ? PEN_COLOR_CHOICES.map((c) => ({ id: c.id, labelKey: c.labelKey }))
       : flow?.step === 'color' && flow.kind === 'highlighter'
-        ? HIGHLIGHTER_TOOLS.map((h) => ({ id: h.id }))
+        ? HIGHLIGHTER_TOOLS.map((h) => ({ id: h.id, labelKey: `item.${inkToolLabelKey(h.id)}` }))
         : [];
-
   const sizeToolId = flow?.step === 'size' ? flow.toolId : tool;
   const sizeOptions = flow?.step === 'size' ? widthOptionsForTool(sizeToolId) : [];
   const sizeCurrent =
@@ -148,8 +147,6 @@ export function FullscreenInkControls({
       : flow?.kind === 'highlighter'
         ? highlighterWidth
         : penWidth;
-
-  const label = (id: InkToolId) => t(`item.${inkToolLabelKey(id)}`);
 
   const picker =
     flow?.step === 'color' ? (
@@ -167,7 +164,7 @@ export function FullscreenInkControls({
                   ink.id === 'pen-white' && styles.whiteSwatch,
                 ]}
               />
-              <Text style={dynamic.chipLabel}>{label(ink.id)}</Text>
+              <Text style={dynamic.chipLabel}>{t(ink.labelKey)}</Text>
             </Pressable>
           ))}
         </View>

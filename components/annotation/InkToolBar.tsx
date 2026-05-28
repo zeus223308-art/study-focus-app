@@ -28,11 +28,11 @@ type Props = {
 };
 
 type PickerTarget = InkToolId | null;
-const PEN_COLOR_CHOICES: { id: InkToolId; color: string }[] = [
-  { id: 'pen-black', color: '#000000' },
-  { id: 'pen-white', color: '#FFFFFF' },
-  { id: 'pen-red', color: '#DC2626' },
-  { id: 'pen-blue', color: '#2563EB' },
+const PEN_COLOR_CHOICES: { id: InkToolId; color: string; labelKey: string }[] = [
+  { id: 'pen-black', color: '#000000', labelKey: 'item.inkPenBlack' },
+  { id: 'pen-white', color: '#FFFFFF', labelKey: 'item.inkPenWhite' },
+  { id: 'pen-red', color: '#DC2626', labelKey: 'item.inkPenRed' },
+  { id: 'pen-blue', color: '#2563EB', labelKey: 'item.inkPenBlue' },
 ];
 
 function colorForTool(id: InkToolId): string {
@@ -114,7 +114,7 @@ export function InkToolBar({
             step: PEN_WIDTHS.findIndex((w) => Math.abs(w - penWidth) < 0.01) + 1 || 2,
           });
 
-  const renderColorChip = (ink: { id: InkToolId }) => (
+  const renderColorChip = (ink: { id: InkToolId; labelKey?: string }) => (
     <Pressable
       key={ink.id}
       onPress={() => openPicker(ink.id)}
@@ -131,7 +131,9 @@ export function InkToolBar({
           ink.id === 'pen-white' && styles.whiteSwatch,
         ]}
       />
-      <Text style={[styles.colorLabel, tool === ink.id && styles.colorLabelOn]}>{label(ink.id)}</Text>
+      <Text style={[styles.colorLabel, tool === ink.id && styles.colorLabelOn]}>
+        {ink.labelKey ? t(ink.labelKey) : label(ink.id)}
+      </Text>
     </Pressable>
   );
 
@@ -139,7 +141,7 @@ export function InkToolBar({
     <View style={styles.wrap}>
       <View style={styles.group}>
         <Text style={styles.groupTitle}>{t('item.inkGroupPen')}</Text>
-        <View style={styles.colorRow}>{PEN_COLOR_CHOICES.map((c) => renderColorChip({ id: c.id }))}</View>
+        <View style={styles.colorRow}>{PEN_COLOR_CHOICES.map(renderColorChip)}</View>
       </View>
 
       <View style={styles.group}>
