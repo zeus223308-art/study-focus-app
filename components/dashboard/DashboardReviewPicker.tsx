@@ -90,7 +90,6 @@ export function DashboardReviewPicker({
                   totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
                   emptyHint={t('dashboard.previewEmpty')}
                   selected={checked}
-                  onFocus={() => onToggle(entry.subject.id)}
                   onPress={() => onToggle(entry.subject.id)}
                 />
               </View>

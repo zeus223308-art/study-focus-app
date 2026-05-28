@@ -11,7 +11,6 @@ type Props = {
   emptyHint: string;
   selected?: boolean;
   onPress: () => void;
-  onFocus: () => void;
 };
 
 /** Dashboard due card — subject tag + swipeable problem previews. */
@@ -22,7 +21,6 @@ export function SubjectReviewCard({
   emptyHint,
   selected,
   onPress,
-  onFocus,
 }: Props) {
   return (
     <View style={[styles.wrap, selected && styles.wrapSelected]}>
@@ -34,7 +32,6 @@ export function SubjectReviewCard({
         emptyHint={emptyHint}
         onOpen={onPress}
         onGestureLock={() => {}}
-        onInteraction={onFocus}
       />
     </View>
   );
