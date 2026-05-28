@@ -44,7 +44,12 @@ function colorForTool(id: InkToolId): string {
   return theme.gray;
 }
 
-const PEN_COLOR_IDS: InkToolId[] = ['pen-black', 'pen-white', 'pen-red', 'pen-blue'];
+const PEN_COLOR_CHOICES: { id: InkToolId; color: string }[] = [
+  { id: 'pen-black', color: '#000000' },
+  { id: 'pen-white', color: '#FFFFFF' },
+  { id: 'pen-red', color: '#DC2626' },
+  { id: 'pen-blue', color: '#2563EB' },
+];
 
 export function FullscreenInkControls({
   tool,
@@ -130,7 +135,7 @@ export function FullscreenInkControls({
 
   const colorTools: { id: InkToolId }[] =
     flow?.step === 'color' && flow.kind === 'pen'
-      ? PEN_COLOR_IDS.map((id) => ({ id }))
+      ? PEN_COLOR_CHOICES.map((c) => ({ id: c.id }))
       : flow?.step === 'color' && flow.kind === 'highlighter'
         ? HIGHLIGHTER_TOOLS.map((h) => ({ id: h.id }))
         : [];

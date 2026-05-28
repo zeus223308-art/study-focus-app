@@ -28,13 +28,16 @@ type Props = {
 };
 
 type PickerTarget = InkToolId | null;
-const PEN_COLOR_IDS: InkToolId[] = ['pen-black', 'pen-white', 'pen-red', 'pen-blue'];
+const PEN_COLOR_CHOICES: { id: InkToolId; color: string }[] = [
+  { id: 'pen-black', color: '#000000' },
+  { id: 'pen-white', color: '#FFFFFF' },
+  { id: 'pen-red', color: '#DC2626' },
+  { id: 'pen-blue', color: '#2563EB' },
+];
 
 function colorForTool(id: InkToolId): string {
-  if (id === 'pen-black') return '#000000';
-  if (id === 'pen-white') return '#FFFFFF';
-  if (id === 'pen-red') return '#DC2626';
-  if (id === 'pen-blue') return '#2563EB';
+  const pen = PEN_COLOR_CHOICES.find((c) => c.id === id);
+  if (pen) return pen.color;
   const hi = HIGHLIGHTER_TOOLS.find((h) => h.id === id);
   if (hi) return hi.color;
   return theme.gray;
@@ -136,7 +139,7 @@ export function InkToolBar({
     <View style={styles.wrap}>
       <View style={styles.group}>
         <Text style={styles.groupTitle}>{t('item.inkGroupPen')}</Text>
-        <View style={styles.colorRow}>{PEN_COLOR_IDS.map((id) => renderColorChip({ id }))}</View>
+        <View style={styles.colorRow}>{PEN_COLOR_CHOICES.map((c) => renderColorChip({ id: c.id }))}</View>
       </View>
 
       <View style={styles.group}>
