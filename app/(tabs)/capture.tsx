@@ -109,6 +109,7 @@ export default function CaptureTabScreen() {
 
   const draftRestoreOnce = useRef(false);
   const importEntryLaunched = useRef(false);
+  const afterEditStepRef = useRef<Step>('answer-prompt');
 
   useEffect(() => {
     if (draftRestoreOnce.current || isImportEntry) return;
@@ -156,21 +157,28 @@ export default function CaptureTabScreen() {
 
   const openEditor = useCallback(
     (uri: string, side: EditSide, returnStep?: Step, source: EditSource = 'camera') => {
+      const nextAfter = returnStep ?? afterEditStepForSide(side);
+      afterEditStepRef.current = nextAfter;
       setEditUri(uri);
       setEditSide(side);
       setEditSource(source);
-      setAfterEditStep(returnStep ?? afterEditStepForSide(side));
+      setAfterEditStep(nextAfter);
       setStep('edit');
     },
     []
   );
 
   const onEditConfirm = async ({ uri }: { uri: string }) => {
-    const previewUri = await stabilizeCaptureImageUri(uri);
-    if (editSide === 'front') setFrontUri(previewUri);
-    else setBackUri(previewUri);
-    setEditUri(null);
-    setStep(afterEditStep);
+    try {
+      const previewUri = await stabilizeCaptureImageUri(uri);
+      const nextStep = afterEditStepRef.current;
+      if (editSide === 'front') setFrontUri(previewUri);
+      else setBackUri(previewUri);
+      setEditUri(null);
+      setStep(nextStep);
+    } catch {
+      showMessage(t('capture.saveFailedKeepDraft'));
+    }
   };
 
   const onEditRetake = () => {
@@ -201,7 +209,13 @@ export default function CaptureTabScreen() {
       }
       const file = picked.files[0];
       if (!file) return;
-      openEditor(file.uri, targetSide, afterEditStepForSide(targetSide), 'gallery');
+      let uri = file.uri;
+      try {
+        uri = await stabilizeCaptureImageUri(file.uri);
+      } catch {
+        /* use picker uri */
+      }
+      openEditor(uri, targetSide, afterEditStepForSide(targetSide), 'gallery');
     },
     [activeFolderCapture, editSide, openEditor, router, t]
   );
@@ -449,6 +463,10 @@ export default function CaptureTabScreen() {
     </>
   );
 
+  const flowModals = renderModals();
+  const inPostEditFlow =
+    step === 'answer-prompt' || step === 'save-sheet' || Boolean(frontUri || backUri);
+
   if (step === 'edit' && editUri) {
     return (
       <>
@@ -458,7 +476,7 @@ export default function CaptureTabScreen() {
           onConfirm={onEditConfirm}
           onRetake={onEditRetake}
         />
-        {renderModals()}
+        {flowModals}
       </>
     );
   }
@@ -488,23 +506,27 @@ export default function CaptureTabScreen() {
             onPress={() => safeRouterBack(router, '/(tabs)/vault')}
           />
         </View>
-        {renderModals()}
+        {flowModals}
       </View>
     );
   }
 
-  if (!permission?.granted) {
+  const needsCameraPermission = !permission?.granted && step === 'camera' && !inPostEditFlow;
+
+  if (needsCameraPermission) {
     return (
       <View style={styles.permission}>
         <View style={styles.permissionBody}>
           <Text style={styles.permissionText}>{t('capture.permissionHint')}</Text>
           <Button label={t('capture.allowCamera')} onPress={requestPermission} />
+          <Button label={t('folder.importPhotos')} onPress={() => void pickFromGallery()} />
           <Button
             label={t('capture.goBack')}
             variant="ghost"
             onPress={() => safeRouterBack(router, '/(tabs)/vault')}
           />
         </View>
+        {flowModals}
       </View>
     );
   }
@@ -513,7 +535,7 @@ export default function CaptureTabScreen() {
 
   return (
     <View style={styles.flex}>
-      {step === 'camera' && (
+      {step === 'camera' && permission?.granted ? (
         <>
           <CameraView ref={cameraRef} style={styles.camera} facing="back" />
           <Pressable
@@ -528,9 +550,9 @@ export default function CaptureTabScreen() {
             accessibilityLabel={cameraLabel}
           />
         </>
-      )}
+      ) : null}
 
-      {renderModals()}
+      {flowModals}
     </View>
   );
 }

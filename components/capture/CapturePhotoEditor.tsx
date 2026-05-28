@@ -30,6 +30,7 @@ import { resolveImageUriForProcessing } from '@/hooks/useResolvedImageUri';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 import { useResolvedImageUri } from '@/hooks/useResolvedImageUri';
+import { showMessage } from '@/lib/ui/confirm';
 
 type EditorMode = 'crop' | 'draw';
 
@@ -56,6 +57,9 @@ export function CapturePhotoEditor({
 
   useEffect(() => {
     setWorkingUri(uri);
+    cropSelectionRef.current = null;
+    setCropSelection(null);
+    setCropReady(false);
   }, [uri]);
   const [busy, setBusy] = useState(false);
   const [cropReady, setCropReady] = useState(false);
@@ -176,7 +180,10 @@ export function CapturePhotoEditor({
 
   const confirm = async () => {
     const selection = cropSelectionRef.current;
-    if (!selection) return;
+    if (!selection) {
+      showMessage(t('capture.cropDragRegionHint'));
+      return;
+    }
     setBusy(true);
     try {
       const sourceUri = await resolveImageUriForProcessing(workingUri);
@@ -211,6 +218,8 @@ export function CapturePhotoEditor({
       }
 
       await onConfirm({ uri: finalUri });
+    } catch {
+      showMessage(t('capture.saveFailedKeepDraft'));
     } finally {
       setBusy(false);
     }

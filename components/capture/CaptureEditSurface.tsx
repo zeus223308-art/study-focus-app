@@ -14,6 +14,7 @@ import {
 } from '@/lib/files/interactive-crop';
 import { selectionMatchesLayout } from '@/lib/files/rotate-capture-edit';
 import type { InkStroke, InkToolId, NoteLayer } from '@/lib/domain/types';
+import { loadImageDimensions } from '@/lib/files/image-dimensions';
 import { useDragHandlers } from '@/lib/ui/use-drag-handlers';
 
 type EditorMode = 'crop' | 'draw';
@@ -149,11 +150,17 @@ export function CaptureEditSurface({
   useEffect(() => {
     didInitRef.current = false;
     setImageSize({ w: 0, h: 0 });
-    Image.getSize(
-      uri,
-      (w, h) => setImageSize({ w, h }),
-      () => setImageSize({ w: 0, h: 0 })
-    );
+    let cancelled = false;
+    void loadImageDimensions(uri)
+      .then(({ width, height }) => {
+        if (!cancelled) setImageSize({ w: width, h: height });
+      })
+      .catch(() => {
+        if (!cancelled) setImageSize({ w: 0, h: 0 });
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [uri]);
 
   const applySelection = useCallback(
@@ -357,7 +364,7 @@ export function CaptureEditSurface({
             style={{ width: '100%', height: '100%' }}
             resizeMode="contain"
             onLoad={(e) => {
-              const src = e.nativeEvent.source;
+              const src = e.nativeEvent.source as { width?: number; height?: number };
               if (src?.width && src?.height && imageSize.w < 2) {
                 setImageSize({ w: src.width, h: src.height });
               }
