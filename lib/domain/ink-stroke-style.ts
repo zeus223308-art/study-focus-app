@@ -16,7 +16,6 @@ export const INK_STROKE_STYLES: Record<InkToolId, InkStrokeStyle> = {
 };
 
 for (const p of PEN_TOOLS) {
-  INK_STROKE_STYLES[p.id].color = p.color;
   INK_STROKE_STYLES[p.id].width = p.width;
 }
 for (const h of HIGHLIGHTER_TOOLS) {

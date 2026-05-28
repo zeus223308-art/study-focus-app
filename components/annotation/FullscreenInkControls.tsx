@@ -35,8 +35,10 @@ type Props = {
 };
 
 function colorForTool(id: InkToolId): string {
-  const pen = PEN_TOOLS.find((p) => p.id === id);
-  if (pen) return pen.color;
+  if (id === 'pen-black') return '#101214';
+  if (id === 'pen-white') return '#F5F5F5';
+  if (id === 'pen-red') return '#DC2626';
+  if (id === 'pen-blue') return '#2563EB';
   const hi = HIGHLIGHTER_TOOLS.find((h) => h.id === id);
   if (hi) return hi.color;
   return theme.gray;
