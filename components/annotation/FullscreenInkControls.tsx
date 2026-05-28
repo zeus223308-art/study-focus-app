@@ -35,8 +35,8 @@ type Props = {
 };
 
 function colorForTool(id: InkToolId): string {
-  if (id === 'pen-black') return '#101214';
-  if (id === 'pen-white') return '#F5F5F5';
+  if (id === 'pen-black') return '#000000';
+  if (id === 'pen-white') return '#FFFFFF';
   if (id === 'pen-red') return '#DC2626';
   if (id === 'pen-blue') return '#2563EB';
   const hi = HIGHLIGHTER_TOOLS.find((h) => h.id === id);
@@ -155,7 +155,13 @@ export function FullscreenInkControls({
         <View style={dynamic.pickerRow}>
           {colorTools.map((ink) => (
             <Pressable key={ink.id} onPress={() => pickColor(ink.id)} style={styles.colorChip}>
-              <View style={[dynamic.swatch, { backgroundColor: colorForTool(ink.id) }]} />
+              <View
+                style={[
+                  dynamic.swatch,
+                  { backgroundColor: colorForTool(ink.id) },
+                  ink.id === 'pen-white' && styles.whiteSwatch,
+                ]}
+              />
               <Text style={dynamic.chipLabel}>{label(ink.id)}</Text>
             </Pressable>
           ))}
@@ -226,6 +232,7 @@ const styles = StyleSheet.create({
   kindBtnOn: { backgroundColor: theme.orange },
   kindBtnTextOn: { color: theme.white },
   colorChip: { alignItems: 'center', gap: 4, minWidth: 48 },
+  whiteSwatch: { borderColor: '#B8B8B8', borderWidth: 1.5 },
   sizeChipOn: { borderColor: theme.orange, backgroundColor: theme.orangeSoft },
   sizeDot: { opacity: 0.95 },
   sizeDotEraser: { backgroundColor: theme.gray },

@@ -31,8 +31,8 @@ type PickerTarget = InkToolId | null;
 const PEN_COLOR_IDS: InkToolId[] = ['pen-black', 'pen-white', 'pen-red', 'pen-blue'];
 
 function colorForTool(id: InkToolId): string {
-  if (id === 'pen-black') return '#101214';
-  if (id === 'pen-white') return '#F5F5F5';
+  if (id === 'pen-black') return '#000000';
+  if (id === 'pen-white') return '#FFFFFF';
   if (id === 'pen-red') return '#DC2626';
   if (id === 'pen-blue') return '#2563EB';
   const hi = HIGHLIGHTER_TOOLS.find((h) => h.id === id);
@@ -125,6 +125,7 @@ export function InkToolBar({
           styles.colorSwatch,
           { width: swatchSize, height: swatchSize, borderRadius: swatchSize / 2 },
           { backgroundColor: colorForTool(ink.id) },
+          ink.id === 'pen-white' && styles.whiteSwatch,
         ]}
       />
       <Text style={[styles.colorLabel, tool === ink.id && styles.colorLabelOn]}>{label(ink.id)}</Text>
@@ -219,6 +220,10 @@ const styles = StyleSheet.create({
   colorSwatch: {
     borderWidth: 1,
     borderColor: theme.grayLight,
+  },
+  whiteSwatch: {
+    borderColor: '#B8B8B8',
+    borderWidth: 1.5,
   },
   colorLabel: { fontSize: 11, fontWeight: '700', color: theme.black },
   colorLabelOn: { color: theme.orange },
