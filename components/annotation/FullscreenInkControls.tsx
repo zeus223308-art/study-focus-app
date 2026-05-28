@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { HIGHLIGHTER_TOOLS } from '@/lib/domain/defaults';
+import { PenInkSwatch } from '@/components/annotation/PenInkSwatch';
 import { getPenInkColor } from '@/lib/domain/pen-colors';
+import type { PenToolId } from '@/lib/domain/types';
 import { inkToolKind, inkToolLabelKey } from '@/lib/domain/ink-tool-labels';
 import { widthOptionsForTool } from '@/lib/domain/ink-sizes';
 import type { InkToolId } from '@/lib/domain/types';
@@ -157,17 +159,13 @@ export function FullscreenInkControls({
         <View style={dynamic.pickerRow}>
           {colorTools.map((ink) => (
             <Pressable key={ink.id} onPress={() => pickColor(ink.id)} style={styles.colorChip}>
-              <View
-                style={[
-                  dynamic.swatch,
-                  { backgroundColor: colorForTool(ink.id) },
-                  ink.id === 'pen-white' && styles.whiteSwatch,
-                ]}
-                {...(Platform.OS === 'web' &&
-                (ink.id === 'pen-black' || ink.id === 'pen-white')
-                  ? { dataSet: { inkSwatch: ink.id } }
-                  : {})}
-              />
+              {flow.kind === 'pen' ? (
+                <PenInkSwatch tool={ink.id as PenToolId} size={m.swatchSize} />
+              ) : (
+                <View
+                  style={[dynamic.swatch, { backgroundColor: colorForTool(ink.id) }]}
+                />
+              )}
               <Text style={dynamic.chipLabel}>{t(ink.labelKey)}</Text>
             </Pressable>
           ))}
@@ -238,11 +236,6 @@ const styles = StyleSheet.create({
   kindBtnOn: { backgroundColor: theme.orange },
   kindBtnTextOn: { color: theme.white },
   colorChip: { alignItems: 'center', gap: 4, minWidth: 48 },
-  whiteSwatch: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#666666',
-    borderWidth: 2,
-  },
   sizeChipOn: { borderColor: theme.orange, backgroundColor: theme.orangeSoft },
   sizeDot: { opacity: 0.95 },
   sizeDotEraser: { backgroundColor: theme.gray },

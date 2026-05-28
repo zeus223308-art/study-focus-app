@@ -1,22 +1,14 @@
-import type { InkToolId } from '@/lib/domain/types';
+import type { InkToolId, PenToolId } from '@/lib/domain/types';
 
-/** Single source of truth for pen ink colors (UI + stroke rendering). */
-export const PEN_INK_COLORS: Record<
-  'pen-black' | 'pen-white' | 'pen-red' | 'pen-blue',
-  string
-> = {
-  'pen-black': '#000000',
-  'pen-white': '#FFFFFF',
-  'pen-red': '#DC2626',
-  'pen-blue': '#2563EB',
+/** Ink colors as rgb() — mobile web handles these more reliably than #000 / #fff. */
+export const PEN_INK_COLORS: Record<PenToolId, string> = {
+  'pen-black': 'rgb(0, 0, 0)',
+  'pen-white': 'rgb(255, 255, 255)',
+  'pen-red': 'rgb(220, 38, 38)',
+  'pen-blue': 'rgb(37, 99, 235)',
 };
 
-export const PEN_INK_ORDER: Array<'pen-black' | 'pen-white' | 'pen-red' | 'pen-blue'> = [
-  'pen-black',
-  'pen-white',
-  'pen-red',
-  'pen-blue',
-];
+export const PEN_INK_ORDER: PenToolId[] = ['pen-black', 'pen-white', 'pen-red', 'pen-blue'];
 
 export function getPenInkColor(tool: InkToolId): string {
   if (tool === 'pen-black') return PEN_INK_COLORS['pen-black'];
@@ -26,13 +18,17 @@ export function getPenInkColor(tool: InkToolId): string {
   return PEN_INK_COLORS['pen-black'];
 }
 
+export function strokeColorForTool(tool: InkToolId): string {
+  return getPenInkColor(tool);
+}
+
 export function getPenStrokeStyle(
   tool: InkToolId,
   width: number,
   opacity = 1
 ): { color: string; width: number; opacity: number } {
   return {
-    color: getPenInkColor(tool),
+    color: strokeColorForTool(tool),
     width,
     opacity,
   };

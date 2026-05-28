@@ -15,6 +15,14 @@ export const INK_STROKE_STYLES: Record<InkToolId, InkStrokeStyle> = {
   eraser: { color: '#888888', width: 24, opacity: 0.35 },
 };
 
+/** SVG / canvas stroke color — pen tools use rgb ink; others use highlighter palette. */
+export function displayStrokeColor(tool: InkToolId): string {
+  if (tool === 'pen-black' || tool === 'pen-white' || tool === 'pen-red' || tool === 'pen-blue') {
+    return getPenInkColor(tool);
+  }
+  return INK_STROKE_STYLES[tool].color;
+}
+
 export function strokeStyleForTool(tool: InkToolId, width: number): InkStrokeStyle {
   if (tool === 'pen-black' || tool === 'pen-white' || tool === 'pen-red' || tool === 'pen-blue') {
     return getPenStrokeStyle(tool, width);

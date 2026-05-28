@@ -11,8 +11,9 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { InkStrokePath } from '@/components/annotation/InkStrokePath';
 import { theme } from '@/constants/theme';
-import { INK_STROKE_STYLES, strokeStyleForTool, styleForStroke } from '@/lib/domain/ink-stroke-style';
+import { INK_STROKE_STYLES, strokeStyleForTool } from '@/lib/domain/ink-stroke-style';
 import { scaleStrokesToViewport } from '@/lib/files/bake-capture-ink';
 import type { InkPoint, InkStroke, InkToolId, NoteLayer } from '@/lib/domain/types';
 
@@ -198,21 +199,16 @@ export function AnnotationCanvas({
       {...pan.panHandlers}
       {...(Platform.OS === 'web' ? { dataSet: { inkCanvas: '1' } } : {})}>
       <Svg width={size.w} height={size.h} style={StyleSheet.absoluteFill}>
-        {display.map((s) => {
-          const spec = styleForStroke(s);
-          return (
-            <Path
-              key={s.id}
-              d={pointsToPath(s.points)}
-              stroke={spec.color}
-              strokeWidth={s.width}
-              strokeOpacity={spec.opacity}
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          );
-        })}
+        {display.map((s) => (
+          <InkStrokePath
+            key={s.id}
+            id={s.id}
+            tool={s.tool}
+            points={s.points}
+            width={s.width}
+            opacity={s.opacity}
+          />
+        ))}
         {eraserPreview && (
           <Path
             d={pointsToPath(eraserPreview.points)}

@@ -109,13 +109,33 @@ body {
 [data-vault-tile="1"][data-hold-drag="active"] {
   touch-action: none !important;
 }
-/* Pen ink swatches — prevent OS/browser forced-color inversion on mobile web */
-[data-ink-swatch="pen-black"] {
-  background-color: #000000 !important;
+/* Pen ink — prevent mobile web dark-mode inversion of pure black/white */
+[data-ink-swatch="pen-black"],
+[data-ink-stroke="pen-black"] {
+  background-color: rgb(0, 0, 0) !important;
+  stroke: rgb(0, 0, 0) !important;
+  forced-color-adjust: none !important;
+  color-scheme: only light;
 }
-[data-ink-swatch="pen-white"] {
-  background-color: #ffffff !important;
-  border: 2px solid #666666 !important;
+[data-ink-swatch="pen-white"],
+[data-ink-stroke="pen-white"] {
+  background-color: rgb(255, 255, 255) !important;
+  border: 2px solid rgb(102, 102, 102) !important;
+  stroke: rgb(255, 255, 255) !important;
+  forced-color-adjust: none !important;
+  color-scheme: only light;
+}
+[data-ink-stroke="pen-red"] {
+  stroke: rgb(220, 38, 38) !important;
+  forced-color-adjust: none !important;
+}
+[data-ink-stroke="pen-blue"] {
+  stroke: rgb(37, 99, 235) !important;
+  forced-color-adjust: none !important;
+}
+[data-ink-canvas="1"] {
+  forced-color-adjust: none !important;
+  color-scheme: only light;
 }
 [data-ink-canvas="1"] svg path {
   forced-color-adjust: none !important;

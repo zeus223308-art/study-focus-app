@@ -4,7 +4,9 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { HIGHLIGHTER_TOOLS } from '@/lib/domain/defaults';
+import { PenInkSwatch } from '@/components/annotation/PenInkSwatch';
 import { getPenInkColor, PEN_INK_ORDER } from '@/lib/domain/pen-colors';
+import type { PenToolId } from '@/lib/domain/types';
 import { inkToolKind, inkToolLabelKey } from '@/lib/domain/ink-tool-labels';
 import {
   ERASER_WIDTHS,
@@ -124,18 +126,17 @@ export function InkToolBar({
         { paddingHorizontal: chipPad, paddingVertical: chipPad * 0.8 },
         tool === ink.id && styles.colorChipOn,
       ]}>
-      <View
-        style={[
-          styles.colorSwatch,
-          { width: swatchSize, height: swatchSize, borderRadius: swatchSize / 2 },
-          { backgroundColor: colorForTool(ink.id) },
-          ink.id === 'pen-white' && styles.whiteSwatch,
-        ]}
-        {...(Platform.OS === 'web' &&
-        (ink.id === 'pen-black' || ink.id === 'pen-white')
-          ? { dataSet: { inkSwatch: ink.id } }
-          : {})}
-      />
+      {PEN_INK_ORDER.includes(ink.id as PenToolId) ? (
+        <PenInkSwatch tool={ink.id as PenToolId} size={swatchSize} />
+      ) : (
+        <View
+          style={[
+            styles.colorSwatch,
+            { width: swatchSize, height: swatchSize, borderRadius: swatchSize / 2 },
+            { backgroundColor: colorForTool(ink.id) },
+          ]}
+        />
+      )}
       <Text style={[styles.colorLabel, tool === ink.id && styles.colorLabelOn]}>
         {ink.labelKey ? t(ink.labelKey) : label(ink.id)}
       </Text>
@@ -230,11 +231,6 @@ const styles = StyleSheet.create({
   colorSwatch: {
     borderWidth: 1,
     borderColor: theme.grayLight,
-  },
-  whiteSwatch: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#666666',
-    borderWidth: 2,
   },
   colorLabel: { fontSize: 11, fontWeight: '700', color: theme.black },
   colorLabelOn: { color: theme.orange },
