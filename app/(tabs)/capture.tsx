@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -53,6 +53,8 @@ const importPickLabels = (t: (key: string) => string) => ({
 export default function CaptureTabScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { entry } = useLocalSearchParams<{ entry?: string }>();
+  const isImportEntry = entry === 'import';
   const { data, captureFlashcardPair, activeFolderCapture } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -106,8 +108,10 @@ export default function CaptureTabScreen() {
     side === 'back' ? 'save-sheet' : 'answer-prompt';
 
   const draftRestoreOnce = useRef(false);
+  const importEntryLaunched = useRef(false);
+
   useEffect(() => {
-    if (draftRestoreOnce.current) return;
+    if (draftRestoreOnce.current || isImportEntry) return;
     draftRestoreOnce.current = true;
     let cancelled = false;
     void (async () => {
@@ -128,7 +132,7 @@ export default function CaptureTabScreen() {
     return () => {
       cancelled = true;
     };
-  }, [data.subjects, t]);
+  }, [data.subjects, isImportEntry, t]);
 
   useEffect(() => {
     if (!frontUri) {
@@ -179,18 +183,52 @@ export default function CaptureTabScreen() {
   };
 
   const pickFromGallery = useCallback(
-    async (side?: EditSide) => {
+    async (side?: EditSide, opts?: { backOnCancel?: boolean }) => {
       const targetSide = side ?? editSide;
       const picked = await pickForImport(importPickLabels(t));
       if (!picked.ok) {
         if (picked.reason === 'denied') showMessage(t('folder.importPermission'));
+        if (opts?.backOnCancel && activeFolderCapture?.subjectId) {
+          router.replace({
+            pathname: '/folder/[id]',
+            params: {
+              id: activeFolderCapture.subjectId,
+              studyDate: activeFolderCapture.studyDate,
+            },
+          });
+        }
         return;
       }
       const file = picked.files[0];
       if (!file) return;
       openEditor(file.uri, targetSide, afterEditStepForSide(targetSide), 'gallery');
     },
-    [editSide, openEditor, t]
+    [activeFolderCapture, editSide, openEditor, router, t]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isImportEntry) {
+        importEntryLaunched.current = false;
+        return;
+      }
+      if (importEntryLaunched.current) return;
+      importEntryLaunched.current = true;
+
+      setEditUri(null);
+      setFrontUri(null);
+      setBackUri(null);
+      setSaveState('idle');
+      setEditSide('front');
+      setStep('camera');
+      void clearCaptureDraft();
+
+      const id = setTimeout(
+        () => void pickFromGallery('front', { backOnCancel: true }),
+        isWeb ? 0 : 350
+      );
+      return () => clearTimeout(id);
+    }, [isImportEntry, isWeb, pickFromGallery])
   );
 
   const takePhoto = async () => {
