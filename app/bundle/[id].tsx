@@ -392,6 +392,7 @@ export default function BundleScreen() {
           maxWidth={photoLayout.maxWidth}
           maxHeight={photoLayout.maxHeight}
           fillWidth={photoLayout.sideBySide}
+          imageResizeMode="cover"
           asset={page.asset}
           showInkPreview={Boolean(activeLayer?.strokes.length)}
           showMemoBadge={hasPhotoMemoContent(page.frontMemo)}

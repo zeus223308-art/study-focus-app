@@ -28,6 +28,7 @@ type Props = {
   showMemoBadge?: boolean;
   onMemoPress?: () => void;
   memoButtonLabel?: string;
+  imageResizeMode?: 'contain' | 'cover';
 };
 
 export function BundlePhotoBlock({
@@ -48,6 +49,7 @@ export function BundlePhotoBlock({
   showMemoBadge = false,
   onMemoPress,
   memoButtonLabel,
+  imageResizeMode,
 }: Props) {
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
@@ -78,6 +80,9 @@ export function BundlePhotoBlock({
     [fillWidth, measuredW]
   );
 
+  const resolvedResizeMode =
+    imageResizeMode ?? (layer && (showInkPreview || inkEnabled) ? 'contain' : 'cover');
+
   return (
     <View
       style={[styles.wrap, fillWidth ? styles.wrapFill : { width: maxWidth }]}
@@ -101,7 +106,7 @@ export function BundlePhotoBlock({
               uri={uri}
               asset={asset}
               style={{ width, height }}
-              resizeMode={layer && (showInkPreview || inkEnabled) ? 'contain' : 'cover'}
+              resizeMode={resolvedResizeMode}
             />
             {layer && (showInkPreview || (inkEnabled && onStrokesChange)) ? (
               <AnnotationCanvas
