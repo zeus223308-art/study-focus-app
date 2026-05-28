@@ -101,7 +101,7 @@ export function BundlePhotoBlock({
               uri={uri}
               asset={asset}
               style={{ width, height }}
-              resizeMode="contain"
+              resizeMode={layer && (showInkPreview || inkEnabled) ? 'contain' : 'cover'}
             />
             {layer && (showInkPreview || (inkEnabled && onStrokesChange)) ? (
               <AnnotationCanvas
