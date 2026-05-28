@@ -14,11 +14,12 @@ type Props = {
   style?: ViewStyle;
   padded?: boolean;
   nestedScrollEnabled?: boolean;
+  fill?: boolean;
 };
 
 /** Web: RN ScrollView (gesture-handler ScrollView breaks nested touch on mobile Safari). */
 export const Screen = forwardRef<ScrollView, Props>(function Screen(
-  { children, scroll, scrollEnabled = true, style, padded = true },
+  { children, scroll, scrollEnabled = true, style, padded = true, fill },
   ref
 ) {
   const insets = useSafeAreaInsets();
@@ -58,9 +59,12 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
         ref={ref}
         style={styles.root}
         scrollEnabled={scrollEnabled}
-        contentContainerStyle={{ paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD }}
-        showsVerticalScrollIndicator={false}
-        nestedScrollEnabled>
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD + (viewport.isLandscape ? 32 : 0),
+        }}
+        showsVerticalScrollIndicator={viewport.isLandscape}
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled">
         {inner}
       </ScrollView>
     );
@@ -74,4 +78,5 @@ const styles = StyleSheet.create({
     backgroundColor: theme.beige,
     WebkitOverflowScrolling: 'touch',
   } as ViewStyle,
+  fill: { flex: 1 },
 });

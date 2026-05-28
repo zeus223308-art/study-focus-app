@@ -15,10 +15,12 @@ type Props = {
   style?: ViewStyle;
   padded?: boolean;
   nestedScrollEnabled?: boolean;
+  /** Non-scroll screens: flex column so a child ScrollView can fill remaining height. */
+  fill?: boolean;
 };
 
 export const Screen = forwardRef<ScrollView, Props>(function Screen(
-  { children, scroll, scrollEnabled = true, style, padded = true, nestedScrollEnabled },
+  { children, scroll, scrollEnabled = true, style, padded = true, nestedScrollEnabled, fill },
   ref
 ) {
   const insets = useSafeAreaInsets();
@@ -33,7 +35,11 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
 
   const innerBody = (
     <View
-      style={[{ paddingTop: dockTopContentInset(insets.top), paddingHorizontal: pad }, style]}>
+      style={[
+        { paddingTop: dockTopContentInset(insets.top), paddingHorizontal: pad },
+        fill && styles.fill,
+        style,
+      ]}>
       {children}
     </View>
   );
@@ -58,9 +64,12 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
         ref={ref}
         style={styles.root}
         scrollEnabled={scrollEnabled}
-        contentContainerStyle={{ paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD }}
-        showsVerticalScrollIndicator={false}
-        nestedScrollEnabled={nestedScrollEnabled}>
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD + (viewport.isLandscape ? 32 : 0),
+        }}
+        showsVerticalScrollIndicator={viewport.isLandscape}
+        nestedScrollEnabled={nestedScrollEnabled}
+        keyboardShouldPersistTaps="handled">
         {inner}
       </ScrollView>
     );
@@ -70,4 +79,5 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.beige },
+  fill: { flex: 1 },
 });

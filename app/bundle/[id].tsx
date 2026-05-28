@@ -334,7 +334,7 @@ export default function BundleScreen() {
   const subject = data.subjects.find((s) => s.id === bundle.subjectId);
 
   return (
-    <Screen scroll>
+    <Screen scroll nestedScrollEnabled>
       <ScreenHeader
         title={subject?.name ?? bundle.studyDate}
         showBack

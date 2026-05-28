@@ -117,10 +117,10 @@ export default function ReviewSessionScreen() {
     (recallViewW > 0 ? recallViewW : viewport.width) - recallSidePad * 2
   );
   const problemCardH = viewport.isLandscape
-    ? Math.round(Math.min(viewport.shortEdge * 0.52, workCardW * 0.42))
+    ? Math.round(Math.min(viewport.shortEdge * 0.4, workCardW * 0.36))
     : Math.round(workCardW * 0.46);
   const workCardH = viewport.isLandscape
-    ? Math.round(viewport.shortEdge * 0.58)
+    ? Math.round(Math.min(viewport.shortEdge * 0.48, workCardW * 0.95))
     : Math.round(workCardW * 1.75);
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
@@ -717,7 +717,6 @@ const styles = StyleSheet.create({
   recallScroll: { flex: 1 },
   recallFull: {
     paddingTop: 8,
-    paddingHorizontal: 20,
     gap: 12,
     alignItems: 'center',
   },

@@ -122,9 +122,14 @@ export function computeBundlePhotoLayout(layout: ViewportLayout): BundlePhotoLay
   const innerW = layout.width - layout.horizontalPadding * 2;
   if (layout.isLandscape) {
     const columnGap = 16;
+    const chromeReserve = layout.isPhone ? 200 : 260;
+    const maxHeight = Math.max(
+      96,
+      Math.min(Math.round(layout.shortEdge * 0.62), layout.shortEdge - chromeReserve)
+    );
     return {
       maxWidth: Math.floor((innerW - columnGap) / 2),
-      maxHeight: Math.round(layout.shortEdge * 0.78),
+      maxHeight,
       sideBySide: true,
       columnGap,
     };
@@ -175,7 +180,7 @@ export function useViewportLayout(): ViewportLayout {
           ? 8
           : 11;
     const vaultFoldersPerPage = computeVaultFoldersPerPage(width);
-    const dashboardCardsPerRow = isPhone ? 1 : 2;
+    const dashboardCardsPerRow = isPhone && !isLandscape ? 1 : 2;
 
     return {
       width,

@@ -321,7 +321,7 @@ export default function FolderScreen() {
 
   return (
     <View style={styles.root}>
-      <Screen padded={false}>
+      <Screen padded={false} fill>
         <View style={styles.header}>
           <ScreenHeader
             title={subject.name}
@@ -354,7 +354,11 @@ export default function FolderScreen() {
           />
         </View>
         <ScrollView
+          style={styles.albumScroll}
           scrollEnabled={albumScrollEnabled}
+          nestedScrollEnabled
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator
           contentContainerStyle={[
             styles.scroll,
             problems.length === 0 && styles.scrollEmpty,
@@ -363,8 +367,7 @@ export default function FolderScreen() {
               alignSelf: 'center',
               width: '100%',
             },
-          ]}
-          showsVerticalScrollIndicator={false}>
+          ]}>
           {dateSections.length === 0 ? (
             <View style={styles.emptyBlock}>
               <Text style={styles.empty}>
@@ -514,6 +517,7 @@ const styles = StyleSheet.create({
   },
   cancelMove: { alignSelf: 'flex-end', marginTop: -12, marginBottom: 8 },
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
+  albumScroll: { flex: 1 },
   scroll: { paddingHorizontal: 16, paddingBottom: 120 },
   scrollEmpty: { flexGrow: 1, justifyContent: 'center' },
   emptyBlock: { alignItems: 'center', gap: 20, paddingVertical: 40 },
