@@ -4,19 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
-  Platform,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { FullscreenInkControls } from '@/components/annotation/FullscreenInkControls';
-import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink-flow';
 import { ArchiveSubjectPickerModal } from '@/components/bundle/ArchiveSubjectPickerModal';
 import { BundlePhotoBlock } from '@/components/bundle/BundlePhotoBlock';
 import { PhotoCropModal } from '@/components/bundle/PhotoCropModal';
-import { PhotoInkToolbar, type PhotoInkToolKind } from '@/components/bundle/PhotoInkToolbar';
 import { PhotoMemoEditorModal } from '@/components/bundle/PhotoMemoEditorModal';
 import { ProblemPhotoModal } from '@/components/bundle/ProblemPhotoModal';
 import { Button } from '@/components/ui/Button';
@@ -29,18 +24,12 @@ import { attachAnswerToPage } from '@/lib/domain/attach-answer';
 import { replacePageAnswerPhoto, replacePageFrontPhoto } from '@/lib/files/replace-page-photo';
 import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
-import {
-  ERASER_WIDTHS,
-  HIGHLIGHTER_WIDTHS,
-  PEN_WIDTHS,
-  isHighlighterTool,
-} from '@/lib/domain/ink-sizes';
+import { ERASER_WIDTHS, HIGHLIGHTER_WIDTHS, PEN_WIDTHS, isHighlighterTool } from '@/lib/domain/ink-sizes';
 import { hasPhotoMemoContent, normalizePhotoMemo } from '@/lib/domain/photo-memo';
 import type { InkToolId, NoteLayer, PhotoMemo } from '@/lib/domain/types';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
-import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { computeBundlePhotoLayout, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 function newLayer(studyDate: string): NoteLayer {
@@ -84,8 +73,7 @@ export default function BundleScreen() {
   const [highlighterWidth, setHighlighterWidth] = useState<number>(HIGHLIGHTER_WIDTHS[1]);
   const [eraserWidth, setEraserWidth] = useState<number>(ERASER_WIDTHS[1]);
   const [problemModalOpen, setProblemModalOpen] = useState(false);
-  const [editAnswer, setEditAnswer] = useState(false);
-  const [answerInkKind, setAnswerInkKind] = useState<PhotoInkToolKind | null>(null);
+  const [modalInitialSide, setModalInitialSide] = useState<'front' | 'back'>('front');
   const [cropOpen, setCropOpen] = useState(false);
   const [cropUri, setCropUri] = useState('');
   const [cropSide, setCropSide] = useState<'front' | 'back'>('front');
@@ -95,7 +83,6 @@ export default function BundleScreen() {
   const [undoStack, setUndoStack] = useState<NoteLayer['strokes'][]>([]);
   const [redoStack, setRedoStack] = useState<NoteLayer['strokes'][]>([]);
   const viewport = useViewportLayout();
-  const viewerLayout = useFullscreenViewerLayout();
   const photoLayout = computeBundlePhotoLayout(viewport);
 
   const page = bundle?.pages[pageIndex] ?? bundle?.pages[0];
@@ -264,37 +251,6 @@ export default function BundleScreen() {
     if (!activeLayer) addLayer();
   };
 
-  const answerInkFlow = useFullscreenInkFlow({
-    visible: editAnswer,
-    tool,
-    onToolChange: setTool,
-    onPenWidthChange: setPenWidth,
-    onHighlighterWidthChange: setHighlighterWidth,
-    onEraserWidthChange: setEraserWidth,
-    onBeforeInkUse: ensureLayer,
-  });
-
-  const onSelectAnswerInk = (kind: PhotoInkToolKind) => {
-    setAnswerInkKind(kind);
-    if (kind === 'crop') {
-      openCrop(page.answerAsset ? 'back' : 'front');
-      return;
-    }
-    if (kind === 'eraser') {
-      ensureLayer();
-      setTool('eraser');
-      answerInkFlow.openKind('eraser');
-      return;
-    }
-    if (kind === 'highlighter') {
-      ensureLayer();
-      answerInkFlow.openKind('highlighter');
-      return;
-    }
-    ensureLayer();
-    answerInkFlow.openKind('pen');
-  };
-
   const addBackPhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -352,34 +308,6 @@ export default function BundleScreen() {
         <Text style={styles.studyDateLine}>{bundle.studyDate}</Text>
       </View>
 
-      {editAnswer ? (
-        <>
-          <PhotoInkToolbar activeKind={answerInkKind} onSelectKind={onSelectAnswerInk} />
-          {answerInkFlow.flow !== null && (
-            <FullscreenInkControls
-              tool={tool}
-              penWidth={penWidth}
-              highlighterWidth={highlighterWidth}
-              eraserWidth={eraserWidth}
-              layout={viewerLayout}
-              flowApi={answerInkFlow}
-              pickerOnly
-            />
-          )}
-          <View style={styles.toolRow}>
-            <Pressable onPress={undo}>
-              <Text style={styles.link}>Undo</Text>
-            </Pressable>
-            <Pressable onPress={redo}>
-              <Text style={styles.link}>Redo</Text>
-            </Pressable>
-            <Pressable onPress={() => setEditAnswer(false)}>
-              <Text style={styles.link}>{t('common.done')}</Text>
-            </Pressable>
-          </View>
-        </>
-      ) : null}
-
       <View
         style={[
           styles.photosColumn,
@@ -400,7 +328,7 @@ export default function BundleScreen() {
           memoButtonLabel={t('item.addMemo')}
           onMemoPress={() => openMemoEditor('front')}
           onPress={() => {
-            setEditAnswer(false);
+            setModalInitialSide('front');
             setProblemModalOpen(true);
           }}
         />
@@ -419,15 +347,9 @@ export default function BundleScreen() {
           onMemoPress={page.answerAsset ? () => openMemoEditor('back') : undefined}
           onPress={() => {
             if (!page.answerAsset) return;
-            setProblemModalOpen(false);
-            setAnswerInkKind(null);
-            setEditAnswer(true);
+            setModalInitialSide('back');
+            setProblemModalOpen(true);
           }}
-          inkEnabled={editAnswer && Boolean(page.answerAsset)}
-          layer={activeLayer ?? undefined}
-          tool={tool}
-          strokeWidth={strokeWidth}
-          onStrokesChange={updateLayerStrokes}
           placeholder={t('item.addBackPhoto')}
           onAddPress={addBackPhoto}
         />
@@ -500,6 +422,7 @@ export default function BundleScreen() {
         visible={problemModalOpen}
         frontAsset={page.asset}
         backAsset={page.answerAsset}
+        initialSide={modalInitialSide}
         layer={activeLayer ?? null}
         tool={tool}
         penWidth={penWidth}
@@ -633,7 +556,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.orangeSoft,
   },
   pairAddText: { color: theme.orange, fontWeight: '800', fontSize: 12 },
-  toolRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginVertical: 12 },
   note: {
     minHeight: 80,
     backgroundColor: theme.surface,
@@ -661,5 +583,4 @@ const styles = StyleSheet.create({
   secOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   secText: { color: theme.black },
   secOnText: { color: theme.white, fontWeight: '700' },
-  link: { color: theme.orange, fontWeight: '700' },
 });

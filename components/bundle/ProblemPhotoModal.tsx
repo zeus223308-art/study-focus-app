@@ -30,6 +30,7 @@ type Props = {
   visible: boolean;
   frontAsset: CloudAsset;
   backAsset: CloudAsset | null;
+  initialSide?: Side;
   layer: NoteLayer | null;
   tool: InkToolId;
   penWidth: number;
@@ -49,6 +50,7 @@ export function ProblemPhotoModal({
   visible,
   frontAsset,
   backAsset,
+  initialSide = 'front',
   layer,
   tool,
   penWidth,
@@ -83,10 +85,11 @@ export function ProblemPhotoModal({
 
   useEffect(() => {
     if (visible) {
-      setPageIndex(0);
+      const startOnBack = initialSide === 'back' && Boolean(backAsset);
+      setPageIndex(startOnBack ? 1 : 0);
       setInkKind(null);
     }
-  }, [visible]);
+  }, [backAsset, initialSide, visible]);
 
   const sides = useMemo(() => {
     const list: { side: Side; asset: CloudAsset; label: string }[] = [
