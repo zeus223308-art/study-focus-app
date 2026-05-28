@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   PanResponder,
+  Platform,
   StyleSheet,
   View,
   type GestureResponderEvent,
@@ -191,7 +192,11 @@ export function AnnotationCanvas({
   ];
 
   return (
-    <View style={[styles.wrap, { height }, style]} onLayout={onLayout} {...pan.panHandlers}>
+    <View
+      style={[styles.wrap, { height }, style]}
+      onLayout={onLayout}
+      {...pan.panHandlers}
+      {...(Platform.OS === 'web' ? { dataSet: { inkCanvas: '1' } } : {})}>
       <Svg width={size.w} height={size.h} style={StyleSheet.absoluteFill}>
         {display.map((s) => {
           const spec = styleForStroke(s);

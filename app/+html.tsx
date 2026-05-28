@@ -117,4 +117,7 @@ body {
   background-color: #ffffff !important;
   border: 2px solid #666666 !important;
 }
+[data-ink-canvas="1"] svg path {
+  forced-color-adjust: none !important;
+}
 `;

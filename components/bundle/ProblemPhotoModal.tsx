@@ -20,6 +20,8 @@ import { PhotoInkToolbar, type PhotoInkToolKind } from '@/components/bundle/Phot
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
+import { inkToolKind } from '@/lib/domain/ink-tool-labels';
+import { getPenInkColor } from '@/lib/domain/pen-colors';
 import type { CloudAsset, InkToolId, NoteLayer } from '@/lib/domain/types';
 import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
@@ -107,6 +109,8 @@ export function ProblemPhotoModal({
     return penWidth;
   }, [tool, penWidth, highlighterWidth, eraserWidth]);
 
+  const penInkColor = inkToolKind(tool) === 'pen' ? getPenInkColor(tool) : null;
+
   const onSelectKind = (kind: PhotoInkToolKind) => {
     if (kind !== 'crop' && inkKind === kind) {
       setInkKind(null);
@@ -153,7 +157,11 @@ export function ProblemPhotoModal({
           <Text style={styles.hint}>{t('item.swipeForBack')}</Text>
         </View>
 
-        <PhotoInkToolbar activeKind={inkKind} onSelectKind={onSelectKind} />
+        <PhotoInkToolbar
+          activeKind={inkKind}
+          penInkColor={penInkColor}
+          onSelectKind={onSelectKind}
+        />
 
         {inkKind !== null && flowApi.flow !== null && (
           <FullscreenInkControls
