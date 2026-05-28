@@ -25,7 +25,7 @@ import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { mergeCaptureTagPresets } from '@/lib/domain/capture-tags';
+import { mergeCaptureTagPresets, removeCaptureTagPreset } from '@/lib/domain/capture-tags';
 import { todayKey } from '@/lib/domain/dates';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { pickForImport } from '@/lib/import/pick-for-import';
@@ -108,6 +108,18 @@ export default function CaptureTabScreen() {
   const addTagPreset = useCallback(
     (label: string) => {
       const next = mergeCaptureTagPresets(
+        data.settings.captureTagPresets,
+        data.settings.language,
+        label
+      );
+      updateSettings({ captureTagPresets: next });
+    },
+    [data.settings.captureTagPresets, data.settings.language, updateSettings]
+  );
+
+  const removeTagPreset = useCallback(
+    (label: string) => {
+      const next = removeCaptureTagPreset(
         data.settings.captureTagPresets,
         data.settings.language,
         label
@@ -467,8 +479,10 @@ export default function CaptureTabScreen() {
                 <CaptureTagPicker
                   presets={tagPresets}
                   selectedTags={selectedTags}
+                  language={data.settings.language}
                   onChangeSelected={setSelectedTags}
                   onAddPreset={addTagPreset}
+                  onRemovePreset={removeTagPreset}
                   disabled={saveBusy}
                 />
                 <Button
