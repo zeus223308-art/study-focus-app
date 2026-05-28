@@ -6,6 +6,7 @@ import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
 
 const IS_WEB = Platform.OS === 'web';
@@ -31,6 +32,8 @@ type Props = {
   pickSelected?: boolean;
   onTogglePick?: () => void;
   onGestureActiveChange?: (active: boolean) => void;
+  /** Small memo pad icon when this problem has front/back memo content. */
+  showMemoBadge?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -51,9 +54,11 @@ export function AlbumPhotoTile({
   pickSelected,
   onTogglePick,
   onGestureActiveChange,
+  showMemoBadge = false,
   style,
 }: Props) {
   const { movingBundleId, draggingItemKey, dragHoverItemKey } = useApp();
+  const memoBadge = albumMemoBadgeMetrics(cellWidth);
   const contextLifted = movingBundleId === bundleId && draggingItemKey === itemDragKey;
   const itemHover = dragHoverItemKey === itemDragKey && !contextLifted;
   const dragEnabled = !pickMode && Boolean(onDragMove);
@@ -81,6 +86,28 @@ export function AlbumPhotoTile({
   const tileHighlighted = pickMode ? pickSelected : contextLifted || itemHover;
   const showLifted = contextLifted;
 
+  const memoBadgeEl =
+    showMemoBadge && !showLifted ? (
+      <View
+        style={[
+          styles.memoBadge,
+          {
+            top: memoBadge.inset,
+            right: memoBadge.inset,
+            width: memoBadge.size,
+            height: memoBadge.size,
+            borderRadius: memoBadge.size / 2,
+          },
+        ]}
+        pointerEvents="none">
+        <SymbolView
+          name={{ ios: 'note.text', android: 'description', web: 'description' }}
+          size={memoBadge.icon}
+          tintColor={theme.orange}
+        />
+      </View>
+    ) : null;
+
   if (pickMode) {
     return (
       <View style={[styles.cell, { width: cellWidth }, style]}>
@@ -88,6 +115,7 @@ export function AlbumPhotoTile({
           onPress={handlePress}
           style={[styles.tile, tileHighlighted && styles.tileSelected]}>
           <ResolvedImage uri={thumbnailUri} asset={asset} style={styles.image} resizeMode="cover" />
+          {memoBadgeEl}
           <View style={[styles.pickBadge, pickSelected && styles.pickBadgeOn]}>
             {pickSelected ? (
               <SymbolView
@@ -131,6 +159,7 @@ export function AlbumPhotoTile({
               />
             </View>
           ) : null}
+          {memoBadgeEl}
           {countLabel ? (
             <View style={styles.countBadge}>
               <Text style={styles.countText} numberOfLines={1}>
@@ -225,5 +254,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: theme.white,
+  },
+  memoBadge: {
+    position: 'absolute',
+    zIndex: 5,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

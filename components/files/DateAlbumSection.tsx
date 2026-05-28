@@ -8,6 +8,7 @@ import { bundleDisplayTitle } from '@/lib/domain/bundle-title';
 import type { Language } from '@/lib/domain/types';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import type { ProblemDateSection, SubjectProblemItem } from '@/lib/grouping/bundles';
+import { pageHasPhotoMemo } from '@/lib/domain/photo-memo';
 import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
 
 type Props = {
@@ -108,6 +109,7 @@ export function DateAlbumSection({
               pickSelected={pickMode && (selectedKeys?.has(key) ?? false)}
               onTogglePick={onToggleSelect ? () => onToggleSelect(item) : undefined}
               onGestureActiveChange={reorderEnabled && !pickMode ? onGestureActiveChange : undefined}
+              showMemoBadge={pageHasPhotoMemo(item.page)}
             />
           );
 
