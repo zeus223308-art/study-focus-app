@@ -391,6 +391,7 @@ export default function BundleScreen() {
           label={t('item.problemSection')}
           maxWidth={photoLayout.maxWidth}
           maxHeight={photoLayout.maxHeight}
+          fillWidth={photoLayout.sideBySide}
           asset={page.asset}
           showInkPreview={Boolean(activeLayer?.strokes.length)}
           showMemoBadge={hasPhotoMemoContent(page.frontMemo)}
@@ -409,6 +410,7 @@ export default function BundleScreen() {
           label={t('item.answerSection')}
           maxWidth={photoLayout.maxWidth}
           maxHeight={photoLayout.maxHeight}
+          fillWidth={photoLayout.sideBySide}
           asset={page.answerAsset}
           showMemoBadge={hasPhotoMemoContent(page.answerMemo)}
           memoButtonLabel={t('item.addMemo')}
@@ -563,19 +565,19 @@ const styles = StyleSheet.create({
   },
   photosColumn: {
     width: '100%',
-    alignItems: 'center',
     marginBottom: 4,
   },
   photosRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    width: '100%',
+    alignItems: 'stretch',
     justifyContent: 'center',
-    alignItems: 'flex-start',
   },
   photoCol: {
     flex: 1,
-    minWidth: 140,
-    maxWidth: '48%',
+    minWidth: 0,
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
   },
   pagerSection: {
     position: 'relative',

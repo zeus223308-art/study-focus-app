@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
@@ -12,6 +12,8 @@ type Props = {
   label: string;
   maxWidth: number;
   maxHeight?: number;
+  /** Fill parent column (landscape side-by-side). */
+  fillWidth?: boolean;
   asset: CloudAsset | null;
   onPress: () => void;
   showInkPreview?: boolean;
@@ -31,6 +33,7 @@ export function BundlePhotoBlock({
   label,
   maxWidth,
   maxHeight = 220,
+  fillWidth = false,
   asset,
   onPress,
   showInkPreview = false,
@@ -48,6 +51,7 @@ export function BundlePhotoBlock({
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
   const [aspect, setAspect] = useState(4 / 3);
+  const [measuredW, setMeasuredW] = useState(0);
 
   useEffect(() => {
     if (!uri) return;
@@ -60,15 +64,32 @@ export function BundlePhotoBlock({
     );
   }, [uri]);
 
-  const width = maxWidth;
+  const width = fillWidth && measuredW > 0 ? measuredW : maxWidth;
   const height = Math.min(maxHeight, Math.max(72, Math.round(width * aspect)));
 
+  const onWrapLayout = useCallback(
+    (w: number) => {
+      if (fillWidth && w > 0 && w !== measuredW) setMeasuredW(w);
+    },
+    [fillWidth, measuredW]
+  );
+
   return (
-    <View style={[styles.wrap, { width: maxWidth }]}>
+    <View
+      style={[styles.wrap, fillWidth ? styles.wrapFill : { width: maxWidth }]}
+      onLayout={
+        fillWidth
+          ? (e) => onWrapLayout(Math.round(e.nativeEvent.layout.width))
+          : undefined
+      }>
       <Text style={styles.label}>{label}</Text>
       <Pressable
         onPress={hasImage ? onPress : onAddPress}
-        style={[styles.frame, { width, height }]}
+        style={[
+          styles.frame,
+          fillWidth ? { width: '100%' } : { width, alignSelf: 'center' },
+          { height },
+        ]}
         accessibilityRole="button">
         {hasImage ? (
           <>
@@ -126,6 +147,7 @@ export function BundlePhotoBlock({
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: 16, alignSelf: 'center' },
+  wrapFill: { width: '100%', marginBottom: 16, alignSelf: 'stretch' },
   label: {
     fontSize: theme.font.body,
     fontWeight: '800',
@@ -133,7 +155,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   frame: {
-    alignSelf: 'center',
+    alignSelf: 'stretch',
     borderRadius: theme.radius.md,
     overflow: 'hidden',
     backgroundColor: theme.surface,

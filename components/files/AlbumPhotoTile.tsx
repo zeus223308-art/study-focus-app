@@ -8,6 +8,8 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
+import { landscapeCardAspectRatio } from '@/lib/ui/landscape-card-layout';
+import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -58,6 +60,8 @@ export function AlbumPhotoTile({
   style,
 }: Props) {
   const { movingBundleId, draggingItemKey, dragHoverItemKey } = useApp();
+  const viewport = useViewportLayout();
+  const tileAspect = landscapeCardAspectRatio(viewport.isLandscape);
   const memoBadge = albumMemoBadgeMetrics(cellWidth);
   const contextLifted = movingBundleId === bundleId && draggingItemKey === itemDragKey;
   const itemHover = dragHoverItemKey === itemDragKey && !contextLifted;
@@ -113,7 +117,7 @@ export function AlbumPhotoTile({
       <View style={[styles.cell, { width: cellWidth }, style]}>
         <Pressable
           onPress={handlePress}
-          style={[styles.tile, tileHighlighted && styles.tileSelected]}>
+          style={[styles.tile, { aspectRatio: tileAspect }, tileHighlighted && styles.tileSelected]}>
           <ResolvedImage uri={thumbnailUri} asset={asset} style={styles.image} resizeMode="cover" />
           {memoBadgeEl}
           <View style={[styles.pickBadge, pickSelected && styles.pickBadgeOn]}>
@@ -143,6 +147,7 @@ export function AlbumPhotoTile({
         onGestureActiveChange={onGestureActiveChange}
         style={[
           styles.tile,
+          { aspectRatio: tileAspect },
           tileHighlighted && styles.tileSelected,
           showLifted && styles.tileLifted,
           showLifted && styles.tileLiftedShadow,
@@ -177,7 +182,6 @@ const styles = StyleSheet.create({
   cell: {},
   tile: {
     width: '100%',
-    aspectRatio: 1,
     borderRadius: 2,
     overflow: 'hidden',
     backgroundColor: theme.grayLight,

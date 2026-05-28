@@ -118,9 +118,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     lineHeight: 18,
   },
-  cardRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  cardRowSingle: { marginBottom: 12 },
-  cell: { flex: 1, minWidth: 0, position: 'relative' },
+  cardRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 12,
+    alignItems: 'stretch',
+    width: '100%',
+  },
+  cardRowSingle: { marginBottom: 12, width: '100%' },
+  cell: { flex: 1, minWidth: 0, position: 'relative', alignSelf: 'stretch' },
   spacer: { flex: 1 },
   checkHit: {
     position: 'absolute',

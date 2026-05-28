@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
+import { computeReviewCardSizes } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { useApp } from '@/context/AppContext';
 import type { InkStroke, NoteBundle, NotePage } from '@/lib/domain/types';
@@ -112,16 +113,16 @@ export default function ReviewSessionScreen() {
   const viewport = useViewportLayout();
   const recallSidePad = viewport.isLandscape ? 12 : 20;
   const [recallViewW, setRecallViewW] = useState(0);
-  const workCardW = Math.max(
-    260,
-    (recallViewW > 0 ? recallViewW : viewport.width) - recallSidePad * 2
+  const reviewCards = computeReviewCardSizes(
+    viewport,
+    recallViewW > 0 ? recallViewW : viewport.width,
+    recallSidePad
   );
+  const workCardW = reviewCards.width;
   const problemCardH = viewport.isLandscape
-    ? Math.round(Math.min(viewport.shortEdge * 0.4, workCardW * 0.36))
+    ? reviewCards.height
     : Math.round(workCardW * 0.46);
-  const workCardH = viewport.isLandscape
-    ? Math.round(Math.min(viewport.shortEdge * 0.48, workCardW * 0.95))
-    : Math.round(workCardW * 1.75);
+  const workCardH = reviewCards.height;
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
   const recallCountdownSec = 3;
@@ -716,9 +717,13 @@ const styles = StyleSheet.create({
   backBadge: { backgroundColor: 'rgba(37,99,235,0.92)' },
   recallScroll: { flex: 1 },
   recallFull: {
+    flexGrow: 1,
     paddingTop: 8,
+    paddingHorizontal: 4,
     gap: 12,
     alignItems: 'center',
+    justifyContent: 'flex-start',
+    width: '100%',
   },
   problemStage: {
     alignSelf: 'center',

@@ -15,6 +15,8 @@ import {
 
 import { theme } from '@/constants/theme';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
+import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
+import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export type PreviewVariant = 'vault' | 'dashboard';
 
@@ -49,7 +51,8 @@ export function SubjectFolderPreview({
   onInteraction,
 }: Props) {
   const { t } = useTranslation();
-  const cardHeight = variant === 'dashboard' ? DASHBOARD_HEIGHT : VAULT_HEIGHT;
+  const viewport = useViewportLayout();
+  const portraitHeight = variant === 'dashboard' ? DASHBOARD_HEIGHT : VAULT_HEIGHT;
   const [cardWidth, setCardWidth] = useState(0);
   const [index, setIndex] = useState(0);
   const didSwipeRef = useRef(false);
@@ -80,15 +83,24 @@ export function SubjectFolderPreview({
     }, 120);
   };
 
+  const cardHeight =
+    cardWidth > 0 && viewport.isLandscape
+      ? heightForLandscapeCardWidth(cardWidth, true)
+      : portraitHeight;
+
   const cardStyle = [
     styles.cardBase,
     variant === 'vault' ? styles.cardVault : styles.cardDashboard,
-    { minHeight: cardHeight, height: cardHeight },
+    viewport.isLandscape && cardWidth > 0
+      ? { height: cardHeight }
+      : { minHeight: portraitHeight, height: portraitHeight },
   ];
   const emptyStyle = [
     styles.emptyCardBase,
     variant === 'vault' ? styles.cardVault : styles.cardDashboard,
-    { minHeight: cardHeight },
+    viewport.isLandscape && cardWidth > 0
+      ? { height: cardHeight }
+      : { minHeight: portraitHeight },
   ];
 
   const renderItem = ({ item }: ListRenderItemInfo<SubjectPreviewItem>) => {

@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 
+import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
+
 /** Phone: short edge < 600. Tablet: 600–767. Large tablet (iPad Pro, Tab S): >= 768. */
 export type DeviceClass = 'phone' | 'tablet' | 'largeTablet';
 
@@ -121,14 +123,18 @@ export type BundlePhotoLayout = {
 export function computeBundlePhotoLayout(layout: ViewportLayout): BundlePhotoLayout {
   const innerW = layout.width - layout.horizontalPadding * 2;
   if (layout.isLandscape) {
-    const columnGap = 16;
-    const chromeReserve = layout.isPhone ? 200 : 260;
+    const columnGap = 12;
+    const colW = Math.floor((innerW - columnGap) / 2);
+    const chromeReserve = layout.isPhone ? 168 : 220;
     const maxHeight = Math.max(
       96,
-      Math.min(Math.round(layout.shortEdge * 0.62), layout.shortEdge - chromeReserve)
+      Math.min(
+        heightForLandscapeCardWidth(colW, true),
+        layout.shortEdge - chromeReserve
+      )
     );
     return {
-      maxWidth: Math.floor((innerW - columnGap) / 2),
+      maxWidth: colW,
       maxHeight,
       sideBySide: true,
       columnGap,
@@ -180,7 +186,8 @@ export function useViewportLayout(): ViewportLayout {
           ? 8
           : 11;
     const vaultFoldersPerPage = computeVaultFoldersPerPage(width);
-    const dashboardCardsPerRow = isPhone && !isLandscape ? 1 : 2;
+    const dashboardCardsPerRow =
+      isLandscape && deviceClass !== 'phone' ? 3 : isPhone && !isLandscape ? 1 : 2;
 
     return {
       width,
