@@ -27,6 +27,9 @@ import {
 import type { CropSelection } from '@/lib/files/interactive-crop';
 import { cropRegionFromSelection, exportCropSelection } from '@/lib/files/interactive-crop';
 import { resolveImageUriForProcessing } from '@/hooks/useResolvedImageUri';
+import { ensureManipulableImageUri } from '@/lib/files/ensure-manipulable-uri';
+import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
+import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 import { useResolvedImageUri } from '@/hooks/useResolvedImageUri';
@@ -186,40 +189,56 @@ export function CapturePhotoEditor({
     }
     setBusy(true);
     try {
-      const sourceUri = await resolveImageUriForProcessing(workingUri);
-      const croppedUri = await exportCropSelection(sourceUri, selection);
-      const region = cropRegionFromSelection(selection);
-      let finalUri = croppedUri;
+      let sourceUri = await resolveImageUriForProcessing(workingUri);
+      sourceUri = await ensureManipulableImageUri(sourceUri);
 
-      if (strokes.length > 0) {
-        const display = captureDisplayRect(selection);
-        const mapped = mapStrokesToCroppedImage(strokes, selection, {
-          left: display.left,
-          top: display.top,
-          width: display.width,
-          height: display.height,
-        });
-        if (mapped.length > 0) {
-          if (Platform.OS === 'web') {
-            finalUri = await bakeStrokesOntoImageUri(
-              croppedUri,
-              mapped,
-              region.width,
-              region.height
-            );
-          } else {
-            try {
-              finalUri = await bakeNative(croppedUri, mapped, region.width, region.height);
-            } catch {
-              finalUri = croppedUri;
+      let finalUri: string;
+      try {
+        const croppedUri = await exportCropSelection(sourceUri, selection);
+        const region = cropRegionFromSelection(selection);
+        finalUri = croppedUri;
+
+        if (strokes.length > 0) {
+          const display = captureDisplayRect(selection);
+          const mapped = mapStrokesToCroppedImage(strokes, selection, {
+            left: display.left,
+            top: display.top,
+            width: display.width,
+            height: display.height,
+          });
+          if (mapped.length > 0) {
+            if (Platform.OS === 'web') {
+              finalUri = await bakeStrokesOntoImageUri(
+                croppedUri,
+                mapped,
+                region.width,
+                region.height
+              );
+            } else {
+              try {
+                finalUri = await bakeNative(croppedUri, mapped, region.width, region.height);
+              } catch {
+                finalUri = croppedUri;
+              }
             }
           }
         }
+      } catch {
+        const passthrough = await ImageManipulator.manipulateAsync(sourceUri, [], {
+          compress: IMAGE_CAPTURE_QUALITY,
+          format: ImageManipulator.SaveFormat.JPEG,
+        });
+        finalUri = passthrough.uri;
       }
 
       await onConfirm({ uri: finalUri });
     } catch {
-      showMessage(t('capture.saveFailedKeepDraft'));
+      try {
+        const fallback = await stabilizeCaptureImageUri(workingUri).catch(() => workingUri);
+        await onConfirm({ uri: fallback });
+      } catch {
+        showMessage(t('capture.editorProcessingFailed'));
+      }
     } finally {
       setBusy(false);
     }

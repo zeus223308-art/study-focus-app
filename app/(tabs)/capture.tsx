@@ -203,16 +203,17 @@ export default function CaptureTabScreen() {
   );
 
   const onEditConfirm = async ({ uri }: { uri: string }) => {
+    let previewUri = uri;
     try {
-      const previewUri = await stabilizeCaptureImageUri(uri);
-      const nextStep = afterEditStepRef.current;
-      if (editSide === 'front') setFrontUri(previewUri);
-      else setBackUri(previewUri);
-      setEditUri(null);
-      setStep(nextStep);
+      previewUri = await stabilizeCaptureImageUri(uri);
     } catch {
-      showMessage(t('capture.saveFailedKeepDraft'));
+      previewUri = uri;
     }
+    const nextStep = afterEditStepRef.current;
+    if (editSide === 'front') setFrontUri(previewUri);
+    else setBackUri(previewUri);
+    setEditUri(null);
+    setStep(nextStep);
   };
 
   const onEditRetake = () => {
@@ -247,7 +248,7 @@ export default function CaptureTabScreen() {
       try {
         uri = await stabilizeCaptureImageUri(file.uri);
       } catch {
-        /* use picker uri */
+        uri = file.uri;
       }
       openEditor(uri, targetSide, afterEditStepForSide(targetSide), 'gallery');
     },
@@ -282,7 +283,13 @@ export default function CaptureTabScreen() {
   const takePhoto = async () => {
     const photo = await cameraRef.current?.takePictureAsync({ quality: IMAGE_CAPTURE_QUALITY });
     if (!photo?.uri) return;
-    openEditor(photo.uri, editSide, afterEditStepForSide(editSide), 'camera');
+    let uri = photo.uri;
+    try {
+      uri = await stabilizeCaptureImageUri(photo.uri);
+    } catch {
+      uri = photo.uri;
+    }
+    openEditor(uri, editSide, afterEditStepForSide(editSide), 'camera');
   };
 
   const startBackCapture = async () => {

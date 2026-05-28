@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 
+import { ensureManipulableImageUri } from '@/lib/files/ensure-manipulable-uri';
 import { isDirectImageUri } from '@/lib/files/direct-image-uri';
 import { parseWebStoredUri, persistUriToWebStore } from '@/services/storage/web-asset-store';
 
@@ -32,11 +33,17 @@ export async function stabilizeCaptureImageUri(uri: string): Promise<string> {
     return uri;
   }
 
-  if (uri.startsWith('file:') || uri.startsWith('content:')) {
+  if (
+    uri.startsWith('file:') ||
+    uri.startsWith('content:') ||
+    uri.startsWith('ph:') ||
+    uri.startsWith('assets-library:')
+  ) {
+    const workable = await ensureManipulableImageUri(uri);
     try {
-      return await persistNativeDraft(uri);
+      return await persistNativeDraft(workable);
     } catch {
-      return uri;
+      return workable;
     }
   }
 

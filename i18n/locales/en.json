@@ -126,6 +126,7 @@
     "cropTitle": "Crop",
     "editorCancel": "Cancel",
     "editorDone": "Done",
+    "editorProcessingFailed": "Could not process the photo. Please try again.",
     "toolCrop": "Crop",
     "toolDraw": "Draw",
     "toolRotate": "Rotate",
