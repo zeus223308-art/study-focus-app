@@ -23,11 +23,33 @@ function pointsToPath(points: InkPoint[]): string {
   return `M ${first.x} ${first.y} ${rest.map((p) => `L ${p.x} ${p.y}`).join(' ')}`;
 }
 
+function pointSegmentDistance(p: InkPoint, a: InkPoint, b: InkPoint): number {
+  const vx = b.x - a.x;
+  const vy = b.y - a.y;
+  const wx = p.x - a.x;
+  const wy = p.y - a.y;
+  const c1 = vx * wx + vy * wy;
+  if (c1 <= 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  const c2 = vx * vx + vy * vy;
+  if (c2 <= c1) return Math.hypot(p.x - b.x, p.y - b.y);
+  const t = c1 / c2;
+  const projX = a.x + t * vx;
+  const projY = a.y + t * vy;
+  return Math.hypot(p.x - projX, p.y - projY);
+}
+
 function strokeIntersects(eraser: InkStroke, stroke: InkStroke): boolean {
-  const pad = eraser.width;
+  if (eraser.points.length < 1 || stroke.points.length < 1) return false;
+  const pad = Math.max(3, eraser.width * 0.5);
+  if (stroke.points.length === 1) {
+    const q = stroke.points[0];
+    return eraser.points.some((p) => Math.hypot(p.x - q.x, p.y - q.y) <= pad);
+  }
   for (const p of eraser.points) {
-    for (const q of stroke.points) {
-      if (Math.hypot(p.x - q.x, p.y - q.y) < pad) return true;
+    for (let i = 1; i < stroke.points.length; i += 1) {
+      const a = stroke.points[i - 1];
+      const b = stroke.points[i];
+      if (pointSegmentDistance(p, a, b) <= pad) return true;
     }
   }
   return false;
@@ -93,13 +115,26 @@ export function AnnotationCanvas({
     const activeTool = toolRef.current;
     const next =
       activeTool === 'eraser'
-        ? strokesRef.current.filter((s) => s.tool !== 'eraser' && !strokeIntersects(cur, s))
+        ? (() => {
+            const scaled = scaleStrokesToViewport(
+              strokesRef.current,
+              size.w,
+              size.h,
+              layer.strokeSpace
+            );
+            const eraseIds = new Set<string>();
+            for (const s of scaled) {
+              if (s.tool === 'eraser') continue;
+              if (strokeIntersects(cur, s)) eraseIds.add(s.id);
+            }
+            return strokesRef.current.filter((s) => !eraseIds.has(s.id));
+          })()
         : [...strokesRef.current, cur];
     strokesRef.current = next;
     currentRef.current = null;
     onStrokesChange(next);
     bump((n) => n + 1);
-  }, [onStrokesChange]);
+  }, [layer.strokeSpace, onStrokesChange, size.h, size.w]);
 
   const lockedRef = useRef(layer.locked);
   lockedRef.current = layer.locked;
