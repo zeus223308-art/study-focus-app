@@ -110,27 +110,20 @@ export function ProblemPhotoModal({
   const onSelectKind = (kind: PhotoInkToolKind) => {
     if (kind !== 'crop' && inkKind === kind) {
       setInkKind(null);
+      flowApi.clearFlow();
       return;
     }
     setInkKind(kind);
+    flowApi.clearFlow();
     if (kind === 'crop') {
       setInkKind(null);
+      flowApi.clearFlow();
       onCropRequest(sides[pageIndex]?.side ?? 'front');
       return;
     }
-    if (kind === 'eraser') {
-      onBeforeInkUse?.();
-      onToolChange('eraser');
-      flowApi.openKind('eraser');
-      return;
-    }
-    if (kind === 'highlighter') {
-      onBeforeInkUse?.();
-      flowApi.openKind('highlighter');
-      return;
-    }
-    onBeforeInkUse?.();
-    flowApi.openKind('pen');
+    if (kind === 'eraser') return flowApi.openKind('eraser');
+    if (kind === 'highlighter') return flowApi.openKind('highlighter');
+    return flowApi.openKind('pen');
   };
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {

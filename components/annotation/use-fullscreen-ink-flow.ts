@@ -66,5 +66,7 @@ export function useFullscreenInkFlow({
     setFlow(null);
   };
 
-  return { flow, activeKind, openKind, pickColor, pickSize };
+  const clearFlow = () => setFlow(null);
+
+  return { flow, activeKind, openKind, pickColor, pickSize, clearFlow };
 }
