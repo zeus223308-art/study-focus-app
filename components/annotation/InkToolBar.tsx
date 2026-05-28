@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { HIGHLIGHTER_TOOLS } from '@/lib/domain/defaults';
+import { getPenInkColor, PEN_INK_ORDER } from '@/lib/domain/pen-colors';
 import { inkToolKind, inkToolLabelKey } from '@/lib/domain/ink-tool-labels';
 import {
   ERASER_WIDTHS,
@@ -28,16 +29,16 @@ type Props = {
 };
 
 type PickerTarget = InkToolId | null;
-const PEN_COLOR_CHOICES: { id: InkToolId; color: string; labelKey: string }[] = [
-  { id: 'pen-black', color: '#000000', labelKey: 'item.inkPenBlack' },
-  { id: 'pen-white', color: '#FFFFFF', labelKey: 'item.inkPenWhite' },
-  { id: 'pen-red', color: '#DC2626', labelKey: 'item.inkPenRed' },
-  { id: 'pen-blue', color: '#2563EB', labelKey: 'item.inkPenBlue' },
-];
+const PEN_COLOR_CHOICES = PEN_INK_ORDER.map((id) => ({
+  id,
+  color: getPenInkColor(id),
+  labelKey: `item.${inkToolLabelKey(id)}`,
+}));
 
 function colorForTool(id: InkToolId): string {
-  const pen = PEN_COLOR_CHOICES.find((c) => c.id === id);
-  if (pen) return pen.color;
+  if (id === 'pen-black' || id === 'pen-white' || id === 'pen-red' || id === 'pen-blue') {
+    return getPenInkColor(id);
+  }
   const hi = HIGHLIGHTER_TOOLS.find((h) => h.id === id);
   if (hi) return hi.color;
   return theme.gray;
@@ -130,6 +131,10 @@ export function InkToolBar({
           { backgroundColor: colorForTool(ink.id) },
           ink.id === 'pen-white' && styles.whiteSwatch,
         ]}
+        {...(Platform.OS === 'web' &&
+        (ink.id === 'pen-black' || ink.id === 'pen-white')
+          ? { dataSet: { inkSwatch: ink.id } }
+          : {})}
       />
       <Text style={[styles.colorLabel, tool === ink.id && styles.colorLabelOn]}>
         {ink.labelKey ? t(ink.labelKey) : label(ink.id)}
@@ -227,8 +232,9 @@ const styles = StyleSheet.create({
     borderColor: theme.grayLight,
   },
   whiteSwatch: {
-    borderColor: '#B8B8B8',
-    borderWidth: 1.5,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#666666',
+    borderWidth: 2,
   },
   colorLabel: { fontSize: 11, fontWeight: '700', color: theme.black },
   colorLabelOn: { color: theme.orange },

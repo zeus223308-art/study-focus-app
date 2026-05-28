@@ -11,11 +11,9 @@ import {
 import Svg, { Path } from 'react-native-svg';
 
 import { theme } from '@/constants/theme';
-import { INK_STROKE_STYLES } from '@/lib/domain/ink-stroke-style';
+import { INK_STROKE_STYLES, strokeStyleForTool, styleForStroke } from '@/lib/domain/ink-stroke-style';
 import { scaleStrokesToViewport } from '@/lib/files/bake-capture-ink';
 import type { InkPoint, InkStroke, InkToolId, NoteLayer } from '@/lib/domain/types';
-
-const TOOL_COLORS = INK_STROKE_STYLES;
 
 function pointsToPath(points: InkPoint[]): string {
   if (points.length === 0) return '';
@@ -148,12 +146,12 @@ export function AnnotationCanvas({
       onPanResponderGrant: (evt: GestureResponderEvent) => {
         const activeTool = toolRef.current;
         const { locationX: x, locationY: y } = evt.nativeEvent;
-        const spec = TOOL_COLORS[activeTool];
+        const spec = strokeStyleForTool(activeTool, widthRef.current);
         currentRef.current = {
           id: `stroke_${Date.now()}`,
           tool: activeTool,
           points: [{ x, y }],
-          width: widthRef.current,
+          width: spec.width,
           opacity: spec.opacity,
           createdAt: new Date().toISOString(),
         };
@@ -196,7 +194,7 @@ export function AnnotationCanvas({
     <View style={[styles.wrap, { height }, style]} onLayout={onLayout} {...pan.panHandlers}>
       <Svg width={size.w} height={size.h} style={StyleSheet.absoluteFill}>
         {display.map((s) => {
-          const spec = TOOL_COLORS[s.tool];
+          const spec = styleForStroke(s);
           return (
             <Path
               key={s.id}
@@ -213,7 +211,7 @@ export function AnnotationCanvas({
         {eraserPreview && (
           <Path
             d={pointsToPath(eraserPreview.points)}
-            stroke={TOOL_COLORS.eraser.color}
+            stroke={INK_STROKE_STYLES.eraser.color}
             strokeWidth={eraserPreview.width}
             strokeOpacity={eraserPreview.opacity}
             fill="none"

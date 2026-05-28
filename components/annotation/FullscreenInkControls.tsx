@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { HIGHLIGHTER_TOOLS } from '@/lib/domain/defaults';
+import { getPenInkColor } from '@/lib/domain/pen-colors';
 import { inkToolKind, inkToolLabelKey } from '@/lib/domain/ink-tool-labels';
 import { widthOptionsForTool } from '@/lib/domain/ink-sizes';
 import type { InkToolId } from '@/lib/domain/types';
@@ -35,20 +36,19 @@ type Props = {
 };
 
 function colorForTool(id: InkToolId): string {
-  if (id === 'pen-black') return '#000000';
-  if (id === 'pen-white') return '#FFFFFF';
-  if (id === 'pen-red') return '#DC2626';
-  if (id === 'pen-blue') return '#2563EB';
+  if (id === 'pen-black' || id === 'pen-white' || id === 'pen-red' || id === 'pen-blue') {
+    return getPenInkColor(id);
+  }
   const hi = HIGHLIGHTER_TOOLS.find((h) => h.id === id);
   if (hi) return hi.color;
   return theme.gray;
 }
 
 const PEN_COLOR_CHOICES: { id: InkToolId; color: string; labelKey: string }[] = [
-  { id: 'pen-black', color: '#000000', labelKey: 'item.inkPenBlack' },
-  { id: 'pen-white', color: '#FFFFFF', labelKey: 'item.inkPenWhite' },
-  { id: 'pen-red', color: '#DC2626', labelKey: 'item.inkPenRed' },
-  { id: 'pen-blue', color: '#2563EB', labelKey: 'item.inkPenBlue' },
+  { id: 'pen-black', color: getPenInkColor('pen-black'), labelKey: 'item.inkPenBlack' },
+  { id: 'pen-white', color: getPenInkColor('pen-white'), labelKey: 'item.inkPenWhite' },
+  { id: 'pen-red', color: getPenInkColor('pen-red'), labelKey: 'item.inkPenRed' },
+  { id: 'pen-blue', color: getPenInkColor('pen-blue'), labelKey: 'item.inkPenBlue' },
 ];
 
 export function FullscreenInkControls({
@@ -163,6 +163,10 @@ export function FullscreenInkControls({
                   { backgroundColor: colorForTool(ink.id) },
                   ink.id === 'pen-white' && styles.whiteSwatch,
                 ]}
+                {...(Platform.OS === 'web' &&
+                (ink.id === 'pen-black' || ink.id === 'pen-white')
+                  ? { dataSet: { inkSwatch: ink.id } }
+                  : {})}
               />
               <Text style={dynamic.chipLabel}>{t(ink.labelKey)}</Text>
             </Pressable>
@@ -234,7 +238,11 @@ const styles = StyleSheet.create({
   kindBtnOn: { backgroundColor: theme.orange },
   kindBtnTextOn: { color: theme.white },
   colorChip: { alignItems: 'center', gap: 4, minWidth: 48 },
-  whiteSwatch: { borderColor: '#B8B8B8', borderWidth: 1.5 },
+  whiteSwatch: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#666666',
+    borderWidth: 2,
+  },
   sizeChipOn: { borderColor: theme.orange, backgroundColor: theme.orangeSoft },
   sizeDot: { opacity: 0.95 },
   sizeDotEraser: { backgroundColor: theme.gray },

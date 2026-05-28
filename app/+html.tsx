@@ -109,4 +109,12 @@ body {
 [data-vault-tile="1"][data-hold-drag="active"] {
   touch-action: none !important;
 }
+/* Pen ink swatches — prevent OS/browser forced-color inversion on mobile web */
+[data-ink-swatch="pen-black"] {
+  background-color: #000000 !important;
+}
+[data-ink-swatch="pen-white"] {
+  background-color: #ffffff !important;
+  border: 2px solid #666666 !important;
+}
 `;
