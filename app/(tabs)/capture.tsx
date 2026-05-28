@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
 import { CapturePreviewImage } from '@/components/capture/CapturePreviewImage';
+import { CaptureTagPicker } from '@/components/capture/CaptureTagPicker';
 import {
   useCaptureLeaveGuard,
   useCaptureLeaveRegistration,
@@ -24,6 +25,7 @@ import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { mergeCaptureTagPresets } from '@/lib/domain/capture-tags';
 import { todayKey } from '@/lib/domain/dates';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { pickForImport } from '@/lib/import/pick-for-import';
@@ -55,7 +57,7 @@ export default function CaptureTabScreen() {
   const router = useRouter();
   const { entry } = useLocalSearchParams<{ entry?: string }>();
   const isImportEntry = entry === 'import';
-  const { data, captureFlashcardPair, activeFolderCapture } = useApp();
+  const { data, captureFlashcardPair, activeFolderCapture, updateSettings } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [step, setStep] = useState<Step>('camera');
@@ -72,6 +74,11 @@ export default function CaptureTabScreen() {
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [subjectId, setSubjectId] = useState(
     () => activeFolderCapture?.subjectId ?? data.subjects[0]?.id ?? ''
+  );
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const tagPresets = useMemo(
+    () => data.settings.captureTagPresets ?? [],
+    [data.settings.captureTagPresets]
   );
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
@@ -92,10 +99,23 @@ export default function CaptureTabScreen() {
     setBackUri(null);
     setSaveState('idle');
     setStudyDate(todayKey());
+    setSelectedTags([]);
     setEditSide('front');
     setStep('camera');
     void clearCaptureDraft();
   }, []);
+
+  const addTagPreset = useCallback(
+    (label: string) => {
+      const next = mergeCaptureTagPresets(
+        data.settings.captureTagPresets,
+        data.settings.language,
+        label
+      );
+      updateSettings({ captureTagPresets: next });
+    },
+    [data.settings.captureTagPresets, data.settings.language, updateSettings]
+  );
 
   useCaptureLeaveRegistration(hasPendingCapture, resetCamera);
 
@@ -127,6 +147,7 @@ export default function CaptureTabScreen() {
       setBackUri((cur) => cur ?? draft.backUri);
       setSubjectId((cur) => (cur && data.subjects.some((s) => s.id === cur) ? cur : draft.subjectId));
       setStudyDate((cur) => cur || draft.studyDate);
+      setSelectedTags((cur) => (cur.length > 0 ? cur : draft.selectedTags ?? []));
       setStep(draft.step === 'save-sheet' ? 'save-sheet' : 'answer-prompt');
       if (didRestore) showMessage(t('capture.draftRestored'));
     })();
@@ -147,13 +168,14 @@ export default function CaptureTabScreen() {
         frontUri,
         backUri,
         subjectId,
+        selectedTags,
         studyDate,
         step: stepForDraft,
         updatedAt: new Date().toISOString(),
       });
     }, 350);
     return () => clearTimeout(timer);
-  }, [frontUri, backUri, subjectId, studyDate, step]);
+  }, [frontUri, backUri, subjectId, studyDate, selectedTags, step]);
 
   const openEditor = useCallback(
     (uri: string, side: EditSide, returnStep?: Step, source: EditSource = 'camera') => {
@@ -286,7 +308,13 @@ export default function CaptureTabScreen() {
     try {
       const stableFront = await stabilizeCaptureImageUri(frontUri);
       const stableBack = backUri ? await stabilizeCaptureImageUri(backUri) : null;
-      const id = await captureFlashcardPair(stableFront, stableBack, subjectId, studyDate);
+      const id = await captureFlashcardPair(
+        stableFront,
+        stableBack,
+        subjectId,
+        studyDate,
+        selectedTags.length > 0 ? selectedTags : undefined
+      );
       if (!id) {
         setSaveState('error');
         showMessage(t('capture.saveFailedKeepDraft'));
@@ -436,6 +464,13 @@ export default function CaptureTabScreen() {
                     </Pressable>
                   ))}
                 </ScrollView>
+                <CaptureTagPicker
+                  presets={tagPresets}
+                  selectedTags={selectedTags}
+                  onChangeSelected={setSelectedTags}
+                  onAddPreset={addTagPreset}
+                  disabled={saveBusy}
+                />
                 <Button
                   label={saveLabel}
                   onPress={() => void save()}

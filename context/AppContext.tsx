@@ -92,7 +92,8 @@ type AppContextValue = {
     frontUri: string,
     backUri: string | null,
     subjectId: string,
-    studyDate?: string
+    studyDate?: string,
+    tags?: string[]
   ) => Promise<string | null>;
   importPhotosToSubject: (
     subjectId: string,
@@ -452,7 +453,8 @@ export function AppProvider({
       frontUri: string,
       backUri: string | null,
       subjectId: string,
-      studyDate?: string
+      studyDate?: string,
+      tags?: string[]
     ) => {
       const prev = dataRef.current;
       if (!prev) return null;
@@ -468,6 +470,7 @@ export function AppProvider({
           answerImageUri: backUri,
           subjectId,
           studyDate,
+          tags,
         });
         persist(next);
         await clearCaptureDraft();

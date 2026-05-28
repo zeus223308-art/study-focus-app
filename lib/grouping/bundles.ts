@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 
 import { buildRibbonDays } from '@/lib/domain/dates';
 import type { DateRibbonMark, NoteBundle, NotePage } from '@/lib/domain/types';
+import { isExamBeforeTag } from '@/lib/domain/capture-tags';
 import { mergeItemOrder } from '@/lib/domain/reorder';
 
 export type BundleStack = {
@@ -135,7 +136,7 @@ export function searchBundles(bundles: NoteBundle[], query: string, examOnly?: b
   const q = query.trim().toLowerCase();
   return bundles.filter((b) => {
     if (b.archived) return false;
-    if (examOnly && !b.pages.some((p) => p.tags.includes('exam'))) return false;
+    if (examOnly && !b.pages.some((p) => p.tags.some(isExamBeforeTag))) return false;
     if (!q) return true;
     const inTitle = b.title.toLowerCase().includes(q);
     const inPages = b.pages.some(

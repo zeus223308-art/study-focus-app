@@ -37,6 +37,7 @@ export async function createPageFromCapture(
     scheduleId: string;
     bundleId: string;
     sortIndex: number;
+    tags?: string[];
   }
 ): Promise<NotePage> {
   const pageId = `page_${Date.now()}_${params.sortIndex}_${Math.random().toString(36).slice(2, 9)}`;
@@ -77,7 +78,7 @@ export async function createPageFromCapture(
     sortIndex: params.sortIndex,
     studyDate: params.studyDate,
     textNote: '',
-    tags: [],
+    tags: params.tags ?? [],
     asset: buildLocalCloudAsset(masterUri, thumb, 'pending_upload'),
     answerAsset,
     answerOcrText,
@@ -145,6 +146,7 @@ export async function appendCaptureToData(
     answerImageUri?: string | null;
     subjectId: string;
     studyDate?: string;
+    tags?: string[];
   }
 ): Promise<{ data: AppData; bundleId: string }> {
   const firstLaunch = data.settings.firstLaunchDate ?? todayKey();
@@ -168,6 +170,7 @@ export async function appendCaptureToData(
     scheduleId,
     bundleId,
     sortIndex: 0,
+    tags: params.tags,
   });
   const now = new Date().toISOString();
   const bundle: NoteBundle = {

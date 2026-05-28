@@ -12,6 +12,7 @@ export type CaptureDraft = {
   backUri: string | null;
   subjectId: string;
   studyDate: string;
+  selectedTags?: string[];
   step: 'answer-prompt' | 'save-sheet';
   updatedAt: string;
 };

@@ -189,6 +189,8 @@ export type AppSettings = {
   lastDerivativeRegenFailed?: number;
   lastDerivativeRegenAt?: string | null;
   captureFrameAspect?: CaptureFrameAspect;
+  /** Labels shown on capture save sheet (+ default exam-before tag). */
+  captureTagPresets?: string[];
 };
 
 export type AppData = {
