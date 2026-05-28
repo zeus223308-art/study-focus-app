@@ -32,8 +32,8 @@ import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
-import { useResolvedImageUri } from '@/hooks/useResolvedImageUri';
 import { showMessage } from '@/lib/ui/confirm';
+import { verifyCaptureImageReadable } from '@/lib/files/verify-capture-image';
 
 type EditorMode = 'crop' | 'draw';
 
@@ -56,16 +56,8 @@ export function CapturePhotoEditor({
   const insets = useSafeAreaInsets();
   const layout = useFullscreenViewerLayout();
   const [workingUri, setWorkingUri] = useState(uri);
-  const displayUri = useResolvedImageUri(workingUri);
-
-  useEffect(() => {
-    setWorkingUri(uri);
-    cropSelectionRef.current = null;
-    setCropSelection(null);
-    setCropReady(false);
-  }, [uri]);
   const [busy, setBusy] = useState(false);
-  const [cropReady, setCropReady] = useState(false);
+  const [imageReady, setImageReady] = useState(false);
   const [mode, setMode] = useState<EditorMode>('crop');
   const [strokes, setStrokes] = useState<InkStroke[]>([]);
   const [tool, setTool] = useState<InkToolId>('pen-black');
@@ -106,8 +98,9 @@ export function CapturePhotoEditor({
   const applyCropSelection = useCallback((next: CropSelection | null) => {
     cropSelectionRef.current = next;
     setCropSelection(next);
-    setCropReady(Boolean(next));
   }, []);
+
+  const canConfirm = imageReady && !busy;
 
   const rotate = async () => {
     const selection = cropSelectionRef.current;
@@ -182,9 +175,8 @@ export function CapturePhotoEditor({
   }, []);
 
   const confirm = async () => {
-    const selection = cropSelectionRef.current;
-    if (!selection) {
-      showMessage(t('capture.cropDragRegionHint'));
+    if (!imageReady) {
+      showMessage(t('capture.previewLoading'));
       return;
     }
     setBusy(true);
@@ -192,8 +184,22 @@ export function CapturePhotoEditor({
       let sourceUri = await resolveImageUriForProcessing(workingUri);
       sourceUri = await ensureManipulableImageUri(sourceUri);
 
+      const readable = await verifyCaptureImageReadable(sourceUri);
+      if (!readable) {
+        showMessage(t('capture.editorProcessingFailed'));
+        return;
+      }
+
+      const selection = cropSelectionRef.current;
       let finalUri: string;
-      try {
+
+      if (!selection) {
+        const passthrough = await ImageManipulator.manipulateAsync(sourceUri, [], {
+          compress: IMAGE_CAPTURE_QUALITY,
+          format: ImageManipulator.SaveFormat.JPEG,
+        });
+        finalUri = passthrough.uri;
+      } else try {
         const croppedUri = await exportCropSelection(sourceUri, selection);
         const region = cropRegionFromSelection(selection);
         finalUri = croppedUri;
@@ -231,11 +237,21 @@ export function CapturePhotoEditor({
         finalUri = passthrough.uri;
       }
 
+      const outReadable = await verifyCaptureImageReadable(finalUri);
+      if (!outReadable) {
+        showMessage(t('capture.editorProcessingFailed'));
+        return;
+      }
+
       await onConfirm({ uri: finalUri });
     } catch {
       try {
         const fallback = await stabilizeCaptureImageUri(workingUri).catch(() => workingUri);
-        await onConfirm({ uri: fallback });
+        if (await verifyCaptureImageReadable(fallback)) {
+          await onConfirm({ uri: fallback });
+        } else {
+          showMessage(t('capture.editorProcessingFailed'));
+        }
       } catch {
         showMessage(t('capture.editorProcessingFailed'));
       }
@@ -257,10 +273,10 @@ export function CapturePhotoEditor({
           {sideLabel}
         </Text>
         <Pressable
-          onPress={busy || !cropReady ? undefined : confirm}
+          onPress={canConfirm ? confirm : undefined}
           hitSlop={12}
           style={styles.topAction}>
-          <Text style={[styles.doneText, (busy || !cropReady) && styles.doneDisabled]}>
+          <Text style={[styles.doneText, !canConfirm && styles.doneDisabled]}>
             {t('capture.editorDone')}
           </Text>
         </Pressable>
@@ -300,24 +316,21 @@ export function CapturePhotoEditor({
       ) : null}
 
       <View style={styles.cropWrap}>
-        {displayUri ? (
-          <CaptureEditSurface
-            key={workingUri}
-            uri={displayUri}
-            mode={mode}
-            selection={cropSelection}
-            onSelectionChange={applyCropSelection}
-            seedSelection={seedSelection}
-            onSeedApplied={() => setSeedSelection(null)}
-            strokes={strokes}
-            tool={tool}
-            strokeWidth={strokeWidth}
-            onStrokesChange={setStrokes}
-            lockImagePosition={lockImagePosition}
-          />
-        ) : (
-          <View style={styles.cropWrapLoading} />
-        )}
+        <CaptureEditSurface
+          key={workingUri}
+          uri={workingUri}
+          mode={mode}
+          selection={cropSelection}
+          onSelectionChange={applyCropSelection}
+          seedSelection={seedSelection}
+          onSeedApplied={() => setSeedSelection(null)}
+          strokes={strokes}
+          tool={tool}
+          strokeWidth={strokeWidth}
+          onStrokesChange={setStrokes}
+          lockImagePosition={lockImagePosition}
+          onImageReadyChange={setImageReady}
+        />
         {busy ? (
           <View style={styles.busy}>
             <ActivityIndicator color={theme.white} size="large" />

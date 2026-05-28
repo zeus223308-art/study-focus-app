@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
+import { Image, LayoutChangeEvent, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
 import { CaptureInkOverlay } from '@/components/capture/CaptureInkOverlay';
@@ -7,6 +7,7 @@ import { theme } from '@/constants/theme';
 import { captureDisplayRect } from '@/lib/files/bake-capture-ink';
 import {
   clampCropSelection,
+  imageContainRect,
   imageDisplayRect,
   initialCropSelection,
   type CropRect,
@@ -14,7 +15,9 @@ import {
 } from '@/lib/files/interactive-crop';
 import { selectionMatchesLayout } from '@/lib/files/rotate-capture-edit';
 import type { InkStroke, InkToolId, NoteLayer } from '@/lib/domain/types';
+import { isDirectImageUri } from '@/lib/files/direct-image-uri';
 import { loadImageDimensions } from '@/lib/files/image-dimensions';
+import { resolveImageUri } from '@/lib/files/resolve-image-uri';
 import { useDragHandlers } from '@/lib/ui/use-drag-handlers';
 
 type EditorMode = 'crop' | 'draw';
@@ -37,6 +40,7 @@ type Props = {
   onStrokesChange?: (strokes: InkStroke[]) => void;
   /** Keep photo centered; crop handles only resize within the image bounds */
   lockImagePosition?: boolean;
+  onImageReadyChange?: (ready: boolean) => void;
 };
 
 function buildLayer(strokes: InkStroke[]): NoteLayer {
@@ -131,9 +135,25 @@ export function CaptureEditSurface({
   strokeWidth = 3,
   onStrokesChange,
   lockImagePosition = false,
+  onImageReadyChange,
 }: Props) {
   const [layout, setLayout] = useState({ w: 0, h: 0 });
   const [imageSize, setImageSize] = useState({ w: 0, h: 0 });
+  const [displayUri, setDisplayUri] = useState(uri);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (isDirectImageUri(uri)) {
+      setDisplayUri(uri);
+      return;
+    }
+    void resolveImageUri(uri).then((resolved) => {
+      if (!cancelled) setDisplayUri(resolved ?? uri);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [uri]);
   const selectionRef = useRef<CropSelection | null>(null);
   const didInitRef = useRef(false);
   const dragRef = useRef<{
@@ -151,7 +171,7 @@ export function CaptureEditSurface({
     didInitRef.current = false;
     setImageSize({ w: 0, h: 0 });
     let cancelled = false;
-    void loadImageDimensions(uri)
+    void loadImageDimensions(displayUri || uri)
       .then(({ width, height }) => {
         if (!cancelled) setImageSize({ w: width, h: height });
       })
@@ -161,7 +181,11 @@ export function CaptureEditSurface({
     return () => {
       cancelled = true;
     };
-  }, [uri]);
+  }, [displayUri, uri]);
+
+  useEffect(() => {
+    onImageReadyChange?.(imageSize.w >= 2 && imageSize.h >= 2 && layout.w >= 8 && layout.h >= 8);
+  }, [imageSize.w, imageSize.h, layout.w, layout.h, onImageReadyChange]);
 
   const applySelection = useCallback(
     (next: CropSelection, opts?: { cropOnly?: boolean }) => {
@@ -313,10 +337,15 @@ export function CaptureEditSurface({
     };
   };
 
+  const baseContainRect = useMemo(() => {
+    if (imageSize.w < 2 || imageSize.h < 2 || layout.w < 8 || layout.h < 8) return null;
+    return imageContainRect(imageSize.w, imageSize.h, layout.w, layout.h);
+  }, [imageSize.w, imageSize.h, layout.w, layout.h]);
+
   const imageRect = useMemo(() => {
-    if (!selection) return null;
-    return imageDisplayRect(selection);
-  }, [selection]);
+    if (selection) return imageDisplayRect(selection);
+    return baseContainRect;
+  }, [selection, baseContainRect]);
 
   const inkRect = useMemo(() => {
     if (!selection) return null;
@@ -335,9 +364,9 @@ export function CaptureEditSurface({
         const { width, height } = e.nativeEvent.layout;
         setLayout({ w: width, h: height });
       }}>
-      {imageRect ? (
+      {imageRect && displayUri ? (
         <View
-          {...(mode === 'crop' && !lockImagePosition
+          {...(mode === 'crop' && !lockImagePosition && selection
             ? wrapHandle('image', imageDrag, [
                 styles.imageTouch,
                 {
@@ -360,7 +389,7 @@ export function CaptureEditSurface({
               })}
         >
           <Image
-            source={{ uri }}
+            source={{ uri: displayUri }}
             style={{ width: '100%', height: '100%' }}
             resizeMode="contain"
             onLoad={(e) => {
@@ -369,7 +398,14 @@ export function CaptureEditSurface({
                 setImageSize({ w: src.width, h: src.height });
               }
             }}
+            onError={() => {
+              if (displayUri !== uri) setDisplayUri(uri);
+            }}
           />
+        </View>
+      ) : displayUri || uri ? (
+        <View style={styles.loading}>
+          <Text style={styles.loadingText}>…</Text>
         </View>
       ) : null}
 
@@ -513,6 +549,8 @@ export function CaptureEditSurface({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.blackPure, overflow: 'hidden' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingText: { color: 'rgba(255,255,255,0.5)', fontSize: 24, fontWeight: '700' },
   imageTouch: { position: 'absolute', zIndex: 2 },
   dim: { position: 'absolute', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 3 },
   frame: { position: 'absolute', borderWidth: 2, borderColor: theme.white, zIndex: 4 },

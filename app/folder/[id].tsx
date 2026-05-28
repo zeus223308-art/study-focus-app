@@ -186,7 +186,7 @@ export default function FolderScreen() {
       subjectId: subject.id,
       studyDate: albumFilterDate,
     });
-    router.push('/(tabs)/capture?entry=import');
+    router.push('/(tabs)/capture?entry=import&fresh=1');
   };
 
   const onDragMove = (pageX: number, pageY: number) => {

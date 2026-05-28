@@ -127,6 +127,7 @@
     "editorCancel": "취소",
     "editorDone": "완료",
     "editorProcessingFailed": "사진 처리에 실패했습니다. 다시 시도해 주세요.",
+    "previewLoading": "사진을 불러오는 중입니다. 잠시 후 다시 완료를 눌러 주세요.",
     "toolCrop": "자르기",
     "toolDraw": "그리기",
     "toolRotate": "회전",

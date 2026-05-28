@@ -1,5 +1,6 @@
 import { createElement, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Platform,
   StyleSheet,
@@ -32,28 +33,47 @@ function webImgStyle(
   };
 }
 
-function useCapturePreviewUri(uri: string | null | undefined): string | null {
-  const [resolved, setResolved] = useState<string | null>(() =>
-    isDirectImageUri(uri) ? uri : null
+function useCapturePreviewUri(uri: string | null | undefined): {
+  displayUri: string | null;
+  loading: boolean;
+  failed: boolean;
+} {
+  const [displayUri, setDisplayUri] = useState<string | null>(() =>
+    uri && isDirectImageUri(uri) ? uri : null
   );
+  const [loading, setLoading] = useState(Boolean(uri && !isDirectImageUri(uri)));
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!uri) {
-      setResolved(null);
+      setDisplayUri(null);
+      setLoading(false);
+      setFailed(false);
       return;
     }
     if (isDirectImageUri(uri)) {
-      setResolved(uri);
+      setDisplayUri(uri);
+      setLoading(false);
+      setFailed(false);
       return;
     }
 
     let cancelled = false;
+    setLoading(true);
+    setFailed(false);
     resolveImageUri(uri)
       .then((next) => {
-        if (!cancelled) setResolved(next ?? uri);
+        if (cancelled) return;
+        const resolved = next ?? (isDirectImageUri(uri) ? uri : null);
+        setDisplayUri(resolved);
+        setLoading(!resolved);
+        setFailed(!resolved);
       })
       .catch(() => {
-        if (!cancelled) setResolved(uri);
+        if (cancelled) return;
+        setDisplayUri(uri);
+        setLoading(false);
+        setFailed(false);
       });
 
     return () => {
@@ -61,15 +81,23 @@ function useCapturePreviewUri(uri: string | null | undefined): string | null {
     };
   }, [uri]);
 
-  return resolved;
+  return { displayUri, loading, failed };
 }
 
-/** Capture sheet previews — same direct rendering as the photo editor. */
+/** Capture sheet previews — resolves URI then shows image (spinner while loading). */
 export function CapturePreviewImage({ uri, style, resizeMode = 'cover', ...rest }: Props) {
-  const displayUri = useCapturePreviewUri(uri);
+  const { displayUri, loading, failed } = useCapturePreviewUri(uri);
 
-  if (!displayUri) {
+  if (!uri || failed) {
     return <View style={[styles.placeholder, style]} />;
+  }
+
+  if (loading || !displayUri) {
+    return (
+      <View style={[styles.placeholder, styles.centered, style]}>
+        <ActivityIndicator color={theme.orange} />
+      </View>
+    );
   }
 
   if (
@@ -93,6 +121,10 @@ export function CapturePreviewImage({ uri, style, resizeMode = 'cover', ...rest 
 const styles = StyleSheet.create({
   placeholder: {
     backgroundColor: theme.grayLight,
+  },
+  centered: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   clip: {
     overflow: 'hidden',

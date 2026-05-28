@@ -127,6 +127,7 @@
     "editorCancel": "Cancel",
     "editorDone": "Done",
     "editorProcessingFailed": "Could not process the photo. Please try again.",
+    "previewLoading": "Photo is still loading. Wait a moment and tap Done again.",
     "toolCrop": "Crop",
     "toolDraw": "Draw",
     "toolRotate": "Rotate",

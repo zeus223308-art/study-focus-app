@@ -4,6 +4,8 @@ export function isDirectImageUri(uri: string | null | undefined): uri is string 
   return (
     uri.startsWith('file:') ||
     uri.startsWith('content:') ||
+    uri.startsWith('ph:') ||
+    uri.startsWith('assets-library:') ||
     uri.startsWith('blob:') ||
     uri.startsWith('data:') ||
     uri.startsWith('http://') ||
