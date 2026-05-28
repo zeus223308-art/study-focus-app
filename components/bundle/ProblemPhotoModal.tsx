@@ -108,8 +108,13 @@ export function ProblemPhotoModal({
   }, [tool, penWidth, highlighterWidth, eraserWidth]);
 
   const onSelectKind = (kind: PhotoInkToolKind) => {
+    if (kind !== 'crop' && inkKind === kind) {
+      setInkKind(null);
+      return;
+    }
     setInkKind(kind);
     if (kind === 'crop') {
+      setInkKind(null);
       onCropRequest(sides[pageIndex]?.side ?? 'front');
       return;
     }
@@ -157,7 +162,7 @@ export function ProblemPhotoModal({
 
         <PhotoInkToolbar activeKind={inkKind} onSelectKind={onSelectKind} />
 
-        {flowApi.flow !== null && (
+        {inkKind !== null && flowApi.flow !== null && (
           <FullscreenInkControls
             tool={tool}
             penWidth={penWidth}
