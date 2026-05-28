@@ -53,7 +53,7 @@ const importPickLabels = (t: (key: string) => string) => ({
 export default function CaptureTabScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, captureFlashcardPair, activeFolderCapture, setActiveFolderCapture } = useApp();
+  const { data, captureFlashcardPair, activeFolderCapture } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [step, setStep] = useState<Step>('camera');
@@ -106,7 +106,6 @@ export default function CaptureTabScreen() {
     side === 'back' ? 'save-sheet' : 'answer-prompt';
 
   const draftRestoreOnce = useRef(false);
-  const folderImportOnce = useRef(false);
   useEffect(() => {
     if (draftRestoreOnce.current) return;
     draftRestoreOnce.current = true;
@@ -193,26 +192,6 @@ export default function CaptureTabScreen() {
     },
     [editSide, openEditor, t]
   );
-
-  useEffect(() => {
-    if (isWeb || folderImportOnce.current || !activeFolderCapture?.promptImport) return;
-    if (!permission?.granted || step !== 'camera' || frontUri) return;
-    folderImportOnce.current = true;
-    setActiveFolderCapture({
-      subjectId: activeFolderCapture.subjectId,
-      studyDate: activeFolderCapture.studyDate,
-    });
-    const id = setTimeout(() => void pickFromGallery('front'), 350);
-    return () => clearTimeout(id);
-  }, [
-    activeFolderCapture,
-    frontUri,
-    isWeb,
-    permission?.granted,
-    pickFromGallery,
-    setActiveFolderCapture,
-    step,
-  ]);
 
   const takePhoto = async () => {
     const photo = await cameraRef.current?.takePictureAsync({ quality: IMAGE_CAPTURE_QUALITY });

@@ -185,7 +185,6 @@ export default function FolderScreen() {
     setActiveFolderCapture({
       subjectId: subject.id,
       studyDate: albumFilterDate,
-      promptImport: true,
     });
     router.push('/(tabs)/capture');
   };

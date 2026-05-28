@@ -78,10 +78,8 @@ type AppContextValue = {
   selectedDate: string;
   setSelectedDate: (d: string) => void;
   /** Last-opened subject folder: default capture subject + study date (ribbon). */
-  activeFolderCapture: { subjectId: string; studyDate: string; promptImport?: boolean } | null;
-  setActiveFolderCapture: (
-    ctx: { subjectId: string; studyDate: string; promptImport?: boolean } | null
-  ) => void;
+  activeFolderCapture: { subjectId: string; studyDate: string } | null;
+  setActiveFolderCapture: (ctx: { subjectId: string; studyDate: string } | null) => void;
   dueSelected: NoteBundle[];
   freemium: FreemiumCheck;
   paywallVisible: boolean;
@@ -209,7 +207,6 @@ export function AppProvider({
   const [activeFolderCapture, setActiveFolderCapture] = useState<{
     subjectId: string;
     studyDate: string;
-    promptImport?: boolean;
   } | null>(null);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [autoRecoveryNotice, setAutoRecoveryNotice] = useState<AutoRecoverySource | null>(null);
