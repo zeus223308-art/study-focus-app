@@ -127,6 +127,7 @@ export default function DashboardScreen() {
       params: {
         blackout: '1',
         reviewPages: reviewPages.join(','),
+        subjectIds: Array.from(selectedSubjectIds).join(','),
       },
     });
   };

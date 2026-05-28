@@ -39,6 +39,11 @@ import {
   slideshowMsForSide,
 } from '@/lib/domain/slideshow-timing';
 import { advanceAfterReview, getNextReviewDate } from '@/lib/spacing/engine';
+import {
+  parseReviewPageKeys,
+  reviewPageKey,
+  routeParamString,
+} from '@/lib/review/parse-review-pages';
 
 const HINT_PEEK_MS = 8000;
 const AD_LOCK_MS = 5000;
@@ -62,19 +67,28 @@ export default function ReviewSessionScreen() {
     useApp();
 
   const slides = useMemo<Slide[]>(() => {
-    const pickedSubjectIds =
-      params.subjectIds?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
-    const pickedPageKeys = new Set(
-      (params.reviewPages?.split(',').map((s) => s.trim()).filter(Boolean) ?? [])
-    );
+    const pickedSubjectIds = routeParamString(params.subjectIds)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const pickedPages = parseReviewPageKeys(params.reviewPages);
+    const pickedPageKeys = new Set(pickedPages.map(reviewPageKey));
 
-    let bundles = params.bundleId
-      ? data.bundles.filter((b) => b.id === params.bundleId)
-      : pickedSubjectIds.length > 0
-        ? data.bundles.filter((b) => !b.archived && pickedSubjectIds.includes(b.subjectId))
-        : dueSelected.length
-          ? dueSelected
-          : dueToday;
+    let bundles;
+    if (params.bundleId) {
+      bundles = data.bundles.filter((b) => b.id === params.bundleId);
+    } else if (pickedPages.length > 0) {
+      const bundleIds = new Set(pickedPages.map((p) => p.bundleId));
+      bundles = data.bundles.filter((b) => !b.archived && bundleIds.has(b.id));
+    } else if (pickedSubjectIds.length > 0) {
+      bundles = data.bundles.filter(
+        (b) => !b.archived && pickedSubjectIds.includes(b.subjectId)
+      );
+    } else if (dueSelected.length > 0) {
+      bundles = dueSelected;
+    } else {
+      bundles = dueToday;
+    }
     if (params.subjectId) {
       bundles = bundles.filter((b) => b.subjectId === params.subjectId);
     }
@@ -82,7 +96,7 @@ export default function ReviewSessionScreen() {
     const list: Slide[] = [];
     for (const bundle of bundles) {
       for (const page of bundle.pages) {
-        if (pickedPageKeys.size > 0 && !pickedPageKeys.has(`${bundle.id}:${page.id}`)) {
+        if (pickedPageKeys.size > 0 && !pickedPageKeys.has(reviewPageKey({ bundleId: bundle.id, pageId: page.id }))) {
           continue;
         }
         list.push({ bundle, page, side: 'front' });
