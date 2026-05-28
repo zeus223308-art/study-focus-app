@@ -1,5 +1,7 @@
 import { addDays, format, parseISO, startOfDay } from 'date-fns';
 
+import { theme } from '@/constants/theme';
+
 import type { AppData, AppSettings } from './types';
 
 /** Local calendar date for this device (uses phone timezone, not UTC). */
@@ -35,9 +37,21 @@ export function normalizeAppSettings(settings: AppSettings, data: AppData): AppS
   const merged = { ...data.settings, ...settings };
   const firstLaunchDate = merged.firstLaunchDate ?? inferFirstLaunchDate({ ...data, settings: merged });
   const pageCount = data.bundles.reduce((n, b) => n + b.pages.length, 0);
+  const tier = merged.tier ?? 'free';
+  const photoLimit =
+    tier === 'pro'
+      ? (merged.photoLimit ?? theme.limits.freeImages)
+      : Math.max(merged.photoLimit ?? 0, theme.limits.freeImages);
+  const memoLimit =
+    tier === 'pro'
+      ? (merged.memoLimit ?? theme.limits.freeMemos)
+      : Math.max(merged.memoLimit ?? 0, theme.limits.freeMemos);
   return {
     ...merged,
     firstLaunchDate,
+    tier,
+    photoLimit,
+    memoLimit,
     hadStudyContent: pageCount > 0 || Boolean(merged.hadStudyContent),
     lastSavedPageCount: pageCount,
     lastSavedAt: merged.lastSavedAt ?? null,

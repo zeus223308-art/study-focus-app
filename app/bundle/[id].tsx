@@ -17,6 +17,7 @@ import { ArchiveSubjectPickerModal } from '@/components/bundle/ArchiveSubjectPic
 import { BundlePhotoBlock } from '@/components/bundle/BundlePhotoBlock';
 import { PhotoCropModal } from '@/components/bundle/PhotoCropModal';
 import { PhotoInkToolbar, type PhotoInkToolKind } from '@/components/bundle/PhotoInkToolbar';
+import { PhotoMemoEditorModal } from '@/components/bundle/PhotoMemoEditorModal';
 import { ProblemPhotoModal } from '@/components/bundle/ProblemPhotoModal';
 import { Button } from '@/components/ui/Button';
 import { NotFoundView } from '@/components/ui/NotFoundView';
@@ -34,12 +35,13 @@ import {
   PEN_WIDTHS,
   isHighlighterTool,
 } from '@/lib/domain/ink-sizes';
-import type { InkToolId, NoteLayer } from '@/lib/domain/types';
+import { hasPhotoMemoContent, normalizePhotoMemo } from '@/lib/domain/photo-memo';
+import type { InkToolId, NoteLayer, PhotoMemo } from '@/lib/domain/types';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
-import { useViewportLayout } from '@/lib/ui/viewport-layout';
+import { computeBundlePhotoLayout, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 function newLayer(studyDate: string): NoteLayer {
   const now = new Date().toISOString();
@@ -69,7 +71,6 @@ export default function BundleScreen() {
     moveBundleToTrash,
     deletePage,
     applyLayerCycleChoice,
-    setActiveFolderCapture,
   } = useApp();
   const bundle = data.bundles.find((b) => b.id === id);
   const initialPageIndex = useMemo(() => {
@@ -89,12 +90,13 @@ export default function BundleScreen() {
   const [cropUri, setCropUri] = useState('');
   const [cropSide, setCropSide] = useState<'front' | 'back'>('front');
   const [archivePickerOpen, setArchivePickerOpen] = useState(false);
+  const [memoOpen, setMemoOpen] = useState(false);
+  const [memoSide, setMemoSide] = useState<'front' | 'back'>('front');
   const [undoStack, setUndoStack] = useState<NoteLayer['strokes'][]>([]);
   const [redoStack, setRedoStack] = useState<NoteLayer['strokes'][]>([]);
   const viewport = useViewportLayout();
   const viewerLayout = useFullscreenViewerLayout();
-  const photoMaxW = viewport.width - viewport.horizontalPadding * 2;
-  const photoMaxH = 220;
+  const photoLayout = computeBundlePhotoLayout(viewport);
 
   const page = bundle?.pages[pageIndex] ?? bundle?.pages[0];
   const strokeWidth = useMemo(() => {
@@ -311,9 +313,22 @@ export default function BundleScreen() {
     });
   };
 
-  const openCaptureFlow = () => {
-    setActiveFolderCapture({ subjectId: bundle.subjectId, studyDate: bundle.studyDate });
-    router.push('/(tabs)/capture');
+  const frontMemo = normalizePhotoMemo(page.frontMemo);
+  const answerMemo = normalizePhotoMemo(page.answerMemo);
+
+  const updatePageMemo = (side: 'front' | 'back', memo: PhotoMemo) => {
+    const key = side === 'front' ? 'frontMemo' : 'answerMemo';
+    updateBundle(bundle.id, {
+      pages: bundle.pages.map((p) =>
+        p.id === page.id ? { ...p, [key]: memo, updatedAt: new Date().toISOString() } : p
+      ),
+    });
+  };
+
+  const openMemoEditor = (side: 'front' | 'back') => {
+    if (side === 'back' && !page.answerAsset) return;
+    setMemoSide(side);
+    setMemoOpen(true);
   };
 
   const subject = data.subjects.find((s) => s.id === bundle.subjectId);
@@ -365,44 +380,55 @@ export default function BundleScreen() {
         </>
       ) : null}
 
-      <View style={styles.photosColumn}>
-      <BundlePhotoBlock
-        label={t('item.problemSection')}
-        maxWidth={photoMaxW}
-        maxHeight={photoMaxH}
-        asset={page.asset}
-        showInkPreview={Boolean(activeLayer?.strokes.length)}
-        layer={activeLayer ?? undefined}
-        onPress={() => {
-          setEditAnswer(false);
-          setProblemModalOpen(true);
-        }}
-      />
-
-      <BundlePhotoBlock
-        label={t('item.answerSection')}
-        maxWidth={photoMaxW}
-        maxHeight={photoMaxH}
-        asset={page.answerAsset}
-        onPress={() => {
-          if (!page.answerAsset) return;
-          setProblemModalOpen(false);
-          setAnswerInkKind(null);
-          setEditAnswer(true);
-        }}
-        inkEnabled={editAnswer && Boolean(page.answerAsset)}
-        layer={activeLayer ?? undefined}
-        tool={tool}
-        strokeWidth={strokeWidth}
-        onStrokesChange={updateLayerStrokes}
-        placeholder={t('item.addBackPhoto')}
-        onAddPress={addBackPhoto}
-      />
+      <View
+        style={[
+          styles.photosColumn,
+          photoLayout.sideBySide && styles.photosRow,
+          photoLayout.sideBySide && { gap: photoLayout.columnGap },
+        ]}>
+      <View style={photoLayout.sideBySide ? styles.photoCol : undefined}>
+        <BundlePhotoBlock
+          label={t('item.problemSection')}
+          maxWidth={photoLayout.maxWidth}
+          maxHeight={photoLayout.maxHeight}
+          asset={page.asset}
+          showInkPreview={Boolean(activeLayer?.strokes.length)}
+          showMemoBadge={hasPhotoMemoContent(page.frontMemo)}
+          layer={activeLayer ?? undefined}
+          memoButtonLabel={t('item.addMemo')}
+          onMemoPress={() => openMemoEditor('front')}
+          onPress={() => {
+            setEditAnswer(false);
+            setProblemModalOpen(true);
+          }}
+        />
       </View>
 
-      <Pressable onPress={openCaptureFlow} style={styles.addProblemRow}>
-        <Text style={styles.link}>{t('folder.importPhotos')}</Text>
-      </Pressable>
+      <View style={photoLayout.sideBySide ? styles.photoCol : undefined}>
+        <BundlePhotoBlock
+          label={t('item.answerSection')}
+          maxWidth={photoLayout.maxWidth}
+          maxHeight={photoLayout.maxHeight}
+          asset={page.answerAsset}
+          showMemoBadge={hasPhotoMemoContent(page.answerMemo)}
+          memoButtonLabel={t('item.addMemo')}
+          onMemoPress={page.answerAsset ? () => openMemoEditor('back') : undefined}
+          onPress={() => {
+            if (!page.answerAsset) return;
+            setProblemModalOpen(false);
+            setAnswerInkKind(null);
+            setEditAnswer(true);
+          }}
+          inkEnabled={editAnswer && Boolean(page.answerAsset)}
+          layer={activeLayer ?? undefined}
+          tool={tool}
+          strokeWidth={strokeWidth}
+          onStrokesChange={updateLayerStrokes}
+          placeholder={t('item.addBackPhoto')}
+          onAddPress={addBackPhoto}
+        />
+      </View>
+      </View>
 
       <Button
         label={t('dashboard.startReview')}
@@ -453,6 +479,17 @@ export default function BundleScreen() {
             },
           });
         }}
+      />
+
+      <PhotoMemoEditorModal
+        visible={memoOpen}
+        sideLabel={
+          memoSide === 'front' ? t('item.problemSection') : t('item.answerSection')
+        }
+        asset={memoSide === 'front' ? page.asset : page.answerAsset!}
+        memo={memoSide === 'front' ? frontMemo : answerMemo}
+        onMemoChange={(m) => updatePageMemo(memoSide, m)}
+        onClose={() => setMemoOpen(false)}
       />
 
       <ProblemPhotoModal
@@ -529,6 +566,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
   },
+  photosRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  photoCol: {
+    flex: 1,
+    minWidth: 140,
+    maxWidth: '48%',
+  },
   pagerSection: {
     position: 'relative',
     marginBottom: 0,
@@ -565,7 +613,6 @@ const styles = StyleSheet.create({
   pageIndicator: { textAlign: 'center', color: theme.gray, marginVertical: 8 },
   pairSection: { marginTop: 8, marginBottom: 12 },
   pairTitle: { fontSize: theme.font.caption, fontWeight: '800', color: theme.gray, marginBottom: 8 },
-  addProblemRow: { marginTop: 4, marginBottom: 12, alignSelf: 'flex-start' },
   linkDisabled: { opacity: 0.5 },
   pairRow: { flexDirection: 'row', gap: 12 },
   pairCol: { flex: 1, gap: 4 },

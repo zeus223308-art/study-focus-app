@@ -66,6 +66,7 @@ export function ProblemPhotoModal({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const layout = useFullscreenViewerLayout();
+  const { isLandscape } = layout;
   const [pageIndex, setPageIndex] = useState(0);
   const [viewerW, setViewerW] = useState(0);
   const [inkKind, setInkKind] = useState<PhotoInkToolKind | null>(null);
@@ -136,8 +137,10 @@ export function ProblemPhotoModal({
     if (w > 0) setViewerW(w);
   };
 
-  const viewerH = Math.min(layout.height * 0.55, viewerW * 1.25);
-  const imageH = Math.max(120, viewerH - 28);
+  const viewerH = isLandscape
+    ? Math.round(Math.min(layout.shortEdge * 0.88, layout.height - 120))
+    : Math.min(layout.height * 0.55, viewerW * 1.25);
+  const imageH = Math.max(120, viewerH - (isLandscape ? 12 : 28));
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>

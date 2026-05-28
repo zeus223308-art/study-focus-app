@@ -17,6 +17,7 @@ import { ChoiceConfirmHost } from '@/components/ui/ChoiceConfirmHost';
 import { MobileWebFrame } from '@/components/MobileWebFrame';
 import { SplashBrand } from '@/components/SplashBrand';
 import { AppProvider, useApp } from '@/context/AppContext';
+import { useUnlockDeviceOrientation } from '@/hooks/useUnlockDeviceOrientation';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/constants/theme';
 import { Image, StyleSheet, View } from 'react-native';
@@ -26,7 +27,7 @@ import { SPLASH_BLACK } from '@/components/MountainMLogo';
 
 const mountainLogo = require('../assets/images/mountain-m-logo.png');
 
-export { ErrorBoundary } from 'expo-router';
+export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -105,6 +106,8 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
 }
 
 function AppRoot({ splashDone }: { splashDone: boolean }) {
+  useUnlockDeviceOrientation();
+
   return (
     <MobileWebFrame>
       <StatusBar style="light" />

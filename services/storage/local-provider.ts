@@ -12,8 +12,6 @@ import type { AppData } from '@/lib/domain/types';
 
 import { migratePersistedWebAssets } from '@/lib/files/migrate-web-assets';
 import { repairAppDataAssets } from '@/lib/files/repair-loaded-assets';
-import { ensureAppDataDerivatives } from '@/lib/files/regenerate-derivatives';
-import { upgradeLegacyPhotoQuality } from '@/lib/files/upgrade-legacy-assets';
 
 import { migrateToV4 } from '@/services/storage/migration';
 
@@ -220,40 +218,18 @@ export class LocalStorageProvider implements StorageProvider {
 
 
   private async finalizeLoaded(data: AppData): Promise<AppData> {
-
     const before = JSON.stringify(data.bundles);
 
     let next = await migratePersistedWebAssets(data);
     next = await repairAppDataAssets(next);
 
-    const derivatives = await ensureAppDataDerivatives(next);
-    next = derivatives.data;
-
-    const quality = await upgradeLegacyPhotoQuality(next);
-    next = quality.data;
-
-    next = {
-      ...next,
-      settings: {
-        ...next.settings,
-        lastDerivativeRegenAt: new Date().toISOString(),
-        lastDerivativeRegenFailed: derivatives.failed,
-      },
-    };
-
-    const changed =
-      before !== JSON.stringify(next.bundles) ||
-      derivatives.regenerated > 0 ||
-      quality.upgraded > 0 ||
-      derivatives.failed > 0 ||
-      (next.settings.assetQualityVersion ?? 0) !== (data.settings.assetQualityVersion ?? 0);
+    const changed = before !== JSON.stringify(next.bundles);
 
     if (changed) {
       await this.persistLocal(next);
     }
 
     return next;
-
   }
 
 
@@ -365,10 +341,29 @@ export class LocalStorageProvider implements StorageProvider {
     const stamped = await stampRecoverySettings(data);
     const json = JSON.stringify(stamped);
     const storageKey = await getScopedAppDataKey();
-    await AsyncStorage.setItem(storageKey, json);
+
     if (hasRecoverableContent(stamped)) {
-      await writeLocalBackupRaw(json);
-      await writeRecoveryManifest(stamped);
+      try {
+        await writeLocalBackupRaw(json);
+        await writeRecoveryManifest(stamped);
+      } catch {
+        // Backup first — main write may still succeed.
+      }
+    }
+
+    try {
+      await AsyncStorage.setItem(storageKey, json);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const quota =
+        msg.includes('QuotaExceeded') ||
+        msg.includes('quota') ||
+        msg.includes('exceeded');
+      if (quota) {
+        console.warn('[storage] persistLocal quota exceeded');
+        return;
+      }
+      throw err;
     }
   }
 

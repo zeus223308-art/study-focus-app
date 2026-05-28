@@ -34,13 +34,21 @@ export function MobileWebFrame({ children }: Props) {
 
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const deviceClass = getDeviceClass(windowWidth, windowHeight);
-  const frameWidth =
-    deviceClass === 'largeTablet'
-      ? Math.min(1100, windowWidth - 48)
-      : deviceClass === 'tablet'
-        ? Math.min(820, windowWidth - 48)
-        : Math.min(MOBILE_FRAME_WIDTH, windowWidth);
-  const showBezel = windowWidth > frameWidth + 48;
+  const isLandscape = windowWidth > windowHeight;
+  const phoneLandscapeFullBleed = isLandscape && deviceClass === 'phone';
+  const frameWidth = phoneLandscapeFullBleed
+    ? windowWidth
+    : isLandscape
+      ? Math.min(
+          deviceClass === 'largeTablet' ? 1200 : deviceClass === 'tablet' ? 960 : windowWidth,
+          windowWidth - (deviceClass === 'phone' ? 16 : 24)
+        )
+      : deviceClass === 'largeTablet'
+        ? Math.min(1100, windowWidth - 48)
+        : deviceClass === 'tablet'
+          ? Math.min(820, windowWidth - 48)
+          : Math.min(MOBILE_FRAME_WIDTH, windowWidth);
+  const showBezel = !phoneLandscapeFullBleed && windowWidth > frameWidth + 48;
 
   return (
     <View style={styles.shell}>

@@ -110,14 +110,18 @@ export default function ReviewSessionScreen() {
   const frontFade = useRef(new Animated.Value(1)).current;
   const problemShift = useRef(new Animated.Value(0)).current;
   const viewport = useViewportLayout();
-  const RECALL_SIDE_PAD = 20;
+  const recallSidePad = viewport.isLandscape ? 12 : 20;
   const [recallViewW, setRecallViewW] = useState(0);
   const workCardW = Math.max(
     260,
-    (recallViewW > 0 ? recallViewW : viewport.width) - RECALL_SIDE_PAD * 2
+    (recallViewW > 0 ? recallViewW : viewport.width) - recallSidePad * 2
   );
-  const problemCardH = Math.round(workCardW * 0.46);
-  const workCardH = Math.round(workCardW * 1.75);
+  const problemCardH = viewport.isLandscape
+    ? Math.round(Math.min(viewport.shortEdge * 0.52, workCardW * 0.42))
+    : Math.round(workCardW * 0.46);
+  const workCardH = viewport.isLandscape
+    ? Math.round(viewport.shortEdge * 0.58)
+    : Math.round(workCardW * 1.75);
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
   const recallCountdownSec = 3;

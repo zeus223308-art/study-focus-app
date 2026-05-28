@@ -106,18 +106,28 @@ export function useFullscreenViewerLayout(): FullscreenViewerLayout {
     const longEdge = Math.max(width, height);
     const useUnifiedTopBar = isLandscape;
 
-    const horizontalPad = isPhone ? 16 : 28;
-    const imageMaxWidth = isPhone
-      ? width - horizontalPad
-      : deviceClass === 'tablet'
-        ? Math.min(width * 0.9, 820)
-        : Math.min(width * 0.82, 1100);
+    const horizontalPad = isLandscape
+      ? isPhone
+        ? 12
+        : 16
+      : isPhone
+        ? 16
+        : 28;
+    const imageMaxWidth = isLandscape
+      ? width - horizontalPad * 2
+      : isPhone
+        ? width - horizontalPad
+        : deviceClass === 'tablet'
+          ? Math.min(width * 0.9, 820)
+          : Math.min(width * 0.82, 1100);
 
-    const inkToolbarMaxWidth = isPhone
-      ? Math.min(width - 24, 360)
-      : deviceClass === 'tablet'
-        ? 520
-        : 640;
+    const inkToolbarMaxWidth = isLandscape
+      ? width - horizontalPad * 2
+      : isPhone
+        ? Math.min(width - 24, 360)
+        : deviceClass === 'tablet'
+          ? 520
+          : 640;
 
     return {
       width,

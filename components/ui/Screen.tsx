@@ -23,7 +23,13 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
 ) {
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
-  const pad = padded ? (viewport.isPhone ? 20 : viewport.horizontalPadding) : 0;
+  const pad = padded
+    ? viewport.isLandscape
+      ? viewport.horizontalPadding
+      : viewport.isPhone
+        ? 20
+        : viewport.horizontalPadding
+    : 0;
 
   const innerBody = (
     <View
@@ -33,7 +39,7 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
   );
 
   const inner =
-    padded && viewport.isTablet ? (
+    padded && viewport.isTablet && !viewport.isLandscape ? (
       <View
         style={{
           width: '100%',

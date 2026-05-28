@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
@@ -21,6 +22,9 @@ type Props = {
   onStrokesChange?: (strokes: NoteLayer['strokes']) => void;
   placeholder?: string;
   onAddPress?: () => void;
+  showMemoBadge?: boolean;
+  onMemoPress?: () => void;
+  memoButtonLabel?: string;
 };
 
 export function BundlePhotoBlock({
@@ -37,6 +41,9 @@ export function BundlePhotoBlock({
   onStrokesChange,
   placeholder,
   onAddPress,
+  showMemoBadge = false,
+  onMemoPress,
+  memoButtonLabel,
 }: Props) {
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
@@ -83,6 +90,15 @@ export function BundlePhotoBlock({
                 style={styles.ink}
               />
             ) : null}
+            {showMemoBadge ? (
+              <View style={styles.memoBadge} pointerEvents="none">
+                <SymbolView
+                  name={{ ios: 'note.text', android: 'description', web: 'description' }}
+                  size={14}
+                  tintColor={theme.orange}
+                />
+              </View>
+            ) : null}
           </>
         ) : (
           <View style={[styles.empty, { width, height }]}>
@@ -90,6 +106,20 @@ export function BundlePhotoBlock({
           </View>
         )}
       </Pressable>
+      {hasImage && onMemoPress ? (
+        <Pressable
+          onPress={onMemoPress}
+          style={styles.memoBtn}
+          accessibilityRole="button"
+          accessibilityLabel={memoButtonLabel ?? 'Memo'}>
+          <SymbolView
+            name={{ ios: 'note.text', android: 'description', web: 'description' }}
+            size={16}
+            tintColor={theme.orange}
+          />
+          <Text style={styles.memoBtnText}>{memoButtonLabel ?? '+ 메모 추가'}</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -127,4 +157,36 @@ const styles = StyleSheet.create({
     backgroundColor: theme.orangeSoft,
   },
   emptyText: { color: theme.orange, fontWeight: '800', fontSize: theme.font.caption },
+  memoBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    zIndex: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: theme.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.orange,
+    backgroundColor: theme.orangeSoft,
+  },
+  memoBtnText: {
+    color: theme.orange,
+    fontWeight: '800',
+    fontSize: theme.font.caption,
+  },
 });

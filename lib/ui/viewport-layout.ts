@@ -35,9 +35,26 @@ export function getDeviceClass(width: number, height: number): DeviceClass {
   return 'phone';
 }
 
-export function computePagerSize(width: number, deviceClass: DeviceClass): number {
-  const pad = deviceClass === 'phone' ? 32 : deviceClass === 'tablet' ? 48 : 64;
-  const cap = deviceClass === 'phone' ? 400 : deviceClass === 'tablet' ? 520 : 600;
+export function computePagerSize(width: number, height: number, deviceClass: DeviceClass): number {
+  const isLandscape = width > height;
+  const pad = isLandscape
+    ? deviceClass === 'phone'
+      ? 16
+      : deviceClass === 'tablet'
+        ? 24
+        : 32
+    : deviceClass === 'phone'
+      ? 32
+      : deviceClass === 'tablet'
+        ? 48
+        : 64;
+  const cap = isLandscape
+    ? Math.round(width - pad)
+    : deviceClass === 'phone'
+      ? 400
+      : deviceClass === 'tablet'
+        ? 520
+        : 600;
   const available = width - pad;
   return Math.round(Math.max(280, Math.min(cap, available)));
 }
@@ -78,10 +95,46 @@ export function vaultCarouselScrollWidth(subjectCount: number, tileWidth: number
   return subjectCount * tileWidth + subjectCount * VAULT_TILE_GAP;
 }
 
-export function computeContentMaxWidth(width: number, deviceClass: DeviceClass): number {
+export function computeContentMaxWidth(
+  width: number,
+  height: number,
+  deviceClass: DeviceClass
+): number {
+  const isLandscape = width > height;
+  if (isLandscape) {
+    const pad = deviceClass === 'phone' ? 12 : deviceClass === 'tablet' ? 16 : 24;
+    return width - pad * 2;
+  }
   if (deviceClass === 'phone') return width;
   if (deviceClass === 'tablet') return Math.min(width - 48, 720);
   return Math.min(width - 64, 960);
+}
+
+export type BundlePhotoLayout = {
+  maxWidth: number;
+  maxHeight: number;
+  sideBySide: boolean;
+  columnGap: number;
+};
+
+/** Problem + answer thumbnails on the bundle card screen. */
+export function computeBundlePhotoLayout(layout: ViewportLayout): BundlePhotoLayout {
+  const innerW = layout.width - layout.horizontalPadding * 2;
+  if (layout.isLandscape) {
+    const columnGap = 16;
+    return {
+      maxWidth: Math.floor((innerW - columnGap) / 2),
+      maxHeight: Math.round(layout.shortEdge * 0.78),
+      sideBySide: true,
+      columnGap,
+    };
+  }
+  return {
+    maxWidth: innerW,
+    maxHeight: 220,
+    sideBySide: false,
+    columnGap: 0,
+  };
 }
 
 export function useViewportLayout(): ViewportLayout {
@@ -95,13 +148,32 @@ export function useViewportLayout(): ViewportLayout {
     const isPhone = deviceClass === 'phone';
     const isTablet = !isPhone;
 
-    const horizontalPadding = isPhone ? 16 : deviceClass === 'tablet' ? 24 : 32;
-    const contentMaxWidth = computeContentMaxWidth(width, deviceClass);
-    const pagerSize = computePagerSize(width, deviceClass);
+    const horizontalPadding = isLandscape
+      ? isPhone
+        ? 12
+        : deviceClass === 'tablet'
+          ? 16
+          : 20
+      : isPhone
+        ? 16
+        : deviceClass === 'tablet'
+          ? 24
+          : 32;
+    const contentMaxWidth = computeContentMaxWidth(width, height, deviceClass);
+    const pagerSize = computePagerSize(width, height, deviceClass);
 
     const listNumColumns = isPhone ? 1 : 2;
-    const albumNumColumns =
-      deviceClass === 'phone' ? 7 : deviceClass === 'tablet' ? 8 : 11;
+    const albumNumColumns = isLandscape
+      ? deviceClass === 'phone'
+        ? Math.min(14, Math.max(9, Math.floor(width / 56)))
+        : deviceClass === 'tablet'
+          ? Math.min(16, Math.max(10, Math.floor(width / 64)))
+          : Math.min(18, Math.max(12, Math.floor(width / 72)))
+      : deviceClass === 'phone'
+        ? 7
+        : deviceClass === 'tablet'
+          ? 8
+          : 11;
     const vaultFoldersPerPage = computeVaultFoldersPerPage(width);
     const dashboardCardsPerRow = isPhone ? 1 : 2;
 

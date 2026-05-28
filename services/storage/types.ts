@@ -1,3 +1,4 @@
+import { hasPhotoMemoContent } from '@/lib/domain/photo-memo';
 import type { AppData, NoteBundle, NotePage } from '@/lib/domain/types';
 import { countAppPages } from '@/services/storage/data-safety';
 
@@ -52,7 +53,13 @@ export type ImportPhotosResult = {
 export function checkFreemiumLimits(data: AppData): FreemiumCheck {
   const usedImages = countUsedImages(data);
   const usedMemos = data.bundles.filter((b) =>
-    b.pages.some((p) => p.textNote.trim().length > 0 || p.layers.some((l) => l.strokes.length > 0))
+    b.pages.some(
+      (p) =>
+        p.textNote.trim().length > 0 ||
+        p.layers.some((l) => l.strokes.length > 0) ||
+        hasPhotoMemoContent(p.frontMemo) ||
+        hasPhotoMemoContent(p.answerMemo)
+    )
   ).length;
 
   if (data.settings.tier === 'pro') {

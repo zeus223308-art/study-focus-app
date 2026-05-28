@@ -71,6 +71,12 @@ body {
   touch-action: manipulation;
   -webkit-touch-callout: none;
 }
+@media (orientation: landscape) {
+  html, body, #root {
+    width: 100%;
+    min-height: 100%;
+  }
+}
 /* Vault subject strip — horizontal swipe between cards */
 [data-subject-carousel="scroll"] {
   touch-action: pan-x !important;

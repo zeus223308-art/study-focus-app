@@ -65,6 +65,22 @@ export type NoteLayer = {
   updatedAt: string;
 };
 
+export type MemoTextBox = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text: string;
+};
+
+/** Pen/highlighter/eraser strokes + text boxes overlaid on a problem or answer photo. */
+export type PhotoMemo = {
+  strokes: InkStroke[];
+  textBoxes: MemoTextBox[];
+  updatedAt: string;
+};
+
 export type CloudSyncStatus = 'local_only' | 'pending_upload' | 'synced' | 'fetch_required' | 'error';
 
 export type CloudAsset = {
@@ -94,6 +110,10 @@ export type NotePage = {
   slideshowSeconds: number;
   /** Slideshow dwell time for back (answer) image — up to 180s */
   answerSlideshowSeconds: number;
+  /** Overlay memo on the problem (front) photo */
+  frontMemo?: PhotoMemo | null;
+  /** Overlay memo on the answer (back) photo */
+  answerMemo?: PhotoMemo | null;
   createdAt: string;
   updatedAt: string;
 };
