@@ -6,6 +6,8 @@ export function inkToolLabelKey(id: InkToolId): string {
   switch (id) {
     case 'pen-black':
       return 'inkPenBlack';
+    case 'pen-white':
+      return 'inkPenWhite';
     case 'pen-red':
       return 'inkPenRed';
     case 'pen-blue':

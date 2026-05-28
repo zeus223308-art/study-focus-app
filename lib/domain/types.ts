@@ -30,7 +30,7 @@ export type SubjectFolder = {
   itemOrder?: string[];
 };
 
-export type PenToolId = 'pen-black' | 'pen-red' | 'pen-blue';
+export type PenToolId = 'pen-black' | 'pen-white' | 'pen-red' | 'pen-blue';
 
 export type HighlighterToolId = 'hi-yellow' | 'hi-green' | 'hi-pink';
 
