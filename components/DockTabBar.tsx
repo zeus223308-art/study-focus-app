@@ -24,7 +24,12 @@ const DOCK_LABELS: Record<(typeof DOCK_ORDER)[number], 'tabs.vault' | 'tabs.dash
 export function DockTabBar({ state, navigation }: BottomTabBarProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { requestLeave } = useCaptureLeaveGuard();
+  const { requestLeave, editorFullscreen } = useCaptureLeaveGuard();
+
+  const currentRoute = state.routes[state.index]?.name;
+  if (currentRoute === 'capture' && editorFullscreen) {
+    return null;
+  }
 
   const items = DOCK_ORDER.map((routeName) => ({
     routeName,

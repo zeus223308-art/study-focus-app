@@ -23,6 +23,8 @@ type PendingLeave = {
 type ContextValue = {
   registerSession: (session: SessionState | null) => void;
   requestLeave: (proceed: () => void) => boolean;
+  editorFullscreen: boolean;
+  setEditorFullscreen: (active: boolean) => void;
 };
 
 const CaptureLeaveGuardContext = createContext<ContextValue | null>(null);
@@ -31,6 +33,7 @@ export function CaptureLeaveGuardProvider({ children }: { children: ReactNode })
   const { t } = useTranslation();
   const sessionRef = useRef<SessionState | null>(null);
   const [pending, setPending] = useState<PendingLeave | null>(null);
+  const [editorFullscreen, setEditorFullscreen] = useState(false);
 
   const registerSession = useCallback((session: SessionState | null) => {
     sessionRef.current = session;
@@ -51,7 +54,8 @@ export function CaptureLeaveGuardProvider({ children }: { children: ReactNode })
   };
 
   return (
-    <CaptureLeaveGuardContext.Provider value={{ registerSession, requestLeave }}>
+    <CaptureLeaveGuardContext.Provider
+      value={{ registerSession, requestLeave, editorFullscreen, setEditorFullscreen }}>
       {children}
       <ConfirmDialog
         visible={pending != null}

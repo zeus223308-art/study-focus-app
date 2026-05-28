@@ -100,6 +100,8 @@
     "saved": "저장됨",
     "savedHint": "",
     "saveFailed": "저장 실패",
+    "saveFailedKeepDraft": "저장에 실패했습니다. 사진은 그대로 두었으니 다시 저장해 주세요.",
+    "draftRestored": "저장되지 않은 촬영을 복구했습니다.",
     "frontGuide": "앞면",
     "backGuide": "뒷면",
     "frontShutter": "앞면",
@@ -155,6 +157,7 @@
     "importMyFiles": "내 파일",
     "importSourceTitle": "불러오기",
     "importAlbum": "앨범",
+    "importCamera": "카메라",
     "importFiles": "파일",
     "importPermission": "갤러리 권한 필요",
     "importSaved": "{{count}}장 추가",
@@ -244,6 +247,9 @@
     "flashcardPair": "앞·뒤",
     "viewFullscreen": "전체 화면",
     "addBackPhoto": "뒷면 추가",
+    "addMemo": "+ 메모 추가",
+    "memoPickTitle": "메모 추가",
+    "memoPickBody": "어느 사진에 메모를 추가할까요?",
     "inkGroupPen": "펜",
     "inkGroupHighlighter": "형광펜",
     "inkGroupEraser": "지우개",
@@ -467,6 +473,11 @@
     "proBenefits": "Pro: 무제한 저장 · 클라우드 백업 · 해답 숨기기",
     "gotIt": "확인",
     "later": "나중에"
+  },
+  "errors": {
+    "boundaryTitle": "문제가 발생했습니다",
+    "boundaryCaptureHint": "저장 전 촬영한 사진은 카메라 탭을 다시 열면 복구될 수 있습니다. 다시 시도해도 사진이 지워지지 않도록 저장해 두었습니다.",
+    "boundaryRetry": "다시 시도"
   },
   "common": {
     "back": "뒤로",

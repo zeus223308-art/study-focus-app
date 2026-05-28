@@ -42,6 +42,7 @@ import type {
   ReviewSchedule,
   SubjectFolder,
 } from '@/lib/domain/types';
+import { runDeferredAppMaintenance } from '@/lib/files/deferred-app-maintenance';
 import { ensureAppDataDerivatives } from '@/lib/files/regenerate-derivatives';
 import { upgradeLegacyPhotoQuality } from '@/lib/files/upgrade-legacy-assets';
 import { listSubjectProblems } from '@/lib/grouping/bundles';
@@ -63,6 +64,7 @@ import {
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
 import { countAppPages, hasRecoverableContent } from '@/services/storage/data-safety';
 import { readRecoveryManifest } from '@/services/storage/recovery-manifest';
+import { clearCaptureDraft } from '@/services/storage/capture-draft';
 import { clearGuestSession } from '@/services/storage/guest-session';
 import type { FreemiumCheck, StorageProvider } from '@/services/storage/types';
 
@@ -76,8 +78,10 @@ type AppContextValue = {
   selectedDate: string;
   setSelectedDate: (d: string) => void;
   /** Last-opened subject folder: default capture subject + study date (ribbon). */
-  activeFolderCapture: { subjectId: string; studyDate: string } | null;
-  setActiveFolderCapture: (ctx: { subjectId: string; studyDate: string } | null) => void;
+  activeFolderCapture: { subjectId: string; studyDate: string; promptImport?: boolean } | null;
+  setActiveFolderCapture: (
+    ctx: { subjectId: string; studyDate: string; promptImport?: boolean } | null
+  ) => void;
   dueSelected: NoteBundle[];
   freemium: FreemiumCheck;
   paywallVisible: boolean;
@@ -205,6 +209,7 @@ export function AppProvider({
   const [activeFolderCapture, setActiveFolderCapture] = useState<{
     subjectId: string;
     studyDate: string;
+    promptImport?: boolean;
   } | null>(null);
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [autoRecoveryNotice, setAutoRecoveryNotice] = useState<AutoRecoverySource | null>(null);
@@ -377,8 +382,33 @@ export function AppProvider({
 
   useEffect(() => {
     if (!ready || !data || skipPersistRef.current) return;
-    storage.saveAppData(data);
+    void storage.saveAppData(data).catch((err) => {
+      console.warn('[storage] saveAppData failed', err);
+    });
   }, [data, ready, storage]);
+
+  const maintenanceStartedRef = useRef(false);
+  useEffect(() => {
+    if (!ready || !data || maintenanceStartedRef.current) return;
+    maintenanceStartedRef.current = true;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const current = dataRef.current;
+        if (!current) return;
+        const { data: next, changed } = await runDeferredAppMaintenance(current);
+        if (cancelled || !changed) return;
+        dataRef.current = next;
+        setData(next);
+        await storage.saveAppData(next);
+      } catch (err) {
+        console.warn('[maintenance] deferred failed', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, data, storage]);
 
   const persist = useCallback((next: AppData) => {
     const stamped = {
@@ -443,8 +473,10 @@ export function AppProvider({
           studyDate,
         });
         persist(next);
+        await clearCaptureDraft();
         return bundleId;
-      } catch {
+      } catch (err) {
+        console.warn('[capture] save failed', err);
         return null;
       }
     },

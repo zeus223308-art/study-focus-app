@@ -238,6 +238,28 @@ export function CapturePhotoEditor({
         </Pressable>
       </View>
 
+      <View style={styles.toolRow}>
+        <Pressable
+          style={[styles.toolChip, mode === 'crop' && styles.toolChipOn]}
+          onPress={() => setMode('crop')}
+          disabled={busy}>
+          <Text style={[styles.toolChipText, mode === 'crop' && styles.toolChipTextOn]}>
+            {t('capture.toolCrop')}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.toolChip, mode === 'draw' && styles.toolChipOn]}
+          onPress={() => setMode('draw')}
+          disabled={busy}>
+          <Text style={[styles.toolChipText, mode === 'draw' && styles.toolChipTextOn]}>
+            {t('capture.toolDraw')}
+          </Text>
+        </Pressable>
+        <Pressable style={styles.toolChip} onPress={busy ? undefined : rotate} disabled={busy}>
+          <Text style={styles.toolChipText}>{t('capture.toolRotate')}</Text>
+        </Pressable>
+      </View>
+
       {mode === 'draw' ? (
         <View style={styles.inkBar}>
           <FullscreenInkControls {...inkProps} />
@@ -273,32 +295,9 @@ export function CapturePhotoEditor({
             <ActivityIndicator color={theme.white} size="large" />
           </View>
         ) : null}
-      </View>
-
-      {mode === 'crop' ? (
-        <Text style={styles.hint}>{t('capture.cropDragRegionHint')}</Text>
-      ) : (
-        <Text style={styles.hint}>{t('capture.drawInkHint')}</Text>
-      )}
-
-      <View style={[styles.toolBar, { paddingBottom: Math.max(14, insets.bottom + 8) }]}>
-        <Pressable
-          style={[styles.toolItem, mode === 'crop' && styles.toolActive]}
-          onPress={() => setMode('crop')}>
-          <Text style={[styles.toolLabel, mode === 'crop' && styles.toolLabelActive]}>
-            {t('capture.toolCrop')}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.toolItem, mode === 'draw' && styles.toolActive]}
-          onPress={() => setMode('draw')}>
-          <Text style={[styles.toolLabel, mode === 'draw' && styles.toolLabelActive]}>
-            {t('capture.toolDraw')}
-          </Text>
-        </Pressable>
-        <Pressable style={styles.toolItem} onPress={busy ? undefined : rotate} disabled={busy}>
-          <Text style={styles.toolLabel}>{t('capture.toolRotate')}</Text>
-        </Pressable>
+        <Text style={styles.hint}>
+          {mode === 'crop' ? t('capture.cropDragRegionHint') : t('capture.drawInkHint')}
+        </Text>
       </View>
     </View>
   );
@@ -342,24 +341,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  hint: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 12,
-    textAlign: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-  },
-  toolBar: {
+  toolRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 22,
-    paddingTop: 14,
-    backgroundColor: '#141414',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  toolItem: { alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4 },
-  toolActive: { borderBottomWidth: 2, borderBottomColor: theme.orange },
-  toolLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: '600' },
-  toolLabelActive: { color: theme.white },
+  toolChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: theme.radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  toolChipOn: { backgroundColor: theme.orange },
+  toolChipText: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700' },
+  toolChipTextOn: { color: theme.white },
+  hint: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 8,
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 11,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    pointerEvents: 'none',
+  },
 });

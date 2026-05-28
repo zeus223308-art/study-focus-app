@@ -14,7 +14,7 @@ export type PickImportResult =
   | { ok: true; files: PickedFile[] }
   | { ok: false; reason: 'denied' | 'canceled' };
 
-type ImportSource = 'album' | 'files';
+type ImportSource = 'album' | 'files' | 'camera';
 
 function isImageMime(mime: string | null | undefined): boolean {
   if (!mime) return true;
@@ -27,17 +27,27 @@ export async function chooseImportSource(labels: {
   album: string;
   files: string;
   cancel: string;
+  camera?: string;
 }): Promise<ImportSource | 'cancel'> {
+  const withCamera = Boolean(labels.camera);
   if (Platform.OS === 'ios') {
     return new Promise((resolve) => {
+      const options = withCamera
+        ? [labels.camera!, labels.album, labels.files, labels.cancel]
+        : [labels.album, labels.files, labels.cancel];
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: [labels.album, labels.files, labels.cancel],
-          cancelButtonIndex: 2,
+          options,
+          cancelButtonIndex: options.length - 1,
           title: labels.title,
         },
         (index) => {
-          if (index === 0) resolve('album');
+          if (withCamera) {
+            if (index === 0) resolve('camera');
+            else if (index === 1) resolve('album');
+            else if (index === 2) resolve('files');
+            else resolve('cancel');
+          } else if (index === 0) resolve('album');
           else if (index === 1) resolve('files');
           else resolve('cancel');
         }
@@ -46,12 +56,46 @@ export async function chooseImportSource(labels: {
   }
 
   return new Promise((resolve) => {
-    Alert.alert(labels.title, undefined, [
-      { text: labels.album, onPress: () => resolve('album') },
-      { text: labels.files, onPress: () => resolve('files') },
-      { text: labels.cancel, style: 'cancel', onPress: () => resolve('cancel') },
-    ]);
+    const buttons = [
+      ...(withCamera ? [{ text: labels.camera!, onPress: () => resolve('camera' as const) }] : []),
+      { text: labels.album, onPress: () => resolve('album' as const) },
+      { text: labels.files, onPress: () => resolve('files' as const) },
+      { text: labels.cancel, style: 'cancel' as const, onPress: () => resolve('cancel' as const) },
+    ];
+    Alert.alert(labels.title, undefined, buttons);
   });
+}
+
+/** Opens the device camera for a single capture (used from import flows). */
+export async function pickFromCamera(): Promise<PickImportResult> {
+  const permission = await ImagePicker.requestCameraPermissionsAsync();
+  if (!permission.granted) {
+    return { ok: false, reason: 'denied' };
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ['images'],
+    quality: IMAGE_CAPTURE_QUALITY,
+    ...(Platform.OS === 'ios'
+      ? { presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN }
+      : {}),
+  });
+
+  if (result.canceled || !result.assets[0]?.uri) {
+    return { ok: false, reason: 'canceled' };
+  }
+
+  const asset = result.assets[0];
+  return {
+    ok: true,
+    files: [
+      {
+        uri: asset.uri,
+        mimeType: asset.mimeType ?? 'image/jpeg',
+        name: asset.fileName ?? null,
+      },
+    ],
+  };
 }
 
 /** Opens the device photo gallery / album (native on iOS & Android). */
@@ -114,6 +158,7 @@ export type PickImportLabels = {
   album: string;
   files: string;
   cancel: string;
+  camera?: string;
   unsupportedOnly?: string;
   unsupportedSkipped?: string;
 };
@@ -126,7 +171,8 @@ export async function pickForImport(labels: PickImportLabels): Promise<PickImpor
   } else {
     const source = await chooseImportSource(labels);
     if (source === 'cancel') return { ok: false, reason: 'canceled' };
-    picked = source === 'album' ? await pickFromPhotoAlbum() : await pickFromFiles();
+    if (source === 'camera') picked = await pickFromCamera();
+    else picked = source === 'album' ? await pickFromPhotoAlbum() : await pickFromFiles();
   }
 
   if (!picked.ok) return picked;

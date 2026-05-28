@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -35,10 +34,8 @@ import {
   listSubjectProblems,
 } from '@/lib/grouping/bundles';
 import type { SubjectProblemItem } from '@/lib/grouping/bundles';
-import { pickForImport } from '@/lib/import/pick-for-import';
 import { remainingPhotoSlots } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
-import { reportImportPhotosResult } from '@/lib/ui/import-result-feedback';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { ALBUM_TILE_GAP, useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -70,7 +67,6 @@ export default function FolderScreen() {
   const {
     data,
     localToday,
-    importPhotosToSubject,
     updateDragHover,
     finishItemDrag,
     startItemDrag,
@@ -85,7 +81,6 @@ export default function FolderScreen() {
     setActiveFolderCapture,
   } = useApp();
   const [albumFilterDate, setAlbumFilterDate] = useState(localToday);
-  const [importing, setImporting] = useState(false);
   const [ghost, setGhost] = useState({ x: 0, y: 0, visible: false });
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
@@ -181,40 +176,18 @@ export default function FolderScreen() {
     });
   }, []);
 
-  const importNewProblem = async () => {
-    if (!subject || importing || pickMode) return;
-
+  const openCaptureFlow = () => {
+    if (!subject || pickMode) return;
     if (remainingPhotoSlots(data) <= 0) {
       setPaywallVisible(true);
       return;
     }
-
-    const picked = await pickForImport({
-      title: t('folder.importSourceTitle'),
-      album: t('folder.importAlbum'),
-      files: t('folder.importFiles'),
-      cancel: t('common.cancel'),
-      unsupportedOnly: t('folder.importUnsupportedOnly'),
-      unsupportedSkipped: t('folder.importUnsupportedSkipped'),
+    setActiveFolderCapture({
+      subjectId: subject.id,
+      studyDate: albumFilterDate,
+      promptImport: true,
     });
-    if (!picked.ok) {
-      if (picked.reason === 'denied') {
-        Alert.alert('', t('folder.importPermission'));
-      }
-      return;
-    }
-
-    setImporting(true);
-    try {
-      const result = await importPhotosToSubject(
-        subject.id,
-        picked.files.map((f) => f.uri),
-        albumFilterDate
-      );
-      reportImportPhotosResult(result, t);
-    } finally {
-      setImporting(false);
-    }
+    router.push('/(tabs)/capture');
   };
 
   const onDragMove = (pageX: number, pageY: number) => {
@@ -334,22 +307,16 @@ export default function FolderScreen() {
 
   const addProblemZone = (
     <Pressable
-      onPress={importNewProblem}
-      disabled={importing || pickMode}
+      onPress={openCaptureFlow}
+      disabled={pickMode}
       style={({ pressed }) => [styles.addZone, pressed && styles.addZonePressed]}
       accessibilityLabel={t('folder.addProblem')}>
-      {importing ? (
-        <ActivityIndicator color={theme.orange} />
-      ) : (
-        <>
-          <SymbolView
-            name={{ ios: 'plus.circle.fill', android: 'add', web: 'add' }}
-            size={28}
-            tintColor={theme.orange}
-          />
-          <Text style={styles.addTitle}>{t('folder.addProblem')}</Text>
-        </>
-      )}
+      <SymbolView
+        name={{ ios: 'plus.circle.fill', android: 'add', web: 'add' }}
+        size={28}
+        tintColor={theme.orange}
+      />
+      <Text style={styles.addTitle}>{t('folder.addProblem')}</Text>
     </Pressable>
   );
 

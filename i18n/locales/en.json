@@ -100,6 +100,8 @@
     "saved": "Saved",
     "savedHint": "",
     "saveFailed": "Save failed",
+    "saveFailedKeepDraft": "Save failed. Your photos are still here — try Save again.",
+    "draftRestored": "Restored your unsaved capture.",
     "frontGuide": "Front",
     "backGuide": "Back",
     "frontShutter": "Front",
@@ -155,6 +157,7 @@
     "importMyFiles": "My files",
     "importSourceTitle": "Import",
     "importAlbum": "Album",
+    "importCamera": "Camera",
     "importFiles": "Files",
     "importPermission": "Photo library access required",
     "importSaved": "Added {{count}}",
@@ -244,6 +247,9 @@
     "flashcardPair": "Front / back",
     "viewFullscreen": "Full screen",
     "addBackPhoto": "Add back",
+    "addMemo": "+ Add memo",
+    "memoPickTitle": "Add memo",
+    "memoPickBody": "Which photo should the memo go on?",
     "inkGroupPen": "Pen",
     "inkGroupHighlighter": "Highlighter",
     "inkGroupEraser": "Eraser",
@@ -467,6 +473,11 @@
     "proBenefits": "Pro: unlimited saves · cloud backup · hide answers",
     "gotIt": "OK",
     "later": "Later"
+  },
+  "errors": {
+    "boundaryTitle": "Something went wrong",
+    "boundaryCaptureHint": "If you were capturing photos, open the Camera tab again — your unsaved shots may be restored. Retry will not discard them.",
+    "boundaryRetry": "Try again"
   },
   "common": {
     "back": "Back",

@@ -16,7 +16,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
 import { CapturePreviewImage } from '@/components/capture/CapturePreviewImage';
-import { useCaptureLeaveRegistration } from '@/components/capture/CaptureLeaveGuard';
+import {
+  useCaptureLeaveGuard,
+  useCaptureLeaveRegistration,
+} from '@/components/capture/CaptureLeaveGuard';
 import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
@@ -27,21 +30,38 @@ import { pickForImport } from '@/lib/import/pick-for-import';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
 import { showMessage } from '@/lib/ui/confirm';
+import {
+  clearCaptureDraft,
+  readCaptureDraft,
+  writeCaptureDraft,
+} from '@/services/storage/capture-draft';
 
 type Step = 'camera' | 'edit' | 'answer-prompt' | 'save-sheet';
 type EditSide = 'front' | 'back';
+type EditSource = 'camera' | 'gallery';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+
+const importPickLabels = (t: (key: string) => string) => ({
+  title: t('folder.importSourceTitle'),
+  camera: t('folder.importCamera'),
+  album: t('folder.importAlbum'),
+  files: t('folder.importFiles'),
+  cancel: t('common.cancel'),
+  unsupportedOnly: t('folder.importUnsupportedOnly'),
+});
 
 export default function CaptureTabScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, captureFlashcardPair, activeFolderCapture } = useApp();
+  const { data, captureFlashcardPair, activeFolderCapture, setActiveFolderCapture } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [step, setStep] = useState<Step>('camera');
   const [editUri, setEditUri] = useState<string | null>(null);
   const [editSide, setEditSide] = useState<EditSide>('front');
+  const [editSource, setEditSource] = useState<EditSource>('camera');
   const [afterEditStep, setAfterEditStep] = useState<Step>('answer-prompt');
+  const { setEditorFullscreen } = useCaptureLeaveGuard();
   const [frontUri, setFrontUri] = useState<string | null>(null);
   const [backUri, setBackUri] = useState<string | null>(null);
   const [studyDate, setStudyDate] = useState(
@@ -72,16 +92,75 @@ export default function CaptureTabScreen() {
     setStudyDate(todayKey());
     setEditSide('front');
     setStep('camera');
+    void clearCaptureDraft();
   }, []);
 
   useCaptureLeaveRegistration(hasPendingCapture, resetCamera);
 
-  const openEditor = (uri: string, side: EditSide, returnStep?: Step) => {
-    setEditUri(uri);
-    setEditSide(side);
-    setAfterEditStep(returnStep ?? (side === 'back' ? 'save-sheet' : 'answer-prompt'));
-    setStep('edit');
-  };
+  useEffect(() => {
+    setEditorFullscreen(step === 'edit');
+    return () => setEditorFullscreen(false);
+  }, [step, setEditorFullscreen]);
+
+  const afterEditStepForSide = (side: EditSide): Step =>
+    side === 'back' ? 'save-sheet' : 'answer-prompt';
+
+  const draftRestoreOnce = useRef(false);
+  const folderImportOnce = useRef(false);
+  useEffect(() => {
+    if (draftRestoreOnce.current) return;
+    draftRestoreOnce.current = true;
+    let cancelled = false;
+    void (async () => {
+      const draft = await readCaptureDraft();
+      if (cancelled || !draft?.frontUri) return;
+      let didRestore = false;
+      setFrontUri((cur) => {
+        if (cur) return cur;
+        didRestore = true;
+        return draft.frontUri;
+      });
+      setBackUri((cur) => cur ?? draft.backUri);
+      setSubjectId((cur) => (cur && data.subjects.some((s) => s.id === cur) ? cur : draft.subjectId));
+      setStudyDate((cur) => cur || draft.studyDate);
+      setStep(draft.step === 'save-sheet' ? 'save-sheet' : 'answer-prompt');
+      if (didRestore) showMessage(t('capture.draftRestored'));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [data.subjects, t]);
+
+  useEffect(() => {
+    if (!frontUri) {
+      void clearCaptureDraft();
+      return;
+    }
+    const timer = setTimeout(() => {
+      const stepForDraft: 'answer-prompt' | 'save-sheet' =
+        step === 'save-sheet' ? 'save-sheet' : 'answer-prompt';
+      void writeCaptureDraft({
+        frontUri,
+        backUri,
+        subjectId,
+        studyDate,
+        step: stepForDraft,
+        updatedAt: new Date().toISOString(),
+      });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [frontUri, backUri, subjectId, studyDate, step]);
+
+  const openEditor = useCallback(
+    (uri: string, side: EditSide, returnStep?: Step, source: EditSource = 'camera') => {
+      setEditUri(uri);
+      setEditSide(side);
+      setEditSource(source);
+      setAfterEditStep(returnStep ?? afterEditStepForSide(side));
+      setStep('edit');
+    },
+    []
+  );
 
   const onEditConfirm = async ({ uri }: { uri: string }) => {
     const previewUri = await stabilizeCaptureImageUri(uri);
@@ -93,26 +172,57 @@ export default function CaptureTabScreen() {
 
   const onEditRetake = () => {
     setEditUri(null);
+    if (editSource === 'gallery') {
+      void pickFromGallery(editSide);
+      return;
+    }
     setStep('camera');
   };
+
+  const pickFromGallery = useCallback(
+    async (side?: EditSide) => {
+      const targetSide = side ?? editSide;
+      const picked = await pickForImport(importPickLabels(t));
+      if (!picked.ok) {
+        if (picked.reason === 'denied') showMessage(t('folder.importPermission'));
+        return;
+      }
+      const file = picked.files[0];
+      if (!file) return;
+      openEditor(file.uri, targetSide, afterEditStepForSide(targetSide), 'gallery');
+    },
+    [editSide, openEditor, t]
+  );
+
+  useEffect(() => {
+    if (isWeb || folderImportOnce.current || !activeFolderCapture?.promptImport) return;
+    if (!permission?.granted || step !== 'camera' || frontUri) return;
+    folderImportOnce.current = true;
+    setActiveFolderCapture({
+      subjectId: activeFolderCapture.subjectId,
+      studyDate: activeFolderCapture.studyDate,
+    });
+    const id = setTimeout(() => void pickFromGallery('front'), 350);
+    return () => clearTimeout(id);
+  }, [
+    activeFolderCapture,
+    frontUri,
+    isWeb,
+    permission?.granted,
+    pickFromGallery,
+    setActiveFolderCapture,
+    step,
+  ]);
 
   const takePhoto = async () => {
     const photo = await cameraRef.current?.takePictureAsync({ quality: IMAGE_CAPTURE_QUALITY });
     if (!photo?.uri) return;
-    openEditor(photo.uri, editSide);
+    openEditor(photo.uri, editSide, afterEditStepForSide(editSide), 'camera');
   };
 
   const startBackCapture = async () => {
     if (isWeb) {
-      const picked = await pickForImport({
-        title: t('capture.importWeb'),
-        album: t('folder.importAlbum'),
-        files: t('folder.importFiles'),
-        cancel: t('common.cancel'),
-        unsupportedOnly: t('folder.importUnsupportedOnly'),
-      });
-      if (!picked.ok || picked.files.length === 0) return;
-      openEditor(picked.files[0].uri, 'back');
+      await pickFromGallery('back');
       return;
     }
     setEditSide('back');
@@ -136,15 +246,7 @@ export default function CaptureTabScreen() {
   };
 
   const pickWebImage = async () => {
-    const picked = await pickForImport({
-      title: t('capture.importWeb'),
-      album: t('folder.importAlbum'),
-      files: t('folder.importFiles'),
-      cancel: t('common.cancel'),
-      unsupportedOnly: t('folder.importUnsupportedOnly'),
-    });
-    if (!picked.ok || picked.files.length === 0) return;
-    openEditor(picked.files[0].uri, frontUri ? 'back' : 'front');
+    await pickFromGallery(frontUri ? 'back' : 'front');
   };
 
   const save = async () => {
@@ -156,7 +258,7 @@ export default function CaptureTabScreen() {
       const id = await captureFlashcardPair(stableFront, stableBack, subjectId, studyDate);
       if (!id) {
         setSaveState('error');
-        showMessage(t('capture.saveFailed'));
+        showMessage(t('capture.saveFailedKeepDraft'));
         return false;
       }
 
@@ -177,7 +279,7 @@ export default function CaptureTabScreen() {
       return true;
     } catch {
       setSaveState('error');
-      showMessage(t('capture.saveFailed'));
+      showMessage(t('capture.saveFailedKeepDraft'));
       return false;
     }
   };
@@ -398,6 +500,12 @@ export default function CaptureTabScreen() {
         <>
           <CameraView ref={cameraRef} style={styles.camera} facing="back" />
           <Pressable
+            style={[styles.importBtn, { bottom: insets.bottom + 44 }]}
+            onPress={() => void pickFromGallery()}
+            accessibilityLabel={t('folder.importPhotos')}>
+            <Text style={styles.importBtnText}>{t('folder.importPhotos')}</Text>
+          </Pressable>
+          <Pressable
             style={[styles.shutter, { bottom: insets.bottom + 40 }]}
             onPress={takePhoto}
             accessibilityLabel={cameraLabel}
@@ -431,6 +539,18 @@ const styles = StyleSheet.create({
     color: theme.gray,
     textAlign: 'center',
   },
+  importBtn: {
+    position: 'absolute',
+    left: 20,
+    zIndex: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: theme.radius.pill,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  importBtnText: { color: theme.white, fontSize: 13, fontWeight: '700' },
   shutter: {
     position: 'absolute',
     left: '50%',
