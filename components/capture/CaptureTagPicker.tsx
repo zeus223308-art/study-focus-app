@@ -20,11 +20,7 @@ import {
   toggleCaptureTag,
 } from '@/lib/domain/capture-tags';
 import type { Language } from '@/lib/domain/types';
-import {
-  FREE_TAG_COLORS,
-  PREMIUM_TAG_COLORS,
-  resolveTagColor,
-} from '@/lib/ui/tag-colors';
+import { FREE_TAG_COLORS, resolveTagColor } from '@/lib/ui/tag-colors';
 
 type Props = {
   presets: string[];
@@ -59,7 +55,6 @@ function TagColorModal({
   isPro,
   title,
   freeLabel,
-  premiumLabel,
   customLabel,
   customHint,
   applyLabel,
@@ -74,7 +69,6 @@ function TagColorModal({
   isPro: boolean;
   title: string;
   freeLabel: string;
-  premiumLabel: string;
   customLabel: string;
   customHint: string;
   applyLabel: string;
@@ -117,11 +111,6 @@ function TagColorModal({
           <Text style={modalStyles.sectionLabel}>{freeLabel}</Text>
           <View style={modalStyles.swatchGrid}>
             {FREE_TAG_COLORS.map((color) => renderSwatch(color, false))}
-          </View>
-
-          <Text style={modalStyles.sectionLabel}>{premiumLabel}</Text>
-          <View style={modalStyles.swatchGrid}>
-            {PREMIUM_TAG_COLORS.map((color) => renderSwatch(color, !isPro))}
           </View>
 
           <Text style={modalStyles.sectionLabel}>{customLabel}</Text>
@@ -364,7 +353,6 @@ export function CaptureTagPicker({
         isPro={Boolean(isPro)}
         title={t('capture.pickTagColor')}
         freeLabel={t('capture.tagColorsFree')}
-        premiumLabel={t('capture.tagColorsPremium')}
         customLabel={t('capture.tagColorCustom')}
         customHint={t('capture.tagColorCustomLocked')}
         applyLabel={t('common.apply')}
