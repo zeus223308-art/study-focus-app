@@ -30,7 +30,7 @@ function TagRibbon({ label, color }: { label: string; color: string }) {
   return (
     <View style={[styles.ribbon, textW ? { width: totalW } : null]}>
       {textW ? (
-        <Svg width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill}>
+        <Svg key={color} width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill}>
           <Path d={path} fill={color} />
         </Svg>
       ) : null}
