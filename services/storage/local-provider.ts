@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { DEFAULT_DATA, DEFAULT_SCHEDULES } from '@/lib/domain/defaults';
 
+import { isExamBeforeTag } from '@/lib/domain/capture-tags';
+
 import { normalizeAppSettings } from '@/lib/domain/dates';
 
 import { normalizeFolderScheduleId } from '@/lib/domain/folder-schedule';
@@ -70,6 +72,8 @@ function normalizePages(data: AppData): AppData['bundles'] {
       pages: b.pages.map((p) => ({
 
         ...p,
+
+        tags: (p.tags ?? []).filter((tag) => !isExamBeforeTag(tag)),
 
         answerSlideshowSeconds: p.answerSlideshowSeconds ?? p.slideshowSeconds ?? 10,
 
