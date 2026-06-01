@@ -5,13 +5,13 @@ export const DEFAULT_TAG_COLOR = '#FF6B00';
 
 /** Free tier: rainbow (빨주노초파남보) to pick the one tag color from. */
 export const FREE_TAG_COLORS = [
-  '#E53935', // 빨 red
-  '#FB8C00', // 주 orange
-  '#FDD835', // 노 yellow
-  '#43A047', // 초 green
-  '#1E88E5', // 파 blue
-  '#283593', // 남 navy
-  '#8E24AA', // 보 violet
+  '#C62828', // 빨 red
+  '#EF6C00', // 주 orange
+  '#F9A825', // 노 yellow
+  '#2E7D32', // 초 green
+  '#1565C0', // 파 blue
+  '#1A237E', // 남 navy
+  '#6A1B9A', // 보 violet
 ];
 
 /** Premium tier: finer shades unlocked with pro. */
