@@ -1,6 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
@@ -33,6 +42,16 @@ type Props = {
   disabled?: boolean;
 };
 
+/** Accepts `#abc`, `abc`, `#aabbcc`, `aabbcc` → normalized `#aabbcc`, else null. */
+function normalizeHexColor(input: string): string | null {
+  const raw = input.trim().replace(/^#/, '').toLowerCase();
+  if (/^[0-9a-f]{3}$/.test(raw)) {
+    return `#${raw[0]}${raw[0]}${raw[1]}${raw[1]}${raw[2]}${raw[2]}`;
+  }
+  if (/^[0-9a-f]{6}$/.test(raw)) return `#${raw}`;
+  return null;
+}
+
 function TagColorModal({
   visible,
   tag,
@@ -41,6 +60,9 @@ function TagColorModal({
   title,
   freeLabel,
   premiumLabel,
+  customLabel,
+  customHint,
+  applyLabel,
   cancelLabel,
   onPick,
   onRequirePremium,
@@ -53,12 +75,20 @@ function TagColorModal({
   title: string;
   freeLabel: string;
   premiumLabel: string;
+  customLabel: string;
+  customHint: string;
+  applyLabel: string;
   cancelLabel: string;
   onPick: (color: string) => void;
   onRequirePremium: () => void;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const [hex, setHex] = useState('');
+  useEffect(() => {
+    if (visible) setHex(current.replace(/^#/, '').toUpperCase());
+  }, [visible, current]);
+  const normalizedHex = normalizeHexColor(hex);
   const renderSwatch = (color: string, locked: boolean) => {
     const selected = color.toLowerCase() === current.toLowerCase();
     return (
@@ -93,6 +123,42 @@ function TagColorModal({
           <View style={modalStyles.swatchGrid}>
             {PREMIUM_TAG_COLORS.map((color) => renderSwatch(color, !isPro))}
           </View>
+
+          <Text style={modalStyles.sectionLabel}>{customLabel}</Text>
+          {isPro ? (
+            <View style={modalStyles.customRow}>
+              <View
+                style={[
+                  modalStyles.customPreview,
+                  { backgroundColor: normalizedHex ?? current },
+                ]}
+              />
+              <View style={modalStyles.hexField}>
+                <Text style={modalStyles.hexHash}>#</Text>
+                <TextInput
+                  style={modalStyles.hexInput}
+                  value={hex}
+                  onChangeText={(v) => setHex(v.replace(/[^0-9a-fA-F]/g, '').slice(0, 6))}
+                  onSubmitEditing={() => normalizedHex && onPick(normalizedHex)}
+                  placeholder="FF8800"
+                  placeholderTextColor={theme.grayMuted}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={6}
+                />
+              </View>
+              <Pressable
+                disabled={!normalizedHex}
+                onPress={() => normalizedHex && onPick(normalizedHex)}
+                style={[modalStyles.applyBtn, !normalizedHex && modalStyles.applyBtnOff]}>
+                <Text style={modalStyles.applyBtnText}>{applyLabel}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable style={modalStyles.customLocked} onPress={onRequirePremium}>
+              <Text style={modalStyles.customLockedText}>{customHint}</Text>
+            </Pressable>
+          )}
 
           <Pressable style={[modalStyles.btn, modalStyles.btnCancel]} onPress={onClose}>
             <Text style={modalStyles.btnCancelText}>{cancelLabel}</Text>
@@ -299,6 +365,9 @@ export function CaptureTagPicker({
         title={t('capture.pickTagColor')}
         freeLabel={t('capture.tagColorsFree')}
         premiumLabel={t('capture.tagColorsPremium')}
+        customLabel={t('capture.tagColorCustom')}
+        customHint={t('capture.tagColorCustomLocked')}
+        applyLabel={t('common.apply')}
         cancelLabel={t('common.cancel')}
         onPick={pickColor}
         onRequirePremium={() => {
@@ -427,6 +496,73 @@ const modalStyles = StyleSheet.create({
   },
   swatchOn: {
     borderColor: theme.black,
+  },
+  customRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+    paddingVertical: 4,
+  },
+  customPreview: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+  },
+  hexField: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    backgroundColor: theme.surface,
+  },
+  hexHash: {
+    color: theme.grayMuted,
+    fontWeight: '800',
+    fontSize: theme.font.body,
+  },
+  hexInput: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingLeft: 2,
+    color: theme.black,
+    fontSize: theme.font.body,
+    fontWeight: '700',
+    letterSpacing: 1,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
+  },
+  applyBtn: {
+    backgroundColor: theme.orange,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  applyBtnOff: {
+    backgroundColor: theme.grayLight,
+  },
+  applyBtnText: {
+    color: theme.white,
+    fontWeight: '800',
+    fontSize: theme.font.bodySmall,
+  },
+  customLocked: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  customLockedText: {
+    color: theme.graySecondary,
+    fontWeight: '700',
+    fontSize: theme.font.bodySmall,
   },
   actions: {
     flexDirection: 'row',
