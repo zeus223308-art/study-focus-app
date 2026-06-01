@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } fro
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
+import { TrashContents, useTrashContents } from '@/components/trash/TrashContents';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
@@ -39,6 +40,7 @@ export default function FilesScreen() {
   } = useApp();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const viewport = useViewportLayout();
+  const trash = useTrashContents();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [panelWidth, setPanelWidth] = useState(0);
@@ -266,9 +268,17 @@ export default function FilesScreen() {
         </View>
       ) : null}
 
-      <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
-        <Text style={styles.trash}>{t('trash.title')}</Text>
-      </Pressable>
+      <View style={styles.trashCard}>
+        <View style={styles.trashCardHeader}>
+          <Text style={styles.trashCardTitle}>{t('trash.title')}</Text>
+          {trash.count > 0 ? (
+            <View style={styles.trashCount}>
+              <Text style={styles.trashCountText}>{trash.count}</Text>
+            </View>
+          ) : null}
+        </View>
+        <TrashContents />
+      </View>
     </Screen>
   );
 }
@@ -333,6 +343,29 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   deleteBtnTextActive: { color: theme.onAccent },
-  trashLink: { marginTop: 12, alignSelf: 'center' },
-  trash: { color: theme.gray, fontSize: theme.font.caption },
+  trashCard: {
+    marginTop: 24,
+    padding: 16,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+  },
+  trashCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  trashCardTitle: { fontSize: theme.font.heading, fontWeight: '900', color: theme.black },
+  trashCount: {
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 7,
+    borderRadius: 11,
+    backgroundColor: theme.grayLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trashCountText: { fontSize: 12, fontWeight: '800', color: theme.black },
 });
