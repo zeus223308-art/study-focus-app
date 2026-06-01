@@ -29,10 +29,10 @@ type Props = {
   onChangeSelected: (tags: string[]) => void;
   onAddPreset: (label: string) => void;
   onRemovePreset: (label: string) => void;
-  /** Per-tag colors (key = lowercase label). Enables the color picker dot. */
-  tagColors?: Record<string, string>;
-  onSetTagColor?: (label: string, color: string) => void;
-  /** Pro unlocks the detailed color shades. */
+  /** Single color applied to every tag. Enables the color control. */
+  tagColor?: string;
+  onSetTagColor?: (color: string) => void;
+  /** Pro unlocks the custom color input. */
   isPro?: boolean;
   onRequirePremium?: () => void;
   disabled?: boolean;
@@ -104,9 +104,11 @@ function TagColorModal({
           style={[modalStyles.card, { marginBottom: Math.max(24, insets.bottom) }]}
           onPress={() => {}}>
           <Text style={modalStyles.title}>{title}</Text>
-          <View style={modalStyles.tagPill}>
-            <Text style={modalStyles.tagPillText}>{tag}</Text>
-          </View>
+          {tag ? (
+            <View style={modalStyles.tagPill}>
+              <Text style={modalStyles.tagPillText}>{tag}</Text>
+            </View>
+          ) : null}
 
           <Text style={modalStyles.sectionLabel}>{freeLabel}</Text>
           <View style={modalStyles.swatchGrid}>
@@ -211,7 +213,7 @@ export function CaptureTagPicker({
   onChangeSelected,
   onAddPreset,
   onRemovePreset,
-  tagColors,
+  tagColor,
   onSetTagColor,
   isPro,
   onRequirePremium,
@@ -221,8 +223,9 @@ export function CaptureTagPicker({
   const [addVisible, setAddVisible] = useState(false);
   const [draftLabel, setDraftLabel] = useState('');
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
-  const [colorTag, setColorTag] = useState<string | null>(null);
+  const [colorOpen, setColorOpen] = useState(false);
   const colorEnabled = Boolean(onSetTagColor);
+  const currentColor = resolveTagColor(tagColor);
 
   const isOn = (tag: string) =>
     selectedTags.some((s) => s.toLowerCase() === tag.toLowerCase());
@@ -238,12 +241,11 @@ export function CaptureTagPicker({
     onAddPreset(trimmed);
     onChangeSelected(toggleCaptureTag(selectedTags, trimmed));
     closeAdd();
-    if (colorEnabled) setColorTag(trimmed);
   };
 
   const pickColor = (color: string) => {
-    if (colorTag) onSetTagColor?.(colorTag, color);
-    setColorTag(null);
+    onSetTagColor?.(color);
+    setColorOpen(false);
   };
 
   const openDelete = (tag: string) => {
@@ -278,19 +280,6 @@ export function CaptureTagPicker({
           const on = isOn(tag);
           return (
             <View key={tag} style={[styles.chip, on && styles.chipOn]}>
-              {colorEnabled ? (
-                <Pressable
-                  disabled={disabled}
-                  onPress={() => setColorTag(tag)}
-                  hitSlop={6}
-                  style={styles.colorDotHit}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('capture.pickTagColor')}>
-                  <View
-                    style={[styles.colorDot, { backgroundColor: resolveTagColor(tag, tagColors) }]}
-                  />
-                </Pressable>
-              ) : null}
               <Pressable
                 disabled={disabled}
                 onPress={() => onChangeSelected(toggleCaptureTag(selectedTags, tag))}
@@ -320,6 +309,17 @@ export function CaptureTagPicker({
           accessibilityLabel={t('capture.addTag')}>
           <Text style={styles.addChipText}>+</Text>
         </Pressable>
+        {colorEnabled ? (
+          <Pressable
+            disabled={disabled}
+            onPress={() => setColorOpen(true)}
+            style={[styles.chip, styles.colorChip]}
+            accessibilityRole="button"
+            accessibilityLabel={t('capture.pickTagColor')}>
+            <View style={[styles.colorChipDot, { backgroundColor: currentColor }]} />
+            <Text style={styles.colorChipText}>{t('capture.tagColorShort')}</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
 
       <SendToNewFolderModal
@@ -347,9 +347,9 @@ export function CaptureTagPicker({
       />
 
       <TagColorModal
-        visible={colorTag !== null}
-        tag={colorTag ?? ''}
-        current={colorTag ? resolveTagColor(colorTag, tagColors) : ''}
+        visible={colorOpen}
+        tag=""
+        current={currentColor}
         isPro={Boolean(isPro)}
         title={t('capture.pickTagColor')}
         freeLabel={t('capture.tagColorsFree')}
@@ -359,10 +359,10 @@ export function CaptureTagPicker({
         cancelLabel={t('common.cancel')}
         onPick={pickColor}
         onRequirePremium={() => {
-          setColorTag(null);
+          setColorOpen(false);
           onRequirePremium?.();
         }}
-        onClose={() => setColorTag(null)}
+        onClose={() => setColorOpen(false)}
       />
     </View>
   );
@@ -384,14 +384,16 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
   },
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
-  colorDotHit: { paddingVertical: 12, paddingRight: 8 },
-  colorDot: {
+  colorChip: { flexDirection: 'row', alignItems: 'center' },
+  colorChipDot: {
     width: 14,
     height: 14,
     borderRadius: 7,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.85)',
+    marginRight: 6,
   },
+  colorChipText: { color: theme.gray, fontWeight: '700', fontSize: theme.font.bodySmall },
   chipLabelHit: { paddingVertical: 12, paddingRight: 4 },
   chipText: { fontWeight: '700', color: theme.black },
   chipTextOn: { color: theme.white },

@@ -29,12 +29,7 @@ export function isPremiumTagColor(color: string): boolean {
   return PREMIUM_TAG_COLORS.some((p) => p.toLowerCase() === c);
 }
 
-/** Explicit user-chosen color when set, otherwise the single default color. */
-export function resolveTagColor(
-  tag: string,
-  colorMap?: Record<string, string>
-): string {
-  const key = tag.trim().toLowerCase();
-  const chosen = colorMap?.[key];
-  return chosen ?? DEFAULT_TAG_COLOR;
+/** The single global tag color when set, otherwise the default color. */
+export function resolveTagColor(color?: string): string {
+  return color && color.trim() ? color : DEFAULT_TAG_COLOR;
 }

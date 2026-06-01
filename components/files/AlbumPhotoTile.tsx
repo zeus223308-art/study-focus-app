@@ -66,7 +66,7 @@ export function AlbumPhotoTile({
   style,
 }: Props) {
   const { data, movingBundleId, draggingItemKey, dragHoverItemKey } = useApp();
-  const tagColors = data.settings.captureTagColors;
+  const ribbonColor = resolveTagColor(data.settings.tagColor);
   const viewport = useViewportLayout();
   const landscapeTileH = viewport.isLandscape
     ? heightForLandscapeCardWidth(cellWidth, true)
@@ -103,22 +103,19 @@ export function AlbumPhotoTile({
   const tagChipsEl =
     visibleTags.length > 0 && !showLifted ? (
       <View style={styles.tagRow} pointerEvents="none">
-        {visibleTags.map((tag, i) => {
-          const color = resolveTagColor(tag, tagColors);
-          return (
-            <View key={`${tag}-${i}`} style={styles.ribbon}>
-              <View style={styles.ribbonTail}>
-                <View style={[styles.ribbonTailTop, { borderTopColor: color }]} />
-                <View style={[styles.ribbonTailBottom, { borderBottomColor: color }]} />
-              </View>
-              <View style={[styles.ribbonBody, { backgroundColor: color }]}>
-                <Text style={styles.tagText} numberOfLines={1}>
-                  {tag}
-                </Text>
-              </View>
+        {visibleTags.map((tag, i) => (
+          <View key={`${tag}-${i}`} style={styles.ribbon}>
+            <View style={styles.ribbonTail}>
+              <View style={[styles.ribbonTailTop, { borderTopColor: ribbonColor }]} />
+              <View style={[styles.ribbonTailBottom, { borderBottomColor: ribbonColor }]} />
             </View>
-          );
-        })}
+            <View style={[styles.ribbonBody, { backgroundColor: ribbonColor }]}>
+              <Text style={styles.tagText} numberOfLines={1}>
+                {tag}
+              </Text>
+            </View>
+          </View>
+        ))}
       </View>
     ) : null;
 

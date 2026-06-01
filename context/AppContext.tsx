@@ -129,7 +129,7 @@ type AppContextValue = {
   restoreSubjectTrash: (subjectId: string) => void;
   applyLayerCycleChoice: (bundleId: string, choice: LayerCycleChoice) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
-  setCaptureTagColor: (label: string, color: string) => void;
+  setTagColor: (color: string) => void;
   getSchedule: (id: string) => ReviewSchedule | undefined;
   syncCloud: () => Promise<void>;
   restoreFromCloudBackup: () => Promise<boolean>;
@@ -889,13 +889,11 @@ export function AppProvider({
     });
   }, []);
 
-  const setCaptureTagColor = useCallback((label: string, color: string) => {
-    const key = label.trim().toLowerCase();
-    if (!key) return;
+  const setTagColor = useCallback((color: string) => {
+    if (!color.trim()) return;
     setData((prev) => {
       if (!prev) return prev;
-      const captureTagColors = { ...(prev.settings.captureTagColors ?? {}), [key]: color };
-      return { ...prev, settings: { ...prev.settings, captureTagColors } };
+      return { ...prev, settings: { ...prev.settings, tagColor: color } };
     });
   }, []);
 
@@ -1381,7 +1379,7 @@ export function AppProvider({
       restoreSubjectTrash,
       applyLayerCycleChoice,
       updateSettings,
-      setCaptureTagColor,
+      setTagColor,
       getSchedule,
       syncCloud,
       restoreFromCloudBackup,
@@ -1458,7 +1456,7 @@ export function AppProvider({
     restoreSubjectTrash,
     applyLayerCycleChoice,
     updateSettings,
-    setCaptureTagColor,
+    setTagColor,
     getSchedule,
     syncCloud,
     restoreFromCloudBackup,

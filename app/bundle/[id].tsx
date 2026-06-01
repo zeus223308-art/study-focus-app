@@ -52,7 +52,7 @@ export default function BundleScreen() {
     storage,
     updateBundle,
     updateSettings,
-    setCaptureTagColor,
+    setTagColor,
     setPaywallVisible,
     archiveBundle,
     unarchiveBundle,
@@ -344,8 +344,8 @@ export default function BundleScreen() {
           onChangeSelected={setPageTags}
           onAddPreset={addTagPreset}
           onRemovePreset={removeTagPreset}
-          tagColors={data.settings.captureTagColors}
-          onSetTagColor={setCaptureTagColor}
+          tagColor={data.settings.tagColor}
+          onSetTagColor={setTagColor}
           isPro={data.settings.tier === 'pro'}
           onRequirePremium={() => setPaywallVisible(true)}
         />

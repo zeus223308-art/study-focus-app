@@ -99,6 +99,7 @@
     "deleteTagHint": "Remove this tag from your list. Tags on photos already saved stay unchanged.",
     "deleteTagConfirm": "Delete",
     "pickTagColor": "Pick tag color",
+    "tagColorShort": "Color",
     "tagColorsFree": "Basic colors",
     "tagColorsPremium": "Premium colors",
     "tagColorCustom": "Custom color",
