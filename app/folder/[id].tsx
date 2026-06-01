@@ -425,7 +425,9 @@ export default function FolderScreen() {
               />
             ))
           )}
-          <View style={styles.footerAdd}>{addProblemZone}</View>
+          {problems.length > 0 ? (
+            <View style={styles.footerAdd}>{addProblemZone}</View>
+          ) : null}
         </ScrollView>
       </Screen>
 
