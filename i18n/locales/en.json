@@ -190,6 +190,7 @@
     "dateYesterday": "Yesterday",
     "photoCount": "{{count}} photos",
     "archive": "Archive",
+    "trash": "Trash",
     "unarchive": "Restore",
     "archiveModalTitle": "{{name}} · Archive",
     "archiveEmpty": "No archived photos",
@@ -328,7 +329,10 @@
     "title": "Trash",
     "empty": "Empty",
     "restore": "Restore",
+    "restoreAll": "Restore all",
     "restoreSubject": "Restore subject",
+    "subjectModalTitle": "{{name}} · Trash",
+    "subjectModalEmpty": "No deleted photos in this subject",
     "subjectPages": "{{count}} photo(s)",
     "subjectEmpty": "No photos (folder only)",
     "autoDeleteHint": "Restorable for 3 days · permanently deleted after that"

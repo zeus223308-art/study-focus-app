@@ -19,6 +19,7 @@ import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { SubjectArchiveHeaderButton } from '@/components/files/SubjectArchiveHeaderButton';
 import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
+import { SubjectTrashModal } from '@/components/files/SubjectTrashModal';
 import { SubjectDropDock } from '@/components/files/SubjectDropDock';
 import { SubjectPickerModal } from '@/components/files/SubjectPickerModal';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -87,6 +88,7 @@ export default function FolderScreen() {
   const [otherPickerOpen, setOtherPickerOpen] = useState(false);
   const [otherSubjectId, setOtherSubjectId] = useState<string | null>(null);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [trashModalOpen, setTrashModalOpen] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [archiveSelectedKeys, setArchiveSelectedKeys] = useState<Set<string>>(new Set());
   const [exportSelectMode, setExportSelectMode] = useState(false);
@@ -329,10 +331,16 @@ export default function FolderScreen() {
             backFallback="/(tabs)/vault"
             showSettings={false}
             right={
-              <SubjectArchiveHeaderButton
-                label={t('folder.archive')}
-                onPress={() => setArchiveModalOpen(true)}
-              />
+              <View style={styles.headerActions}>
+                <SubjectArchiveHeaderButton
+                  label={t('folder.trash')}
+                  onPress={() => setTrashModalOpen(true)}
+                />
+                <SubjectArchiveHeaderButton
+                  label={t('folder.archive')}
+                  onPress={() => setArchiveModalOpen(true)}
+                />
+              </View>
             }
           />
           {exportSelectMode ? (
@@ -476,6 +484,13 @@ export default function FolderScreen() {
         onClose={() => setArchiveModalOpen(false)}
       />
 
+      <SubjectTrashModal
+        visible={trashModalOpen}
+        subjectId={subject.id}
+        subjectName={subject.name}
+        onClose={() => setTrashModalOpen(false)}
+      />
+
       <SendToNewFolderModal
         visible={sendModalOpen}
         title={t('folder.sendToNewFolderTitle')}
@@ -509,6 +524,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, minHeight: 0 },
   shrink0: { flexShrink: 0 },
   header: { paddingHorizontal: 20 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ribbonWrap: { marginBottom: 8, marginHorizontal: -4 },
   exportHint: {
     fontSize: theme.font.caption,

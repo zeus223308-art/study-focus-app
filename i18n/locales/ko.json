@@ -190,6 +190,7 @@
     "dateYesterday": "어제",
     "photoCount": "{{count}}장",
     "archive": "아카이브",
+    "trash": "휴지통",
     "unarchive": "보관함으로",
     "archiveModalTitle": "{{name}} · 아카이브",
     "archiveEmpty": "아카이브된 사진이 없습니다",
@@ -328,7 +329,10 @@
     "title": "휴지통",
     "empty": "비어 있음",
     "restore": "복원",
+    "restoreAll": "모두 복원",
     "restoreSubject": "과목 복원",
+    "subjectModalTitle": "{{name}} · 휴지통",
+    "subjectModalEmpty": "이 과목에 삭제된 사진이 없습니다",
     "subjectPages": "사진 {{count}}장",
     "subjectEmpty": "사진 없음 (과목 폴더만)",
     "autoDeleteHint": "3일 이내 복원 가능 · 복원하지 않으면 영구 삭제"
