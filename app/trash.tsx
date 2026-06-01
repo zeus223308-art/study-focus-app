@@ -103,11 +103,19 @@ export default function TrashScreen() {
           {deletedSubjects.length > 0 ? (
             <>
               <Text style={styles.sectionHeader}>{t('trash.subjectsHeader')}</Text>
-              {deletedSubjects.map((group) => (
-                <View key={group.subjectId} style={styles.card}>
-                  <View style={styles.cardHeader}>
+              {deletedSubjects.map((group) => {
+                const cover = group.pages[0] ? getPreviewImageUri(group.pages[0].asset) : null;
+                return (
+                  <View key={group.subjectId} style={styles.row}>
+                    {cover ? (
+                      <ResolvedImage uri={cover} asset={group.pages[0]!.asset} style={styles.cover} />
+                    ) : (
+                      <View style={[styles.cover, styles.thumbEmpty]} />
+                    )}
                     <View style={styles.cardTitleBlock}>
-                      <Text style={styles.subjectName}>{group.name}</Text>
+                      <Text style={styles.subjectName} numberOfLines={1}>
+                        {group.name}
+                      </Text>
                       <Text style={styles.meta}>
                         {group.pages.length > 0
                           ? t('trash.subjectPages', { count: group.pages.length })
@@ -121,9 +129,8 @@ export default function TrashScreen() {
                       <Text style={styles.restore}>{t('trash.restoreSubject')}</Text>
                     </Pressable>
                   </View>
-                  {group.pages.length > 0 ? <Thumbs pages={group.pages} /> : null}
-                </View>
-              ))}
+                );
+              })}
             </>
           ) : null}
 
@@ -161,21 +168,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 4,
   },
-  card: {
-    backgroundColor: theme.surface,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 10,
-  },
   cardTitleBlock: { flex: 1, minWidth: 0 },
   subjectName: { fontSize: 17, fontWeight: '800', color: theme.black },
   meta: { fontSize: 13, color: theme.gray, marginTop: 4 },
@@ -199,6 +191,7 @@ const styles = StyleSheet.create({
   },
   thumbSlot: { width: THUMB, height: THUMB },
   thumb: { width: THUMB, height: THUMB, borderRadius: 8 },
+  cover: { width: THUMB, height: THUMB, borderRadius: 8, flexShrink: 0 },
   thumbEmpty: { backgroundColor: theme.grayLight },
   restoreBtn: {
     flexShrink: 0,
