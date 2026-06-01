@@ -11,23 +11,23 @@ export function normalizeCaptureTagLabel(raw: string): string {
   return raw.trim().replace(/\s+/g, ' ').slice(0, 40);
 }
 
-/** Deduped preset list for the save sheet (default tag always first). */
+/** Deduped preset list for the save sheet (user-defined tags only). */
 export function normalizeCaptureTagPresets(
   presets: string[] | undefined,
-  language: Language
+  _language?: Language
 ): string[] {
-  const defaultTag = defaultCaptureTagPreset(language);
   const seen = new Set<string>();
   const out: string[] = [];
   const push = (label: string) => {
     const n = normalizeCaptureTagLabel(label);
     if (!n) return;
+    // The legacy default "Before exam" tag is no longer offered or stored.
+    if (isExamBeforeTag(n)) return;
     const key = n.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
     out.push(n);
   };
-  push(defaultTag);
   for (const p of presets ?? []) push(p);
   return out;
 }
