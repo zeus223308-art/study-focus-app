@@ -273,7 +273,20 @@ export function CaptureTagPicker({
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>{t('capture.pickTags')}</Text>
+      <View style={styles.header}>
+        <Text style={styles.label}>{t('capture.pickTags')}</Text>
+        {colorEnabled ? (
+          <Pressable
+            disabled={disabled}
+            onPress={() => setColorOpen(true)}
+            style={styles.colorControl}
+            accessibilityRole="button"
+            accessibilityLabel={t('capture.pickTagColor')}>
+            <View style={[styles.colorChipDot, { backgroundColor: currentColor }]} />
+            <Text style={styles.colorChipText}>{t('capture.tagColorShort')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
         {presets.map((tag) => {
           const deletable = canDeleteCaptureTagPreset(tag, language);
@@ -309,17 +322,6 @@ export function CaptureTagPicker({
           accessibilityLabel={t('capture.addTag')}>
           <Text style={styles.addChipText}>+</Text>
         </Pressable>
-        {colorEnabled ? (
-          <Pressable
-            disabled={disabled}
-            onPress={() => setColorOpen(true)}
-            style={[styles.chip, styles.colorChip]}
-            accessibilityRole="button"
-            accessibilityLabel={t('capture.pickTagColor')}>
-            <View style={[styles.colorChipDot, { backgroundColor: currentColor }]} />
-            <Text style={styles.colorChipText}>{t('capture.tagColorShort')}</Text>
-          </Pressable>
-        ) : null}
       </ScrollView>
 
       <SendToNewFolderModal
@@ -370,7 +372,22 @@ export function CaptureTagPicker({
 
 const styles = StyleSheet.create({
   wrap: { marginTop: 4 },
-  label: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray, marginTop: 8 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  label: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray },
+  colorControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+  },
   chips: { marginVertical: 12 },
   chip: {
     flexDirection: 'row',
@@ -384,7 +401,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
   },
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
-  colorChip: { flexDirection: 'row', alignItems: 'center' },
   colorChipDot: {
     width: 14,
     height: 14,
