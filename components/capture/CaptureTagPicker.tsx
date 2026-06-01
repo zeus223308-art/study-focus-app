@@ -69,13 +69,8 @@ function TagColorModal({
           modalStyles.swatch,
           { backgroundColor: color },
           selected && modalStyles.swatchOn,
-        ]}>
-        {locked ? (
-          <View style={modalStyles.swatchLock}>
-            <Text style={modalStyles.swatchLockText}>★</Text>
-          </View>
-        ) : null}
-      </Pressable>
+        ]}
+      />
     );
   };
   return (
@@ -432,23 +427,6 @@ const modalStyles = StyleSheet.create({
   },
   swatchOn: {
     borderColor: theme.black,
-  },
-  swatchLock: {
-    position: 'absolute',
-    right: -2,
-    top: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: theme.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  swatchLockText: {
-    color: '#FFD400',
-    fontSize: 10,
-    lineHeight: 12,
-    fontWeight: '900',
   },
   actions: {
     flexDirection: 'row',
