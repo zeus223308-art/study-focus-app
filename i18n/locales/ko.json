@@ -233,7 +233,7 @@
     "archive": "아카이브",
     "delete": "휴지통",
     "deletePhoto": "삭제",
-    "deletePhotoTitle": "삭제할까요?",
+    "deletePhotoTitle": "삭제하시겠습니까?",
     "deletePhotoMessage": "휴지통에서 복원 가능",
     "deleteLastPhotoMessage": "마지막 사진이면 카드 전체가 휴지통으로",
     "deleteAll": "전체 삭제",
