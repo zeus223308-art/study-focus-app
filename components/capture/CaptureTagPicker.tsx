@@ -103,6 +103,13 @@ export function CaptureTagPicker({
     setDeleteTag(tag);
   };
 
+  const removePresetNow = (tag: string) => {
+    if (disabled || !canDeleteCaptureTagPreset(tag, language)) return;
+    onRemovePreset(tag);
+    const key = normalizeCaptureTagLabel(tag).toLowerCase();
+    onChangeSelected(selectedTags.filter((s) => s.toLowerCase() !== key));
+  };
+
   const closeDelete = () => setDeleteTag(null);
 
   const confirmDelete = () => {
@@ -134,7 +141,7 @@ export function CaptureTagPicker({
               {deletable ? (
                 <Pressable
                   disabled={disabled}
-                  onPress={() => openDelete(tag)}
+                  onPress={() => removePresetNow(tag)}
                   hitSlop={8}
                   style={styles.chipDelete}
                   accessibilityRole="button"
