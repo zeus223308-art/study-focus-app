@@ -284,8 +284,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   panel: {
-    borderWidth: 1.5,
-    borderColor: theme.black,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.grayLight,
     borderRadius: theme.radius.sm,
     paddingVertical: PANEL_PAD,
     backgroundColor: theme.surface,
