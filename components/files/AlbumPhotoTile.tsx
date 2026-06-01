@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SymbolView } from 'expo-symbols';
+import Svg, { Path } from 'react-native-svg';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
@@ -17,6 +18,8 @@ const IS_WEB = Platform.OS === 'web';
 /** Horizontal ribbon banner: body height + left fishtail notch width. */
 const RIBBON_H = 12;
 const RIBBON_NOTCH_W = 4;
+/** Left fishtail: two outward points with a center notch, one filled shape. */
+const RIBBON_TAIL_PATH = `M0 0 L${RIBBON_NOTCH_W} 0 L${RIBBON_NOTCH_W} ${RIBBON_H} L0 ${RIBBON_H} L${RIBBON_NOTCH_W} ${RIBBON_H / 2} Z`;
 
 type Props = {
   bundleId: string;
@@ -105,10 +108,9 @@ export function AlbumPhotoTile({
       <View style={styles.tagRow} pointerEvents="none">
         {visibleTags.map((tag, i) => (
           <View key={`${tag}-${i}`} style={styles.ribbon}>
-            <View style={styles.ribbonTail}>
-              <View style={[styles.ribbonTailTop, { borderTopColor: ribbonColor }]} />
-              <View style={[styles.ribbonTailBottom, { borderBottomColor: ribbonColor }]} />
-            </View>
+            <Svg width={RIBBON_NOTCH_W} height={RIBBON_H}>
+              <Path d={RIBBON_TAIL_PATH} fill={ribbonColor} />
+            </Svg>
             <View style={[styles.ribbonBody, { backgroundColor: ribbonColor }]}>
               <Text style={styles.tagText} numberOfLines={1}>
                 {tag}
@@ -291,24 +293,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     maxWidth: '100%',
   },
-  ribbonTail: {
-    width: RIBBON_NOTCH_W,
-    height: RIBBON_H,
-  },
-  ribbonTailTop: {
-    width: 0,
-    height: 0,
-    borderTopWidth: RIBBON_H / 2,
-    borderLeftWidth: RIBBON_NOTCH_W,
-    borderLeftColor: 'transparent',
-  },
-  ribbonTailBottom: {
-    width: 0,
-    height: 0,
-    borderBottomWidth: RIBBON_H / 2,
-    borderLeftWidth: RIBBON_NOTCH_W,
-    borderLeftColor: 'transparent',
-  },
   ribbonBody: {
     height: RIBBON_H,
     justifyContent: 'center',
@@ -317,7 +301,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     borderTopRightRadius: 2,
     borderBottomRightRadius: 2,
-    ...theme.cardShadow,
   },
   tagText: {
     fontSize: 8,
