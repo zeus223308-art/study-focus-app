@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 
@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
     color: theme.black,
     borderWidth: 1,
     borderColor: theme.grayLight,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
   },
   row: {
     flexDirection: 'row',
