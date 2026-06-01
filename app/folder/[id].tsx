@@ -199,7 +199,6 @@ export default function FolderScreen() {
   const confirmDeleteProblem = (bundleId: string, pageId: string) => {
     confirmChoice({
       title: t('item.deletePhotoTitle'),
-      message: t('item.deletePhotoMessage'),
       yesLabel: t('common.yes'),
       noLabel: t('common.no'),
       onYes: () => deletePage(bundleId, pageId),
