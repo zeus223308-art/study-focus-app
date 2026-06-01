@@ -53,6 +53,7 @@ export default function BundleScreen() {
     updateBundle,
     updateSettings,
     setCaptureTagColor,
+    setPaywallVisible,
     archiveBundle,
     unarchiveBundle,
     moveBundleToTrash,
@@ -345,6 +346,8 @@ export default function BundleScreen() {
           onRemovePreset={removeTagPreset}
           tagColors={data.settings.captureTagColors}
           onSetTagColor={setCaptureTagColor}
+          isPro={data.settings.tier === 'pro'}
+          onRequirePremium={() => setPaywallVisible(true)}
         />
       </View>
 

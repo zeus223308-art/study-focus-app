@@ -11,7 +11,11 @@ import {
   toggleCaptureTag,
 } from '@/lib/domain/capture-tags';
 import type { Language } from '@/lib/domain/types';
-import { TAG_COLOR_PALETTE, resolveTagColor } from '@/lib/ui/tag-colors';
+import {
+  FREE_TAG_COLORS,
+  PREMIUM_TAG_COLORS,
+  resolveTagColor,
+} from '@/lib/ui/tag-colors';
 
 type Props = {
   presets: string[];
@@ -23,6 +27,9 @@ type Props = {
   /** Per-tag colors (key = lowercase label). Enables the color picker dot. */
   tagColors?: Record<string, string>;
   onSetTagColor?: (label: string, color: string) => void;
+  /** Pro unlocks the detailed color shades. */
+  isPro?: boolean;
+  onRequirePremium?: () => void;
   disabled?: boolean;
 };
 
@@ -30,20 +37,47 @@ function TagColorModal({
   visible,
   tag,
   current,
+  isPro,
   title,
+  freeLabel,
+  premiumLabel,
   cancelLabel,
   onPick,
+  onRequirePremium,
   onClose,
 }: {
   visible: boolean;
   tag: string;
   current: string;
+  isPro: boolean;
   title: string;
+  freeLabel: string;
+  premiumLabel: string;
   cancelLabel: string;
   onPick: (color: string) => void;
+  onRequirePremium: () => void;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const renderSwatch = (color: string, locked: boolean) => {
+    const selected = color.toLowerCase() === current.toLowerCase();
+    return (
+      <Pressable
+        key={color}
+        onPress={() => (locked ? onRequirePremium() : onPick(color))}
+        style={[
+          modalStyles.swatch,
+          { backgroundColor: color },
+          selected && modalStyles.swatchOn,
+        ]}>
+        {locked ? (
+          <View style={modalStyles.swatchLock}>
+            <Text style={modalStyles.swatchLockText}>★</Text>
+          </View>
+        ) : null}
+      </Pressable>
+    );
+  };
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={modalStyles.backdrop} onPress={onClose}>
@@ -54,22 +88,17 @@ function TagColorModal({
           <View style={modalStyles.tagPill}>
             <Text style={modalStyles.tagPillText}>{tag}</Text>
           </View>
+
+          <Text style={modalStyles.sectionLabel}>{freeLabel}</Text>
           <View style={modalStyles.swatchGrid}>
-            {TAG_COLOR_PALETTE.map((color) => {
-              const selected = color.toLowerCase() === current.toLowerCase();
-              return (
-                <Pressable
-                  key={color}
-                  onPress={() => onPick(color)}
-                  style={[
-                    modalStyles.swatch,
-                    { backgroundColor: color },
-                    selected && modalStyles.swatchOn,
-                  ]}
-                />
-              );
-            })}
+            {FREE_TAG_COLORS.map((color) => renderSwatch(color, false))}
           </View>
+
+          <Text style={modalStyles.sectionLabel}>{premiumLabel}</Text>
+          <View style={modalStyles.swatchGrid}>
+            {PREMIUM_TAG_COLORS.map((color) => renderSwatch(color, !isPro))}
+          </View>
+
           <Pressable style={[modalStyles.btn, modalStyles.btnCancel]} onPress={onClose}>
             <Text style={modalStyles.btnCancelText}>{cancelLabel}</Text>
           </Pressable>
@@ -134,6 +163,8 @@ export function CaptureTagPicker({
   onRemovePreset,
   tagColors,
   onSetTagColor,
+  isPro,
+  onRequirePremium,
   disabled,
 }: Props) {
   const { t } = useTranslation();
@@ -269,9 +300,16 @@ export function CaptureTagPicker({
         visible={colorTag !== null}
         tag={colorTag ?? ''}
         current={colorTag ? resolveTagColor(colorTag, tagColors) : ''}
+        isPro={Boolean(isPro)}
         title={t('capture.pickTagColor')}
+        freeLabel={t('capture.tagColorsFree')}
+        premiumLabel={t('capture.tagColorsPremium')}
         cancelLabel={t('common.cancel')}
         onPick={pickColor}
+        onRequirePremium={() => {
+          setColorTag(null);
+          onRequirePremium?.();
+        }}
         onClose={() => setColorTag(null)}
       />
     </View>
@@ -368,6 +406,14 @@ const modalStyles = StyleSheet.create({
     borderColor: theme.grayLight,
   },
   tagPillText: { fontWeight: '800', color: theme.black, fontSize: theme.font.body },
+  sectionLabel: {
+    alignSelf: 'flex-start',
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.graySecondary,
+    marginTop: 12,
+    marginBottom: 2,
+  },
   swatchGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -381,9 +427,28 @@ const modalStyles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   swatchOn: {
     borderColor: theme.black,
+  },
+  swatchLock: {
+    position: 'absolute',
+    right: -2,
+    top: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: theme.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swatchLockText: {
+    color: '#FFD400',
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '900',
   },
   actions: {
     flexDirection: 'row',

@@ -60,8 +60,14 @@ export default function CaptureTabScreen() {
   const { entry, fresh } = useLocalSearchParams<{ entry?: string; fresh?: string }>();
   const isImportEntry = entry === 'import';
   const isImportFresh = fresh === '1';
-  const { data, captureFlashcardPair, activeFolderCapture, updateSettings, setCaptureTagColor } =
-    useApp();
+  const {
+    data,
+    captureFlashcardPair,
+    activeFolderCapture,
+    updateSettings,
+    setCaptureTagColor,
+    setPaywallVisible,
+  } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [step, setStep] = useState<Step>('camera');
@@ -576,6 +582,8 @@ export default function CaptureTabScreen() {
                   onRemovePreset={removeTagPreset}
                   tagColors={data.settings.captureTagColors}
                   onSetTagColor={setCaptureTagColor}
+                  isPro={data.settings.tier === 'pro'}
+                  onRequirePremium={() => setPaywallVisible(true)}
                   disabled={saveBusy}
                 />
                 <Button
