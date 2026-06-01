@@ -208,6 +208,28 @@ export default function FilesScreen() {
             onSubjectDeleteHold={confirmDeleteSubject}
           />
         </View>
+
+        {subjectDeleteMode ? (
+          <Text style={styles.deleteHint}>{t('vault.deleteSubjectsHint')}</Text>
+        ) : null}
+
+        <Pressable
+          onPress={onDeleteSubjectsPress}
+          style={({ pressed }) => [
+            styles.deleteBtn,
+            subjectDeleteMode && selectedForDelete.size > 0 && styles.deleteBtnActive,
+            pressed && styles.deleteBtnPressed,
+          ]}>
+          <Text
+            style={[
+              styles.deleteBtnText,
+              subjectDeleteMode && selectedForDelete.size > 0 && styles.deleteBtnTextActive,
+            ]}>
+            {subjectDeleteMode && selectedForDelete.size > 0
+              ? t('vault.deleteSubjectsConfirmAction', { count: selectedForDelete.size })
+              : t('vault.deleteSubjects')}
+          </Text>
+        </Pressable>
       </View>
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
@@ -243,22 +265,6 @@ export default function FilesScreen() {
           </View>
         </View>
       ) : null}
-
-      {subjectDeleteMode ? (
-        <Text style={styles.deleteHint}>{t('vault.deleteSubjectsHint')}</Text>
-      ) : null}
-
-      <Pressable onPress={onDeleteSubjectsPress} style={styles.deleteSubjectsLink}>
-        <Text
-          style={[
-            styles.deleteSubjects,
-            subjectDeleteMode && selectedForDelete.size > 0 && styles.deleteSubjectsActive,
-          ]}>
-          {subjectDeleteMode && selectedForDelete.size > 0
-            ? t('vault.deleteSubjectsConfirmAction', { count: selectedForDelete.size })
-            : t('vault.deleteSubjects')}
-        </Text>
-      </Pressable>
 
       <Pressable onPress={() => router.push('/trash')} style={styles.trashLink}>
         <Text style={styles.trash}>{t('trash.title')}</Text>
@@ -301,18 +307,33 @@ const styles = StyleSheet.create({
   cancel: { color: theme.gray },
   save: { color: theme.orange, fontWeight: '800' },
   deleteHint: {
-    marginTop: 20,
+    marginTop: 14,
+    marginHorizontal: PANEL_PAD,
     fontSize: theme.font.caption,
     color: theme.gray,
     textAlign: 'center',
   },
-  deleteSubjectsLink: { marginTop: 16, alignSelf: 'center' },
-  deleteSubjects: {
-    color: theme.gray,
-    fontSize: theme.font.caption,
-    fontWeight: '700',
+  deleteBtn: {
+    marginTop: 14,
+    marginHorizontal: PANEL_PAD,
+    paddingVertical: 11,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1.5,
+    borderColor: theme.grayLight,
+    backgroundColor: theme.beige,
+    alignItems: 'center',
   },
-  deleteSubjectsActive: { color: theme.orange },
-  trashLink: { marginTop: 12 },
+  deleteBtnActive: {
+    borderColor: theme.orange,
+    backgroundColor: theme.orange,
+  },
+  deleteBtnPressed: { opacity: 0.85 },
+  deleteBtnText: {
+    color: theme.gray,
+    fontSize: theme.font.bodySmall,
+    fontWeight: '800',
+  },
+  deleteBtnTextActive: { color: theme.white },
+  trashLink: { marginTop: 12, alignSelf: 'center' },
   trash: { color: theme.gray, fontSize: theme.font.caption },
 });
