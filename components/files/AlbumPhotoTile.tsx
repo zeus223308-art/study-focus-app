@@ -14,9 +14,9 @@ import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
 
-/** Forked tail dimensions for the ribbon-style tag banner. */
-const RIBBON_TAIL_W = 7;
-const RIBBON_TAIL_H = 6;
+/** Horizontal ribbon banner: body height + pointed end-cap width. */
+const RIBBON_H = 18;
+const RIBBON_CAP_W = 6;
 
 type Props = {
   bundleId: string;
@@ -107,13 +107,13 @@ export function AlbumPhotoTile({
           const color = resolveTagColor(tag, tagColors);
           return (
             <View key={`${tag}-${i}`} style={styles.ribbon}>
+              <View style={[styles.ribbonCapLeft, { borderRightColor: color }]} />
               <View style={[styles.ribbonBody, { backgroundColor: color }]}>
                 <Text style={styles.tagText} numberOfLines={1}>
                   {tag}
                 </Text>
               </View>
-              <View style={[styles.ribbonTailLeft, { borderTopColor: color }]} />
-              <View style={[styles.ribbonTailRight, { borderTopColor: color }]} />
+              <View style={[styles.ribbonCapRight, { borderLeftColor: color }]} />
             </View>
           );
         })}
@@ -280,46 +280,46 @@ const styles = StyleSheet.create({
   tagRow: {
     position: 'absolute',
     left: 6,
-    bottom: 9,
+    bottom: 6,
     right: 6,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    rowGap: 9,
-    columnGap: 6,
+    rowGap: 6,
+    columnGap: 7,
   },
   ribbon: {
+    flexDirection: 'row',
+    alignItems: 'center',
     maxWidth: '100%',
-  },
-  ribbonBody: {
-    borderTopLeftRadius: 3,
-    borderTopRightRadius: 3,
-    paddingHorizontal: 8,
-    paddingTop: 3,
-    paddingBottom: 4,
     ...theme.cardShadow,
   },
-  ribbonTailLeft: {
-    position: 'absolute',
-    left: 0,
-    bottom: -RIBBON_TAIL_H,
-    width: 0,
-    height: 0,
-    borderRightWidth: RIBBON_TAIL_W,
-    borderTopWidth: RIBBON_TAIL_H,
-    borderRightColor: 'transparent',
+  ribbonBody: {
+    height: RIBBON_H,
+    justifyContent: 'center',
+    paddingHorizontal: 7,
+    flexShrink: 1,
   },
-  ribbonTailRight: {
-    position: 'absolute',
-    right: 0,
-    bottom: -RIBBON_TAIL_H,
+  ribbonCapLeft: {
     width: 0,
     height: 0,
-    borderLeftWidth: RIBBON_TAIL_W,
-    borderTopWidth: RIBBON_TAIL_H,
-    borderLeftColor: 'transparent',
+    borderTopWidth: RIBBON_H / 2,
+    borderBottomWidth: RIBBON_H / 2,
+    borderRightWidth: RIBBON_CAP_W,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  ribbonCapRight: {
+    width: 0,
+    height: 0,
+    borderTopWidth: RIBBON_H / 2,
+    borderBottomWidth: RIBBON_H / 2,
+    borderLeftWidth: RIBBON_CAP_W,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
   },
   tagText: {
     fontSize: 10,
+    lineHeight: 12,
     fontWeight: '800',
     color: theme.white,
   },
