@@ -20,7 +20,7 @@ export function Button({ label, onPress, variant = 'primary', style, disabled }:
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && styles.ghost,
-        pressed && { opacity: 0.85 },
+        pressed && (variant === 'primary' ? styles.primaryPressed : { opacity: 0.85 }),
         disabled && { opacity: 0.5 },
         style,
       ]}>
@@ -45,6 +45,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primary: { backgroundColor: theme.orange },
+  primaryPressed: { backgroundColor: theme.gray },
   secondary: { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.grayLight },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: theme.font.body, fontWeight: '700' },
