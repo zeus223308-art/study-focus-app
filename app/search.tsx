@@ -17,9 +17,8 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const { data } = useApp();
   const [query, setQuery] = useState('');
-  const [examOnly, setExamOnly] = useState(false);
 
-  const results = searchBundles(data.bundles, query, examOnly);
+  const results = searchBundles(data.bundles, query);
 
   return (
     <View
@@ -41,12 +40,6 @@ export default function SearchScreen() {
         onChangeText={setQuery}
         autoFocus
       />
-      <Pressable onPress={() => setExamOnly((e) => !e)} style={styles.filter}>
-        <Text style={[styles.filterText, examOnly && styles.filterOn]}>
-          {examOnly ? `${t('common.check')} ` : ''}
-          {t('item.tagExam')}
-        </Text>
-      </Pressable>
       <FlatList
         data={results}
         keyExtractor={(b) => b.id}
@@ -82,10 +75,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.grayLight,
   },
-  filter: { marginTop: 12, alignSelf: 'flex-start' },
-  filterText: { color: theme.gray, fontWeight: '600' },
-  filterOn: { color: theme.orange },
-  soon: { fontSize: 12, color: theme.gray, marginVertical: 8 },
   row: {
     flexDirection: 'row',
     padding: 12,
