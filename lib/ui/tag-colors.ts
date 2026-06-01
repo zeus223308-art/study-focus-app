@@ -7,7 +7,7 @@ export const DEFAULT_TAG_COLOR = '#FF6B00';
 export const FREE_TAG_COLORS = [
   '#FF3B30', // 빨 red
   '#FF9500', // 주 orange
-  '#FFCC00', // 노 yellow
+  '#FFE600', // 노 yellow
   '#34C759', // 초 green
   '#007AFF', // 파 blue
   '#303F9F', // 남 navy
