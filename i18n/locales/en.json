@@ -98,6 +98,7 @@
     "deleteTagTitle": "Delete tag",
     "deleteTagHint": "Remove this tag from your list. Tags on photos already saved stay unchanged.",
     "deleteTagConfirm": "Delete",
+    "pickTagColor": "Pick tag color",
     "pickDate": "Date",
     "changeDate": "Change date",
     "datePrevDay": "Previous day",

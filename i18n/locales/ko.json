@@ -98,6 +98,7 @@
     "deleteTagTitle": "태그 삭제",
     "deleteTagHint": "이 태그를 목록에서 삭제합니다. 이미 저장된 사진에 붙은 태그는 그대로 남습니다.",
     "deleteTagConfirm": "삭제",
+    "pickTagColor": "태그 색상 선택",
     "pickDate": "날짜",
     "changeDate": "날짜 변경",
     "datePrevDay": "하루 전",

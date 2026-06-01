@@ -11,6 +11,7 @@ import {
   toggleCaptureTag,
 } from '@/lib/domain/capture-tags';
 import type { Language } from '@/lib/domain/types';
+import { TAG_COLOR_PALETTE, resolveTagColor } from '@/lib/ui/tag-colors';
 
 type Props = {
   presets: string[];
@@ -19,8 +20,64 @@ type Props = {
   onChangeSelected: (tags: string[]) => void;
   onAddPreset: (label: string) => void;
   onRemovePreset: (label: string) => void;
+  /** Per-tag colors (key = lowercase label). Enables the color picker dot. */
+  tagColors?: Record<string, string>;
+  onSetTagColor?: (label: string, color: string) => void;
   disabled?: boolean;
 };
+
+function TagColorModal({
+  visible,
+  tag,
+  current,
+  title,
+  cancelLabel,
+  onPick,
+  onClose,
+}: {
+  visible: boolean;
+  tag: string;
+  current: string;
+  title: string;
+  cancelLabel: string;
+  onPick: (color: string) => void;
+  onClose: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={modalStyles.backdrop} onPress={onClose}>
+        <Pressable
+          style={[modalStyles.card, { marginBottom: Math.max(24, insets.bottom) }]}
+          onPress={() => {}}>
+          <Text style={modalStyles.title}>{title}</Text>
+          <View style={modalStyles.tagPill}>
+            <Text style={modalStyles.tagPillText}>{tag}</Text>
+          </View>
+          <View style={modalStyles.swatchGrid}>
+            {TAG_COLOR_PALETTE.map((color) => {
+              const selected = color.toLowerCase() === current.toLowerCase();
+              return (
+                <Pressable
+                  key={color}
+                  onPress={() => onPick(color)}
+                  style={[
+                    modalStyles.swatch,
+                    { backgroundColor: color },
+                    selected && modalStyles.swatchOn,
+                  ]}
+                />
+              );
+            })}
+          </View>
+          <Pressable style={[modalStyles.btn, modalStyles.btnCancel]} onPress={onClose}>
+            <Text style={modalStyles.btnCancelText}>{cancelLabel}</Text>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
 
 function CaptureTagDeleteModal({
   visible,
@@ -75,12 +132,16 @@ export function CaptureTagPicker({
   onChangeSelected,
   onAddPreset,
   onRemovePreset,
+  tagColors,
+  onSetTagColor,
   disabled,
 }: Props) {
   const { t } = useTranslation();
   const [addVisible, setAddVisible] = useState(false);
   const [draftLabel, setDraftLabel] = useState('');
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
+  const [colorTag, setColorTag] = useState<string | null>(null);
+  const colorEnabled = Boolean(onSetTagColor);
 
   const isOn = (tag: string) =>
     selectedTags.some((s) => s.toLowerCase() === tag.toLowerCase());
@@ -96,6 +157,12 @@ export function CaptureTagPicker({
     onAddPreset(trimmed);
     onChangeSelected(toggleCaptureTag(selectedTags, trimmed));
     closeAdd();
+    if (colorEnabled) setColorTag(trimmed);
+  };
+
+  const pickColor = (color: string) => {
+    if (colorTag) onSetTagColor?.(colorTag, color);
+    setColorTag(null);
   };
 
   const openDelete = (tag: string) => {
@@ -130,6 +197,19 @@ export function CaptureTagPicker({
           const on = isOn(tag);
           return (
             <View key={tag} style={[styles.chip, on && styles.chipOn]}>
+              {colorEnabled ? (
+                <Pressable
+                  disabled={disabled}
+                  onPress={() => setColorTag(tag)}
+                  hitSlop={6}
+                  style={styles.colorDotHit}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('capture.pickTagColor')}>
+                  <View
+                    style={[styles.colorDot, { backgroundColor: resolveTagColor(tag, tagColors) }]}
+                  />
+                </Pressable>
+              ) : null}
               <Pressable
                 disabled={disabled}
                 onPress={() => onChangeSelected(toggleCaptureTag(selectedTags, tag))}
@@ -184,6 +264,16 @@ export function CaptureTagPicker({
         onDelete={confirmDelete}
         onClose={closeDelete}
       />
+
+      <TagColorModal
+        visible={colorTag !== null}
+        tag={colorTag ?? ''}
+        current={colorTag ? resolveTagColor(colorTag, tagColors) : ''}
+        title={t('capture.pickTagColor')}
+        cancelLabel={t('common.cancel')}
+        onPick={pickColor}
+        onClose={() => setColorTag(null)}
+      />
     </View>
   );
 }
@@ -195,7 +285,7 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 18,
+    paddingLeft: 14,
     paddingRight: 6,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
@@ -204,6 +294,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
   },
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
+  colorDotHit: { paddingVertical: 12, paddingRight: 8 },
+  colorDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.85)',
+  },
   chipLabelHit: { paddingVertical: 12, paddingRight: 4 },
   chipText: { fontWeight: '700', color: theme.black },
   chipTextOn: { color: theme.white },
@@ -270,6 +368,23 @@ const modalStyles = StyleSheet.create({
     borderColor: theme.grayLight,
   },
   tagPillText: { fontWeight: '800', color: theme.black, fontSize: theme.font.body },
+  swatchGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  swatch: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  swatchOn: {
+    borderColor: theme.black,
+  },
   actions: {
     flexDirection: 'row',
     gap: 10,

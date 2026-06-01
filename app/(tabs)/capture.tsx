@@ -60,7 +60,8 @@ export default function CaptureTabScreen() {
   const { entry, fresh } = useLocalSearchParams<{ entry?: string; fresh?: string }>();
   const isImportEntry = entry === 'import';
   const isImportFresh = fresh === '1';
-  const { data, captureFlashcardPair, activeFolderCapture, updateSettings } = useApp();
+  const { data, captureFlashcardPair, activeFolderCapture, updateSettings, setCaptureTagColor } =
+    useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [step, setStep] = useState<Step>('camera');
@@ -573,6 +574,8 @@ export default function CaptureTabScreen() {
                   onChangeSelected={setSelectedTags}
                   onAddPreset={addTagPreset}
                   onRemovePreset={removeTagPreset}
+                  tagColors={data.settings.captureTagColors}
+                  onSetTagColor={setCaptureTagColor}
                   disabled={saveBusy}
                 />
                 <Button

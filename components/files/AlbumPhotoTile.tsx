@@ -9,7 +9,7 @@ import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
 import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
-import { tagColor } from '@/lib/ui/tag-colors';
+import { resolveTagColor } from '@/lib/ui/tag-colors';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
@@ -61,7 +61,8 @@ export function AlbumPhotoTile({
   showMemoBadge = false,
   style,
 }: Props) {
-  const { movingBundleId, draggingItemKey, dragHoverItemKey } = useApp();
+  const { data, movingBundleId, draggingItemKey, dragHoverItemKey } = useApp();
+  const tagColors = data.settings.captureTagColors;
   const viewport = useViewportLayout();
   const landscapeTileH = viewport.isLandscape
     ? heightForLandscapeCardWidth(cellWidth, true)
@@ -99,7 +100,7 @@ export function AlbumPhotoTile({
     visibleTags.length > 0 && !showLifted ? (
       <View style={styles.tagRow} pointerEvents="none">
         {visibleTags.map((tag, i) => (
-          <View key={`${tag}-${i}`} style={[styles.tagChip, { backgroundColor: tagColor(tag) }]}>
+          <View key={`${tag}-${i}`} style={[styles.tagChip, { backgroundColor: resolveTagColor(tag, tagColors) }]}>
             <Text style={styles.tagText} numberOfLines={1}>
               {tag}
             </Text>

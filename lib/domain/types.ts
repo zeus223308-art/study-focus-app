@@ -191,6 +191,8 @@ export type AppSettings = {
   captureFrameAspect?: CaptureFrameAspect;
   /** Labels shown on capture save sheet (+ default exam-before tag). */
   captureTagPresets?: string[];
+  /** User-chosen color per tag (key = normalized lowercase label → hex). */
+  captureTagColors?: Record<string, string>;
 };
 
 export type AppData = {

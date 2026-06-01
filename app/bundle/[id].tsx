@@ -52,6 +52,7 @@ export default function BundleScreen() {
     storage,
     updateBundle,
     updateSettings,
+    setCaptureTagColor,
     archiveBundle,
     unarchiveBundle,
     moveBundleToTrash,
@@ -342,6 +343,8 @@ export default function BundleScreen() {
           onChangeSelected={setPageTags}
           onAddPreset={addTagPreset}
           onRemovePreset={removeTagPreset}
+          tagColors={data.settings.captureTagColors}
+          onSetTagColor={setCaptureTagColor}
         />
       </View>
 
