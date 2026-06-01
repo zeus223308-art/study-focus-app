@@ -15,8 +15,8 @@ import { useViewportLayout } from '@/lib/ui/viewport-layout';
 const IS_WEB = Platform.OS === 'web';
 
 /** Horizontal ribbon banner: body height + left fishtail notch width. */
-const RIBBON_H = 18;
-const RIBBON_NOTCH_W = 6;
+const RIBBON_H = 14;
+const RIBBON_NOTCH_W = 5;
 
 type Props = {
   bundleId: string;
@@ -323,8 +323,8 @@ const styles = StyleSheet.create({
     ...theme.cardShadow,
   },
   tagText: {
-    fontSize: 10,
-    lineHeight: 12,
+    fontSize: 9,
+    lineHeight: 10,
     fontWeight: '800',
     color: theme.white,
   },

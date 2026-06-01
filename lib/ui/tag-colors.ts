@@ -34,22 +34,15 @@ export function isPremiumTagColor(color: string): boolean {
   return PREMIUM_TAG_COLORS.some((p) => p.toLowerCase() === c);
 }
 
-/** Stable fallback color (free palette) for a tag with no explicit choice. */
-export function tagColor(tag: string): string {
-  const key = tag.trim().toLowerCase();
-  let hash = 0;
-  for (let i = 0; i < key.length; i += 1) {
-    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
-  }
-  return FREE_TAG_COLORS[hash % FREE_TAG_COLORS.length]!;
-}
+/** Single default color for tags with no explicit choice (brand orange). */
+export const DEFAULT_TAG_COLOR = '#FF6B00';
 
-/** Explicit user-chosen color when set, otherwise the stable fallback. */
+/** Explicit user-chosen color when set, otherwise the single default color. */
 export function resolveTagColor(
   tag: string,
   colorMap?: Record<string, string>
 ): string {
   const key = tag.trim().toLowerCase();
   const chosen = colorMap?.[key];
-  return chosen ?? tagColor(tag);
+  return chosen ?? DEFAULT_TAG_COLOR;
 }
