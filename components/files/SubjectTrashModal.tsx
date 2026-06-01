@@ -93,8 +93,8 @@ export function SubjectTrashModal({ visible, subjectId, subjectName, onClose }: 
                     hitSlop={8}
                     style={styles.restoreBtn}
                     accessibilityRole="button"
-                    accessibilityLabel={t('trash.restore')}>
-                    <Text style={styles.restoreText}>{t('trash.restore')}</Text>
+                    accessibilityLabel={t('trash.restorePhoto')}>
+                    <Text style={styles.restoreText}>{t('trash.restorePhoto')}</Text>
                   </Pressable>
                 </View>
               ))

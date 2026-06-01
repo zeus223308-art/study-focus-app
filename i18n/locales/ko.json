@@ -329,6 +329,7 @@
     "title": "휴지통",
     "empty": "비어 있음",
     "restore": "복원",
+    "restorePhoto": "사진 복원",
     "restoreAll": "모두 복원",
     "restoreSubject": "과목 복원",
     "subjectsHeader": "삭제된 과목",

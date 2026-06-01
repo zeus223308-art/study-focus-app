@@ -145,8 +145,8 @@ export default function TrashScreen() {
                     hitSlop={8}
                     style={styles.restoreBtn}
                     accessibilityRole="button"
-                    accessibilityLabel={t('trash.restore')}>
-                    <Text style={styles.restore}>{t('trash.restore')}</Text>
+                    accessibilityLabel={t('trash.restorePhoto')}>
+                    <Text style={styles.restore}>{t('trash.restorePhoto')}</Text>
                   </Pressable>
                 </View>
               ))}

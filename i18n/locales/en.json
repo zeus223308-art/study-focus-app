@@ -329,6 +329,7 @@
     "title": "Trash",
     "empty": "Empty",
     "restore": "Restore",
+    "restorePhoto": "Restore photo",
     "restoreAll": "Restore all",
     "restoreSubject": "Restore subject",
     "subjectsHeader": "Deleted subjects",
