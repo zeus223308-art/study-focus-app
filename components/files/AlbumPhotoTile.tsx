@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import Svg, { Path } from 'react-native-svg';
@@ -15,11 +15,34 @@ import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
 
-/** Horizontal ribbon banner: body height + left fishtail notch width. */
+/** Horizontal ribbon banner: body height + left fishtail notch width + text padding. */
 const RIBBON_H = 12;
 const RIBBON_NOTCH_W = 4;
-/** Left fishtail: two outward points with a center notch, one filled shape. */
-const RIBBON_TAIL_PATH = `M0 0 L${RIBBON_NOTCH_W} 0 L${RIBBON_NOTCH_W} ${RIBBON_H} L0 ${RIBBON_H} L${RIBBON_NOTCH_W} ${RIBBON_H / 2} Z`;
+const RIBBON_PAD_L = 4;
+const RIBBON_PAD_R = 6;
+
+/** Whole ribbon (left fishtail + rectangle body) as ONE filled shape so the
+ *  pointed end and the body are always exactly the same color. Text is overlaid. */
+function TagRibbon({ label, color }: { label: string; color: string }) {
+  const [textW, setTextW] = useState(0);
+  const totalW = RIBBON_NOTCH_W + RIBBON_PAD_L + textW + RIBBON_PAD_R;
+  const path = `M0 0 L${totalW} 0 L${totalW} ${RIBBON_H} L0 ${RIBBON_H} L${RIBBON_NOTCH_W} ${RIBBON_H / 2} Z`;
+  return (
+    <View style={[styles.ribbon, textW ? { width: totalW } : null]}>
+      {textW ? (
+        <Svg width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill}>
+          <Path d={path} fill={color} />
+        </Svg>
+      ) : null}
+      <Text
+        style={styles.tagText}
+        numberOfLines={1}
+        onLayout={(e) => setTextW(Math.ceil(e.nativeEvent.layout.width))}>
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 type Props = {
   bundleId: string;
@@ -107,16 +130,7 @@ export function AlbumPhotoTile({
     visibleTags.length > 0 && !showLifted ? (
       <View style={styles.tagRow} pointerEvents="none">
         {visibleTags.map((tag, i) => (
-          <View key={`${tag}-${i}`} style={styles.ribbon}>
-            <Svg width={RIBBON_NOTCH_W} height={RIBBON_H}>
-              <Path d={RIBBON_TAIL_PATH} fill={ribbonColor} />
-            </Svg>
-            <View style={[styles.ribbonBody, { backgroundColor: ribbonColor }]}>
-              <Text style={styles.tagText} numberOfLines={1}>
-                {tag}
-              </Text>
-            </View>
-          </View>
+          <TagRibbon key={`${tag}-${i}`} label={tag} color={ribbonColor} />
         ))}
       </View>
     ) : null;
@@ -289,22 +303,15 @@ const styles = StyleSheet.create({
     columnGap: 7,
   },
   ribbon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    maxWidth: '100%',
-  },
-  ribbonBody: {
     height: RIBBON_H,
     justifyContent: 'center',
-    paddingLeft: 4,
-    paddingRight: 6,
-    flexShrink: 1,
-    borderTopRightRadius: 2,
-    borderBottomRightRadius: 2,
   },
   tagText: {
+    height: RIBBON_H,
+    lineHeight: RIBBON_H,
+    marginLeft: RIBBON_NOTCH_W + RIBBON_PAD_L,
+    marginRight: RIBBON_PAD_R,
     fontSize: 8,
-    lineHeight: 9,
     fontWeight: '800',
     color: theme.white,
   },
