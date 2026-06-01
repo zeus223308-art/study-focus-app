@@ -14,6 +14,10 @@ import { theme } from '@/constants/theme';
 import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
 import { appendCaptureToData } from '@/lib/domain/bundle-factory';
+import {
+  normalizeCaptureTagLabel,
+  removeCaptureTagPreset,
+} from '@/lib/domain/capture-tags';
 import { todayKey } from '@/lib/domain/dates';
 import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
 import { movePageToSubject } from '@/lib/domain/move-page-to-subject';
@@ -131,6 +135,7 @@ type AppContextValue = {
   updateSettings: (patch: Partial<AppSettings>) => void;
   setTagColor: (color: string) => void;
   setTagColorFor: (tag: string, color: string) => void;
+  removeCaptureTag: (label: string) => void;
   getSchedule: (id: string) => ReviewSchedule | undefined;
   syncCloud: () => Promise<void>;
   restoreFromCloudBackup: () => Promise<boolean>;
@@ -908,6 +913,40 @@ export function AppProvider({
     });
   }, []);
 
+  /** Delete a tag: remove it from presets, every photo, and its saved color. */
+  const removeCaptureTag = useCallback((label: string) => {
+    const key = normalizeCaptureTagLabel(label).toLowerCase();
+    if (!key) return;
+    setData((prev) => {
+      if (!prev) return prev;
+      const presets = removeCaptureTagPreset(
+        prev.settings.captureTagPresets,
+        prev.settings.language,
+        label
+      );
+      const tagColors = { ...(prev.settings.tagColors ?? {}) };
+      delete tagColors[key];
+      const bundles = prev.bundles.map((bundle) => {
+        let changed = false;
+        const pages = bundle.pages.map((page) => {
+          if (!page.tags?.length) return page;
+          const filtered = page.tags.filter(
+            (tg) => normalizeCaptureTagLabel(tg).toLowerCase() !== key
+          );
+          if (filtered.length === page.tags.length) return page;
+          changed = true;
+          return { ...page, tags: filtered };
+        });
+        return changed ? { ...bundle, pages } : bundle;
+      });
+      return {
+        ...prev,
+        bundles,
+        settings: { ...prev.settings, captureTagPresets: presets, tagColors },
+      };
+    });
+  }, []);
+
   const syncCloud = useCallback(async () => {
     const current = dataRef.current;
     if (!current) return;
@@ -1392,6 +1431,7 @@ export function AppProvider({
       updateSettings,
       setTagColor,
       setTagColorFor,
+      removeCaptureTag,
       getSchedule,
       syncCloud,
       restoreFromCloudBackup,
@@ -1470,6 +1510,7 @@ export function AppProvider({
     updateSettings,
     setTagColor,
     setTagColorFor,
+    removeCaptureTag,
     getSchedule,
     syncCloud,
     restoreFromCloudBackup,

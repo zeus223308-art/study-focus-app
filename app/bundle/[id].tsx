@@ -16,7 +16,7 @@ import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { attachAnswerToPage } from '@/lib/domain/attach-answer';
-import { mergeCaptureTagPresets, removeCaptureTagPreset } from '@/lib/domain/capture-tags';
+import { mergeCaptureTagPresets } from '@/lib/domain/capture-tags';
 import { replacePageAnswerPhoto, replacePageFrontPhoto } from '@/lib/files/replace-page-photo';
 import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
@@ -53,6 +53,7 @@ export default function BundleScreen() {
     updateBundle,
     updateSettings,
     setTagColorFor,
+    removeCaptureTag,
     setPaywallVisible,
     archiveBundle,
     unarchiveBundle,
@@ -115,19 +116,6 @@ export default function BundleScreen() {
     (label: string) => {
       updateSettings({
         captureTagPresets: mergeCaptureTagPresets(
-          data.settings.captureTagPresets,
-          data.settings.language,
-          label
-        ),
-      });
-    },
-    [data.settings.captureTagPresets, data.settings.language, updateSettings]
-  );
-
-  const removeTagPreset = useCallback(
-    (label: string) => {
-      updateSettings({
-        captureTagPresets: removeCaptureTagPreset(
           data.settings.captureTagPresets,
           data.settings.language,
           label
@@ -344,7 +332,7 @@ export default function BundleScreen() {
           language={data.settings.language}
           onChangeSelected={setPageTags}
           onAddPreset={addTagPreset}
-          onRemovePreset={removeTagPreset}
+          onRemovePreset={removeCaptureTag}
           tagColors={data.settings.tagColors}
           tagColorFallback={data.settings.tagColor}
           onSetTagColor={setTagColorFor}
