@@ -63,6 +63,8 @@
     "reorderEdgeHint": "Drag to the screen edge to reveal more folders",
     "previewEmpty": "No photos",
     "photos": "{{count}} photos",
+    "tagFilterEmpty": "No photos with this tag.",
+    "tagFilterCount": "\"{{tag}}\" · {{count}} photos",
     "deleteFolderTitle": "Delete this folder?",
     "deleteFolderMessage": "\"{{name}}\" and all its photos will move to Trash.",
     "deleteSubjects": "Delete subjects",

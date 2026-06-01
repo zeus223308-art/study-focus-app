@@ -63,6 +63,8 @@
     "reorderEdgeHint": "끝까지 끌면 다른 페이지 폴더가 나타납니다",
     "previewEmpty": "사진 없음",
     "photos": "{{count}}장",
+    "tagFilterEmpty": "이 태그가 달린 사진이 없습니다.",
+    "tagFilterCount": "\"{{tag}}\" · 사진 {{count}}장",
     "deleteFolderTitle": "폴더를 삭제할까요?",
     "deleteFolderMessage": "\"{{name}}\" 폴더와 모든 사진이 휴지통으로 이동합니다.",
     "deleteSubjects": "과목 삭제",

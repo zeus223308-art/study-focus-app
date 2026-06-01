@@ -5,13 +5,17 @@ import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } fro
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
+import { TagFilterBar } from '@/components/files/TagFilterBar';
 import { TrashContents, useTrashContents } from '@/components/trash/TrashContents';
+import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import type { SubjectFolder } from '@/lib/domain/types';
+import type { NotePage, SubjectFolder } from '@/lib/domain/types';
+import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
+import { resolveTagColor } from '@/lib/ui/tag-colors';
 import { countActivePagesForSubject } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import {
@@ -49,6 +53,45 @@ export default function FilesScreen() {
   const [subjectDeleteMode, setSubjectDeleteMode] = useState(false);
   const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(() => new Set());
   const [mergeName, setMergeName] = useState('');
+  const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [resultsWidth, setResultsWidth] = useState(0);
+
+  const tagColor = resolveTagColor(data.settings.tagColor);
+
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const bundle of data.bundles) {
+      if (bundle.archived) continue;
+      for (const page of bundle.pages) {
+        for (const tag of page.tags ?? []) {
+          const trimmed = tag.trim();
+          if (trimmed) set.add(trimmed);
+        }
+      }
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [data.bundles]);
+
+  const matchingPhotos = useMemo<{ bundleId: string; page: NotePage }[]>(() => {
+    if (!activeTag) return [];
+    const out: { bundleId: string; page: NotePage }[] = [];
+    for (const bundle of data.bundles) {
+      if (bundle.archived) continue;
+      for (const page of bundle.pages) {
+        if ((page.tags ?? []).some((tag) => tag.trim() === activeTag)) {
+          out.push({ bundleId: bundle.id, page });
+        }
+      }
+    }
+    return out;
+  }, [activeTag, data.bundles]);
+
+  const gridCols = viewport.isPhone ? 3 : 4;
+  const cellW = useMemo(() => {
+    const w = resultsWidth > 0 ? resultsWidth : Math.max(280, windowWidth - 40);
+    const gap = 8;
+    return Math.floor((w - gap * (gridCols - 1)) / gridCols);
+  }, [resultsWidth, windowWidth, gridCols]);
 
   useEffect(() => {
     if (pendingSubjectMerge) {
@@ -182,57 +225,131 @@ export default function FilesScreen() {
         }
       />
 
-      <View style={[styles.panel, { marginTop: Math.round(windowHeight * 0.16) }]}>
+      <TagFilterBar
+        tags={allTags}
+        color={tagColor}
+        activeTag={activeTag}
+        onSelect={setActiveTag}
+      />
+
+      {activeTag ? (
         <View
-          style={styles.carouselSlot}
+          style={styles.results}
           onLayout={(e) => {
             const w = Math.round(e.nativeEvent.layout.width);
-            if (w > 0 && w !== panelWidth) setPanelWidth(w);
+            if (w > 0 && w !== resultsWidth) setResultsWidth(w);
           }}>
-          <SubjectFilesCarousel
-            pages={subjectPages}
-            pageWidth={pageWidth}
-            foldersPerPage={foldersPerPage}
-            onAddFolder={subjectDeleteMode ? undefined : () => setAdding(true)}
-            addFolderLabel={subjectDeleteMode ? undefined : t('vault.addFolderCard')}
-            subjectDeleteMode={subjectDeleteMode}
-            selectedSubjectIds={selectedForDelete}
-            onToggleSubjectDelete={toggleSubjectDeleteSelect}
-            totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
-            previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
-            onSubjectPress={(subjectId) =>
-              router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
-            }
-            onSubjectLift={startSubjectReorder}
-            onSubjectReorderMove={onSubjectReorderMove}
-            onSubjectReorderEnd={onSubjectReorderEnd}
-            onFolderGestureLock={lockFolderTouch}
-            onSubjectDeleteHold={confirmDeleteSubject}
-          />
-        </View>
-
-        {subjectDeleteMode ? (
-          <Text style={styles.deleteHint}>{t('vault.deleteSubjectsHint')}</Text>
-        ) : null}
-
-        <Pressable
-          onPress={onDeleteSubjectsPress}
-          style={({ pressed }) => [
-            styles.deleteBtn,
-            subjectDeleteMode && selectedForDelete.size > 0 && styles.deleteBtnActive,
-            pressed && styles.deleteBtnPressed,
-          ]}>
-          <Text
-            style={[
-              styles.deleteBtnText,
-              subjectDeleteMode && selectedForDelete.size > 0 && styles.deleteBtnTextActive,
-            ]}>
-            {subjectDeleteMode && selectedForDelete.size > 0
-              ? t('vault.deleteSubjectsConfirmAction', { count: selectedForDelete.size })
-              : t('vault.deleteSubjects')}
+          <Text style={styles.resultsTitle}>
+            {t('vault.tagFilterCount', { tag: activeTag, count: matchingPhotos.length })}
           </Text>
-        </Pressable>
-      </View>
+          {matchingPhotos.length === 0 ? (
+            <Text style={styles.resultsEmpty}>{t('vault.tagFilterEmpty')}</Text>
+          ) : (
+            <View style={styles.grid}>
+              {matchingPhotos.map(({ bundleId, page }) => {
+                const uri = getPreviewImageUri(page.asset);
+                return (
+                  <Pressable
+                    key={page.id}
+                    style={[styles.gridCell, { width: cellW, height: cellW }]}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/bundle/[id]',
+                        params: { id: bundleId, pageId: page.id },
+                      })
+                    }>
+                    {uri ? (
+                      <ResolvedImage uri={uri} asset={page.asset} style={styles.gridImg} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.gridImg, styles.gridEmpty]} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      ) : (
+        <>
+          <View style={[styles.panel, { marginTop: Math.round(windowHeight * 0.16) }]}>
+            <View
+              style={styles.carouselSlot}
+              onLayout={(e) => {
+                const w = Math.round(e.nativeEvent.layout.width);
+                if (w > 0 && w !== panelWidth) setPanelWidth(w);
+              }}>
+              <SubjectFilesCarousel
+                pages={subjectPages}
+                pageWidth={pageWidth}
+                foldersPerPage={foldersPerPage}
+                onAddFolder={subjectDeleteMode ? undefined : () => setAdding(true)}
+                addFolderLabel={subjectDeleteMode ? undefined : t('vault.addFolderCard')}
+                subjectDeleteMode={subjectDeleteMode}
+                selectedSubjectIds={selectedForDelete}
+                onToggleSubjectDelete={toggleSubjectDeleteSelect}
+                totalLabelFor={(id) => t('vault.totalPages', { count: pageCountFor(id) })}
+                previewItemsFor={(id) => getSubjectFrontPreviews(data, id)}
+                onSubjectPress={(subjectId) =>
+                  router.push({ pathname: '/folder/[id]', params: { id: subjectId } })
+                }
+                onSubjectLift={startSubjectReorder}
+                onSubjectReorderMove={onSubjectReorderMove}
+                onSubjectReorderEnd={onSubjectReorderEnd}
+                onFolderGestureLock={lockFolderTouch}
+                onSubjectDeleteHold={confirmDeleteSubject}
+              />
+            </View>
+
+            {subjectDeleteMode ? (
+              <Text style={styles.deleteHint}>{t('vault.deleteSubjectsHint')}</Text>
+            ) : null}
+
+            <Pressable
+              onPress={onDeleteSubjectsPress}
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                subjectDeleteMode && selectedForDelete.size > 0 && styles.deleteBtnActive,
+                pressed && styles.deleteBtnPressed,
+              ]}>
+              <Text
+                style={[
+                  styles.deleteBtnText,
+                  subjectDeleteMode && selectedForDelete.size > 0 && styles.deleteBtnTextActive,
+                ]}>
+                {subjectDeleteMode && selectedForDelete.size > 0
+                  ? t('vault.deleteSubjectsConfirmAction', { count: selectedForDelete.size })
+                  : t('vault.deleteSubjects')}
+              </Text>
+            </Pressable>
+          </View>
+
+          {adding ? (
+            <View style={styles.addBox}>
+              <TextInput value={newName} onChangeText={setNewName} style={styles.input} autoFocus />
+              <View style={styles.addActions}>
+                <Pressable onPress={() => setAdding(false)}>
+                  <Text style={styles.cancel}>{t('common.cancel')}</Text>
+                </Pressable>
+                <Pressable onPress={confirmAdd}>
+                  <Text style={styles.save}>{t('common.save')}</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+
+          <View style={styles.trashCard}>
+            <View style={styles.trashCardHeader}>
+              <Text style={styles.trashCardTitle}>{t('trash.title')}</Text>
+              {trash.count > 0 ? (
+                <View style={styles.trashCount}>
+                  <Text style={styles.trashCountText}>{trash.count}</Text>
+                </View>
+              ) : null}
+            </View>
+            <TrashContents />
+          </View>
+        </>
+      )}
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
 
@@ -253,32 +370,6 @@ export default function FilesScreen() {
         }}
         onClose={cancelSubjectMerge}
       />
-
-      {adding ? (
-        <View style={styles.addBox}>
-          <TextInput value={newName} onChangeText={setNewName} style={styles.input} autoFocus />
-          <View style={styles.addActions}>
-            <Pressable onPress={() => setAdding(false)}>
-              <Text style={styles.cancel}>{t('common.cancel')}</Text>
-            </Pressable>
-            <Pressable onPress={confirmAdd}>
-              <Text style={styles.save}>{t('common.save')}</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : null}
-
-      <View style={styles.trashCard}>
-        <View style={styles.trashCardHeader}>
-          <Text style={styles.trashCardTitle}>{t('trash.title')}</Text>
-          {trash.count > 0 ? (
-            <View style={styles.trashCount}>
-              <Text style={styles.trashCountText}>{trash.count}</Text>
-            </View>
-          ) : null}
-        </View>
-        <TrashContents />
-      </View>
     </Screen>
   );
 }
@@ -368,4 +459,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   trashCountText: { fontSize: 12, fontWeight: '800', color: theme.black },
+  results: { marginTop: 12 },
+  resultsTitle: {
+    fontSize: theme.font.bodySmall,
+    fontWeight: '800',
+    color: theme.black,
+    marginBottom: 12,
+  },
+  resultsEmpty: { color: theme.gray, textAlign: 'center', marginVertical: 32 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  gridCell: { borderRadius: 10, overflow: 'hidden', backgroundColor: theme.surface },
+  gridImg: { width: '100%', height: '100%' },
+  gridEmpty: { backgroundColor: theme.grayLight },
 });
