@@ -14,6 +14,10 @@ import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
 
+/** Forked tail dimensions for the ribbon-style tag banner. */
+const RIBBON_TAIL_W = 7;
+const RIBBON_TAIL_H = 6;
+
 type Props = {
   bundleId: string;
   pageId: string;
@@ -99,13 +103,20 @@ export function AlbumPhotoTile({
   const tagChipsEl =
     visibleTags.length > 0 && !showLifted ? (
       <View style={styles.tagRow} pointerEvents="none">
-        {visibleTags.map((tag, i) => (
-          <View key={`${tag}-${i}`} style={[styles.tagChip, { backgroundColor: resolveTagColor(tag, tagColors) }]}>
-            <Text style={styles.tagText} numberOfLines={1}>
-              {tag}
-            </Text>
-          </View>
-        ))}
+        {visibleTags.map((tag, i) => {
+          const color = resolveTagColor(tag, tagColors);
+          return (
+            <View key={`${tag}-${i}`} style={styles.ribbon}>
+              <View style={[styles.ribbonBody, { backgroundColor: color }]}>
+                <Text style={styles.tagText} numberOfLines={1}>
+                  {tag}
+                </Text>
+              </View>
+              <View style={[styles.ribbonTailLeft, { borderTopColor: color }]} />
+              <View style={[styles.ribbonTailRight, { borderTopColor: color }]} />
+            </View>
+          );
+        })}
       </View>
     ) : null;
 
@@ -269,17 +280,43 @@ const styles = StyleSheet.create({
   tagRow: {
     position: 'absolute',
     left: 6,
-    bottom: 6,
+    bottom: 9,
     right: 6,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    rowGap: 9,
+    columnGap: 6,
   },
-  tagChip: {
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  ribbon: {
     maxWidth: '100%',
+  },
+  ribbonBody: {
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
+    paddingHorizontal: 8,
+    paddingTop: 3,
+    paddingBottom: 4,
+    ...theme.cardShadow,
+  },
+  ribbonTailLeft: {
+    position: 'absolute',
+    left: 0,
+    bottom: -RIBBON_TAIL_H,
+    width: 0,
+    height: 0,
+    borderRightWidth: RIBBON_TAIL_W,
+    borderTopWidth: RIBBON_TAIL_H,
+    borderRightColor: 'transparent',
+  },
+  ribbonTailRight: {
+    position: 'absolute',
+    right: 0,
+    bottom: -RIBBON_TAIL_H,
+    width: 0,
+    height: 0,
+    borderLeftWidth: RIBBON_TAIL_W,
+    borderTopWidth: RIBBON_TAIL_H,
+    borderLeftColor: 'transparent',
   },
   tagText: {
     fontSize: 10,
