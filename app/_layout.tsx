@@ -1,7 +1,7 @@
 import '@/lib/auth/complete-oauth-popup';
 import 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
-import { Stack, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
@@ -10,7 +10,6 @@ import 'react-native-reanimated';
 import { CloudAutoSync } from '@/components/CloudAutoSync';
 import { GoogleAuthBootstrap } from '@/components/GoogleAuthBootstrap';
 import { RecoveryBanner } from '@/components/RecoveryBanner';
-import { FloatingCameraButton } from '@/components/FloatingCameraButton';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { GoogleOAuthReturnHandler } from '@/components/settings/GoogleOAuthReturnHandler';
 import { ChoiceConfirmHost } from '@/components/ui/ChoiceConfirmHost';
@@ -31,13 +30,6 @@ export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary
 
 SplashScreen.preventAutoHideAsync();
 
-/** Session-only overlay — not persisted; unmounts when app closes. */
-function shouldShowFloatingCamera(segments: string[]): boolean {
-  if (segments.includes('capture')) return false;
-  if (segments.includes('review')) return false;
-  return true;
-}
-
 type RootNavigatorProps = {
   splashDone: boolean;
 };
@@ -51,16 +43,12 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
     derivativeRegenNotice,
     dismissDerivativeRegenNotice,
   } = useApp();
-  const segments = useSegments();
-
   useEffect(() => {
     if (!ready || !splashDone) return;
     void SplashScreen.hideAsync();
   }, [ready, splashDone]);
 
   if (!splashDone || !ready) return null;
-
-  const showCamera = shouldShowFloatingCamera(segments);
 
   return (
     <View style={styles.appShell}>
@@ -98,7 +86,6 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
         <Stack.Screen name="trash" options={{ headerShown: false }} />
         <Stack.Screen name="search" options={{ presentation: 'modal', headerShown: false }} />
       </Stack>
-      {showCamera && <FloatingCameraButton />}
       <PaywallGate />
       <ChoiceConfirmHost />
     </View>
