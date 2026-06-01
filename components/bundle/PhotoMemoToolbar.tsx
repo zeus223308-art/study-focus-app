@@ -57,5 +57,5 @@ const styles = StyleSheet.create({
     borderColor: theme.orange,
   },
   btnText: { fontSize: theme.font.caption, fontWeight: '800', color: theme.black },
-  btnTextOn: { color: theme.white },
+  btnTextOn: { color: theme.onAccent },
 });

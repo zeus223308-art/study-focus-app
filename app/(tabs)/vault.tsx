@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     fontSize: theme.font.label,
     fontWeight: '800',
   },
-  deleteBtnTextActive: { color: theme.white },
+  deleteBtnTextActive: { color: theme.onAccent },
   trashLink: { marginTop: 12, alignSelf: 'center' },
   trash: { color: theme.gray, fontSize: theme.font.caption },
 });

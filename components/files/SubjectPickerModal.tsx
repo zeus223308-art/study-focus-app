@@ -54,7 +54,7 @@ export function SubjectPickerModal({
                       <SymbolView
                         name={{ ios: 'checkmark', android: 'check', web: 'check' }}
                         size={14}
-                        tintColor={theme.white}
+                        tintColor={theme.onAccent}
                       />
                     ) : null}
                   </View>
@@ -181,6 +181,6 @@ const styles = StyleSheet.create({
   },
   btnConfirmText: {
     fontWeight: '800',
-    color: theme.white,
+    color: theme.onAccent,
   },
 });

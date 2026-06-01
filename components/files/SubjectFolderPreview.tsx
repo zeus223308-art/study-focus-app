@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   subjectTagText: {
     fontSize: 11,
     fontWeight: '800',
-    color: theme.white,
+    color: theme.onAccent,
   },
   overlay: {
     position: 'absolute',

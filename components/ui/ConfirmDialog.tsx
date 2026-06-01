@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   btnConfirmText: {
     fontWeight: '800',
-    color: theme.white,
+    color: theme.onAccent,
     fontSize: theme.font.body,
   },
 });

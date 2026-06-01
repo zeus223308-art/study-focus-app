@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   colorChipText: { color: theme.gray, fontWeight: '700', fontSize: theme.font.bodySmall },
   chipLabelHit: { paddingVertical: 12, paddingRight: 4 },
   chipText: { fontWeight: '700', color: theme.black },
-  chipTextOn: { color: theme.white },
+  chipTextOn: { color: theme.onAccent },
   chipDelete: {
     width: 22,
     height: 22,
@@ -561,7 +561,7 @@ const modalStyles = StyleSheet.create({
     backgroundColor: theme.grayLight,
   },
   applyBtnText: {
-    color: theme.white,
+    color: theme.onAccent,
     fontWeight: '800',
     fontSize: theme.font.bodySmall,
   },

@@ -136,6 +136,6 @@ const styles = StyleSheet.create({
   },
   btnSendText: {
     fontWeight: '800',
-    color: theme.white,
+    color: theme.onAccent,
   },
 });

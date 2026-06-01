@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
   },
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   chipText: { fontWeight: '700', color: theme.black },
-  chipTextOn: { color: theme.white },
+  chipTextOn: { color: theme.onAccent },
   saveBtnDone: { opacity: 0.85 },
   saveSpinner: { marginTop: 8 },
   retake: { marginTop: 14, alignItems: 'center' },

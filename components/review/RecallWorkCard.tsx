@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   },
   modeBtnOn: { backgroundColor: theme.orange },
   modeBtnText: { fontSize: 11, fontWeight: '800', color: theme.gray },
-  modeBtnTextOn: { color: theme.white },
+  modeBtnTextOn: { color: theme.onAccent },
   addText: {
     width: 28,
     height: 28,

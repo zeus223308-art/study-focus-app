@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
   },
   btnInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   btnText: { fontSize: theme.font.caption, fontWeight: '800', color: theme.black },
-  btnTextOn: { color: theme.white },
+  btnTextOn: { color: theme.onAccent },
 });

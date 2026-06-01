@@ -43,5 +43,5 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     backgroundColor: theme.orange,
   },
-  retryText: { color: theme.white, fontWeight: '800', fontSize: theme.font.body },
+  retryText: { color: theme.onAccent, fontWeight: '800', fontSize: theme.font.body },
 });

@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
   },
   saveBtnBusy: { opacity: 0.85 },
   saveBtnText: {
-    color: theme.white,
+    color: theme.onAccent,
     fontSize: theme.font.body,
     fontWeight: '700',
   },

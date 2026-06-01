@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.orange,
   },
   startBtnDisabled: { opacity: 0.45 },
-  startText: { color: theme.white, fontWeight: '800', fontSize: theme.font.body },
+  startText: { color: theme.onAccent, fontWeight: '800', fontSize: theme.font.body },
   startHint: {
     textAlign: 'center',
     fontSize: theme.font.caption,

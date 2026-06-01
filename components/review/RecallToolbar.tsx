@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   chipDanger: { borderColor: theme.orangeSoft },
   chipDisabled: { opacity: 0.45 },
   chipText: { fontSize: 13, fontWeight: '700', color: theme.black },
-  chipTextOn: { color: theme.white },
+  chipTextOn: { color: theme.onAccent },
   chipDangerText: { color: theme.orange },
   chipTextDisabled: { color: theme.gray },
 });

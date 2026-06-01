@@ -1,4 +1,4 @@
-/** Grey dark mode — orange accent, high-contrast text */
+/** Grey dark mode — monochrome (white) accent, high-contrast text */
 export const theme = {
   /** App shell background */
   beige: '#141414',
@@ -19,9 +19,12 @@ export const theme = {
   dock: '#1C1C1C',
   dockDivider: 'rgba(255, 255, 255, 0.12)',
   grayMuted: '#8A8480',
-  orange: '#FF6B00',
-  orangeMuted: 'rgba(255, 107, 0, 0.22)',
-  orangeSoft: 'rgba(255, 107, 0, 0.14)',
+  /** Monochrome accent — selected/active fills, primary buttons (was orange) */
+  orange: '#FFFFFF',
+  orangeMuted: 'rgba(255, 255, 255, 0.18)',
+  orangeSoft: 'rgba(255, 255, 255, 0.10)',
+  /** Text/icons sitting ON the white accent fill */
+  onAccent: '#141414',
   danger: '#F87171',
   success: '#4ADE80',
   inkDefault: '#F0EDE8',
@@ -73,4 +76,4 @@ export const FOLDER_COLORS: Record<string, string> = {
 export function folderColor(folderId: string): string {
   return FOLDER_COLORS[folderId] ?? theme.gray;
 }
-
+

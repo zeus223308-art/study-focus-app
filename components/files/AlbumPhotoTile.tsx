@@ -175,7 +175,7 @@ export function AlbumPhotoTile({
               <SymbolView
                 name={{ ios: 'checkmark', android: 'check', web: 'check' }}
                 size={11}
-                tintColor={theme.white}
+                tintColor={theme.onAccent}
               />
             ) : null}
           </View>
@@ -210,7 +210,7 @@ export function AlbumPhotoTile({
               <SymbolView
                 name={{ ios: 'line.3.horizontal', android: 'menu', web: 'menu' }}
                 size={12}
-                tintColor={theme.white}
+                tintColor={theme.onAccent}
               />
             </View>
           ) : null}

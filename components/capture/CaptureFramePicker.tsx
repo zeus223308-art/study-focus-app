@@ -61,5 +61,5 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   chipText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.white },
   chipTextLight: { color: theme.black },
-  chipTextOn: { color: theme.white },
+  chipTextOn: { color: theme.onAccent },
 });

@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   cellSelected: { backgroundColor: theme.orange },
   cellToday: { borderWidth: 1, borderColor: theme.orange },
   dayNum: { fontSize: theme.font.caption, fontWeight: '600', color: theme.black },
-  dayNumSelected: { color: theme.white, fontWeight: '800' },
+  dayNumSelected: { color: theme.onAccent, fontWeight: '800' },
   dayDue: { fontWeight: '800' },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
   dotPlaceholder: { width: 5, height: 5, marginTop: 2 },

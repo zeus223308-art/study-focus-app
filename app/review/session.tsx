@@ -868,7 +868,7 @@ const styles = StyleSheet.create({
   },
   durationChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   durationChipText: { fontWeight: '700', color: theme.black, fontSize: theme.font.caption },
-  durationChipTextOn: { color: theme.white },
+  durationChipTextOn: { color: theme.onAccent },
   recallActions: { gap: 8, paddingTop: 4 },
   peekOverlay: { ...StyleSheet.absoluteFill, backgroundColor: theme.beige },
   peekHint: {

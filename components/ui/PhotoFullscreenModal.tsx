@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   sideChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   sideText: { fontWeight: '700', color: theme.white },
-  sideTextOn: { color: theme.white },
+  sideTextOn: { color: theme.onAccent },
   closeBtn: {
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',

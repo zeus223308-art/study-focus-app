@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   secondary: { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.grayLight },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: theme.font.body, fontWeight: '700' },
-  textPrimary: { color: theme.white },
+  textPrimary: { color: theme.onAccent },
   textSecondary: { color: theme.black },
   textGhost: { color: theme.orange },
 });

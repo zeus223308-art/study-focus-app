@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   },
   toolChipOn: { backgroundColor: theme.orange },
   toolChipText: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700' },
-  toolChipTextOn: { color: theme.white },
+  toolChipTextOn: { color: theme.onAccent },
   hint: {
     position: 'absolute',
     left: 0,

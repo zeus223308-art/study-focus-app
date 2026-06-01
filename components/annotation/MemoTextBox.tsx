@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deleteChipText: { color: theme.white, fontWeight: '800', fontSize: 14, lineHeight: 16 },
+  deleteChipText: { color: theme.onAccent, fontWeight: '800', fontSize: 14, lineHeight: 16 },
   textInput: {
     flex: 1,
     fontSize: 14,

@@ -79,7 +79,7 @@ export function DashboardReviewPicker({
                       <SymbolView
                         name={{ ios: 'checkmark', android: 'check', web: 'check' }}
                         size={14}
-                        tintColor={theme.white}
+                        tintColor={theme.onAccent}
                       />
                     ) : null}
                   </View>
@@ -173,5 +173,5 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: theme.radius.pill,
   },
-  dueBadgeText: { fontSize: 10, fontWeight: '800', color: theme.white },
+  dueBadgeText: { fontSize: 10, fontWeight: '800', color: theme.onAccent },
 });

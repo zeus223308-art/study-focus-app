@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   kindBtnOn: { backgroundColor: theme.orange },
-  kindBtnTextOn: { color: theme.white },
+  kindBtnTextOn: { color: theme.onAccent },
   colorChip: { alignItems: 'center', gap: 4, minWidth: 48 },
   sizeChipOn: { borderColor: theme.orange, backgroundColor: theme.orangeSoft },
   sizeDot: { opacity: 0.95 },

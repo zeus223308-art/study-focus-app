@@ -1,7 +1,7 @@
 /** Color-coded tag chips for album photo tiles. */
 
-/** Single default color for tags with no explicit choice (brand orange). */
-export const DEFAULT_TAG_COLOR = '#FF6B00';
+/** Single default color for tags with no explicit choice (monochrome white). */
+export const DEFAULT_TAG_COLOR = '#FFFFFF';
 
 /** Free tier: rainbow (빨주노초파남보) to pick the one tag color from. */
 export const FREE_TAG_COLORS = [

@@ -204,5 +204,5 @@ const styles = StyleSheet.create({
   langChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: theme.grayLight },
   langChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   langText: { fontSize: 13, color: theme.black },
-  langOn: { fontSize: 13, color: theme.white, fontWeight: '600' },
+  langOn: { fontSize: 13, color: theme.onAccent, fontWeight: '600' },
 });

@@ -85,6 +85,6 @@ const styles = StyleSheet.create({
   btnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: theme.white,
+    color: theme.onAccent,
   },
 });

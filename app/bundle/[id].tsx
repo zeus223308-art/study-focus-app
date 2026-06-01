@@ -611,6 +611,6 @@ const styles = StyleSheet.create({
     borderColor: theme.grayLight,
   },
   secOn: { backgroundColor: theme.orange, borderColor: theme.orange },
-  secText: { color: theme.black },
+  secText: { color: theme.onAccent },
   secOnText: { color: theme.white, fontWeight: '700' },
 });

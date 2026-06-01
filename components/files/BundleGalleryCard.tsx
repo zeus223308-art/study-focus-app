@@ -158,7 +158,7 @@ export function BundleGalleryCard({
               <SymbolView
                 name={{ ios: 'checkmark', android: 'check', web: 'check' }}
                 size={14}
-                tintColor={theme.white}
+                tintColor={theme.onAccent}
               />
             </View>
           )}
