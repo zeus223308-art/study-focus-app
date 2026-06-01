@@ -37,7 +37,7 @@ export default function FilesScreen() {
     confirmSubjectMerge,
     cancelSubjectMerge,
   } = useApp();
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const viewport = useViewportLayout();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -180,7 +180,7 @@ export default function FilesScreen() {
         }
       />
 
-      <View style={styles.panel}>
+      <View style={[styles.panel, { marginTop: Math.round(windowHeight * 0.16) }]}>
         <View
           style={styles.carouselSlot}
           onLayout={(e) => {
