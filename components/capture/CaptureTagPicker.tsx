@@ -289,9 +289,6 @@ export function CaptureTagPicker({
     <View style={styles.wrap}>
       <View style={styles.header}>
         <Text style={styles.label}>{t('capture.pickTags')}</Text>
-        {colorEnabled ? (
-          <Text style={styles.colorHint}>{t('capture.tagColorHint')}</Text>
-        ) : null}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
         {presets.map((tag) => {
@@ -398,7 +395,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   label: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray },
-  colorHint: { fontSize: theme.font.caption, color: theme.grayMuted, fontWeight: '600' },
   chips: { marginVertical: 12 },
   chip: {
     flexDirection: 'row',
