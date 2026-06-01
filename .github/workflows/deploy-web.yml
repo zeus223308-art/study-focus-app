@@ -56,10 +56,12 @@ jobs:
         run: |
           cp dist/index.html dist/404.html
           touch dist/.nojekyll
+          printf '{"build":"%s"}' "${GITHUB_SHA}" > dist/version.json
           CACHE_META='<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" /><meta http-equiv="Pragma" content="no-cache" /><meta http-equiv="Expires" content="0" />'
           for f in dist/index.html dist/404.html; do
             sed -i "s|<head>|<head>${CACHE_META}|" "$f"
-            echo "<!-- deploy $(date -u +%Y-%m-%dT%H:%M:%SZ) -->" >> "$f"
+            sed -i "s|__APP_BUILD__|${GITHUB_SHA}|g" "$f"
+            echo "<!-- deploy $(date -u +%Y-%m-%dT%H:%M:%SZ) ${GITHUB_SHA} -->" >> "$f"
           done
 
       - name: Deploy to gh-pages

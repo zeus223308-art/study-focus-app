@@ -18,7 +18,13 @@ export default function Root({ children }: { children: ReactNode }) {
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
         />
         <meta name="color-scheme" content="only light" />
+        <meta name="app-build" content="__APP_BUILD__" />
         <ScrollViewStyleReset />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: autoUpdateScript,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: oauthPopupCloseScript,
@@ -30,6 +36,31 @@ export default function Root({ children }: { children: ReactNode }) {
     </html>
   );
 }
+
+// Defeats stale HTML caching on mobile browsers (no service worker):
+// compares the build id baked into this HTML against a no-store version.json,
+// and force-reloads once with a cache-busting query when they differ.
+const autoUpdateScript = `
+(function () {
+  try {
+    var meta = document.querySelector('meta[name="app-build"]');
+    var current = meta ? meta.getAttribute('content') : '';
+    if (!current || current.indexOf('APP_BUILD') !== -1) return;
+    fetch('/study-focus-app/version.json?ts=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r && r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.build || j.build === current) return;
+        var key = 'app-build-reloaded';
+        if (window.sessionStorage.getItem(key) === j.build) return;
+        window.sessionStorage.setItem(key, j.build);
+        var u = new URL(window.location.href);
+        u.searchParams.set('u', j.build);
+        window.location.replace(u.toString());
+      })
+      .catch(function () {});
+  } catch (e) {}
+})();
+`;
 
 const oauthPopupCloseScript = `
 (function () {
