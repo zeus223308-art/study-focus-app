@@ -120,16 +120,29 @@ export function CaptureTagPicker({
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
         {presets.map((tag) => {
           const deletable = canDeleteCaptureTagPreset(tag, language);
+          const on = isOn(tag);
           return (
-            <Pressable
-              key={tag}
-              disabled={disabled}
-              onPress={() => onChangeSelected(toggleCaptureTag(selectedTags, tag))}
-              onLongPress={deletable ? () => openDelete(tag) : undefined}
-              delayLongPress={450}
-              style={[styles.chip, isOn(tag) && styles.chipOn]}>
-              <Text style={[styles.chipText, isOn(tag) && styles.chipTextOn]}>{tag}</Text>
-            </Pressable>
+            <View key={tag} style={[styles.chip, on && styles.chipOn]}>
+              <Pressable
+                disabled={disabled}
+                onPress={() => onChangeSelected(toggleCaptureTag(selectedTags, tag))}
+                onLongPress={deletable ? () => openDelete(tag) : undefined}
+                delayLongPress={450}
+                style={styles.chipLabelHit}>
+                <Text style={[styles.chipText, on && styles.chipTextOn]}>{tag}</Text>
+              </Pressable>
+              {deletable ? (
+                <Pressable
+                  disabled={disabled}
+                  onPress={() => openDelete(tag)}
+                  hitSlop={8}
+                  style={styles.chipDelete}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('capture.deleteTagConfirm')}>
+                  <Text style={[styles.chipDeleteText, on && styles.chipTextOn]}>×</Text>
+                </Pressable>
+              ) : null}
+            </View>
           );
         })}
         <Pressable
@@ -173,8 +186,10 @@ const styles = StyleSheet.create({
   label: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray, marginTop: 8 },
   chips: { marginVertical: 12 },
   chip: {
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 18,
+    paddingRight: 6,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.grayLight,
@@ -182,10 +197,23 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
   },
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
+  chipLabelHit: { paddingVertical: 12, paddingRight: 4 },
   chipText: { fontWeight: '700', color: theme.black },
   chipTextOn: { color: theme.white },
+  chipDelete: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  chipDeleteText: { fontSize: 16, fontWeight: '800', color: theme.gray, lineHeight: 18 },
   addChip: {
     minWidth: 48,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderStyle: 'dashed',
