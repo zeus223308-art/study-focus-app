@@ -331,6 +331,8 @@
     "restore": "Restore",
     "restoreAll": "Restore all",
     "restoreSubject": "Restore subject",
+    "subjectsHeader": "Deleted subjects",
+    "photosHeader": "Deleted photos",
     "subjectModalTitle": "{{name}} · Trash",
     "subjectModalEmpty": "No deleted photos in this subject",
     "subjectPages": "{{count}} photo(s)",

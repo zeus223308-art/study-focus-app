@@ -331,6 +331,8 @@
     "restore": "복원",
     "restoreAll": "모두 복원",
     "restoreSubject": "과목 복원",
+    "subjectsHeader": "삭제된 과목",
+    "photosHeader": "삭제된 사진",
     "subjectModalTitle": "{{name}} · 휴지통",
     "subjectModalEmpty": "이 과목에 삭제된 사진이 없습니다",
     "subjectPages": "사진 {{count}}장",
