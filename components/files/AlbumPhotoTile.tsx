@@ -14,9 +14,9 @@ import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
 
-/** Horizontal ribbon banner: body height + pointed end-cap width. */
+/** Horizontal ribbon banner: body height + left fishtail notch width. */
 const RIBBON_H = 18;
-const RIBBON_CAP_W = 6;
+const RIBBON_NOTCH_W = 6;
 
 type Props = {
   bundleId: string;
@@ -107,13 +107,15 @@ export function AlbumPhotoTile({
           const color = resolveTagColor(tag, tagColors);
           return (
             <View key={`${tag}-${i}`} style={styles.ribbon}>
-              <View style={[styles.ribbonCapLeft, { borderRightColor: color }]} />
+              <View style={styles.ribbonTail}>
+                <View style={[styles.ribbonTailTop, { borderTopColor: color }]} />
+                <View style={[styles.ribbonTailBottom, { borderBottomColor: color }]} />
+              </View>
               <View style={[styles.ribbonBody, { backgroundColor: color }]}>
                 <Text style={styles.tagText} numberOfLines={1}>
                   {tag}
                 </Text>
               </View>
-              <View style={[styles.ribbonCapRight, { borderLeftColor: color }]} />
             </View>
           );
         })}
@@ -291,31 +293,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     maxWidth: '100%',
-    ...theme.cardShadow,
+  },
+  ribbonTail: {
+    width: RIBBON_NOTCH_W,
+    height: RIBBON_H,
+  },
+  ribbonTailTop: {
+    width: 0,
+    height: 0,
+    borderTopWidth: RIBBON_H / 2,
+    borderLeftWidth: RIBBON_NOTCH_W,
+    borderLeftColor: 'transparent',
+  },
+  ribbonTailBottom: {
+    width: 0,
+    height: 0,
+    borderBottomWidth: RIBBON_H / 2,
+    borderLeftWidth: RIBBON_NOTCH_W,
+    borderLeftColor: 'transparent',
   },
   ribbonBody: {
     height: RIBBON_H,
     justifyContent: 'center',
-    paddingHorizontal: 7,
+    paddingLeft: 5,
+    paddingRight: 7,
     flexShrink: 1,
-  },
-  ribbonCapLeft: {
-    width: 0,
-    height: 0,
-    borderTopWidth: RIBBON_H / 2,
-    borderBottomWidth: RIBBON_H / 2,
-    borderRightWidth: RIBBON_CAP_W,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-  },
-  ribbonCapRight: {
-    width: 0,
-    height: 0,
-    borderTopWidth: RIBBON_H / 2,
-    borderBottomWidth: RIBBON_H / 2,
-    borderLeftWidth: RIBBON_CAP_W,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+    ...theme.cardShadow,
   },
   tagText: {
     fontSize: 10,
