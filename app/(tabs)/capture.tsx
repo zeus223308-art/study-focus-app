@@ -248,10 +248,10 @@ export default function CaptureTabScreen() {
         readable = false;
       }
     }
-    if (!readable) {
-      showMessage(t('capture.editorProcessingFailed'));
-      return;
-    }
+    // Even if the readability probe is inconclusive (common on mobile web
+    // blob/content URIs), keep the best available URI and advance to the save
+    // sheet instead of dead-ending on a popup.
+    if (!readable) previewUri = previewUri || uri;
 
     const nextStep = afterEditStepRef.current;
     if (editSide === 'front') setFrontUri(previewUri);

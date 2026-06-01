@@ -186,7 +186,10 @@ export function CapturePhotoEditor({
 
       const readable = await verifyCaptureImageReadable(sourceUri);
       if (!readable) {
-        showMessage(t('capture.editorProcessingFailed'));
+        // Verification can give false negatives (mobile web blob/content URIs).
+        // Hand the source URI forward so the flow continues to the save sheet
+        // instead of dead-ending on a popup.
+        await onConfirm({ uri: sourceUri });
         return;
       }
 
@@ -237,12 +240,8 @@ export function CapturePhotoEditor({
         finalUri = passthrough.uri;
       }
 
-      const outReadable = await verifyCaptureImageReadable(finalUri);
-      if (!outReadable) {
-        showMessage(t('capture.editorProcessingFailed'));
-        return;
-      }
-
+      // finalUri came straight from the crop/manipulator output; even if the
+      // readability probe is inconclusive, proceed so the save sheet opens.
       await onConfirm({ uri: finalUri });
     } catch {
       try {
