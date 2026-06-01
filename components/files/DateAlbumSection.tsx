@@ -4,7 +4,6 @@ import { AlbumPhotoTile } from '@/components/files/AlbumPhotoTile';
 import { ItemDropTarget } from '@/components/files/ItemDropTarget';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { bundleDisplayTitle } from '@/lib/domain/bundle-title';
 import type { Language } from '@/lib/domain/types';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import type { ProblemDateSection, SubjectProblemItem } from '@/lib/grouping/bundles';
@@ -83,9 +82,7 @@ export function DateAlbumSection({
         </View>
       ) : null}
       <View style={[styles.grid, { gap }]}>
-        {section.items.map((item, index) => {
-          const title = bundleDisplayTitle(item.bundle);
-          const countLabel = title ?? labels.problemLabel(index + 1);
+        {section.items.map((item) => {
           const key = itemKey(item);
           const tile = (
             <AlbumPhotoTile
@@ -95,7 +92,7 @@ export function DateAlbumSection({
               sourceSubjectId={subjectId}
               thumbnailUri={getPreviewImageUri(item.page.asset) ?? ''}
               asset={item.page.asset}
-              countLabel={countLabel}
+              tags={item.page.tags}
               cellWidth={cellWidth}
               onOpen={() => onOpen(item.bundleId, item.pageId)}
               onLiftForDrag={() => onLiftItemForDrag(item)}

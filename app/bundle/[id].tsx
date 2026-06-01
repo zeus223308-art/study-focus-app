@@ -2,13 +2,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { ArchiveSubjectPickerModal } from '@/components/bundle/ArchiveSubjectPickerModal';
 import { BundlePhotoBlock } from '@/components/bundle/BundlePhotoBlock';
 import { PhotoCropModal } from '@/components/bundle/PhotoCropModal';
@@ -296,13 +290,6 @@ export default function BundleScreen() {
         showSettings={false}
       />
       <View style={styles.titleBlock}>
-        <Text style={styles.titleLabel}>{t('item.cardTitle')}</Text>
-        <TextInput
-          style={styles.titleInput}
-          value={bundle.title}
-          onChangeText={(text) => updateBundle(bundle.id, { title: text })}
-          maxLength={80}
-        />
         <Text style={styles.studyDateLine}>{bundle.studyDate}</Text>
       </View>
 
@@ -468,20 +455,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.grayLight,
   },
-  titleLabel: { fontSize: theme.font.caption, fontWeight: '800', color: theme.gray, marginBottom: 6 },
-  titleInput: {
-    fontSize: theme.font.heading,
-    fontWeight: '800',
-    color: theme.black,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: theme.surface,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-  },
   studyDateLine: {
-    marginTop: 8,
     fontSize: theme.font.caption,
     fontWeight: '700',
     color: theme.orange,

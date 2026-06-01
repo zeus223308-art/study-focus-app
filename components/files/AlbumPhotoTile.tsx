@@ -9,6 +9,7 @@ import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
 import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
+import { tagColor } from '@/lib/ui/tag-colors';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
@@ -20,7 +21,8 @@ type Props = {
   sourceSubjectId: string;
   thumbnailUri: string;
   asset: CloudAsset;
-  countLabel?: string;
+  /** Color-coded tag chips shown on the photo (replaces problem number). */
+  tags?: string[];
   cellWidth: number;
   onOpen: () => void;
   onDragMove?: (pageX: number, pageY: number) => void;
@@ -44,7 +46,7 @@ export function AlbumPhotoTile({
   itemDragKey,
   thumbnailUri,
   asset,
-  countLabel,
+  tags,
   cellWidth,
   onOpen,
   onDragMove,
@@ -92,6 +94,20 @@ export function AlbumPhotoTile({
   const tileHighlighted = pickMode ? pickSelected : contextLifted || itemHover;
   const showLifted = contextLifted;
 
+  const visibleTags = (tags ?? []).filter((t) => t.trim().length > 0).slice(0, 3);
+  const tagChipsEl =
+    visibleTags.length > 0 && !showLifted ? (
+      <View style={styles.tagRow} pointerEvents="none">
+        {visibleTags.map((tag, i) => (
+          <View key={`${tag}-${i}`} style={[styles.tagChip, { backgroundColor: tagColor(tag) }]}>
+            <Text style={styles.tagText} numberOfLines={1}>
+              {tag}
+            </Text>
+          </View>
+        ))}
+      </View>
+    ) : null;
+
   const memoBadgeEl =
     showMemoBadge && !showLifted ? (
       <View
@@ -126,6 +142,7 @@ export function AlbumPhotoTile({
           ]}>
           <ResolvedImage uri={thumbnailUri} asset={asset} style={styles.image} resizeMode="cover" />
           {memoBadgeEl}
+          {tagChipsEl}
           <View style={[styles.pickBadge, pickSelected && styles.pickBadgeOn]}>
             {pickSelected ? (
               <SymbolView
@@ -171,13 +188,7 @@ export function AlbumPhotoTile({
             </View>
           ) : null}
           {memoBadgeEl}
-          {countLabel ? (
-            <View style={styles.countBadge}>
-              <Text style={styles.countText} numberOfLines={1}>
-                {countLabel}
-              </Text>
-            </View>
-          ) : null}
+          {tagChipsEl}
         </View>
       </HoldDragSurface>
     </View>
@@ -254,19 +265,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  countBadge: {
+  tagRow: {
     position: 'absolute',
     left: 6,
     bottom: 6,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    right: 6,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  tagChip: {
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    maxWidth: '80%',
+    maxWidth: '100%',
   },
-  countText: {
+  tagText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: theme.white,
   },
   memoBadge: {
