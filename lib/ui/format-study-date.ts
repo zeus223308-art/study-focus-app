@@ -22,6 +22,15 @@ export function formatStudyDateHeading(
   return format(date, 'EEEE, MMM d, yyyy', { locale });
 }
 
+/** Trash restore-by deadline, e.g. "6월 5일 08:00" / "Jun 5, 08:00". */
+export function formatTrashDeadline(deadline: Date, language: Language): string {
+  const locale = language === 'ko' ? ko : enUS;
+  if (language === 'ko') {
+    return format(deadline, 'M월 d일 HH:mm', { locale });
+  }
+  return format(deadline, 'MMM d, HH:mm', { locale });
+}
+
 /** Month section heading, e.g. "2024년 2월" / "February 2024". */
 export function formatMonthHeading(monthKey: string, language: Language): string {
   const date = parseISO(`${monthKey}-01T12:00:00`);

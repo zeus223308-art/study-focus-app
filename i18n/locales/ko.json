@@ -240,7 +240,7 @@
     "delete": "휴지통",
     "deletePhoto": "삭제",
     "deletePhotoTitle": "삭제하시겠습니까?",
-    "deletePhotoMessage": "휴지통에서 복원 가능",
+    "deletePhotoMessage": "삭제일로부터 3일 이내에 복원하지 않을 시 영구적으로 삭제됩니다.",
     "deleteLastPhotoMessage": "마지막 사진이면 카드 전체가 휴지통으로",
     "deleteAll": "전체 삭제",
     "deleteAllMessage": "이 날짜 전체가 휴지통으로",
@@ -344,7 +344,11 @@
     "subjectModalEmpty": "이 과목에 삭제된 사진이 없습니다",
     "subjectPages": "사진 {{count}}장",
     "subjectEmpty": "사진 없음 (과목 폴더만)",
-    "autoDeleteHint": "3일 이내 복원 가능 · 복원하지 않으면 영구 삭제"
+    "autoDeleteHint": "삭제일로부터 3일 이내에 복원하지 않을 시 영구적으로 삭제됩니다.",
+    "remainDays": "{{days}}일 {{hours}}시간 남음",
+    "remainHours": "{{hours}}시간 남음",
+    "remainMinutes": "{{minutes}}분 남음",
+    "restoreBy": "{{date}}까지 복원 가능"
   },
   "schedule": {
     "daily": "매일",

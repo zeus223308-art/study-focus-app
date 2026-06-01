@@ -79,6 +79,26 @@ export function isTrashEntryWithPhotos(entry: TrashLifecycle): boolean {
   return entry.bundleSnapshot.pages.length > 0;
 }
 
+export type TrashRemaining = {
+  /** Milliseconds until permanent deletion (clamped at 0). */
+  totalMs: number;
+  days: number;
+  hours: number;
+  minutes: number;
+  /** Exact moment the entry is permanently deleted. */
+  expiresAt: Date;
+};
+
+/** Time left before an entry is permanently deleted (deletedAt + 3 days). */
+export function trashRemaining(backupExpiresAt: string, now = new Date()): TrashRemaining {
+  const expiresAt = parseISO(backupExpiresAt);
+  const totalMs = Math.max(0, expiresAt.getTime() - now.getTime());
+  const days = Math.floor(totalMs / 86_400_000);
+  const hours = Math.floor((totalMs % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((totalMs % 3_600_000) / 60_000);
+  return { totalMs, days, hours, minutes, expiresAt };
+}
+
 export function isVisibleInTrashUI(entry: TrashLifecycle, now = new Date()): boolean {
   if (entry.restoredAt) return false;
   return !isBefore(parseISO(entry.backupExpiresAt), now);

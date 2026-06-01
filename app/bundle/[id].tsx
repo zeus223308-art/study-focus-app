@@ -191,6 +191,7 @@ export default function BundleScreen() {
   const confirmDeleteCurrentPage = () => {
     confirmDestructive({
       title: t('item.deletePhotoTitle'),
+      message: t('item.deletePhotoMessage'),
       cancelLabel: t('common.cancel'),
       confirmLabel: t('item.deletePhoto'),
       onConfirm: () => {

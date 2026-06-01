@@ -6,40 +6,49 @@ import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
-import { useApp } from '@/context/AppContext';
+import { useApp, useLanguage } from '@/context/AppContext';
 import type { NotePage, TrashLifecycle } from '@/lib/domain/types';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
+import { formatTrashDeadline } from '@/lib/ui/format-study-date';
 import {
   canRestoreFromBackup,
   filterActiveTrash,
   isTrashEntryWithPhotos,
+  trashRemaining,
 } from '@/lib/trash/lifecycle';
 
-const THUMB = 56;
-const THUMB_GAP = 8;
+const COVER = 64;
 
 type DeletedSubject = {
   subjectId: string;
   name: string;
   pages: NotePage[];
   deletedAt: string;
+  backupExpiresAt: string;
 };
 
-function Thumbs({ pages }: { pages: NotePage[] }) {
+/** Remaining-time chip + restore-by deadline shown next to each entry. */
+function CountdownBlock({ backupExpiresAt }: { backupExpiresAt: string }) {
+  const { t } = useTranslation();
+  const { language } = useLanguage();
+  const rem = trashRemaining(backupExpiresAt);
+  const urgent = rem.days === 0;
+
+  const remainingText =
+    rem.days > 0
+      ? t('trash.remainDays', { days: rem.days, hours: rem.hours })
+      : rem.hours > 0
+        ? t('trash.remainHours', { hours: rem.hours })
+        : t('trash.remainMinutes', { minutes: rem.minutes });
+
   return (
-    <View style={styles.thumbRow}>
-      {pages.map((page) => {
-        const cover = getPreviewImageUri(page.asset);
-        return (
-          <View key={page.id} style={styles.thumbSlot}>
-            {cover ? (
-              <ResolvedImage uri={cover} asset={page.asset} style={styles.thumb} />
-            ) : (
-              <View style={[styles.thumb, styles.thumbEmpty]} />
-            )}
-          </View>
-        );
-      })}
+    <View style={styles.countdown}>
+      <View style={[styles.remainChip, urgent && styles.remainChipUrgent]}>
+        <Text style={[styles.remainText, urgent && styles.remainTextUrgent]}>{remainingText}</Text>
+      </View>
+      <Text style={styles.deadline}>
+        {t('trash.restoreBy', { date: formatTrashDeadline(rem.expiresAt, language) })}
+      </Text>
     </View>
   );
 }
@@ -65,22 +74,27 @@ export default function TrashScreen() {
             name: entry.subjectSnapshot.name,
             pages: [],
             deletedAt: entry.deletedAt,
+            backupExpiresAt: entry.backupExpiresAt,
           };
           subjectMap.set(entry.subjectSnapshot.id, group);
         }
         for (const page of entry.bundleSnapshot.pages) group.pages.push(page);
         if (entry.deletedAt > group.deletedAt) group.deletedAt = entry.deletedAt;
+        // Soonest expiry drives the countdown (entries expire independently).
+        if (entry.backupExpiresAt < group.backupExpiresAt) {
+          group.backupExpiresAt = entry.backupExpiresAt;
+        }
       } else if (isTrashEntryWithPhotos(entry)) {
         photos.push(entry);
       }
     }
 
-    const byDeletedDesc = (a: { deletedAt: string }, b: { deletedAt: string }) =>
-      new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime();
+    const byExpirySoonest = (a: { backupExpiresAt: string }, b: { backupExpiresAt: string }) =>
+      new Date(a.backupExpiresAt).getTime() - new Date(b.backupExpiresAt).getTime();
 
     return {
-      deletedSubjects: [...subjectMap.values()].sort(byDeletedDesc),
-      photoEntries: photos.sort(byDeletedDesc),
+      deletedSubjects: [...subjectMap.values()].sort(byExpirySoonest),
+      photoEntries: photos.sort(byExpirySoonest),
     };
   }, [data.trash, data.subjects]);
 
@@ -88,13 +102,9 @@ export default function TrashScreen() {
 
   return (
     <Screen scroll>
-      <ScreenHeader
-        title={t('trash.title')}
-        showBack
-        backFallback="/(tabs)/vault"
-        showSettings={false}
-      />
-      <Text style={styles.hint}>{t('trash.autoDeleteHint')}</Text>
+      <ScreenHeader title="" showBack backFallback="/(tabs)/vault" showSettings={false} />
+      <Text style={styles.pageTitle}>{t('trash.title')}</Text>
+      <Text style={styles.notice}>{t('trash.autoDeleteHint')}</Text>
 
       {isEmpty ? (
         <Text style={styles.empty}>{t('trash.empty')}</Text>
@@ -106,14 +116,14 @@ export default function TrashScreen() {
               {deletedSubjects.map((group) => {
                 const cover = group.pages[0] ? getPreviewImageUri(group.pages[0].asset) : null;
                 return (
-                  <View key={group.subjectId} style={styles.row}>
+                  <View key={group.subjectId} style={styles.card}>
                     {cover ? (
                       <ResolvedImage uri={cover} asset={group.pages[0]!.asset} style={styles.cover} />
                     ) : (
                       <View style={[styles.cover, styles.thumbEmpty]} />
                     )}
-                    <View style={styles.cardTitleBlock}>
-                      <Text style={styles.subjectName} numberOfLines={1}>
+                    <View style={styles.info}>
+                      <Text style={styles.itemName} numberOfLines={1}>
                         {group.name}
                       </Text>
                       <Text style={styles.meta}>
@@ -121,6 +131,7 @@ export default function TrashScreen() {
                           ? t('trash.subjectPages', { count: group.pages.length })
                           : t('trash.subjectEmpty')}
                       </Text>
+                      <CountdownBlock backupExpiresAt={group.backupExpiresAt} />
                     </View>
                     <Pressable
                       onPress={() => restoreSubjectTrash(group.subjectId)}
@@ -137,19 +148,34 @@ export default function TrashScreen() {
           {photoEntries.length > 0 ? (
             <>
               <Text style={styles.sectionHeader}>{t('trash.photosHeader')}</Text>
-              {photoEntries.map((entry) => (
-                <View key={entry.id} style={styles.row}>
-                  <Thumbs pages={entry.bundleSnapshot.pages} />
-                  <Pressable
-                    onPress={() => restoreTrash(entry.id)}
-                    hitSlop={8}
-                    style={styles.restoreBtn}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('trash.restorePhoto')}>
-                    <Text style={styles.restore}>{t('trash.restorePhoto')}</Text>
-                  </Pressable>
-                </View>
-              ))}
+              {photoEntries.map((entry) => {
+                const pages = entry.bundleSnapshot.pages;
+                const cover = pages[0] ? getPreviewImageUri(pages[0].asset) : null;
+                return (
+                  <View key={entry.id} style={styles.card}>
+                    {cover ? (
+                      <ResolvedImage uri={cover} asset={pages[0]!.asset} style={styles.cover} />
+                    ) : (
+                      <View style={[styles.cover, styles.thumbEmpty]} />
+                    )}
+                    <View style={styles.info}>
+                      <Text style={styles.itemName} numberOfLines={1}>
+                        {entry.subjectSnapshot?.name ?? t('trash.photosHeader')}
+                      </Text>
+                      <Text style={styles.meta}>{t('trash.subjectPages', { count: pages.length })}</Text>
+                      <CountdownBlock backupExpiresAt={entry.backupExpiresAt} />
+                    </View>
+                    <Pressable
+                      onPress={() => restoreTrash(entry.id)}
+                      hitSlop={8}
+                      style={styles.restoreBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('trash.restorePhoto')}>
+                      <Text style={styles.restore}>{t('trash.restorePhoto')}</Text>
+                    </Pressable>
+                  </View>
+                );
+              })}
             </>
           ) : null}
         </>
@@ -159,7 +185,15 @@ export default function TrashScreen() {
 }
 
 const styles = StyleSheet.create({
-  hint: { fontSize: 13, color: theme.gray, marginTop: 6, marginBottom: 20 },
+  pageTitle: {
+    fontSize: 34,
+    fontWeight: '900',
+    color: theme.black,
+    letterSpacing: -0.5,
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  notice: { fontSize: 13, color: theme.gray, lineHeight: 19, marginBottom: 22 },
   empty: { color: theme.gray, textAlign: 'center', marginTop: 40 },
   sectionHeader: {
     fontSize: theme.font.bodySmall,
@@ -168,30 +202,33 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 4,
   },
-  cardTitleBlock: { flex: 1, minWidth: 0 },
-  subjectName: { fontSize: 17, fontWeight: '800', color: theme.black },
-  meta: { fontSize: 13, color: theme.gray, marginTop: 4 },
-  row: {
+  card: {
     backgroundColor: theme.surface,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: 14,
+    padding: 12,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: theme.grayLight,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 12,
   },
-  thumbRow: {
-    flex: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: THUMB_GAP,
+  info: { flex: 1, minWidth: 0, gap: 4 },
+  itemName: { fontSize: 16, fontWeight: '800', color: theme.black },
+  meta: { fontSize: 12, color: theme.graySecondary },
+  countdown: { marginTop: 2, gap: 3 },
+  remainChip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: theme.radius.pill,
+    backgroundColor: theme.grayLight,
   },
-  thumbSlot: { width: THUMB, height: THUMB },
-  thumb: { width: THUMB, height: THUMB, borderRadius: 8 },
-  cover: { width: THUMB, height: THUMB, borderRadius: 8, flexShrink: 0 },
+  remainChipUrgent: { backgroundColor: 'rgba(248, 113, 113, 0.18)' },
+  remainText: { fontSize: 12, fontWeight: '800', color: theme.gray },
+  remainTextUrgent: { color: theme.danger },
+  deadline: { fontSize: 11, color: theme.grayMuted, fontWeight: '600' },
+  cover: { width: COVER, height: COVER, borderRadius: 10, flexShrink: 0 },
   thumbEmpty: { backgroundColor: theme.grayLight },
   restoreBtn: {
     flexShrink: 0,
@@ -199,8 +236,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
-    borderColor: theme.orange,
+    borderColor: theme.gray,
     backgroundColor: theme.surface,
   },
-  restore: { color: theme.orange, fontWeight: '700', fontSize: 14 },
+  restore: { color: theme.black, fontWeight: '700', fontSize: 13 },
 });

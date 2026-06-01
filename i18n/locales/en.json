@@ -240,7 +240,7 @@
     "delete": "Trash",
     "deletePhoto": "Delete",
     "deletePhotoTitle": "Delete photo?",
-    "deletePhotoMessage": "Restore from Trash",
+    "deletePhotoMessage": "If not restored within 3 days of deletion, it will be permanently deleted.",
     "deleteLastPhotoMessage": "Last photo moves card to Trash",
     "deleteAll": "Delete all",
     "deleteAllMessage": "Moves date to Trash",
@@ -344,7 +344,11 @@
     "subjectModalEmpty": "No deleted photos in this subject",
     "subjectPages": "{{count}} photo(s)",
     "subjectEmpty": "No photos (folder only)",
-    "autoDeleteHint": "Restorable for 3 days · permanently deleted after that"
+    "autoDeleteHint": "If not restored within 3 days of deletion, it will be permanently deleted.",
+    "remainDays": "{{days}}d {{hours}}h left",
+    "remainHours": "{{hours}}h left",
+    "remainMinutes": "{{minutes}}m left",
+    "restoreBy": "Restore by {{date}}"
   },
   "schedule": {
     "daily": "Daily",
