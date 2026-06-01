@@ -380,7 +380,6 @@ export default function FolderScreen() {
               <Text style={styles.empty}>
                 {problems.length === 0 ? t('folder.empty') : t('folder.emptyDate')}
               </Text>
-              {problems.length === 0 ? addProblemZone : null}
             </View>
           ) : (
             dateSections.map((section) => (
@@ -425,9 +424,7 @@ export default function FolderScreen() {
               />
             ))
           )}
-          {problems.length > 0 ? (
-            <View style={styles.footerAdd}>{addProblemZone}</View>
-          ) : null}
+          <View style={styles.footerAdd}>{addProblemZone}</View>
         </ScrollView>
       </Screen>
 
