@@ -9,12 +9,14 @@ import { PhotoCropModal } from '@/components/bundle/PhotoCropModal';
 import { PhotoMemoEditorModal } from '@/components/bundle/PhotoMemoEditorModal';
 import { ProblemPhotoModal } from '@/components/bundle/ProblemPhotoModal';
 import { Button } from '@/components/ui/Button';
+import { CaptureTagPicker } from '@/components/capture/CaptureTagPicker';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { attachAnswerToPage } from '@/lib/domain/attach-answer';
+import { mergeCaptureTagPresets, removeCaptureTagPreset } from '@/lib/domain/capture-tags';
 import { replacePageAnswerPhoto, replacePageFrontPhoto } from '@/lib/files/replace-page-photo';
 import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
@@ -49,6 +51,7 @@ export default function BundleScreen() {
     data,
     storage,
     updateBundle,
+    updateSettings,
     archiveBundle,
     unarchiveBundle,
     moveBundleToTrash,
@@ -89,6 +92,47 @@ export default function BundleScreen() {
   const activeLayer = useMemo(
     () => page?.layers[page.layers.length - 1],
     [page?.layers]
+  );
+
+  const tagPresets = useMemo(
+    () => data.settings.captureTagPresets ?? [],
+    [data.settings.captureTagPresets]
+  );
+
+  const setPageTags = useCallback(
+    (tags: string[]) => {
+      if (!bundle || !page) return;
+      updateBundle(bundle.id, {
+        pages: bundle.pages.map((p) => (p.id === page.id ? { ...p, tags } : p)),
+      });
+    },
+    [bundle, page, updateBundle]
+  );
+
+  const addTagPreset = useCallback(
+    (label: string) => {
+      updateSettings({
+        captureTagPresets: mergeCaptureTagPresets(
+          data.settings.captureTagPresets,
+          data.settings.language,
+          label
+        ),
+      });
+    },
+    [data.settings.captureTagPresets, data.settings.language, updateSettings]
+  );
+
+  const removeTagPreset = useCallback(
+    (label: string) => {
+      updateSettings({
+        captureTagPresets: removeCaptureTagPreset(
+          data.settings.captureTagPresets,
+          data.settings.language,
+          label
+        ),
+      });
+    },
+    [data.settings.captureTagPresets, data.settings.language, updateSettings]
   );
 
   useEffect(() => {
@@ -291,6 +335,14 @@ export default function BundleScreen() {
       />
       <View style={styles.titleBlock}>
         <Text style={styles.studyDateLine}>{bundle.studyDate}</Text>
+        <CaptureTagPicker
+          presets={tagPresets}
+          selectedTags={page?.tags ?? []}
+          language={data.settings.language}
+          onChangeSelected={setPageTags}
+          onAddPreset={addTagPreset}
+          onRemovePreset={removeTagPreset}
+        />
       </View>
 
       <View
