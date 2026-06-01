@@ -315,8 +315,9 @@ const styles = StyleSheet.create({
   },
   deleteBtn: {
     marginTop: 14,
-    marginHorizontal: PANEL_PAD,
-    paddingVertical: 11,
+    alignSelf: 'center',
+    paddingVertical: 7,
+    paddingHorizontal: 16,
     borderRadius: theme.radius.sm,
     borderWidth: 1.5,
     borderColor: theme.grayLight,
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
   deleteBtnPressed: { opacity: 0.85 },
   deleteBtnText: {
     color: theme.gray,
-    fontSize: theme.font.bodySmall,
+    fontSize: theme.font.caption,
     fontWeight: '800',
   },
   deleteBtnTextActive: { color: theme.white },
