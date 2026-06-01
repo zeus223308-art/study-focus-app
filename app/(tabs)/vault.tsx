@@ -5,17 +5,13 @@ import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } fro
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
-import { TagFilterBar } from '@/components/files/TagFilterBar';
 import { TrashContents, useTrashContents } from '@/components/trash/TrashContents';
-import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import type { NotePage, SubjectFolder } from '@/lib/domain/types';
-import { getPreviewImageUri } from '@/lib/files/display-image-uri';
+import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
-import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { countActivePagesForSubject } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import {
@@ -53,48 +49,6 @@ export default function FilesScreen() {
   const [subjectDeleteMode, setSubjectDeleteMode] = useState(false);
   const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(() => new Set());
   const [mergeName, setMergeName] = useState('');
-  const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [resultsWidth, setResultsWidth] = useState(0);
-
-  const colorForTag = useCallback(
-    (tag: string) => resolveTagColorFor(tag, data.settings.tagColors, data.settings.tagColor),
-    [data.settings.tagColors, data.settings.tagColor]
-  );
-
-  const allTags = useMemo(() => {
-    const set = new Set<string>();
-    for (const bundle of data.bundles) {
-      if (bundle.archived) continue;
-      for (const page of bundle.pages) {
-        for (const tag of page.tags ?? []) {
-          const trimmed = tag.trim();
-          if (trimmed) set.add(trimmed);
-        }
-      }
-    }
-    return [...set].sort((a, b) => a.localeCompare(b));
-  }, [data.bundles]);
-
-  const matchingPhotos = useMemo<{ bundleId: string; page: NotePage }[]>(() => {
-    if (!activeTag) return [];
-    const out: { bundleId: string; page: NotePage }[] = [];
-    for (const bundle of data.bundles) {
-      if (bundle.archived) continue;
-      for (const page of bundle.pages) {
-        if ((page.tags ?? []).some((tag) => tag.trim() === activeTag)) {
-          out.push({ bundleId: bundle.id, page });
-        }
-      }
-    }
-    return out;
-  }, [activeTag, data.bundles]);
-
-  const gridCols = viewport.isPhone ? 3 : 4;
-  const cellW = useMemo(() => {
-    const w = resultsWidth > 0 ? resultsWidth : Math.max(280, windowWidth - 40);
-    const gap = 8;
-    return Math.floor((w - gap * (gridCols - 1)) / gridCols);
-  }, [resultsWidth, windowWidth, gridCols]);
 
   useEffect(() => {
     if (pendingSubjectMerge) {
@@ -228,53 +182,7 @@ export default function FilesScreen() {
         }
       />
 
-      <TagFilterBar
-        tags={allTags}
-        colorForTag={colorForTag}
-        activeTag={activeTag}
-        onSelect={setActiveTag}
-      />
-
-      {activeTag ? (
-        <View
-          style={styles.results}
-          onLayout={(e) => {
-            const w = Math.round(e.nativeEvent.layout.width);
-            if (w > 0 && w !== resultsWidth) setResultsWidth(w);
-          }}>
-          <Text style={styles.resultsTitle}>
-            {t('vault.tagFilterCount', { tag: activeTag, count: matchingPhotos.length })}
-          </Text>
-          {matchingPhotos.length === 0 ? (
-            <Text style={styles.resultsEmpty}>{t('vault.tagFilterEmpty')}</Text>
-          ) : (
-            <View style={styles.grid}>
-              {matchingPhotos.map(({ bundleId, page }) => {
-                const uri = getPreviewImageUri(page.asset);
-                return (
-                  <Pressable
-                    key={page.id}
-                    style={[styles.gridCell, { width: cellW, height: cellW }]}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/bundle/[id]',
-                        params: { id: bundleId, pageId: page.id },
-                      })
-                    }>
-                    {uri ? (
-                      <ResolvedImage uri={uri} asset={page.asset} style={styles.gridImg} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.gridImg, styles.gridEmpty]} />
-                    )}
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-        </View>
-      ) : (
-        <>
-          <View style={[styles.panel, { marginTop: Math.round(windowHeight * 0.16) }]}>
+      <View style={[styles.panel, { marginTop: Math.round(windowHeight * 0.16) }]}>
             <View
               style={styles.carouselSlot}
               onLayout={(e) => {
@@ -351,8 +259,6 @@ export default function FilesScreen() {
             </View>
             <TrashContents />
           </View>
-        </>
-      )}
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
 
@@ -462,16 +368,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   trashCountText: { fontSize: 12, fontWeight: '800', color: theme.black },
-  results: { marginTop: 12 },
-  resultsTitle: {
-    fontSize: theme.font.bodySmall,
-    fontWeight: '800',
-    color: theme.black,
-    marginBottom: 12,
-  },
-  resultsEmpty: { color: theme.gray, textAlign: 'center', marginVertical: 32 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  gridCell: { borderRadius: 10, overflow: 'hidden', backgroundColor: theme.surface },
-  gridImg: { width: '100%', height: '100%' },
-  gridEmpty: { backgroundColor: theme.grayLight },
 });
