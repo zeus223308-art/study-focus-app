@@ -1,15 +1,10 @@
 /** Color-coded tag chips for album photo tiles. */
 
-/** Free tier: rainbow (빨주노초파남보). Auto-assigned colors come from here too. */
-export const FREE_TAG_COLORS = [
-  '#E5484D', // red 빨
-  '#FF6B00', // orange 주
-  '#EAB308', // yellow 노
-  '#30A46C', // green 초
-  '#3E63DD', // blue 파
-  '#4338CA', // indigo 남
-  '#9333EA', // violet 보
-];
+/** Single default color for tags with no explicit choice (brand orange). */
+export const DEFAULT_TAG_COLOR = '#FF6B00';
+
+/** Free tier: one unified default color. */
+export const FREE_TAG_COLORS = [DEFAULT_TAG_COLOR];
 
 /** Premium tier: finer shades unlocked with pro. */
 export const PREMIUM_TAG_COLORS = [
@@ -33,9 +28,6 @@ export function isPremiumTagColor(color: string): boolean {
   const c = color.toLowerCase();
   return PREMIUM_TAG_COLORS.some((p) => p.toLowerCase() === c);
 }
-
-/** Single default color for tags with no explicit choice (brand orange). */
-export const DEFAULT_TAG_COLOR = '#FF6B00';
 
 /** Explicit user-chosen color when set, otherwise the single default color. */
 export function resolveTagColor(
