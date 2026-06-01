@@ -132,6 +132,28 @@ export function groupSubjectProblemsByDate(problems: SubjectProblemItem[]): Prob
     .sort((a, b) => b.studyDate.localeCompare(a.studyDate));
 }
 
+export type ProblemMonthSection = {
+  /** 'YYYY-MM' */
+  month: string;
+  items: SubjectProblemItem[];
+};
+
+/** Newest months first; within a month, preserve `problems` order. */
+export function groupSubjectProblemsByMonth(
+  problems: SubjectProblemItem[]
+): ProblemMonthSection[] {
+  const map = new Map<string, SubjectProblemItem[]>();
+  for (const item of problems) {
+    const month = problemStudyDate(item).slice(0, 7);
+    const list = map.get(month) ?? [];
+    list.push(item);
+    map.set(month, list);
+  }
+  return Array.from(map.entries())
+    .map(([month, items]) => ({ month, items }))
+    .sort((a, b) => b.month.localeCompare(a.month));
+}
+
 export function searchBundles(bundles: NoteBundle[], query: string, examOnly?: boolean): NoteBundle[] {
   const q = query.trim().toLowerCase();
   return bundles.filter((b) => {

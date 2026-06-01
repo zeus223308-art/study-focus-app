@@ -21,3 +21,13 @@ export function formatStudyDateHeading(
   }
   return format(date, 'EEEE, MMM d, yyyy', { locale });
 }
+
+/** Month section heading, e.g. "2024년 2월" / "February 2024". */
+export function formatMonthHeading(monthKey: string, language: Language): string {
+  const date = parseISO(`${monthKey}-01T12:00:00`);
+  const locale = language === 'ko' ? ko : enUS;
+  if (language === 'ko') {
+    return format(date, 'yyyy년 M월', { locale });
+  }
+  return format(date, 'MMMM yyyy', { locale });
+}

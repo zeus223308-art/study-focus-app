@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Alert,
@@ -30,11 +30,11 @@ import { useApp, useLanguage } from '@/context/AppContext';
 import type { PageRef } from '@/lib/domain/move-pages-batch';
 import {
   buildSubjectStudyDateMarks,
-  filterProblemsByStudyDate,
-  groupSubjectProblemsByDate,
+  groupSubjectProblemsByMonth,
   listSubjectProblems,
 } from '@/lib/grouping/bundles';
 import type { SubjectProblemItem } from '@/lib/grouping/bundles';
+import { formatMonthHeading } from '@/lib/ui/format-study-date';
 import { remainingPhotoSlots } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { NotFoundView } from '@/components/ui/NotFoundView';
@@ -120,15 +120,33 @@ export default function FolderScreen() {
     [problems, data.settings.firstLaunchDate]
   );
 
-  const filteredProblems = useMemo(
-    () => filterProblemsByStudyDate(problems, albumFilterDate),
-    [problems, albumFilterDate]
+  const monthSections = useMemo(
+    () => groupSubjectProblemsByMonth(problems),
+    [problems]
   );
 
-  const dateSections = useMemo(
-    () => groupSubjectProblemsByDate(filteredProblems),
-    [filteredProblems]
-  );
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionOffsets = useRef<Record<string, number>>({});
+
+  const scrollToMonth = useCallback((monthKey: string) => {
+    const offsets = sectionOffsets.current;
+    let target = offsets[monthKey];
+    if (target == null) {
+      // Sections are newest-first; jump to the closest month at or before the pick.
+      const months = Object.keys(offsets).sort((a, b) => b.localeCompare(a));
+      const fallback = months.find((m) => m <= monthKey) ?? months[months.length - 1];
+      if (fallback != null) target = offsets[fallback];
+    }
+    if (target != null) {
+      scrollRef.current?.scrollTo({ y: Math.max(0, target - 8), animated: true });
+    }
+  }, []);
+
+  useEffect(() => {
+    const month = albumFilterDate.slice(0, 7);
+    const id = setTimeout(() => scrollToMonth(month), 0);
+    return () => clearTimeout(id);
+  }, [albumFilterDate, scrollToMonth, monthSections.length]);
 
   const pickMode = exportSelectMode || archiveSelectMode;
   const activeSelectedKeys = exportSelectMode ? exportSelectedKeys : archiveSelectedKeys;
@@ -361,6 +379,7 @@ export default function FolderScreen() {
           />
         </View>
         <ScrollView
+          ref={scrollRef}
           style={styles.albumScroll}
           scrollEnabled={albumScrollEnabled}
           nestedScrollEnabled
@@ -375,53 +394,64 @@ export default function FolderScreen() {
               width: '100%',
             },
           ]}>
-          {dateSections.length === 0 ? (
+          {monthSections.length === 0 ? (
             <View style={styles.emptyBlock}>
-              <Text style={styles.empty}>
-                {problems.length === 0 ? t('folder.empty') : t('folder.emptyDate')}
-              </Text>
+              <Text style={styles.empty}>{t('folder.empty')}</Text>
             </View>
           ) : (
-            dateSections.map((section) => (
-              <DateAlbumSection
-                key={section.studyDate}
-                section={section}
-                language={language}
-                subjectId={subject.id}
-                albumColumns={viewport.albumNumColumns}
-                contentWidth={albumContentWidth}
-                gap={ALBUM_TILE_GAP}
-                hideHeader
-                sectionMarginBottom={2}
-                labels={albumLabels}
-                onOpen={(bundleId, pageId) =>
-                  router.push({
-                    pathname: '/bundle/[id]',
-                    params: { id: bundleId, pageId },
-                  })
-                }
-                onLiftItemForDrag={onLiftItemForDrag}
-                onHoldMenu={pickMode ? undefined : (item) => enterExportSelect(item)}
-                onDragMove={pickMode ? undefined : onDragMove}
-                onDragEnd={
-                  pickMode
-                    ? undefined
-                    : (item, moved, pageX, pageY) =>
-                        handleItemDragEnd(moved, pageX, pageY, item)
-                }
-                reorderEnabled={!pickMode}
-                onGestureActiveChange={pickMode ? undefined : lockTileGesture}
-                onDeleteHold={
-                  pickMode
-                    ? undefined
-                    : (item) => confirmDeleteProblem(item.bundleId, item.pageId)
-                }
-                selectionMode={pickMode ? 'pick' : null}
-                selectedKeys={activeSelectedKeys}
-                onToggleSelect={
-                  exportSelectMode ? toggleExportSelect : toggleArchiveSelect
-                }
-              />
+            monthSections.map((section) => (
+              <View
+                key={section.month}
+                onLayout={(e) => {
+                  sectionOffsets.current[section.month] = e.nativeEvent.layout.y;
+                }}>
+                <View style={styles.monthHeader}>
+                  <Text style={styles.monthHeading}>
+                    {formatMonthHeading(section.month, language)}
+                  </Text>
+                  <Text style={styles.monthCount}>
+                    {albumLabels.photoCount(section.items.length)}
+                  </Text>
+                </View>
+                <DateAlbumSection
+                  section={{ studyDate: section.month, items: section.items }}
+                  language={language}
+                  subjectId={subject.id}
+                  albumColumns={viewport.albumNumColumns}
+                  contentWidth={albumContentWidth}
+                  gap={ALBUM_TILE_GAP}
+                  hideHeader
+                  sectionMarginBottom={18}
+                  labels={albumLabels}
+                  onOpen={(bundleId, pageId) =>
+                    router.push({
+                      pathname: '/bundle/[id]',
+                      params: { id: bundleId, pageId },
+                    })
+                  }
+                  onLiftItemForDrag={onLiftItemForDrag}
+                  onHoldMenu={pickMode ? undefined : (item) => enterExportSelect(item)}
+                  onDragMove={pickMode ? undefined : onDragMove}
+                  onDragEnd={
+                    pickMode
+                      ? undefined
+                      : (item, moved, pageX, pageY) =>
+                          handleItemDragEnd(moved, pageX, pageY, item)
+                  }
+                  reorderEnabled={!pickMode}
+                  onGestureActiveChange={pickMode ? undefined : lockTileGesture}
+                  onDeleteHold={
+                    pickMode
+                      ? undefined
+                      : (item) => confirmDeleteProblem(item.bundleId, item.pageId)
+                  }
+                  selectionMode={pickMode ? 'pick' : null}
+                  selectedKeys={activeSelectedKeys}
+                  onToggleSelect={
+                    exportSelectMode ? toggleExportSelect : toggleArchiveSelect
+                  }
+                />
+              </View>
             ))
           )}
           <View style={styles.footerAdd}>{addProblemZone}</View>
@@ -534,6 +564,26 @@ const styles = StyleSheet.create({
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   albumScroll: { flex: 1, minHeight: 0 },
   scroll: { paddingHorizontal: 16, paddingBottom: 120 },
+  monthHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  monthHeading: {
+    flex: 1,
+    fontSize: theme.font.heading,
+    fontWeight: '800',
+    color: theme.black,
+  },
+  monthCount: {
+    fontSize: theme.font.caption,
+    fontWeight: '600',
+    color: theme.gray,
+    marginLeft: 8,
+  },
   scrollEmpty: { flexGrow: 1, justifyContent: 'center' },
   emptyBlock: { alignItems: 'center', gap: 20, paddingVertical: 40 },
   empty: { fontSize: theme.font.body, color: theme.gray, textAlign: 'center' },
