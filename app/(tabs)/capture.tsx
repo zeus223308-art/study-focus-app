@@ -149,6 +149,7 @@ export default function CaptureTabScreen() {
   const draftRestoreOnce = useRef(false);
   const draftRestoreDoneRef = useRef(isImportEntry);
   const importEntryLaunched = useRef(false);
+  const freshConsumedRef = useRef(false);
   const captureProgressRef = useRef({ front: false, back: false });
   const afterEditStepRef = useRef<Step>('answer-prompt');
 
@@ -320,12 +321,18 @@ export default function CaptureTabScreen() {
         return;
       }
 
-      if (isImportFresh) {
+      // Treat the `fresh=1` intent as a one-shot. The focus effect re-runs
+      // whenever pickFromGallery changes identity (e.g. after a photo is
+      // confirmed and frontUri updates); without this guard each re-run would
+      // wrongly reset the in-progress capture and relaunch the picker popup.
+      const freshNow = isImportFresh && !freshConsumedRef.current;
+
+      if (freshNow) {
         importEntryLaunched.current = false;
       }
       const hasProgress =
         captureProgressRef.current.front || captureProgressRef.current.back;
-      if (!isImportFresh && hasProgress) {
+      if (!freshNow && hasProgress) {
         importEntryLaunched.current = true;
         return;
       }
@@ -333,7 +340,8 @@ export default function CaptureTabScreen() {
       if (importEntryLaunched.current) return;
       importEntryLaunched.current = true;
 
-      if (isImportFresh) {
+      if (freshNow) {
+        freshConsumedRef.current = true;
         setEditUri(null);
         setFrontUri(null);
         setBackUri(null);
