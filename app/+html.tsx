@@ -17,7 +17,7 @@ export default function Root({ children }: { children: ReactNode }) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
         />
-        <meta name="color-scheme" content="light" />
+        <meta name="color-scheme" content="only light" />
         <ScrollViewStyleReset />
         <script
           dangerouslySetInnerHTML={{
@@ -67,7 +67,7 @@ html, body, #root {
   padding: 0;
 }
 html {
-  color-scheme: light;
+  color-scheme: only light;
 }
 body {
   background-color: #0A0A0A;
@@ -78,7 +78,7 @@ body {
 }
 @media (prefers-color-scheme: dark) {
   html {
-    color-scheme: light;
+    color-scheme: only light;
   }
 }
 @media (orientation: landscape) {

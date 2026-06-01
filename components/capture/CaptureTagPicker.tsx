@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { theme } from '@/constants/theme';
@@ -89,12 +90,18 @@ function TagColorModal({
       <Pressable
         key={color}
         onPress={() => (locked ? onRequirePremium() : onPick(color))}
-        style={[
-          modalStyles.swatch,
-          { backgroundColor: color },
-          selected && modalStyles.swatchOn,
-        ]}
-      />
+        style={modalStyles.swatch}>
+        <Svg key={color} width={40} height={40} viewBox="0 0 40 40">
+          <Circle
+            cx={20}
+            cy={20}
+            r={18}
+            fill={color}
+            stroke={selected ? theme.black : 'transparent'}
+            strokeWidth={selected ? 3 : 0}
+          />
+        </Svg>
+      </Pressable>
     );
   };
   return (
@@ -118,12 +125,15 @@ function TagColorModal({
           <Text style={modalStyles.sectionLabel}>{customLabel}</Text>
           {isPro ? (
             <View style={modalStyles.customRow}>
-              <View
-                style={[
-                  modalStyles.customPreview,
-                  { backgroundColor: normalizedHex ?? current },
-                ]}
-              />
+              <View style={modalStyles.customPreview}>
+                <Svg
+                  key={normalizedHex ?? current}
+                  width={36}
+                  height={36}
+                  viewBox="0 0 36 36">
+                  <Circle cx={18} cy={18} r={17} fill={normalizedHex ?? current} />
+                </Svg>
+              </View>
               <View style={modalStyles.hexField}>
                 <Text style={modalStyles.hexHash}>#</Text>
                 <TextInput
@@ -513,9 +523,8 @@ const modalStyles = StyleSheet.create({
   customPreview: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   hexField: {
     flex: 1,
