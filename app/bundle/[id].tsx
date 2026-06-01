@@ -149,10 +149,9 @@ export default function BundleScreen() {
   };
 
   const confirmDeleteCurrentPage = () => {
-    const isLast = bundle.pages.length <= 1;
     confirmDestructive({
       title: t('item.deletePhotoTitle'),
-      message: isLast ? t('item.deleteLastPhotoMessage') : t('item.deletePhotoMessage'),
+      message: t('item.deletePhotoMessage'),
       cancelLabel: t('common.cancel'),
       confirmLabel: t('item.deletePhoto'),
       onConfirm: () => {
