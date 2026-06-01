@@ -55,10 +55,12 @@ export function SendToNewFolderModal({
               <Text style={styles.btnCancelText}>{cancelLabel}</Text>
             </Pressable>
             <Pressable
-              style={[styles.btn, styles.btnSend, !canSend && styles.btnDisabled]}
+              style={[styles.btn, styles.btnSend, !canSend && styles.btnSendIdle]}
               onPress={canSend ? onSend : undefined}
               disabled={!canSend}>
-              <Text style={styles.btnSendText}>{sendLabel}</Text>
+              <Text style={[styles.btnSendText, !canSend && styles.btnSendTextIdle]}>
+                {sendLabel}
+              </Text>
             </Pressable>
           </View>
         </Pressable>
@@ -127,8 +129,11 @@ const styles = StyleSheet.create({
   btnSend: {
     backgroundColor: theme.orange,
   },
-  btnDisabled: {
-    opacity: 0.5,
+  /** Empty input: keep the button looking active, styled like Cancel. */
+  btnSendIdle: {
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
   },
   btnCancelText: {
     fontWeight: '700',
@@ -137,5 +142,8 @@ const styles = StyleSheet.create({
   btnSendText: {
     fontWeight: '800',
     color: theme.onAccent,
+  },
+  btnSendTextIdle: {
+    color: theme.black,
   },
 });

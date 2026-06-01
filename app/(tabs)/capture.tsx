@@ -65,7 +65,7 @@ export default function CaptureTabScreen() {
     captureFlashcardPair,
     activeFolderCapture,
     updateSettings,
-    setTagColor,
+    setTagColorFor,
     setPaywallVisible,
   } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
@@ -580,8 +580,9 @@ export default function CaptureTabScreen() {
                   onChangeSelected={setSelectedTags}
                   onAddPreset={addTagPreset}
                   onRemovePreset={removeTagPreset}
-                  tagColor={data.settings.tagColor}
-                  onSetTagColor={setTagColor}
+                  tagColors={data.settings.tagColors}
+                  tagColorFallback={data.settings.tagColor}
+                  onSetTagColor={setTagColorFor}
                   isPro={data.settings.tier === 'pro'}
                   onRequirePremium={() => setPaywallVisible(true)}
                   disabled={saveBusy}

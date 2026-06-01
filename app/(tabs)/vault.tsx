@@ -15,7 +15,7 @@ import { useApp } from '@/context/AppContext';
 import type { NotePage, SubjectFolder } from '@/lib/domain/types';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
-import { resolveTagColor } from '@/lib/ui/tag-colors';
+import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { countActivePagesForSubject } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import {
@@ -56,7 +56,10 @@ export default function FilesScreen() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [resultsWidth, setResultsWidth] = useState(0);
 
-  const tagColor = resolveTagColor(data.settings.tagColor);
+  const colorForTag = useCallback(
+    (tag: string) => resolveTagColorFor(tag, data.settings.tagColors, data.settings.tagColor),
+    [data.settings.tagColors, data.settings.tagColor]
+  );
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -227,7 +230,7 @@ export default function FilesScreen() {
 
       <TagFilterBar
         tags={allTags}
-        color={tagColor}
+        colorForTag={colorForTag}
         activeTag={activeTag}
         onSelect={setActiveTag}
       />

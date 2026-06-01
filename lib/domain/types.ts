@@ -191,8 +191,10 @@ export type AppSettings = {
   captureFrameAspect?: CaptureFrameAspect;
   /** Labels shown on capture save sheet (+ default exam-before tag). */
   captureTagPresets?: string[];
-  /** Single color applied to every tag (hex). Defaults to brand orange. */
+  /** Legacy/default color used for tags without a per-tag color (hex). */
   tagColor?: string;
+  /** Per-tag colors keyed by normalized (trimmed, lowercased) tag label. */
+  tagColors?: Record<string, string>;
 };
 
 export type AppData = {

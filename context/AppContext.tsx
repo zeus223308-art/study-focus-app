@@ -130,6 +130,7 @@ type AppContextValue = {
   applyLayerCycleChoice: (bundleId: string, choice: LayerCycleChoice) => void;
   updateSettings: (patch: Partial<AppSettings>) => void;
   setTagColor: (color: string) => void;
+  setTagColorFor: (tag: string, color: string) => void;
   getSchedule: (id: string) => ReviewSchedule | undefined;
   syncCloud: () => Promise<void>;
   restoreFromCloudBackup: () => Promise<boolean>;
@@ -897,6 +898,16 @@ export function AppProvider({
     });
   }, []);
 
+  const setTagColorFor = useCallback((tag: string, color: string) => {
+    const key = tag.trim().toLowerCase();
+    if (!key || !color.trim()) return;
+    setData((prev) => {
+      if (!prev) return prev;
+      const tagColors = { ...(prev.settings.tagColors ?? {}), [key]: color };
+      return { ...prev, settings: { ...prev.settings, tagColors } };
+    });
+  }, []);
+
   const syncCloud = useCallback(async () => {
     const current = dataRef.current;
     if (!current) return;
@@ -1380,6 +1391,7 @@ export function AppProvider({
       applyLayerCycleChoice,
       updateSettings,
       setTagColor,
+      setTagColorFor,
       getSchedule,
       syncCloud,
       restoreFromCloudBackup,
@@ -1457,6 +1469,7 @@ export function AppProvider({
     applyLayerCycleChoice,
     updateSettings,
     setTagColor,
+    setTagColorFor,
     getSchedule,
     syncCloud,
     restoreFromCloudBackup,

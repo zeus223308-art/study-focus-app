@@ -21,7 +21,7 @@ import {
   toggleCaptureTag,
 } from '@/lib/domain/capture-tags';
 import type { Language } from '@/lib/domain/types';
-import { FREE_TAG_COLORS, resolveTagColor } from '@/lib/ui/tag-colors';
+import { FREE_TAG_COLORS, resolveTagColorFor } from '@/lib/ui/tag-colors';
 
 type Props = {
   presets: string[];
@@ -30,9 +30,12 @@ type Props = {
   onChangeSelected: (tags: string[]) => void;
   onAddPreset: (label: string) => void;
   onRemovePreset: (label: string) => void;
-  /** Single color applied to every tag. Enables the color control. */
-  tagColor?: string;
-  onSetTagColor?: (color: string) => void;
+  /** Per-tag colors keyed by normalized label. */
+  tagColors?: Record<string, string>;
+  /** Fallback color for tags without an explicit color. */
+  tagColorFallback?: string;
+  /** Sets the color for a single tag. Enables the per-tag color control. */
+  onSetTagColor?: (tag: string, color: string) => void;
   /** Pro unlocks the custom color input. */
   isPro?: boolean;
   onRequirePremium?: () => void;
@@ -223,7 +226,8 @@ export function CaptureTagPicker({
   onChangeSelected,
   onAddPreset,
   onRemovePreset,
-  tagColor,
+  tagColors,
+  tagColorFallback,
   onSetTagColor,
   isPro,
   onRequirePremium,
@@ -233,9 +237,9 @@ export function CaptureTagPicker({
   const [addVisible, setAddVisible] = useState(false);
   const [draftLabel, setDraftLabel] = useState('');
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
-  const [colorOpen, setColorOpen] = useState(false);
+  const [colorTag, setColorTag] = useState<string | null>(null);
   const colorEnabled = Boolean(onSetTagColor);
-  const currentColor = resolveTagColor(tagColor);
+  const colorForTag = (tag: string) => resolveTagColorFor(tag, tagColors, tagColorFallback);
 
   const isOn = (tag: string) =>
     selectedTags.some((s) => s.toLowerCase() === tag.toLowerCase());
@@ -254,8 +258,8 @@ export function CaptureTagPicker({
   };
 
   const pickColor = (color: string) => {
-    onSetTagColor?.(color);
-    setColorOpen(false);
+    if (colorTag) onSetTagColor?.(colorTag, color);
+    setColorTag(null);
   };
 
   const openDelete = (tag: string) => {
@@ -286,15 +290,7 @@ export function CaptureTagPicker({
       <View style={styles.header}>
         <Text style={styles.label}>{t('capture.pickTags')}</Text>
         {colorEnabled ? (
-          <Pressable
-            disabled={disabled}
-            onPress={() => setColorOpen(true)}
-            style={styles.colorControl}
-            accessibilityRole="button"
-            accessibilityLabel={t('capture.pickTagColor')}>
-            <View style={[styles.colorChipDot, { backgroundColor: currentColor }]} />
-            <Text style={styles.colorChipText}>{t('capture.tagColorShort')}</Text>
-          </Pressable>
+          <Text style={styles.colorHint}>{t('capture.tagColorHint')}</Text>
         ) : null}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
@@ -303,6 +299,19 @@ export function CaptureTagPicker({
           const on = isOn(tag);
           return (
             <View key={tag} style={[styles.chip, on && styles.chipOn]}>
+              {colorEnabled ? (
+                <Pressable
+                  disabled={disabled}
+                  onPress={() => setColorTag(tag)}
+                  hitSlop={6}
+                  style={styles.chipColorDot}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('capture.pickTagColor')}>
+                  <View
+                    style={[styles.chipColorDotInner, { backgroundColor: colorForTag(tag) }]}
+                  />
+                </Pressable>
+              ) : null}
               <Pressable
                 disabled={disabled}
                 onPress={() => onChangeSelected(toggleCaptureTag(selectedTags, tag))}
@@ -359,9 +368,9 @@ export function CaptureTagPicker({
       />
 
       <TagColorModal
-        visible={colorOpen}
-        tag=""
-        current={currentColor}
+        visible={colorTag !== null}
+        tag={colorTag ?? ''}
+        current={colorForTag(colorTag ?? '')}
         isPro={Boolean(isPro)}
         title={t('capture.pickTagColor')}
         freeLabel={t('capture.tagColorsFree')}
@@ -371,10 +380,10 @@ export function CaptureTagPicker({
         cancelLabel={t('common.cancel')}
         onPick={pickColor}
         onRequirePremium={() => {
-          setColorOpen(false);
+          setColorTag(null);
           onRequirePremium?.();
         }}
-        onClose={() => setColorOpen(false)}
+        onClose={() => setColorTag(null)}
       />
     </View>
   );
@@ -389,20 +398,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   label: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray },
-  colorControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: theme.radius.pill,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-  },
+  colorHint: { fontSize: theme.font.caption, color: theme.grayMuted, fontWeight: '600' },
   chips: { marginVertical: 12 },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 14,
+    paddingLeft: 10,
     paddingRight: 6,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
@@ -411,15 +412,18 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
   },
   chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
-  colorChipDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.85)',
-    marginRight: 6,
+  chipColorDot: {
+    paddingVertical: 12,
+    paddingRight: 6,
+    justifyContent: 'center',
   },
-  colorChipText: { color: theme.gray, fontWeight: '700', fontSize: theme.font.bodySmall },
+  chipColorDotInner: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.55)',
+  },
   chipLabelHit: { paddingVertical: 12, paddingRight: 4 },
   chipText: { fontWeight: '700', color: theme.black },
   chipTextOn: { color: theme.onAccent },

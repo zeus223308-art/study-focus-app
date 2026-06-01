@@ -10,7 +10,7 @@ import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
 import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
-import { contrastTextColor, resolveTagColor } from '@/lib/ui/tag-colors';
+import { contrastTextColor, resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
@@ -92,7 +92,8 @@ export function AlbumPhotoTile({
   style,
 }: Props) {
   const { data, movingBundleId, draggingItemKey, dragHoverItemKey } = useApp();
-  const ribbonColor = resolveTagColor(data.settings.tagColor);
+  const tagColors = data.settings.tagColors;
+  const tagFallback = data.settings.tagColor;
   const viewport = useViewportLayout();
   const landscapeTileH = viewport.isLandscape
     ? heightForLandscapeCardWidth(cellWidth, true)
@@ -130,7 +131,11 @@ export function AlbumPhotoTile({
     visibleTags.length > 0 && !showLifted ? (
       <View style={styles.tagRow} pointerEvents="none">
         {visibleTags.map((tag, i) => (
-          <TagRibbon key={`${tag}-${i}`} label={tag} color={ribbonColor} />
+          <TagRibbon
+            key={`${tag}-${i}`}
+            label={tag}
+            color={resolveTagColorFor(tag, tagColors, tagFallback)}
+          />
         ))}
       </View>
     ) : null;

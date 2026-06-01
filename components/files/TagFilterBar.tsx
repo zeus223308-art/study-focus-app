@@ -5,16 +5,15 @@ import { contrastTextColor } from '@/lib/ui/tag-colors';
 
 type Props = {
   tags: string[];
-  /** Global tag color (same as photo ribbons). */
-  color: string;
+  /** Per-tag color (same color shown on photo ribbons). */
+  colorForTag: (tag: string) => string;
   activeTag: string | null;
   onSelect: (tag: string | null) => void;
 };
 
 /** Horizontal row of tag chips; tap toggles a filter for matching photos. */
-export function TagFilterBar({ tags, color, activeTag, onSelect }: Props) {
+export function TagFilterBar({ tags, colorForTag, activeTag, onSelect }: Props) {
   if (tags.length === 0) return null;
-  const textColor = contrastTextColor(color);
 
   return (
     <View style={styles.wrap}>
@@ -24,12 +23,15 @@ export function TagFilterBar({ tags, color, activeTag, onSelect }: Props) {
         contentContainerStyle={styles.row}>
         {tags.map((tag) => {
           const active = tag === activeTag;
+          const color = colorForTag(tag);
           return (
             <Pressable
               key={tag}
               onPress={() => onSelect(active ? null : tag)}
               style={[styles.chip, { backgroundColor: color }, active && styles.chipActive]}>
-              <Text style={[styles.chipText, { color: textColor }]} numberOfLines={1}>
+              <Text
+                style={[styles.chipText, { color: contrastTextColor(color) }]}
+                numberOfLines={1}>
                 {tag}
               </Text>
             </Pressable>

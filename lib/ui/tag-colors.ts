@@ -42,6 +42,26 @@ export function resolveTagColor(color?: string): string {
   return color && color.trim() ? color : DEFAULT_TAG_COLOR;
 }
 
+/** Normalized lookup key for per-tag color maps. */
+export function tagColorKey(tag: string): string {
+  return tag.trim().toLowerCase();
+}
+
+/**
+ * Color for a specific tag: its own color if set, else the legacy global
+ * `tagColor`, else the default. Keeps existing tags stable when a new tag's
+ * color is changed.
+ */
+export function resolveTagColorFor(
+  tag: string,
+  tagColors?: Record<string, string>,
+  fallback?: string
+): string {
+  const own = tagColors?.[tagColorKey(tag)];
+  if (own && own.trim()) return own;
+  return resolveTagColor(fallback);
+}
+
 /** Readable text color (#1A1A1A or #FFFFFF) for a given background hex. */
 export function contrastTextColor(hex: string): string {
   const c = hex.replace(/^#/, '');
