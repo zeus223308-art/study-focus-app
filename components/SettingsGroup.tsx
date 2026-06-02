@@ -44,12 +44,12 @@ export function SettingsRow({
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 24 },
+  wrap: { marginBottom: 16 },
   title: {
     fontSize: 13,
     fontWeight: '600',
     color: theme.gray,
-    marginBottom: 8,
+    marginBottom: 6,
     marginLeft: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -65,9 +65,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 16,
-    minHeight: 48,
+    minHeight: 42,
   },
   rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
   label: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },

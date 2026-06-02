@@ -279,16 +279,16 @@ const styles = StyleSheet.create({
   headerBlock: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.grayLight,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 12,
+    paddingTop: 10,
     paddingHorizontal: 16,
     gap: 12,
-    minHeight: 44,
+    minHeight: 40,
   },
   headerLabel: {
     fontSize: theme.font.body,
@@ -325,8 +325,8 @@ const styles = StyleSheet.create({
     color: theme.gray,
     fontWeight: '600',
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 8,
     lineHeight: 18,
   },
   webMobileHint: {
@@ -346,8 +346,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 16,
+    minHeight: 42,
   },
   rowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
