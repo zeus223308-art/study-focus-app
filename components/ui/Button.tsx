@@ -57,9 +57,9 @@ const styles = StyleSheet.create({
   },
   baseCompact: {
     paddingVertical: 9,
-    paddingHorizontal: 14,
+    paddingHorizontal: 8,
     borderRadius: theme.radius.sm,
-    minHeight: 40,
+    minHeight: 38,
   },
   primary: { backgroundColor: theme.orange },
   primaryPressed: { backgroundColor: theme.gray },

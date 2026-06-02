@@ -76,7 +76,10 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: theme.radius.lg,
     borderTopRightRadius: theme.radius.lg,
     paddingTop: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 320,
   },
   handle: {
     width: 40,

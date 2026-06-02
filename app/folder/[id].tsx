@@ -153,6 +153,13 @@ export default function FolderScreen() {
     viewport.contentMaxWidth - 32
   );
 
+  /** Bottom action buttons — inset from screen edges, capped width on phone. */
+  const actionBarWidth = useMemo(() => {
+    const sideInset = viewport.isPhone ? 96 : 128;
+    const maxW = viewport.isPhone ? 252 : 300;
+    return Math.min(maxW, viewport.width - sideInset, albumContentWidth);
+  }, [albumContentWidth, viewport.isPhone, viewport.width]);
+
   const albumLabels = useMemo(
     () => ({
       today: t('folder.dateToday'),
@@ -428,48 +435,52 @@ export default function FolderScreen() {
 
       {exportSelectMode ? (
         <View style={[styles.exportBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
-          <Button
-            label={t('folder.sendToNewFolder')}
-            size="compact"
-            onPress={openNewFolderModal}
-            disabled={exportSelectedKeys.size === 0}
-          />
-          <Button
-            label={t('folder.sendToOtherFolder')}
-            variant="secondary"
-            size="compact"
-            onPress={openOtherSubjectPicker}
-            disabled={exportSelectedKeys.size === 0}
-            style={styles.exportBarBtnGap}
-          />
-          <Button
-            label={t('common.cancel')}
-            variant="ghost"
-            size="compact"
-            onPress={exitExportSelect}
-            style={styles.exportBarBtnGap}
-          />
+          <View style={[styles.actionBarColumn, { width: actionBarWidth }]}>
+            <Button
+              label={t('folder.sendToNewFolder')}
+              size="compact"
+              onPress={openNewFolderModal}
+              disabled={exportSelectedKeys.size === 0}
+            />
+            <Button
+              label={t('folder.sendToOtherFolder')}
+              variant="secondary"
+              size="compact"
+              onPress={openOtherSubjectPicker}
+              disabled={exportSelectedKeys.size === 0}
+              style={styles.exportBarBtnGap}
+            />
+            <Button
+              label={t('common.cancel')}
+              variant="ghost"
+              size="compact"
+              onPress={exitExportSelect}
+              style={styles.exportBarBtnGap}
+            />
+          </View>
         </View>
       ) : null}
 
       {archiveSelectMode ? (
         <View style={[styles.archiveBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
-          <Button
-            label={t('folder.saveToArchiveCount', { count: archiveSelectedKeys.size })}
-            size="compact"
-            onPress={confirmArchiveSelected}
-            disabled={archiveSelectedKeys.size === 0}
-          />
-          <Button
-            label={t('common.cancel')}
-            variant="ghost"
-            size="compact"
-            onPress={() => {
-              setArchiveSelectMode(false);
-              setArchiveSelectedKeys(new Set());
-            }}
-            style={styles.exportBarBtnGap}
-          />
+          <View style={[styles.actionBarColumn, { width: actionBarWidth }]}>
+            <Button
+              label={t('folder.saveToArchiveCount', { count: archiveSelectedKeys.size })}
+              size="compact"
+              onPress={confirmArchiveSelected}
+              disabled={archiveSelectedKeys.size === 0}
+            />
+            <Button
+              label={t('common.cancel')}
+              variant="ghost"
+              size="compact"
+              onPress={() => {
+                setArchiveSelectMode(false);
+                setArchiveSelectedKeys(new Set());
+              }}
+              style={styles.exportBarBtnGap}
+            />
+          </View>
         </View>
       ) : null}
 
@@ -551,11 +562,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 16,
     paddingTop: 8,
+    alignItems: 'center',
     backgroundColor: theme.beige,
     borderTopWidth: 1,
     borderTopColor: theme.grayLight,
+  },
+  actionBarColumn: {
+    alignSelf: 'center',
   },
   exportBarBtnGap: { marginTop: 6 },
   archiveBar: {
@@ -563,8 +577,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 16,
     paddingTop: 8,
+    alignItems: 'center',
     backgroundColor: theme.beige,
     borderTopWidth: 1,
     borderTopColor: theme.grayLight,
