@@ -84,16 +84,10 @@ export function DashboardReviewPicker({
                     ) : null}
                   </View>
                 </Pressable>
-                {entry.duePages > 0 ? (
-                  <View style={styles.dueBadge}>
-                    <Text style={styles.dueBadgeText}>
-                      {t('dashboard.dueToday', { count: entry.duePages })}
-                    </Text>
-                  </View>
-                ) : null}
                 <SubjectReviewCard
                   subjectTag={entry.subject.name}
                   previewItems={entry.previews}
+                  pageCount={entry.totalPages}
                   totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
                   emptyHint={t('dashboard.previewEmpty')}
                   selected={checked}
@@ -163,15 +157,4 @@ const styles = StyleSheet.create({
     backgroundColor: theme.orange,
     borderColor: theme.orange,
   },
-  dueBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    zIndex: 5,
-    backgroundColor: theme.orange,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: theme.radius.pill,
-  },
-  dueBadgeText: { fontSize: 10, fontWeight: '800', color: theme.onAccent },
 });

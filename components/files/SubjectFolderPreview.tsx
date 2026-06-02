@@ -22,6 +22,8 @@ export type PreviewVariant = 'vault' | 'dashboard';
 
 type Props = {
   items: SubjectPreviewItem[];
+  /** Dashboard: denominator for swipe counter (e.g. 10 → 3/10). */
+  pageCount?: number;
   totalLabel: string;
   emptyHint: string;
   onOpen: () => void;
@@ -43,6 +45,7 @@ const DASHBOARD_HEIGHT = 120;
 
 export function SubjectFolderPreview({
   items,
+  pageCount,
   totalLabel,
   emptyHint,
   onOpen,
@@ -67,6 +70,9 @@ export function SubjectFolderPreview({
     previewIndexProp !== undefined
       ? Math.max(0, Math.min(previewIndexProp, Math.max(0, items.length - 1)))
       : internalIndex;
+  const counterTotal = Math.max(pageCount ?? items.length, items.length, 1);
+  const showCounter = isDashboard ? counterTotal >= 1 : items.length > 1;
+  const counterLabel = `${index + 1} / ${counterTotal}`;
 
   const lock = useCallback(() => onGestureLock(true), [onGestureLock]);
   const unlock = useCallback(() => onGestureLock(false), [onGestureLock]);
@@ -199,11 +205,7 @@ export function SubjectFolderPreview({
         </View>
         <View style={styles.overlay}>
           <Text style={styles.badge}>{totalLabel}</Text>
-          {items.length > 1 ? (
-            <Text style={styles.counter}>
-              1 / {items.length}
-            </Text>
-          ) : null}
+          {showCounter ? <Text style={styles.counter}>{counterLabel}</Text> : null}
         </View>
       </View>
     );
@@ -270,10 +272,8 @@ export function SubjectFolderPreview({
       )}
       <View style={styles.overlay} pointerEvents="none">
         <Text style={styles.badge}>{totalLabel}</Text>
-        {items.length > 1 ? (
-          <Text style={[styles.counter, isDashboard && styles.counterPick]}>
-            {index + 1} / {items.length}
-          </Text>
+        {showCounter ? (
+          <Text style={[styles.counter, isDashboard && styles.counterPick]}>{counterLabel}</Text>
         ) : null}
       </View>
       {!isDashboard ? (
