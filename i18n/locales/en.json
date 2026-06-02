@@ -92,6 +92,8 @@
     "yes": "Save",
     "no": "Pick date",
     "pickSubject": "Subject",
+    "selectedSubject": "Save to",
+    "pickSubjectTap": "Tap a subject below to change",
     "pickTags": "Tags",
     "addTag": "Add tag",
     "addTagTitle": "New tag",

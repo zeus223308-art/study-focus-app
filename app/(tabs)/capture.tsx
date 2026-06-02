@@ -1,4 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { SymbolView } from 'expo-symbols';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -94,6 +95,10 @@ export default function CaptureTabScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
   const hasSubjects = data.subjects.length > 0;
+  const selectedSubject = useMemo(
+    () => data.subjects.find((s) => s.id === subjectId),
+    [data.subjects, subjectId]
+  );
 
   const hasPendingCapture = step !== 'camera' || Boolean(frontUri || backUri);
   const folderCaptureSyncKeyRef = useRef<string | null>(null);
@@ -551,17 +556,38 @@ export default function CaptureTabScreen() {
             ) : (
               <>
                 <Text style={styles.chipLabel}>{t('capture.pickSubject')}</Text>
+                {selectedSubject ? (
+                  <View style={styles.subjectSelectedCard}>
+                    <Text style={styles.subjectSelectedLabel}>{t('capture.selectedSubject')}</Text>
+                    <Text style={styles.subjectSelectedName}>{selectedSubject.name}</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.chipHint}>{t('capture.pickSubjectTap')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
-                  {data.subjects.map((s) => (
-                    <Pressable
-                      key={s.id}
-                      onPress={() => setSubjectId(s.id)}
-                      style={[styles.chip, subjectId === s.id && styles.chipOn]}>
-                      <Text style={[styles.chipText, subjectId === s.id && styles.chipTextOn]}>
-                        {s.name}
-                      </Text>
-                    </Pressable>
-                  ))}
+                  {data.subjects.map((s) => {
+                    const on = subjectId === s.id;
+                    return (
+                      <Pressable
+                        key={s.id}
+                        onPress={() => setSubjectId(s.id)}
+                        accessibilityRole="button"
+                        accessibilityState={on ? { selected: true } : {}}
+                        style={({ pressed }) => [
+                          styles.chip,
+                          on && styles.chipOn,
+                          pressed && (on ? styles.chipOnPressed : styles.chipPressed),
+                        ]}>
+                        {on ? (
+                          <SymbolView
+                            name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                            size={14}
+                            tintColor={theme.onAccent}
+                          />
+                        ) : null}
+                        <Text style={[styles.chipText, on && styles.chipTextOn]}>{s.name}</Text>
+                      </Pressable>
+                    );
+                  })}
                 </ScrollView>
                 <CaptureTagPicker
                   presets={tagPresets}
@@ -787,19 +813,61 @@ const styles = StyleSheet.create({
   },
   pairEmptyText: { color: theme.grayMuted, fontWeight: '700', fontSize: 24 },
   chipLabel: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray, marginTop: 16 },
-  chips: { marginVertical: 12 },
+  subjectSelectedCard: {
+    marginTop: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.orange,
+    borderWidth: 2,
+    borderColor: theme.white,
+    alignItems: 'center',
+  },
+  subjectSelectedLabel: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.onAccent,
+    opacity: 0.85,
+  },
+  subjectSelectedName: {
+    marginTop: 4,
+    fontSize: theme.font.heading,
+    fontWeight: '900',
+    color: theme.onAccent,
+    textAlign: 'center',
+  },
+  chipHint: {
+    fontSize: theme.font.caption,
+    color: theme.grayMuted,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  chips: { marginVertical: 8 },
   chip: {
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: theme.radius.pill,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: theme.grayLight,
     marginRight: 8,
     backgroundColor: theme.surface,
   },
-  chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
-  chipText: { fontWeight: '700', color: theme.black },
-  chipTextOn: { color: theme.onAccent },
+  chipPressed: {
+    backgroundColor: theme.grayLight,
+    borderColor: theme.gray,
+  },
+  chipOn: {
+    backgroundColor: theme.orange,
+    borderColor: theme.white,
+    borderWidth: 2,
+  },
+  chipOnPressed: { opacity: 0.88 },
+  chipText: { fontWeight: '700', color: theme.gray },
+  chipTextOn: { color: theme.onAccent, fontWeight: '800' },
   saveBtnDone: { opacity: 0.85 },
   saveSpinner: { marginTop: 8 },
   retake: { marginTop: 14, alignItems: 'center' },

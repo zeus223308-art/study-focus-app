@@ -92,6 +92,8 @@
     "yes": "저장",
     "no": "날짜 선택",
     "pickSubject": "과목 선택",
+    "selectedSubject": "저장할 과목",
+    "pickSubjectTap": "탭해서 과목을 바꿀 수 있습니다",
     "pickTags": "태그",
     "addTag": "태그 추가",
     "addTagTitle": "새 태그",
