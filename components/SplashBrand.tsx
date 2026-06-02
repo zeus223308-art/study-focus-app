@@ -113,7 +113,7 @@ export function SplashBrand({ onFinish }: Props) {
     const p = Math.max(0, Math.min(1, shineProgress.value));
     return {
       strokeDashoffset:
-        -SHINE_SEGMENT_LENGTH + p * (SHINE_PATH_LENGTH + SHINE_SEGMENT_LENGTH),
+        SHINE_PATH_LENGTH - p * (SHINE_PATH_LENGTH + SHINE_SEGMENT_LENGTH),
       opacity: p <= 0.02 || p >= 0.98 ? 0 : 1,
     };
   });
