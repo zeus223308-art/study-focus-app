@@ -90,6 +90,7 @@ export function RecallCanvas({
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
       onMoveShouldSetPanResponder: (_, gesture) => {
         if (scrollPassthroughRef.current) {
           const { dx, dy } = gesture;
@@ -97,6 +98,7 @@ export function RecallCanvas({
         }
         return true;
       },
+      onMoveShouldSetPanResponderCapture: () => true,
       onPanResponderGrant: (evt: GestureResponderEvent) => {
         touchStartRef.current?.();
         const activeTool = toolRef.current;
