@@ -23,11 +23,9 @@ import {
   useCaptureLeaveRegistration,
 } from '@/components/capture/CaptureLeaveGuard';
 import { Button } from '@/components/ui/Button';
-import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { mergeCaptureTagPresets } from '@/lib/domain/capture-tags';
-import { todayKey } from '@/lib/domain/dates';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { pickForImport } from '@/lib/import/pick-for-import';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
@@ -35,6 +33,7 @@ import { ensureManipulableImageUri } from '@/lib/files/ensure-manipulable-uri';
 import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
 import { verifyCaptureImageReadable } from '@/lib/files/verify-capture-image';
 import { showMessage } from '@/lib/ui/confirm';
+import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
 import {
   clearCaptureDraft,
   readCaptureDraft,
@@ -63,6 +62,7 @@ export default function CaptureTabScreen() {
   const isImportFresh = fresh === '1';
   const {
     data,
+    localToday,
     captureFlashcardPair,
     activeFolderCapture,
     updateSettings,
@@ -80,9 +80,6 @@ export default function CaptureTabScreen() {
   const { setEditorFullscreen } = useCaptureLeaveGuard();
   const [frontUri, setFrontUri] = useState<string | null>(null);
   const [backUri, setBackUri] = useState<string | null>(null);
-  const [studyDate, setStudyDate] = useState(
-    () => activeFolderCapture?.studyDate ?? todayKey()
-  );
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [subjectId, setSubjectId] = useState(
     () => activeFolderCapture?.subjectId ?? data.subjects[0]?.id ?? ''
@@ -99,18 +96,25 @@ export default function CaptureTabScreen() {
     () => data.subjects.find((s) => s.id === subjectId),
     [data.subjects, subjectId]
   );
+  const captureDateLabel = useMemo(
+    () =>
+      formatStudyDateHeading(localToday, data.settings.language, {
+        today: t('folder.dateToday'),
+        yesterday: t('folder.dateYesterday'),
+      }),
+    [localToday, data.settings.language, t]
+  );
 
   const hasPendingCapture = step !== 'camera' || Boolean(frontUri || backUri);
   const folderCaptureSyncKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!activeFolderCapture?.subjectId) return;
-    const syncKey = `${activeFolderCapture.subjectId}:${activeFolderCapture.studyDate}`;
+    const syncKey = activeFolderCapture.subjectId;
     if (folderCaptureSyncKeyRef.current === syncKey) return;
     const exists = data.subjects.some((s) => s.id === activeFolderCapture.subjectId);
     if (!exists) return;
     folderCaptureSyncKeyRef.current = syncKey;
     setSubjectId(activeFolderCapture.subjectId);
-    setStudyDate(activeFolderCapture.studyDate);
   }, [activeFolderCapture, data.subjects]);
 
   const resetCamera = useCallback(() => {
@@ -118,7 +122,6 @@ export default function CaptureTabScreen() {
     setFrontUri(null);
     setBackUri(null);
     setSaveState('idle');
-    setStudyDate(todayKey());
     setSelectedTags([]);
     setEditSide('front');
     setStep('camera');
@@ -183,7 +186,6 @@ export default function CaptureTabScreen() {
         setSubjectId((cur) =>
           cur && data.subjects.some((s) => s.id === cur) ? cur : draft.subjectId
         );
-        setStudyDate((cur) => cur || draft.studyDate);
         setSelectedTags((cur) => (cur.length > 0 ? cur : draft.selectedTags ?? []));
         setStep(draft.step === 'save-sheet' ? 'save-sheet' : 'answer-prompt');
         if (didRestore) showMessage(t('capture.draftRestored'));
@@ -210,13 +212,13 @@ export default function CaptureTabScreen() {
         backUri,
         subjectId,
         selectedTags,
-        studyDate,
+        studyDate: localToday,
         step: stepForDraft,
         updatedAt: new Date().toISOString(),
       });
     }, 350);
     return () => clearTimeout(timer);
-  }, [frontUri, backUri, subjectId, studyDate, selectedTags, step]);
+  }, [frontUri, backUri, subjectId, localToday, selectedTags, step]);
 
   const openEditor = useCallback(
     (uri: string, side: EditSide, returnStep?: Step, source: EditSource = 'camera') => {
@@ -416,7 +418,7 @@ export default function CaptureTabScreen() {
         stableFront,
         stableBack,
         subjectId,
-        studyDate,
+        localToday,
         selectedTags.length > 0 ? selectedTags : undefined
       );
       if (!id) {
@@ -431,7 +433,7 @@ export default function CaptureTabScreen() {
       }
 
       const savedSubjectId = subjectId;
-      const savedStudyDate = studyDate;
+      const savedStudyDate = localToday;
       setTimeout(() => {
         resetCamera();
         router.replace({
@@ -510,13 +512,9 @@ export default function CaptureTabScreen() {
               </View>
             ) : null}
 
-            <Text style={styles.sheetTitle}>{t('capture.pickDate')}</Text>
-            <View pointerEvents={saveState === 'saving' ? 'none' : 'auto'}>
-              <StudyDateStepper
-                studyDate={studyDate}
-                onChange={setStudyDate}
-                firstLaunchDate={data.settings.firstLaunchDate}
-              />
+            <Text style={styles.sheetTitle}>{t('capture.captureDate')}</Text>
+            <View style={styles.captureDateCard} accessibilityRole="text">
+              <Text style={styles.captureDateValue}>{captureDateLabel}</Text>
             </View>
 
             <View style={styles.pairRow}>
@@ -780,6 +778,22 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   sheetTitle: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
+  captureDateCard: {
+    marginTop: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    alignItems: 'center',
+  },
+  captureDateValue: {
+    fontSize: theme.font.body,
+    fontWeight: '800',
+    color: theme.black,
+    textAlign: 'center',
+  },
   successBanner: {
     backgroundColor: theme.orangeMuted,
     borderWidth: 1,
