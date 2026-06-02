@@ -78,18 +78,26 @@ export function DashboardCalendar({
   }, [selectedDate]);
 
   const monthStart = startOfMonth(viewMonth);
+  const monthKey = format(monthStart, 'yyyy-MM');
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
   const gridEnd = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 0 });
-  const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
+  const days = useMemo(
+    () => eachDayOfInterval({ start: gridStart, end: gridEnd }),
+    [monthKey]
+  );
 
   const markMap = useMemo(() => {
-    const map: Record<string, DateRibbonMark> = {};
+    const map: Record<string, DateRibbonMark> = Object.fromEntries(
+      marks.map((m) => [m.date, m])
+    );
     for (const day of days) {
       const key = format(day, 'yyyy-MM-dd');
-      map[key] = buildReviewMarkForDate(day, bundles, getSchedule, localToday);
+      if (key > localToday || !map[key]) {
+        map[key] = buildReviewMarkForDate(day, bundles, getSchedule, localToday);
+      }
     }
     return map;
-  }, [days, bundles, getSchedule, localToday]);
+  }, [monthKey, marks, days, bundles, getSchedule, localToday]);
 
   const todayDate = startOfDay(parseISO(`${localToday}T12:00:00`));
   const minDate = startOfDay(parseISO(`${bounds.min}T12:00:00`));

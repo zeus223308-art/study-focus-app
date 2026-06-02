@@ -26,36 +26,44 @@ export function getNextReviewDate(
   const today = dayStart(from);
   const intervals = getScheduleIntervals(schedule);
 
+  const stepGap = (stepIndex: number) => {
+    const gap =
+      intervals[Math.min(stepIndex, intervals.length - 1)] ??
+      intervals[intervals.length - 1] ??
+      1;
+    return Math.max(1, gap);
+  };
+
   if (schedule.mode === 'everyNDays' && schedule.everyNDays) {
+    const stepDays = Math.max(1, schedule.everyNDays);
     let candidate = anchor;
-    while (isBefore(candidate, today)) {
-      candidate = addDays(candidate, schedule.everyNDays);
+    let guard = 0;
+    while (isBefore(candidate, today) && guard < 4000) {
+      candidate = addDays(candidate, stepDays);
+      guard += 1;
     }
-    return candidate;
+    return guard >= 4000 ? today : candidate;
   }
 
   let step = bundle.review.reviewStepIndex;
   let next = anchor;
   if (step === 0) {
-    next = addDays(anchor, intervals[0] ?? 1);
+    next = addDays(anchor, stepGap(0));
   } else {
     const last = bundle.review.lastReviewedAt
       ? dayStart(bundle.review.lastReviewedAt)
       : anchor;
-    const gap = intervals[Math.min(step, intervals.length - 1)] ?? intervals[intervals.length - 1];
-    next = addDays(last, gap);
+    next = addDays(last, stepGap(step));
   }
 
-  while (isBefore(next, today)) {
+  let guard = 0;
+  while (isBefore(next, today) && guard < 4000) {
     step += 1;
-    const gap = intervals[Math.min(step, intervals.length - 1)] ?? intervals[intervals.length - 1];
-    const base = bundle.review.lastReviewedAt
-      ? dayStart(bundle.review.lastReviewedAt)
-      : anchor;
-    next = addDays(base, gap);
+    next = addDays(next, stepGap(step));
+    guard += 1;
   }
 
-  return next;
+  return guard >= 4000 ? today : next;
 }
 
 export function isDueOnDate(
