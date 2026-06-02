@@ -135,7 +135,7 @@ export default function DashboardScreen() {
 
   return (
     <Screen scroll nestedScrollEnabled>
-      <ScreenHeader title={t('dashboard.title')} showSettings />
+      <ScreenHeader title={t('dashboard.title')} showSettings={false} />
 
       <View style={styles.calendarSection}>
         <DashboardCalendar
