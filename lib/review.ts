@@ -14,7 +14,7 @@ export function getScheduleIntervals(schedule: ReviewSchedule): number[] {
   if (schedule.mode === 'everyNDays' && schedule.everyNDays) {
     return [schedule.everyNDays];
   }
-  return schedule.customIntervals ?? [1, 3, 5, 7];
+  return schedule.customIntervals ?? [1, 3, 5, 14, 30];
 }
 
 /** 다음 복습 예정일 (오늘 포함 이전이면 오늘 복습 대상) */

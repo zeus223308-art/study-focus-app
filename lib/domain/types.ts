@@ -195,6 +195,8 @@ export type AppSettings = {
   tagColor?: string;
   /** Per-tag colors keyed by normalized (trimmed, lowercased) tag label. */
   tagColors?: Record<string, string>;
+  /** yyyy-MM — last free-tier tag/schedule customization reset (monthly). */
+  customizationResetMonth?: string;
 };
 
 export type AppData = {

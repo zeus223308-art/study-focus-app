@@ -18,6 +18,7 @@ import {
   normalizeCaptureTagLabel,
   removeCaptureTagPreset,
 } from '@/lib/domain/capture-tags';
+import { applyMonthlyCustomizationReset } from '@/lib/domain/customization-reset';
 import { todayKey } from '@/lib/domain/dates';
 import { normalizeTagColorHex } from '@/lib/ui/tag-colors';
 import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
@@ -398,15 +399,22 @@ export function AppProvider({
   }, [ready, onReady]);
 
   useEffect(() => {
+    if (!ready) return;
     const prev = prevLocalTodayRef.current;
-    if (prev === localToday) return;
-    prevLocalTodayRef.current = localToday;
-    setSelectedDate((cur) => {
-      if (cur > localToday) return localToday;
-      if (cur === prev) return localToday;
-      return cur;
+    if (prev !== localToday) {
+      prevLocalTodayRef.current = localToday;
+      setSelectedDate((cur) => {
+        if (cur > localToday) return localToday;
+        if (cur === prev) return localToday;
+        return cur;
+      });
+    }
+    setData((prev) => {
+      if (!prev) return prev;
+      const next = applyMonthlyCustomizationReset(prev, localToday);
+      return next ?? prev;
     });
-  }, [localToday]);
+  }, [ready, localToday]);
 
   useEffect(() => {
     if (!ready || !data || skipPersistRef.current) return;
