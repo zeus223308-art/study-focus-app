@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Text as SvgText } from 'react-native-svg';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
@@ -26,30 +26,38 @@ const RIBBON_PAD_R = 6;
 function TagRibbon({ label, color }: { label: string; color: string }) {
   const [textW, setTextW] = useState(0);
   const labelColor = tagLabelTextColor(color);
-  const totalW = RIBBON_NOTCH_W + RIBBON_PAD_L + textW + RIBBON_PAD_R;
+  const contentW = textW || Math.max(6, Math.ceil(label.length * 4.8));
+  const totalW = RIBBON_NOTCH_W + RIBBON_PAD_L + contentW + RIBBON_PAD_R;
   const path = `M0 0 L${totalW} 0 L${totalW} ${RIBBON_H} L0 ${RIBBON_H} L${RIBBON_NOTCH_W} ${RIBBON_H / 2} Z`;
-  const labelStyle = [
-    styles.tagText,
-    { color: labelColor },
-    IS_WEB ? ({ color: labelColor, WebkitTextFillColor: labelColor } as object) : null,
-  ];
 
   return (
-    <View style={[styles.ribbon, textW > 0 ? { width: totalW } : null]}>
-      {textW > 0 ? (
-        <Svg key={color} width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill}>
-          <Path d={path} fill={color} />
-        </Svg>
-      ) : null}
+    <View style={[styles.ribbon, { width: totalW, height: RIBBON_H }]}>
       <Text
-        style={labelStyle}
+        style={styles.measureText}
         numberOfLines={1}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
         onLayout={(e) => {
           const w = Math.ceil(e.nativeEvent.layout.width);
-          if (w > 0) setTextW(w);
+          if (w > 0 && w !== textW) setTextW(w);
         }}>
         {label}
       </Text>
+      <Svg width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill}>
+        <Path d={path} fill={color} />
+        <SvgText
+          x={RIBBON_NOTCH_W + RIBBON_PAD_L}
+          y={RIBBON_H / 2 + 2.5}
+          fill={labelColor}
+          fontSize={8}
+          fontWeight="800"
+          alignmentBaseline="middle"
+          {...(IS_WEB
+            ? ({ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif' } as object)
+            : null)}>
+          {label}
+        </SvgText>
+      </Svg>
     </View>
   );
 }
@@ -325,14 +333,15 @@ const styles = StyleSheet.create({
     height: RIBBON_H,
     justifyContent: 'center',
   },
-  tagText: {
-    zIndex: 1,
+  measureText: {
+    opacity: 0,
     height: RIBBON_H,
     lineHeight: RIBBON_H,
     marginLeft: RIBBON_NOTCH_W + RIBBON_PAD_L,
     marginRight: RIBBON_PAD_R,
     fontSize: 8,
     fontWeight: '800',
+    alignSelf: 'flex-start',
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   memoBadge: {

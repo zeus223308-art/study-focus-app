@@ -65,16 +65,6 @@ export function resolveTagColorFor(
 const TAG_TEXT_DARK = '#141414';
 const TAG_TEXT_LIGHT = '#FFFFFF';
 
-/** 빨·주·노·초 — black label text. */
-const RAINBOW_DARK_TEXT = new Set(
-  FREE_TAG_COLORS.slice(0, 4).map((c) => c.toLowerCase())
-);
-
-/** 파·남·보 — white label text. */
-const RAINBOW_LIGHT_TEXT = new Set(
-  FREE_TAG_COLORS.slice(4, 7).map((c) => c.toLowerCase())
-);
-
 /** Premium warm/bright hues — same rule as 빨·주·노·초 family. */
 const PREMIUM_DARK_TEXT = new Set(
   ['#65a30d', '#84cc16', '#d97706', '#db2777', '#f43f5e']
@@ -185,14 +175,16 @@ export function snapToTagPalette(hex: string): string {
 }
 
 function tagLabelTextColorForPaletteKey(key: string): string {
+  const freeIdx = FREE_TAG_COLORS.findIndex((c) => normalizeHex(c) === key);
+  if (freeIdx >= 0 && freeIdx <= 3) return TAG_TEXT_DARK;
+  if (freeIdx >= 4 && freeIdx <= 6) return TAG_TEXT_LIGHT;
   if (
-    RAINBOW_DARK_TEXT.has(key) ||
     PREMIUM_DARK_TEXT.has(key) ||
     key === LEGACY_TAG_ORANGE
   ) {
     return TAG_TEXT_DARK;
   }
-  if (RAINBOW_LIGHT_TEXT.has(key) || PREMIUM_LIGHT_TEXT.has(key)) return TAG_TEXT_LIGHT;
+  if (PREMIUM_LIGHT_TEXT.has(key)) return TAG_TEXT_LIGHT;
   return TAG_TEXT_DARK;
 }
 
