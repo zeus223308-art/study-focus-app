@@ -37,7 +37,9 @@ export function MemoTextBoxView({
   const dragPan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => interactive && active,
+      onStartShouldSetPanResponderCapture: () => interactive && active,
       onMoveShouldSetPanResponder: () => interactive && active,
+      onMoveShouldSetPanResponderCapture: () => interactive && active,
       onPanResponderGrant: () => {
         dragOrigin.current = { x: box.x, y: box.y };
         onActivate();
@@ -47,13 +49,17 @@ export function MemoTextBoxView({
         const ny = Math.max(0, Math.min(surfaceHeight - box.height, dragOrigin.current.y + g.dy));
         onChange({ x: nx, y: ny });
       },
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
     })
   ).current;
 
   const resizePan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => interactive && active,
+      onStartShouldSetPanResponderCapture: () => interactive && active,
       onMoveShouldSetPanResponder: () => interactive && active,
+      onMoveShouldSetPanResponderCapture: () => interactive && active,
       onPanResponderGrant: () => {
         resizeOrigin.current = { w: box.width, h: box.height };
         onActivate();
@@ -63,6 +69,8 @@ export function MemoTextBoxView({
         const h = Math.max(32, Math.min(surfaceHeight - box.y, resizeOrigin.current.h + g.dy));
         onChange({ width: w, height: h });
       },
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
     })
   ).current;
 

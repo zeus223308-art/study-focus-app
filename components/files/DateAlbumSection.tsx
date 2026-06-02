@@ -129,13 +129,20 @@ export function DateAlbumSection({
 }
 
 const styles = StyleSheet.create({
-  section: {},
+  section: {
+    backgroundColor: theme.surface,
+    borderRadius: theme.radius.md,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    padding: 10,
+    ...theme.cardShadow,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
     marginBottom: 10,
-    paddingHorizontal: 2,
+    paddingHorizontal: 4,
   },
   heading: {
     flex: 1,
@@ -145,8 +152,8 @@ const styles = StyleSheet.create({
   },
   count: {
     fontSize: theme.font.caption,
-    fontWeight: '600',
-    color: theme.gray,
+    fontWeight: '700',
+    color: theme.graySecondary,
     marginLeft: 8,
   },
   grid: {

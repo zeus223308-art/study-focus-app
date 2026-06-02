@@ -54,23 +54,25 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: 14,
+    minHeight: 48,
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   baseCompact: {
+    minHeight: 40,
     paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingHorizontal: 12,
     borderRadius: theme.radius.sm,
-    minHeight: 36,
   },
   fit: {
     alignSelf: 'center',
     width: '100%',
     maxWidth: '100%',
   },
-  primary: { backgroundColor: theme.orange },
+  primary: { backgroundColor: theme.orange, ...theme.cardShadow },
   primaryPressed: { backgroundColor: theme.gray },
   secondary: { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.grayLight },
   ghost: { backgroundColor: 'transparent' },

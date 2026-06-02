@@ -308,6 +308,7 @@ const styles = StyleSheet.create({
     paddingVertical: PANEL_PAD,
     backgroundColor: theme.surface,
     overflow: 'hidden',
+    ...theme.cardShadow,
   },
   carouselSlot: {
     width: '100%',
@@ -360,6 +361,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
     borderWidth: 1,
     borderColor: theme.grayLight,
+    ...theme.cardShadow,
   },
   trashCardHeader: {
     flexDirection: 'row',
