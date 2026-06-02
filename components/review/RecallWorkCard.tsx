@@ -18,6 +18,8 @@ type Props = {
   onStrokesChange: (strokes: InkStroke[]) => void;
   textBoxes: ScratchTextBox[];
   onTextBoxesChange: (boxes: ScratchTextBox[]) => void;
+  /** Display-only — hides tools and blocks edits. */
+  readOnly?: boolean;
 };
 
 export function RecallWorkCard({
@@ -27,6 +29,7 @@ export function RecallWorkCard({
   onStrokesChange,
   textBoxes,
   onTextBoxesChange,
+  readOnly = false,
 }: Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<WorkMode>('draw');
@@ -34,7 +37,7 @@ export function RecallWorkCard({
   const [editingText, setEditingText] = useState(false);
 
   const recallTool: RecallTool = mode === 'erase' ? 'eraser' : 'pen-black';
-  const surfaceH = height - 36;
+  const surfaceH = readOnly ? height : height - 36;
   const canvasInteractive = mode === 'draw' || mode === 'erase' || (mode === 'text' && !editingText);
 
   const dismissTextEditing = useCallback(() => {
@@ -78,39 +81,41 @@ export function RecallWorkCard({
 
   return (
     <View style={[styles.card, { width, height }]}>
-      <View style={styles.modeRow}>
-        {modeBtn('draw', t('review.workDraw'))}
-        {modeBtn('text', t('review.workText'))}
-        {modeBtn('erase', t('review.workEraser'))}
-        {mode === 'text' ? (
-          <Pressable onPress={addTextBox} style={styles.addText}>
-            <Text style={styles.addTextLabel}>+</Text>
-          </Pressable>
-        ) : null}
-      </View>
+      {!readOnly ? (
+        <View style={styles.modeRow}>
+          {modeBtn('draw', t('review.workDraw'))}
+          {modeBtn('text', t('review.workText'))}
+          {modeBtn('erase', t('review.workEraser'))}
+          {mode === 'text' ? (
+            <Pressable onPress={addTextBox} style={styles.addText}>
+              <Text style={styles.addTextLabel}>+</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={[styles.surfaceOuter, { width, height: surfaceH }]}>
         <View style={[styles.surface, { width, height: surfaceH }]}>
           <View
             style={[styles.canvasLayer, { width, height: surfaceH }]}
-            pointerEvents={canvasInteractive ? 'auto' : 'none'}>
+            pointerEvents={readOnly || !canvasInteractive ? 'none' : 'auto'}>
         <RecallCanvas
           strokes={strokes}
-          onStrokesChange={onStrokesChange}
+          onStrokesChange={readOnly ? () => {} : onStrokesChange}
           tool={recallTool}
-          allowVerticalScrollPassthrough
+          allowVerticalScrollPassthrough={!readOnly}
         />
           </View>
-          {editingText ? (
+          {!readOnly && editingText ? (
             <Pressable style={styles.dismissBackdrop} onPress={dismissTextEditing} />
           ) : null}
           {textBoxes.map((box) => (
             <MemoTextBoxView
               key={box.id}
               box={box}
-              active={activeBoxId === box.id}
-              editing={editingText && activeBoxId === box.id}
-              interactive={mode === 'text'}
+              active={!readOnly && activeBoxId === box.id}
+              editing={!readOnly && editingText && activeBoxId === box.id}
+              interactive={!readOnly && mode === 'text'}
               surfaceWidth={width}
               surfaceHeight={surfaceH}
               placeholder={t('review.textBoxPlaceholder')}

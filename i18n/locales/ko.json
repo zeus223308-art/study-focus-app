@@ -333,7 +333,8 @@
     "pairIncomplete": "뒷면 없음",
     "countdownDuration": "카운트다운",
     "slideDuration": "슬라이드",
-    "timerSec": "{{sec}}초"
+    "timerSec": "{{sec}}초",
+    "debriefYourWork": "내 풀이"
   },
   "trash": {
     "title": "휴지통",

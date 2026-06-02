@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RecallWorkCard, type ScratchTextBox } from '@/components/review/RecallWorkCard';
+import { ReviewDebriefPanel } from '@/components/review/ReviewDebriefPanel';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
@@ -44,7 +45,12 @@ import {
 const HINT_PEEK_MS = 8000;
 type SlideSide = 'front' | 'back';
 type Slide = { bundle: NoteBundle; page: NotePage; side: SlideSide };
-type Phase = 'front' | 'countdown' | 'recall-work' | 'peek' | 'complete';
+type Phase = 'front' | 'countdown' | 'recall-work' | 'peek' | 'debrief';
+
+type SubmittedRecall = {
+  strokes: InkStroke[];
+  textBoxes: ScratchTextBox[];
+};
 
 export default function ReviewSessionScreen() {
   const { t } = useTranslation();
@@ -143,6 +149,8 @@ export default function ReviewSessionScreen() {
   const [textBoxes, setTextBoxes] = useState<ScratchTextBox[]>([]);
   const [adVisible, setAdVisible] = useState(false);
   const [hintOffer, setHintOffer] = useState(false);
+  const [completionVisible, setCompletionVisible] = useState(false);
+  const [submittedRecall, setSubmittedRecall] = useState<SubmittedRecall | null>(null);
   const [passAnim] = useState(() => new Animated.Value(0));
   const passScale = useRef(new Animated.Value(0.7)).current;
   const frontFade = useRef(new Animated.Value(1)).current;
@@ -237,6 +245,8 @@ export default function ReviewSessionScreen() {
     problemShift.setValue(0);
     setAdVisible(false);
     setHintOffer(false);
+    setCompletionVisible(false);
+    setSubmittedRecall(null);
     frontFade.setValue(1);
     passAnim.setValue(0);
     passScale.setValue(0.7);
@@ -316,6 +326,8 @@ export default function ReviewSessionScreen() {
     passScale.setValue(0.7);
     setRecallStrokes([]);
     setTextBoxes([]);
+    setSubmittedRecall(null);
+    setCompletionVisible(false);
     setPhase('front');
     if (index < slides.length - 1) {
       setIndex((i) => i + 1);
@@ -325,22 +337,28 @@ export default function ReviewSessionScreen() {
   }, [finishSession, index, passAnim, passScale, slides.length]);
 
   const showCompletion = useCallback(() => {
-    setPhase('complete');
+    setCompletionVisible(true);
     passAnim.setValue(0);
     passScale.setValue(0.7);
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(passAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
-        Animated.spring(passScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
-      ]),
-      Animated.delay(650),
-    ]).start(() => {
-      finishAfterComplete();
-    });
-  }, [finishAfterComplete, passAnim, passScale]);
+    Animated.parallel([
+      Animated.timing(passAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
+      Animated.spring(passScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
+    ]).start();
+  }, [passAnim, passScale]);
+
+  const confirmCompletion = useCallback(() => {
+    setCompletionVisible(false);
+    passAnim.setValue(0);
+    passScale.setValue(0.7);
+    setPhase('debrief');
+  }, [passAnim, passScale]);
 
   const submitRecall = () => {
     if (!current) return;
+    setSubmittedRecall({
+      strokes: recallStrokes,
+      textBoxes: textBoxes,
+    });
     completeReview(current.bundle.id);
     showCompletion();
   };
@@ -402,6 +420,7 @@ export default function ReviewSessionScreen() {
 
   const hasAnswer = Boolean(answerUri);
   const recallMode = phase === 'recall-work' || phase === 'countdown';
+  const debriefMode = phase === 'debrief';
   const problemLiftY = problemShift.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 0],
@@ -414,16 +433,17 @@ export default function ReviewSessionScreen() {
     current.side === 'back' ? ANSWER_SLIDESHOW_SECONDS : FRONT_SLIDESHOW_SECONDS;
 
   return (
-    <View style={[styles.root, recallMode && styles.rootRecall]}>
+    <View style={[styles.root, (recallMode || debriefMode) && styles.rootRecall]}>
       <View
         style={[
           styles.topBar,
           { paddingTop: insets.top + 8 },
           recallMode && styles.topBarRecall,
+          debriefMode && styles.topBarRecall,
         ]}>
         <View style={styles.topBarLeft}>
           {auto ? (
-            <Text style={[styles.slideshowProgress, recallMode && styles.topBarDarkText]}>
+            <Text style={[styles.slideshowProgress, (recallMode || debriefMode) && styles.topBarDarkText]}>
               {index + 1} / {slides.length}
             </Text>
           ) : null}
@@ -440,12 +460,26 @@ export default function ReviewSessionScreen() {
             style={styles.close}
             onPress={finishSession}
             hitSlop={12}>
-            <Text style={[styles.closeText, recallMode && styles.topBarDarkText]}>{t('common.close')}</Text>
+            <Text style={[styles.closeText, (recallMode || debriefMode) && styles.topBarDarkText]}>{t('common.close')}</Text>
           </Pressable>
         </View>
       </View>
 
-      {recallMode ? (
+      {debriefMode && submittedRecall ? (
+        <ReviewDebriefPanel
+          frontUri={resolvedFrontUri}
+          answerUri={resolvedAnswerUri}
+          hasAnswer={hasAnswer}
+          cardWidth={workCardW}
+          problemHeight={problemCardH}
+          workHeight={workCardH}
+          strokes={submittedRecall.strokes}
+          textBoxes={submittedRecall.textBoxes}
+          bottomInset={insets.bottom}
+          onNext={finishAfterComplete}
+          nextLabel={index < slides.length - 1 ? t('review.next') : t('common.done')}
+        />
+      ) : recallMode ? (
         <ScrollView
           style={styles.recallScroll}
           contentContainerStyle={[
@@ -528,15 +562,6 @@ export default function ReviewSessionScreen() {
                 <Text style={styles.peekHint}>{t('review.hintPeek')}</Text>
               </View>
             )}
-
-            {phase === 'complete' && (
-              <Animated.View style={[styles.passOverlay, { opacity: passAnim }]}>
-                <Animated.View style={{ transform: [{ scale: passScale }] }}>
-                  <Text style={styles.passEmoji}>✓</Text>
-                  <Text style={styles.passTitle}>{t('review.complete')}</Text>
-                </Animated.View>
-              </Animated.View>
-            )}
           </View>
 
           {phase === 'front' && !auto && (
@@ -593,6 +618,25 @@ export default function ReviewSessionScreen() {
           )}
         </>
       )}
+
+      {completionVisible ? (
+        <View style={styles.completionOverlay}>
+          <View style={styles.completionBackdrop} />
+          <Animated.View
+            style={[
+              styles.completionCard,
+              { opacity: passAnim, transform: [{ scale: passScale }] },
+            ]}>
+            <Text style={styles.passEmoji}>✓</Text>
+            <Text style={styles.passTitle}>{t('review.complete')}</Text>
+            <Button
+              label={t('common.confirm')}
+              onPress={confirmCompletion}
+              style={styles.completionBtn}
+            />
+          </Animated.View>
+        </View>
+      ) : null}
 
       <Modal visible={adVisible} transparent animationType="fade" onRequestClose={dismissAd}>
         <View style={styles.ad}>
@@ -767,6 +811,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,107,0,0.92)',
   },
+  completionOverlay: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  completionBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  completionCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: theme.orange,
+    borderRadius: theme.radius.lg,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 20,
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  completionBtn: { alignSelf: 'stretch', marginTop: 20 },
   passEmoji: { color: theme.white, fontSize: 56, textAlign: 'center', marginBottom: 8 },
   passTitle: { color: theme.white, fontSize: 32, fontWeight: '900', textAlign: 'center' },
   ad: {

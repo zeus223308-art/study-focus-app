@@ -333,7 +333,8 @@
     "pairIncomplete": "No back",
     "countdownDuration": "Countdown",
     "slideDuration": "Slides",
-    "timerSec": "{{sec}}s"
+    "timerSec": "{{sec}}s",
+    "debriefYourWork": "Your work"
   },
   "trash": {
     "title": "Trash",
