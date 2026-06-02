@@ -112,11 +112,14 @@ export default function ReviewSessionScreen() {
       bundles = bundles.filter((b) => b.subjectId === params.subjectId);
     }
     if (reviewDate && /^\d{4}-\d{2}-\d{2}$/.test(reviewDate)) {
+      const before = bundles;
       const d = parseISO(`${reviewDate}T12:00:00`);
-      bundles = bundles.filter((b) => {
+      const filtered = bundles.filter((b) => {
         const s = getSchedule(b.review.reviewScheduleId);
         return s ? isDueOnDate(b, s, d) : false;
       });
+      // If nothing is due on that day, allow manual/extra review (fallback to all in scope).
+      bundles = filtered.length > 0 ? filtered : before;
     }
     const isSlideshow = params.slideshow === '1';
     const list: Slide[] = [];
