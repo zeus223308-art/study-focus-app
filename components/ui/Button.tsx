@@ -6,17 +6,27 @@ type Props = {
   label: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'default' | 'compact';
   style?: ViewStyle;
   disabled?: boolean;
 };
 
-export function Button({ label, onPress, variant = 'primary', style, disabled }: Props) {
+export function Button({
+  label,
+  onPress,
+  variant = 'primary',
+  size = 'default',
+  style,
+  disabled,
+}: Props) {
+  const compact = size === 'compact';
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [
         styles.base,
+        compact && styles.baseCompact,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && styles.ghost,
@@ -27,6 +37,7 @@ export function Button({ label, onPress, variant = 'primary', style, disabled }:
       <Text
         style={[
           styles.text,
+          compact && styles.textCompact,
           variant === 'primary' && styles.textPrimary,
           variant === 'secondary' && styles.textSecondary,
           variant === 'ghost' && styles.textGhost,
@@ -44,11 +55,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
+  baseCompact: {
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: theme.radius.sm,
+    minHeight: 40,
+  },
   primary: { backgroundColor: theme.orange },
   primaryPressed: { backgroundColor: theme.gray },
   secondary: { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.grayLight },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: theme.font.body, fontWeight: '700' },
+  textCompact: { fontSize: theme.font.bodySmall, fontWeight: '700' },
   textPrimary: { color: theme.onAccent },
   textSecondary: { color: theme.black },
   textGhost: { color: theme.orange },

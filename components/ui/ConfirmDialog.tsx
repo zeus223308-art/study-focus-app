@@ -96,8 +96,8 @@ const styles = StyleSheet.create({
   },
   btn: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: theme.radius.md,
+    paddingVertical: 10,
+    borderRadius: theme.radius.sm,
     alignItems: 'center',
   },
   btnCancel: {
@@ -114,11 +114,11 @@ const styles = StyleSheet.create({
   btnCancelText: {
     fontWeight: '700',
     color: theme.black,
-    fontSize: theme.font.body,
+    fontSize: theme.font.bodySmall,
   },
   btnConfirmText: {
     fontWeight: '800',
     color: theme.onAccent,
-    fontSize: theme.font.body,
+    fontSize: theme.font.bodySmall,
   },
 });

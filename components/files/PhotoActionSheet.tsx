@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   row: {
-    paddingVertical: 16,
+    paddingVertical: 11,
     alignItems: 'center',
   },
   rowBorder: {
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     borderTopColor: theme.grayLight,
   },
   rowText: {
-    fontSize: theme.font.body,
+    fontSize: theme.font.bodySmall,
     fontWeight: '700',
     color: theme.black,
   },
@@ -103,14 +103,14 @@ const styles = StyleSheet.create({
     color: theme.orange,
   },
   cancelRow: {
-    marginTop: 8,
-    paddingVertical: 14,
+    marginTop: 6,
+    paddingVertical: 10,
     alignItems: 'center',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.grayLight,
   },
   cancelText: {
-    fontSize: theme.font.body,
+    fontSize: theme.font.bodySmall,
     fontWeight: '600',
     color: theme.gray,
   },

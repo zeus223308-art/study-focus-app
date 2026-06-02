@@ -427,43 +427,48 @@ export default function FolderScreen() {
       </Screen>
 
       {exportSelectMode ? (
-        <View style={[styles.exportBar, { paddingBottom: Math.max(16, insets.bottom) }]}>
+        <View style={[styles.exportBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
           <Button
             label={t('folder.sendToNewFolder')}
+            size="compact"
             onPress={openNewFolderModal}
             disabled={exportSelectedKeys.size === 0}
           />
           <Button
             label={t('folder.sendToOtherFolder')}
             variant="secondary"
+            size="compact"
             onPress={openOtherSubjectPicker}
             disabled={exportSelectedKeys.size === 0}
-            style={{ marginTop: 8 }}
+            style={styles.exportBarBtnGap}
           />
           <Button
             label={t('common.cancel')}
             variant="ghost"
+            size="compact"
             onPress={exitExportSelect}
-            style={{ marginTop: 8 }}
+            style={styles.exportBarBtnGap}
           />
         </View>
       ) : null}
 
       {archiveSelectMode ? (
-        <View style={[styles.archiveBar, { paddingBottom: Math.max(16, insets.bottom) }]}>
+        <View style={[styles.archiveBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
           <Button
             label={t('folder.saveToArchiveCount', { count: archiveSelectedKeys.size })}
+            size="compact"
             onPress={confirmArchiveSelected}
             disabled={archiveSelectedKeys.size === 0}
           />
           <Button
             label={t('common.cancel')}
             variant="ghost"
+            size="compact"
             onPress={() => {
               setArchiveSelectMode(false);
               setArchiveSelectedKeys(new Set());
             }}
-            style={{ marginTop: 8 }}
+            style={styles.exportBarBtnGap}
           />
         </View>
       ) : null}
@@ -546,19 +551,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     backgroundColor: theme.beige,
     borderTopWidth: 1,
     borderTopColor: theme.grayLight,
   },
+  exportBarBtnGap: { marginTop: 6 },
   archiveBar: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 20,
-    paddingTop: 12,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     backgroundColor: theme.beige,
     borderTopWidth: 1,
     borderTopColor: theme.grayLight,
