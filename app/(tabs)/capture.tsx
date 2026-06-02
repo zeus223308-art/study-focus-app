@@ -92,6 +92,7 @@ export default function CaptureTabScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
   const hasSubjects = data.subjects.length > 0;
+  const captureDateLabel = useMemo(
     () =>
       formatStudyDateHeading(localToday, data.settings.language, {
         today: t('folder.dateToday'),
