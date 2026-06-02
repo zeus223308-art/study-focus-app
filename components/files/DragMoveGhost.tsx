@@ -3,6 +3,10 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { useApp } from '@/context/AppContext';
 import { theme } from '@/constants/theme';
 
+/** Finger-following pill when reordering a subject folder. */
+const SUBJECT_GHOST_MAX_W = 88;
+const SUBJECT_GHOST_H = 22;
+
 type Props = {
   pageX: number;
   pageY: number;
@@ -16,8 +20,8 @@ export function DragMoveGhost({ pageX, pageY, visible }: Props) {
   if (reorderingSubjectId) {
     const subject = data.subjects.find((s) => s.id === reorderingSubjectId);
     if (!subject) return null;
-    const left = pageX - 56;
-    const top = pageY - 28;
+    const left = pageX - SUBJECT_GHOST_MAX_W / 2;
+    const top = pageY - SUBJECT_GHOST_H / 2;
     return (
       <View style={[styles.labelGhost, { left, top }]} pointerEvents="none">
         <Text style={styles.labelText} numberOfLines={1}>
@@ -67,19 +71,18 @@ const styles = StyleSheet.create({
   labelGhost: {
     position: 'absolute',
     zIndex: 200,
-    minWidth: 112,
-    maxWidth: 180,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: theme.radius.md,
-    borderWidth: 2,
+    maxWidth: SUBJECT_GHOST_MAX_W,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
     borderColor: theme.orange,
     backgroundColor: theme.surface,
     opacity: 0.95,
     ...theme.cardShadow,
   },
   labelText: {
-    fontSize: theme.font.body,
+    fontSize: theme.font.caption,
     fontWeight: '800',
     color: theme.black,
     textAlign: 'center',
