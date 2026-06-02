@@ -128,6 +128,8 @@ const styles = StyleSheet.create({
   },
   btnSend: {
     backgroundColor: theme.orange,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
   },
   /** Empty input: keep the button looking active, styled like Cancel. */
   btnSendIdle: {
