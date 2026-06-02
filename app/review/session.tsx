@@ -10,7 +10,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from 'react-native';
@@ -73,7 +72,6 @@ export default function ReviewSessionScreen() {
     storage,
     updateBundle,
     getSchedule,
-    setPaywallVisible,
   } = useApp();
 
   const slides = useMemo<Slide[]>(() => {
@@ -153,7 +151,6 @@ export default function ReviewSessionScreen() {
   const [adLocked, setAdLocked] = useState(false);
   const [adVisible, setAdVisible] = useState(false);
   const [hintOffer, setHintOffer] = useState(false);
-  const [premiumReveal, setPremiumReveal] = useState(false);
   const [scheduleSheetVisible, setScheduleSheetVisible] = useState(false);
   const [lastPassScore, setLastPassScore] = useState(0);
   const [passAnim] = useState(() => new Animated.Value(0));
@@ -253,7 +250,6 @@ export default function ReviewSessionScreen() {
     setAdLocked(false);
     setAdVisible(false);
     setHintOffer(false);
-    setPremiumReveal(false);
     setScheduleSheetVisible(false);
     setLastPassScore(0);
     frontFade.setValue(1);
@@ -468,11 +464,9 @@ export default function ReviewSessionScreen() {
     );
   }
 
-  const showAnswerOverlay = isPro && premiumReveal && answerUri && !auto;
   const hasAnswer = Boolean(answerUri);
   const gradable = isProblemGradable(current.page);
-  const recallMode =
-    (phase === 'recall-work' || phase === 'countdown') && !showAnswerOverlay;
+  const recallMode = phase === 'recall-work' || phase === 'countdown';
   const problemLiftY = problemShift.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 0],
@@ -494,29 +488,11 @@ export default function ReviewSessionScreen() {
           recallMode && styles.topBarRecall,
         ]}>
         <View style={styles.topBarLeft}>
-          {!auto ? (
-            <View style={styles.premiumToggle}>
-              <Text style={[styles.premiumLabel, recallMode && styles.topBarDarkText]}>
-                {t('review.answerToggle')}
-              </Text>
-              <Switch
-                value={isPro && premiumReveal}
-                onValueChange={(on) => {
-                  if (!isPro) {
-                    if (on) setPaywallVisible(true);
-                    return;
-                  }
-                  setPremiumReveal(on);
-                }}
-                trackColor={{ false: theme.grayLight, true: theme.orange }}
-                thumbColor={theme.white}
-              />
-            </View>
-          ) : (
+          {auto ? (
             <Text style={[styles.slideshowProgress, recallMode && styles.topBarDarkText]}>
               {index + 1} / {slides.length}
             </Text>
-          )}
+          ) : null}
         </View>
         <View style={styles.topBarRight}>
           {timerDisplaySec !== null && timerDisplaySec > 0 ? (
@@ -599,7 +575,7 @@ export default function ReviewSessionScreen() {
           <View
             style={styles.stage}
             {...(phase === 'front' && slides.length > 1 ? slideSwipePan.panHandlers : {})}>
-            <Animated.View style={[styles.imageWrap, { opacity: showAnswerOverlay ? 0 : frontFade }]}>
+            <Animated.View style={[styles.imageWrap, { opacity: frontFade }]}>
               {displayUri ? (
                 <Image source={{ uri: displayUri }} style={styles.image} resizeMode="contain" />
               ) : (
@@ -615,10 +591,6 @@ export default function ReviewSessionScreen() {
                 </View>
               )}
             </Animated.View>
-
-            {showAnswerOverlay && resolvedAnswerUri && (
-              <Image source={{ uri: resolvedAnswerUri }} style={styles.image} resizeMode="contain" />
-            )}
 
             {phase === 'peek' && resolvedAnswerUri && (
               <View style={styles.peekOverlay}>
@@ -779,8 +751,6 @@ const styles = StyleSheet.create({
   topBarDarkMuted: { color: theme.gray },
   topBarLeft: { flex: 1, minWidth: 0 },
   topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  premiumToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  premiumLabel: { color: theme.white, fontSize: theme.font.caption, fontWeight: '700' },
   slideshowProgress: { color: theme.white, fontSize: theme.font.caption, fontWeight: '700' },
   timerBadge: {
     minWidth: 44,
