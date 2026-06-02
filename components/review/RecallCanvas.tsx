@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   PanResponder,
+  Platform,
   StyleSheet,
   View,
   type GestureResponderEvent,
   type LayoutChangeEvent,
+  type ViewStyle,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { WebInkCanvasOverlay } from '@/components/annotation/WebInkCanvasOverlay';
 import { theme } from '@/constants/theme';
 import type { InkPoint, InkStroke, InkToolId } from '@/lib/domain/types';
 
@@ -16,6 +19,11 @@ function pointsToPath(points: InkPoint[]): string {
   const [first, ...rest] = points;
   return `M ${first.x} ${first.y} ${rest.map((p) => `L ${p.x} ${p.y}`).join(' ')}`;
 }
+
+const recallCanvasWebWrap: ViewStyle | undefined =
+  Platform.OS === 'web'
+    ? ({ touchAction: 'none' } as unknown as ViewStyle)
+    : undefined;
 
 function strokeIntersects(eraser: InkStroke, stroke: InkStroke): boolean {
   const pad = eraser.width;
@@ -147,33 +155,43 @@ export function RecallCanvas({
 
   return (
     <View
-      style={[styles.wrap, fullScreen && styles.wrapFull]}
+      style={[styles.wrap, fullScreen && styles.wrapFull, recallCanvasWebWrap]}
       onLayout={onLayout}
-      {...pan.panHandlers}>
-      <Svg width={size.w} height={size.h} style={StyleSheet.absoluteFill}>
-        {display.map((s) => (
-          <Path
-            key={s.id}
-            d={pointsToPath(s.points)}
-            stroke={theme.inkDefault}
-            strokeWidth={s.width}
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ))}
-        {eraserPreview && (
-          <Path
-            d={pointsToPath(eraserPreview.points)}
-            stroke={theme.grayLight}
-            strokeWidth={eraserPreview.width}
-            strokeOpacity={eraserPreview.opacity}
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        )}
-      </Svg>
+      {...pan.panHandlers}
+      {...(Platform.OS === 'web' ? { dataSet: { recallCanvas: '1' } } : {})}>
+      {Platform.OS === 'web' ? (
+        <WebInkCanvasOverlay
+          width={size.w}
+          height={size.h}
+          strokes={display}
+          eraserPreview={eraserPreview}
+        />
+      ) : (
+        <Svg width={size.w} height={size.h} style={StyleSheet.absoluteFill}>
+          {display.map((s) => (
+            <Path
+              key={s.id}
+              d={pointsToPath(s.points)}
+              stroke={theme.inkDefault}
+              strokeWidth={s.width}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+          {eraserPreview && (
+            <Path
+              d={pointsToPath(eraserPreview.points)}
+              stroke={theme.grayLight}
+              strokeWidth={eraserPreview.width}
+              strokeOpacity={eraserPreview.opacity}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+        </Svg>
+      )}
     </View>
   );
 }

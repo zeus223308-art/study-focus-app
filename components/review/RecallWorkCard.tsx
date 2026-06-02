@@ -20,6 +20,8 @@ type Props = {
   onTextBoxesChange: (boxes: ScratchTextBox[]) => void;
   /** Display-only — hides tools and blocks edits. */
   readOnly?: boolean;
+  /** Parent can disable outer scroll while pen/eraser is active (mobile web). */
+  onGestureLockChange?: (locked: boolean) => void;
 };
 
 export function RecallWorkCard({
@@ -30,6 +32,7 @@ export function RecallWorkCard({
   textBoxes,
   onTextBoxesChange,
   readOnly = false,
+  onGestureLockChange,
 }: Props) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<WorkMode>('draw');
@@ -104,6 +107,8 @@ export function RecallWorkCard({
           onStrokesChange={readOnly ? () => {} : onStrokesChange}
           tool={recallTool}
           allowVerticalScrollPassthrough={false}
+          onTouchStart={() => onGestureLockChange?.(true)}
+          onTouchEnd={() => onGestureLockChange?.(false)}
         />
           </View>
           {!readOnly && editingText ? (

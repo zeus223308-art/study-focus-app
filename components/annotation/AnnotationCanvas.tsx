@@ -140,12 +140,15 @@ export function AnnotationCanvas({
   const lockedRef = useRef(layer.locked);
   lockedRef.current = layer.locked;
 
+  const canDraw = () =>
+    visibleRef.current && interactiveRef.current && !lockedRef.current;
+
   const pan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () =>
-        visibleRef.current && interactiveRef.current && !lockedRef.current,
-      onMoveShouldSetPanResponder: () =>
-        visibleRef.current && interactiveRef.current && !lockedRef.current,
+      onStartShouldSetPanResponder: canDraw,
+      onStartShouldSetPanResponderCapture: canDraw,
+      onMoveShouldSetPanResponder: canDraw,
+      onMoveShouldSetPanResponderCapture: canDraw,
       onPanResponderGrant: (evt: GestureResponderEvent) => {
         const activeTool = toolRef.current;
         const { locationX: x, locationY: y } = evt.nativeEvent;
@@ -169,6 +172,8 @@ export function AnnotationCanvas({
       },
       onPanResponderRelease: commitStroke,
       onPanResponderTerminate: commitStroke,
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
     })
   ).current;
 

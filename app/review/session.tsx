@@ -173,6 +173,7 @@ export default function ReviewSessionScreen() {
   const [textBoxes, setTextBoxes] = useState<ScratchTextBox[]>([]);
   const [problemCompleteVisible, setProblemCompleteVisible] = useState(false);
   const [sessionCompleteVisible, setSessionCompleteVisible] = useState(false);
+  const [recallScrollLocked, setRecallScrollLocked] = useState(false);
   const [submittedRecall, setSubmittedRecall] = useState<SubmittedRecall | null>(null);
   const [passAnim] = useState(() => new Animated.Value(0));
   const passScale = useRef(new Animated.Value(0.7)).current;
@@ -535,6 +536,7 @@ export default function ReviewSessionScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator
           nestedScrollEnabled
+          scrollEnabled={!recallScrollLocked}
           onLayout={(e) => {
             const w = e.nativeEvent.layout.width;
             if (w > 0) setRecallViewW(w);
@@ -593,6 +595,7 @@ export default function ReviewSessionScreen() {
                 onStrokesChange={setRecallStrokes}
                 textBoxes={textBoxes}
                 onTextBoxesChange={setTextBoxes}
+                onGestureLockChange={setRecallScrollLocked}
               />
               {!hasAnswer ? <Text style={styles.warn}>{t('review.noBackPhoto')}</Text> : null}
               <View style={styles.recallActions}>
