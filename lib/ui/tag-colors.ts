@@ -85,6 +85,9 @@ const PREMIUM_LIGHT_TEXT = new Set(
   ['#0891b2', '#06b6d4', '#0f766e', '#92400e', '#64748b']
 );
 
+/** Legacy global tag tint (pre–per-tag colors). */
+const LEGACY_TAG_ORANGE = '#ff6b00';
+
 function normalizeHex(hex: string): string | null {
   const rgb = parseHexRgb(hex);
   if (!rgb) return null;
@@ -125,16 +128,67 @@ function relativeLuminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+function rgbSaturation(rgb: { r: number; g: number; b: number }): number {
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  if (max <= 0) return 0;
+  return (max - min) / max;
+}
+
+/** Hue 0–360; achromatic colors return 0. */
+function rgbHueDegrees(rgb: { r: number; g: number; b: number }): number {
+  const r = rgb.r / 255;
+  const g = rgb.g / 255;
+  const b = rgb.b / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  if (delta < 1 / 255) return 0;
+  let h = 0;
+  if (max === r) h = ((g - b) / delta) % 6;
+  else if (max === g) h = (b - r) / delta + 2;
+  else h = (r - g) / delta + 4;
+  h *= 60;
+  if (h < 0) h += 360;
+  return h;
+}
+
+/** 빨·주·노·초 (+ legacy orange, pink-red). */
+function isWarmTagHue(hue: number): boolean {
+  return hue <= 150 || hue >= 325;
+}
+
 /**
  * Tag label text: 빨·주·노·초 → black, 파·남·보 → white.
- * Custom colors fall back to luminance.
+ * Uses palette hex when exact; otherwise hue (not luminance — dark red/green
+ * were wrongly getting white text).
  */
 export function contrastTextColor(hex: string): string {
   const key = normalizeHex(hex);
   if (!key) return TAG_TEXT_LIGHT;
-  if (RAINBOW_DARK_TEXT.has(key) || PREMIUM_DARK_TEXT.has(key)) return TAG_TEXT_DARK;
+  if (
+    RAINBOW_DARK_TEXT.has(key) ||
+    PREMIUM_DARK_TEXT.has(key) ||
+    key === LEGACY_TAG_ORANGE
+  ) {
+    return TAG_TEXT_DARK;
+  }
   if (RAINBOW_LIGHT_TEXT.has(key) || PREMIUM_LIGHT_TEXT.has(key)) return TAG_TEXT_LIGHT;
-  return relativeLuminance(hex) > 0.45 ? TAG_TEXT_DARK : TAG_TEXT_LIGHT;
+
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return TAG_TEXT_LIGHT;
+
+  const lum = relativeLuminance(hex);
+  if (lum > 0.78) return TAG_TEXT_DARK;
+  if (lum < 0.1) return TAG_TEXT_LIGHT;
+
+  const sat = rgbSaturation(rgb);
+  if (sat < 0.12) return lum > 0.45 ? TAG_TEXT_DARK : TAG_TEXT_LIGHT;
+
+  return isWarmTagHue(rgbHueDegrees(rgb)) ? TAG_TEXT_DARK : TAG_TEXT_LIGHT;
 }
 
 /** Subtle shadow so tag labels stay legible on busy photo areas. */
