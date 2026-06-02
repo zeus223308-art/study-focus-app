@@ -137,16 +137,6 @@ export default function DashboardScreen() {
     <Screen scroll nestedScrollEnabled>
       <ScreenHeader title={t('dashboard.title')} showSettings={false} />
 
-      <View style={styles.calendarSection}>
-        <DashboardCalendar
-          marks={ribbonMarks}
-          selectedDate={selectedDate}
-          localToday={localToday}
-          firstLaunchDate={data.settings.firstLaunchDate}
-          onSelectDate={setSelectedDate}
-        />
-      </View>
-
       {subjectEntries.length === 0 ? (
         <View style={styles.emptyBlock}>
           <Text style={styles.empty}>{t('dashboard.noSubjects')}</Text>
@@ -184,6 +174,16 @@ export default function DashboardScreen() {
         </>
       )}
 
+      <View style={styles.calendarSection}>
+        <DashboardCalendar
+          marks={ribbonMarks}
+          selectedDate={selectedDate}
+          localToday={localToday}
+          firstLaunchDate={data.settings.firstLaunchDate}
+          onSelectDate={setSelectedDate}
+        />
+      </View>
+
       {subjectEntries.length > 0 ? (
         <SpringPressable
           style={[styles.startBtn, !canStart && styles.startBtnDisabled]}
@@ -202,7 +202,7 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  calendarSection: { marginBottom: 8 },
+  calendarSection: { marginTop: 8, marginBottom: 8 },
   emptyBlock: {
     marginVertical: 24,
     gap: 12,
