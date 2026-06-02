@@ -89,7 +89,7 @@ export function RecallCanvas({
 
   const pan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, gesture) => {
         if (scrollPassthroughRef.current) {
           const { dx, dy } = gesture;

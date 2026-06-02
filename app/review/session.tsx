@@ -586,19 +586,14 @@ export default function ReviewSessionScreen() {
 
           {phase === 'recall-work' && !problemCompleteVisible ? (
             <>
-              <View
-                style={styles.workCardTouchGuard}
-                onStartShouldSetResponderCapture={() => true}
-                onMoveShouldSetResponderCapture={() => true}>
-                <RecallWorkCard
-                  width={workCardW}
-                  height={workCardH}
-                  strokes={recallStrokes}
-                  onStrokesChange={setRecallStrokes}
-                  textBoxes={textBoxes}
-                  onTextBoxesChange={setTextBoxes}
-                />
-              </View>
+              <RecallWorkCard
+                width={workCardW}
+                height={workCardH}
+                strokes={recallStrokes}
+                onStrokesChange={setRecallStrokes}
+                textBoxes={textBoxes}
+                onTextBoxesChange={setTextBoxes}
+              />
               {!hasAnswer ? <Text style={styles.warn}>{t('review.noBackPhoto')}</Text> : null}
               <View style={styles.recallActions}>
                 <Button label={t('review.submitRecall')} onPress={submitRecall} />
@@ -853,7 +848,6 @@ const styles = StyleSheet.create({
   durationChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   durationChipText: { fontWeight: '700', color: theme.black, fontSize: theme.font.caption },
   durationChipTextOn: { color: theme.onAccent },
-  workCardTouchGuard: { width: '100%', alignItems: 'center' },
   recallActions: { gap: 8, paddingTop: 4 },
   peekOverlay: { ...StyleSheet.absoluteFill, backgroundColor: theme.beige },
   peekHint: {
