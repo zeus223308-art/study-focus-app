@@ -203,7 +203,6 @@
     "archiveModalTitle": "{{name}} · Archive",
     "archiveEmpty": "No archived photos",
     "archiveRestoreHint": "Tap a photo to view or restore it",
-    "restoreMultiple": "Restore multiple",
     "restorePhoto": "Restore",
     "saveToArchive": "Save to archive",
     "saveToArchiveCount": "Save to archive ({{count}})",

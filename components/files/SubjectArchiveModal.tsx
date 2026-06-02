@@ -19,10 +19,6 @@ import {
 import { confirmChoice } from '@/lib/ui/confirm';
 import { ALBUM_TILE_GAP, useViewportLayout } from '@/lib/ui/viewport-layout';
 
-function itemKey(item: SubjectProblemItem) {
-  return `${item.bundleId}:${item.pageId}`;
-}
-
 type Props = {
   visible: boolean;
   subjectId: string;
@@ -37,8 +33,6 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
 
-  const [restoreSelectMode, setRestoreSelectMode] = useState(false);
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [previewItem, setPreviewItem] = useState<SubjectProblemItem | null>(null);
   const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
 
@@ -66,19 +60,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
   );
 
   const closeAll = () => {
-    setRestoreSelectMode(false);
-    setSelectedKeys(new Set());
     onClose();
-  };
-
-  const toggleSelect = (item: SubjectProblemItem) => {
-    const key = itemKey(item);
-    setSelectedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
   };
 
   const openPreview = (bundleId: string, pageId: string) => {
@@ -94,19 +76,6 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
     if (!previewItem) return;
     unarchiveBundle(previewItem.bundleId);
     setPreviewItem(null);
-  };
-
-  const confirmRestore = () => {
-    const bundleIds = new Set<string>();
-    for (const key of selectedKeys) {
-      bundleIds.add(key.split(':')[0]!);
-    }
-    for (const id of bundleIds) {
-      unarchiveBundle(id);
-    }
-    setRestoreSelectMode(false);
-    setSelectedKeys(new Set());
-    onClose();
   };
 
   const confirmDeleteProblem = (bundleId: string, pageId: string) => {
@@ -140,7 +109,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
               },
             ]}>
             <Text style={styles.title}>{t('folder.archiveModalTitle', { name: subjectName })}</Text>
-            {dateSections.length > 0 && !restoreSelectMode ? (
+            {dateSections.length > 0 ? (
               <Text style={styles.hint}>{t('folder.archiveRestoreHint')}</Text>
             ) : null}
             <ScrollView
@@ -161,9 +130,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                     contentWidth={albumContentWidth}
                     gap={ALBUM_TILE_GAP}
                     labels={albumLabels}
-                    selectionMode={restoreSelectMode ? 'pick' : null}
-                    selectedKeys={selectedKeys}
-                    onToggleSelect={toggleSelect}
+                    selectionMode={null}
                     onLiftItemForDrag={() => {}}
                     onDeleteHold={(item) => confirmDeleteProblem(item.bundleId, item.pageId)}
                     onOpen={(bundleId, pageId) => openPreview(bundleId, pageId)}
@@ -172,43 +139,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                 ))
               )}
             </ScrollView>
-            {restoreSelectMode ? (
-              <View style={styles.selectActions}>
-                <Button
-                  label={t('folder.restoreSelected', { count: selectedKeys.size })}
-                  onPress={confirmRestore}
-                  disabled={selectedKeys.size === 0}
-                />
-                <Button
-                  label={t('common.cancel')}
-                  variant="ghost"
-                  onPress={() => {
-                    setRestoreSelectMode(false);
-                    setSelectedKeys(new Set());
-                  }}
-                  style={{ marginTop: 8 }}
-                />
-              </View>
-            ) : (
-              <View style={styles.selectActions}>
-                {dateSections.length > 0 ? (
-                  <Button
-                    label={t('folder.restoreMultiple')}
-                    variant="secondary"
-                    onPress={() => {
-                      setSelectedKeys(new Set());
-                      setRestoreSelectMode(true);
-                    }}
-                  />
-                ) : null}
-                <Button
-                  label={t('appUsageGuide.close')}
-                  variant="ghost"
-                  onPress={closeAll}
-                  style={dateSections.length > 0 ? { marginTop: 8 } : undefined}
-                />
-              </View>
-            )}
+            <Button label={t('appUsageGuide.close')} onPress={closeAll} style={styles.closeBtn} />
           </View>
         </View>
       </Modal>
@@ -333,9 +264,6 @@ const styles = StyleSheet.create({
     fontSize: theme.font.body,
   },
   closeBtn: {
-    marginTop: 12,
-  },
-  selectActions: {
     marginTop: 12,
   },
   previewRoot: {
