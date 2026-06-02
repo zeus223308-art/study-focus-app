@@ -19,11 +19,11 @@ import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
 
 const M_SHINE_PATH = `
-  M 174 92
-  L 156 34
-  L 120 96
-  L 84 34
-  L 66 92
+  M 62 84
+  L 82 30
+  L 120 84
+  L 158 30
+  L 178 84
 `;
 const SHINE_PATH_LENGTH = 272;
 const SHINE_SEGMENT_LENGTH = 46;
