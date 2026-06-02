@@ -29,7 +29,7 @@ const M_SHINE_PATH = `
   L 170 64
   L 186 98
 `;
-const SHINE_PATH_LENGTH = 520;
+const SHINE_PATH_LENGTH = 700;
 const SHINE_SEGMENT_LENGTH = 74;
 const SHINE_GAP = 1200;
 const AnimatedPath = Animated.createAnimatedComponent(Path);
