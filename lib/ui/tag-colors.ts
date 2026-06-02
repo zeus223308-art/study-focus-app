@@ -62,14 +62,68 @@ export function resolveTagColorFor(
   return resolveTagColor(fallback);
 }
 
-/** Readable text color (#1A1A1A or #FFFFFF) for a given background hex. */
-export function contrastTextColor(hex: string): string {
-  const c = hex.replace(/^#/, '');
-  const full = c.length === 3 ? c.split('').map((x) => x + x).join('') : c;
+const TAG_TEXT_DARK = '#141414';
+const TAG_TEXT_LIGHT = '#FFFFFF';
+
+function parseHexRgb(hex: string): { r: number; g: number; b: number } | null {
+  const raw = hex.trim().replace(/^#/, '');
+  const full =
+    raw.length === 3
+      ? raw
+          .split('')
+          .map((x) => x + x)
+          .join('')
+      : raw.length >= 6
+        ? raw.slice(0, 6)
+        : '';
+  if (full.length !== 6) return null;
   const r = parseInt(full.slice(0, 2), 16);
   const g = parseInt(full.slice(2, 4), 16);
   const b = parseInt(full.slice(4, 6), 16);
-  if ([r, g, b].some((v) => Number.isNaN(v))) return '#FFFFFF';
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.6 ? '#1A1A1A' : '#FFFFFF';
+  if ([r, g, b].some((v) => Number.isNaN(v))) return null;
+  return { r, g, b };
+}
+
+function srgbChannelToLinear(channel: number): number {
+  const s = channel / 255;
+  return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+}
+
+function relativeLuminance(hex: string): number {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return 0;
+  const r = srgbChannelToLinear(rgb.r);
+  const g = srgbChannelToLinear(rgb.g);
+  const b = srgbChannelToLinear(rgb.b);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(l1: number, l2: number): number {
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+/** Readable text on a tag ribbon / chip — picks dark or light by WCAG contrast. */
+export function contrastTextColor(hex: string): string {
+  const bg = relativeLuminance(hex);
+  const darkLum = relativeLuminance(TAG_TEXT_DARK);
+  const lightLum = relativeLuminance(TAG_TEXT_LIGHT);
+  return contrastRatio(bg, darkLum) >= contrastRatio(bg, lightLum)
+    ? TAG_TEXT_DARK
+    : TAG_TEXT_LIGHT;
+}
+
+/** Subtle shadow so tag labels stay legible on busy photo areas. */
+export function contrastTextShadow(hex: string): {
+  textShadowColor: string;
+  textShadowOffset: { width: number; height: number };
+  textShadowRadius: number;
+} {
+  const light = contrastTextColor(hex) === TAG_TEXT_LIGHT;
+  return {
+    textShadowColor: light ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.45)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 1.25,
+  };
 }

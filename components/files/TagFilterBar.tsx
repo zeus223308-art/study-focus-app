@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import { contrastTextColor } from '@/lib/ui/tag-colors';
+import { contrastTextColor, contrastTextShadow } from '@/lib/ui/tag-colors';
 
 type Props = {
   tags: string[];
@@ -30,7 +30,11 @@ export function TagFilterBar({ tags, colorForTag, activeTag, onSelect }: Props) 
               onPress={() => onSelect(active ? null : tag)}
               style={[styles.chip, { backgroundColor: color }, active && styles.chipActive]}>
               <Text
-                style={[styles.chipText, { color: contrastTextColor(color) }]}
+                style={[
+                  styles.chipText,
+                  contrastTextShadow(color),
+                  { color: contrastTextColor(color) },
+                ]}
                 numberOfLines={1}>
                 {tag}
               </Text>

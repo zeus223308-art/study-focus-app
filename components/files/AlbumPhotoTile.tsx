@@ -10,7 +10,11 @@ import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
 import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
-import { contrastTextColor, resolveTagColorFor } from '@/lib/ui/tag-colors';
+import {
+  contrastTextColor,
+  contrastTextShadow,
+  resolveTagColorFor,
+} from '@/lib/ui/tag-colors';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
@@ -35,7 +39,7 @@ function TagRibbon({ label, color }: { label: string; color: string }) {
         </Svg>
       ) : null}
       <Text
-        style={[styles.tagText, { color: contrastTextColor(color) }]}
+        style={[styles.tagText, contrastTextShadow(color), { color: contrastTextColor(color) }]}
         numberOfLines={1}
         onLayout={(e) => setTextW(Math.ceil(e.nativeEvent.layout.width))}>
         {label}
@@ -322,7 +326,7 @@ const styles = StyleSheet.create({
     marginRight: RIBBON_PAD_R,
     fontSize: 8,
     fontWeight: '800',
-    color: theme.white,
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   memoBadge: {
     position: 'absolute',
