@@ -46,7 +46,6 @@ export function SplashBrand({ onFinish }: Props) {
 
   const mountainOpacity = useSharedValue(1);
   const taglineOpacity = useSharedValue(0);
-  const taglineTranslateY = useSharedValue(14);
   const footerOpacity = useSharedValue(0);
   const screenOpacity = useSharedValue(1);
 
@@ -59,8 +58,8 @@ export function SplashBrand({ onFinish }: Props) {
       withTiming(1, { duration: T.mountainIn, easing: EASE_OUT }),
       withDelay(T.mountainHold, withTiming(0, { duration: T.mountainOut, easing: EASE }))
     );
+
     taglineOpacity.value = withDelay(tTaglineIn, withTiming(1, { duration: T.taglineIn, easing: EASE_OUT }));
-    taglineTranslateY.value = withDelay(tTaglineIn, withTiming(0, { duration: T.taglineIn, easing: EASE_OUT }));
 
     footerOpacity.value = withDelay(tTaglineIn, withTiming(1, { duration: T.taglineIn, easing: EASE_OUT }));
 
@@ -70,7 +69,7 @@ export function SplashBrand({ onFinish }: Props) {
         if (finished) runOnJS(onFinish)();
       })
     );
-  }, [onFinish, mountainOpacity, taglineOpacity, taglineTranslateY, footerOpacity, screenOpacity]);
+  }, [onFinish, mountainOpacity, taglineOpacity, footerOpacity, screenOpacity]);
 
   const mountainStyle = useAnimatedStyle(() => ({
     opacity: mountainOpacity.value,
@@ -78,7 +77,6 @@ export function SplashBrand({ onFinish }: Props) {
 
   const taglineStyle = useAnimatedStyle(() => ({
     opacity: taglineOpacity.value,
-    transform: [{ translateY: taglineTranslateY.value }],
   }));
 
   const footerStyle = useAnimatedStyle(() => ({
