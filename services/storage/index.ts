@@ -2,6 +2,7 @@ export { createStorageProvider, CloudStorageProvider } from './cloud-provider';
 export { LocalStorageProvider } from './local-provider';
 export {
   checkFreemiumLimits,
+  checkSubjectLimit,
   countPages,
   countUsedImages,
   findBundle,
@@ -13,6 +14,8 @@ export type {
   StorageProvider,
   FreemiumCheck,
   ImportPhotosResult,
+  PaywallReason,
+  SubjectLimitCheck,
   ThumbnailResult,
   UploadResult,
 } from './types';

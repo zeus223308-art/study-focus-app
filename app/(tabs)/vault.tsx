@@ -12,7 +12,7 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
-import { countActivePagesForSubject } from '@/services/storage';
+import { checkSubjectLimit, countActivePagesForSubject } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import {
   computeVaultFoldersPerPage,
@@ -37,6 +37,7 @@ export default function FilesScreen() {
     pendingSubjectMerge,
     confirmSubjectMerge,
     cancelSubjectMerge,
+    setPaywallVisible,
   } = useApp();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const viewport = useViewportLayout();
@@ -130,6 +131,14 @@ export default function FilesScreen() {
 
   const pageCountFor = (subjectId: string) => countActivePagesForSubject(data, subjectId);
 
+  const tryOpenAddSubject = useCallback(() => {
+    if (!checkSubjectLimit(data).allowed) {
+      setPaywallVisible(true, 'subjects');
+      return;
+    }
+    setAdding(true);
+  }, [data, setPaywallVisible]);
+
   const confirmAdd = () => {
     if (!newName.trim()) return;
     addSubject(newName, data.settings.activeScheduleIds[0] ?? data.schedules[0].id);
@@ -193,7 +202,7 @@ export default function FilesScreen() {
                 pages={subjectPages}
                 pageWidth={pageWidth}
                 foldersPerPage={foldersPerPage}
-                onAddFolder={subjectDeleteMode ? undefined : () => setAdding(true)}
+                onAddFolder={subjectDeleteMode ? undefined : tryOpenAddSubject}
                 addFolderLabel={subjectDeleteMode ? undefined : t('vault.addFolderCard')}
                 subjectDeleteMode={subjectDeleteMode}
                 selectedSubjectIds={selectedForDelete}

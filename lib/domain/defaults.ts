@@ -36,8 +36,6 @@ export const DEFAULT_SUBJECTS: Omit<SubjectFolder, 'createdAt' | 'sortOrder'>[] 
   { id: 'folder_english', name: '영어', reviewScheduleId: 'sched_135714', color: theme.graySecondary },
   { id: 'folder_science', name: '과학', reviewScheduleId: 'sched_daily', color: theme.grayMuted },
   { id: 'folder_korean', name: '국어', reviewScheduleId: 'sched_daily', color: theme.black },
-  { id: 'folder_history', name: '역사', reviewScheduleId: 'sched_135714', color: theme.gray },
-  { id: 'folder_social', name: '사회', reviewScheduleId: 'sched_135714', color: theme.graySecondary },
 ];
 
 export const DEFAULT_DATA: AppData = {

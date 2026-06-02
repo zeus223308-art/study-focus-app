@@ -4,10 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
+import type { PaywallReason } from '@/services/storage/types';
 
 type Props = {
   visible: boolean;
-  reason: 'images' | 'memos';
+  reason: PaywallReason;
   used: number;
   max: number;
   onClose: () => void;
@@ -17,11 +18,17 @@ export function PaywallSheet({ visible, reason, used, max, onClose }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const title =
-    reason === 'images' ? t('paywall.imagesTitle') : t('paywall.memosTitle');
+    reason === 'images'
+      ? t('paywall.imagesTitle')
+      : reason === 'memos'
+        ? t('paywall.memosTitle')
+        : t('paywall.subjectsTitle');
   const body =
     reason === 'images'
       ? t('paywall.imagesBody', { used, max })
-      : t('paywall.memosBody', { used, max });
+      : reason === 'memos'
+        ? t('paywall.memosBody', { used, max })
+        : t('paywall.subjectsBody', { used, max });
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>

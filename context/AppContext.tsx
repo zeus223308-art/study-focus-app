@@ -64,6 +64,7 @@ import { buildTrashEntriesForDeletedSubjects, trashEntriesForSubject } from '@/l
 import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/google-session';
 import {
   checkFreemiumLimits,
+  checkSubjectLimit,
   createStorageProvider,
   type ImportPhotosResult,
 } from '@/services/storage';
@@ -72,7 +73,7 @@ import { countAppPages, hasRecoverableContent } from '@/services/storage/data-sa
 import { readRecoveryManifest } from '@/services/storage/recovery-manifest';
 import { clearCaptureDraft } from '@/services/storage/capture-draft';
 import { clearGuestSession } from '@/services/storage/guest-session';
-import type { FreemiumCheck, StorageProvider } from '@/services/storage/types';
+import type { FreemiumCheck, PaywallReason, StorageProvider } from '@/services/storage/types';
 
 type AppContextValue = {
   ready: boolean;
@@ -89,7 +90,8 @@ type AppContextValue = {
   dueSelected: NoteBundle[];
   freemium: FreemiumCheck;
   paywallVisible: boolean;
-  setPaywallVisible: (v: boolean) => void;
+  paywallReason: PaywallReason | null;
+  setPaywallVisible: (visible: boolean, reason?: PaywallReason) => void;
   refresh: () => Promise<void>;
   /** After sign-in/out — reloads the correct per-account partition (and Drive if needed). */
   reloadAccountData: () => Promise<void>;
@@ -218,7 +220,18 @@ export function AppProvider({
     subjectId: string;
     studyDate: string;
   } | null>(null);
-  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [paywallVisible, setPaywallVisibleState] = useState(false);
+  const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null);
+
+  const setPaywallVisible = useCallback((visible: boolean, reason?: PaywallReason) => {
+    if (visible) {
+      setPaywallReason(reason ?? null);
+      setPaywallVisibleState(true);
+    } else {
+      setPaywallVisibleState(false);
+      setPaywallReason(null);
+    }
+  }, []);
   const [autoRecoveryNotice, setAutoRecoveryNotice] = useState<AutoRecoverySource | null>(null);
   const [derivativeRegenNotice, setDerivativeRegenNotice] = useState<{ failed: number } | null>(
     null
@@ -579,16 +592,22 @@ export function AppProvider({
   );
 
   const addSubject = useCallback((name: string, scheduleId: string) => {
+    const prev = dataRef.current;
+    if (!prev) return;
+    if (!checkSubjectLimit(prev).allowed) {
+      setPaywallVisible(true, 'subjects');
+      return;
+    }
     const subject: SubjectFolder = {
       id: `folder_${Date.now()}`,
       name: name.trim(),
       reviewScheduleId: scheduleId,
       color: theme.gray,
-      sortOrder: data?.subjects.length ?? 0,
+      sortOrder: prev.subjects.length,
       createdAt: new Date().toISOString(),
     };
-    setData((prev) => (prev ? { ...prev, subjects: [...prev.subjects, subject] } : prev));
-  }, [data?.subjects.length]);
+    setData((cur) => (cur ? { ...cur, subjects: [...cur.subjects, subject] } : cur));
+  }, [setPaywallVisible]);
 
   const renameSubject = useCallback((subjectId: string, name: string) => {
     const trimmed = name.trim();
@@ -611,6 +630,10 @@ export function AppProvider({
       if (!trimmed || items.length === 0) return null;
       const prev = dataRef.current;
       if (!prev) return null;
+      if (!checkSubjectLimit(prev).allowed) {
+        setPaywallVisible(true, 'subjects');
+        return null;
+      }
 
       const scheduleId =
         prev.settings.activeScheduleIds[0] ?? prev.schedules[0]?.id ?? '';
@@ -632,7 +655,7 @@ export function AppProvider({
       persist(moved);
       return subject.id;
     },
-    [persist]
+    [persist, setPaywallVisible]
   );
 
   const moveProblemToNewSubject = useCallback(
@@ -1406,6 +1429,7 @@ export function AppProvider({
       dueSelected,
       freemium,
       paywallVisible,
+      paywallReason,
       setPaywallVisible,
       refresh: load,
       reloadAccountData,
@@ -1486,6 +1510,8 @@ export function AppProvider({
     dueSelected,
     freemium,
     paywallVisible,
+    paywallReason,
+    setPaywallVisible,
     load,
     reloadAccountData,
     capturePhoto,

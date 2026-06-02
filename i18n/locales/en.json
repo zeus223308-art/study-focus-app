@@ -506,9 +506,11 @@
   "paywall": {
     "imagesTitle": "Photo limit reached",
     "memosTitle": "Memo limit reached",
+    "subjectsTitle": "Subject limit reached",
     "imagesBody": "Free plan allows up to {{max}} photos ({{used}} used).",
     "memosBody": "Free plan allows up to {{max}} memos ({{used}} used).",
-    "proBenefits": "Pro: unlimited saves · cloud backup · hide answers",
+    "subjectsBody": "Free plan allows up to {{max}} subjects ({{used}} used). Upgrade to add more.",
+    "proBenefits": "Pro: unlimited subjects · unlimited saves · cloud backup · hide answers",
     "gotIt": "OK",
     "later": "Later"
   },

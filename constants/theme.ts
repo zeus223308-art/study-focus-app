@@ -62,6 +62,7 @@ export const theme = {
   limits: {
     freeImages: 1500,
     freeMemos: 500,
+    freeSubjects: 4,
   },
 };
 

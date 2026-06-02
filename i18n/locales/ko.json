@@ -506,9 +506,11 @@
   "paywall": {
     "imagesTitle": "사진 한도에 도달했어요",
     "memosTitle": "메모 한도에 도달했어요",
+    "subjectsTitle": "과목 개수 한도에 도달했어요",
     "imagesBody": "무료 플랜은 사진 {{max}}장까지 저장할 수 있어요. (현재 {{used}}장)",
     "memosBody": "무료 플랜은 메모 {{max}}개까지 저장할 수 있어요. (현재 {{used}}개)",
-    "proBenefits": "Pro: 무제한 저장 · 클라우드 백업 · 해답 숨기기",
+    "subjectsBody": "무료 플랜은 과목 {{max}}개까지 만들 수 있어요. (현재 {{used}}개) 더 추가하려면 Pro가 필요해요.",
+    "proBenefits": "Pro: 무제한 과목 · 무제한 저장 · 클라우드 백업 · 해답 숨기기",
     "gotIt": "확인",
     "later": "나중에"
   },

@@ -1,6 +1,15 @@
+import { theme } from '@/constants/theme';
 import { hasPhotoMemoContent } from '@/lib/domain/photo-memo';
 import type { AppData, NoteBundle, NotePage } from '@/lib/domain/types';
 import { countAppPages } from '@/services/storage/data-safety';
+
+export type PaywallReason = 'images' | 'memos' | 'subjects';
+
+export type SubjectLimitCheck = {
+  allowed: boolean;
+  used: number;
+  max: number;
+};
 
 export type ThumbnailResult = {
   thumbnailUri: string;
@@ -41,6 +50,16 @@ export function countUsedImages(data: AppData): number {
 export function remainingPhotoSlots(data: AppData): number {
   if (data.settings.tier === 'pro') return Number.MAX_SAFE_INTEGER;
   return Math.max(0, data.settings.photoLimit - countUsedImages(data));
+}
+
+/** Free tier: up to {{theme.limits.freeSubjects}} subject folders; pro is unlimited. */
+export function checkSubjectLimit(data: AppData): SubjectLimitCheck {
+  const used = data.subjects.length;
+  if (data.settings.tier === 'pro') {
+    return { allowed: true, used, max: used };
+  }
+  const max = theme.limits.freeSubjects;
+  return { allowed: used < max, used, max };
 }
 
 export type ImportPhotosResult = {
