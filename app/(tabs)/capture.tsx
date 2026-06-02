@@ -40,6 +40,9 @@ import {
   writeCaptureDraft,
 } from '@/services/storage/capture-draft';
 
+const sheetPressableProps =
+  Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : undefined;
+
 type Step = 'camera' | 'edit' | 'answer-prompt' | 'save-sheet';
 type EditSide = 'front' | 'back';
 type EditSource = 'camera' | 'gallery';
@@ -462,7 +465,10 @@ export default function CaptureTabScreen() {
         transparent
         onRequestClose={dismissAnswerPrompt}>
         <Pressable style={styles.sheetBackdrop} onPress={dismissAnswerPrompt}>
-          <Pressable style={[styles.sheet, { paddingBottom: sheetBottom }]} onPress={() => {}}>
+          <Pressable
+            style={[styles.sheet, { paddingBottom: sheetBottom }]}
+            onPress={() => {}}
+            {...sheetPressableProps}>
             <Text style={styles.sheetTitle}>{t('capture.pairTitle')}</Text>
             {frontUri ? (
               <CapturePreviewImage uri={frontUri} style={styles.preview} resizeMode="cover" />
@@ -499,7 +505,10 @@ export default function CaptureTabScreen() {
         transparent
         onRequestClose={dismissSaveSheet}>
         <Pressable style={styles.sheetBackdrop} onPress={dismissSaveSheet}>
-          <Pressable style={[styles.sheet, { paddingBottom: sheetBottom }]} onPress={() => {}}>
+          <Pressable
+            style={[styles.sheet, { paddingBottom: sheetBottom }]}
+            onPress={() => {}}
+            {...sheetPressableProps}>
             {saveState === 'saved' ? (
               <View style={styles.successBanner}>
                 <Text style={styles.successTitle}>
@@ -508,8 +517,8 @@ export default function CaptureTabScreen() {
               </View>
             ) : null}
 
-            <Text style={styles.sheetTitle}>{t('capture.captureDate')}</Text>
-            <View style={styles.captureDateCard} accessibilityRole="text">
+            <View style={styles.captureDateRow}>
+              <Text style={styles.captureDateLabel}>{t('capture.captureDate')}</Text>
               <Text style={styles.captureDateValue}>{captureDateLabel}</Text>
             </View>
 
@@ -765,28 +774,30 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: theme.radius.lg,
     borderTopRightRadius: theme.radius.lg,
     padding: 24,
+    overflow: 'hidden',
   },
   sheetTitle: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
-  captureDateCard: {
-    marginTop: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
+  captureDateRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 4,
+  },
+  captureDateLabel: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.gray,
   },
   captureDateValue: {
+    flexShrink: 1,
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.black,
-    textAlign: 'center',
+    textAlign: 'right',
   },
   successBanner: {
     backgroundColor: theme.orangeMuted,
-    borderWidth: 1,
-    borderColor: theme.orange,
     borderRadius: theme.radius.md,
     padding: 14,
     marginBottom: 16,
@@ -836,8 +847,7 @@ const styles = StyleSheet.create({
   },
   chipOn: {
     backgroundColor: theme.orange,
-    borderColor: theme.white,
-    borderWidth: 2,
+    borderColor: theme.orange,
   },
   chipOnPressed: { opacity: 0.88 },
   chipText: { fontWeight: '700', color: theme.gray },
