@@ -351,7 +351,10 @@ const styles = StyleSheet.create({
   gridCell: {
     borderRadius: 4,
     overflow: 'hidden',
-    backgroundColor: theme.grayLight,
+    backgroundColor: theme.surface,
+    /** Thin edge so dark/black photos are visible on the dark card. */
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
     ...Platform.select({
       web: { cursor: 'pointer' as const },
       default: {},
