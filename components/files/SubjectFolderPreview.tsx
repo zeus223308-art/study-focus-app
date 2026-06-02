@@ -72,7 +72,10 @@ export function SubjectFolderPreview({
       : internalIndex;
   const counterTotal = Math.max(pageCount ?? items.length, items.length, 1);
   const showCounter = isDashboard ? counterTotal >= 1 : items.length > 1;
-  const counterLabel = `${index + 1} / ${counterTotal}`;
+  /** Dashboard: total/total (e.g. 10/10, 1/1), not swipe index. */
+  const counterLabel = isDashboard
+    ? `${counterTotal}/${counterTotal}`
+    : `${index + 1} / ${items.length}`;
 
   const lock = useCallback(() => onGestureLock(true), [onGestureLock]);
   const unlock = useCallback(() => onGestureLock(false), [onGestureLock]);
