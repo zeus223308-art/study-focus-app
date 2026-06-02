@@ -75,6 +75,11 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
     });
   };
 
+  const enterRestoreSelect = (bundleId: string, pageId: string) => {
+    setRestoreSelectMode(true);
+    setSelectedKeys(new Set([`${bundleId}:${pageId}`]));
+  };
+
   const confirmRestore = () => {
     const bundleIds = new Set<string>();
     for (const key of selectedKeys) {
@@ -119,6 +124,9 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
               },
             ]}>
             <Text style={styles.title}>{t('folder.archiveModalTitle', { name: subjectName })}</Text>
+            {dateSections.length > 0 && !restoreSelectMode ? (
+              <Text style={styles.hint}>{t('folder.archiveRestoreHint')}</Text>
+            ) : null}
             <ScrollView
               style={styles.scroll}
               contentContainerStyle={styles.scrollContent}
@@ -142,7 +150,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                     onToggleSelect={toggleSelect}
                     onLiftItemForDrag={() => {}}
                     onDeleteHold={(item) => confirmDeleteProblem(item.bundleId, item.pageId)}
-                    onOpen={() => {}}
+                    onOpen={(bundleId, pageId) => enterRestoreSelect(bundleId, pageId)}
                     reorderEnabled={false}
                   />
                 ))
@@ -200,6 +208,12 @@ const styles = StyleSheet.create({
     fontSize: theme.font.heading,
     fontWeight: '800',
     color: theme.black,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  hint: {
+    fontSize: theme.font.caption,
+    color: theme.gray,
     textAlign: 'center',
     marginBottom: 12,
   },

@@ -202,6 +202,7 @@
     "unarchive": "Restore",
     "archiveModalTitle": "{{name}} · Archive",
     "archiveEmpty": "No archived photos",
+    "archiveRestoreHint": "Tap a photo to select it for restore",
     "saveToArchive": "Save to archive",
     "saveToArchiveCount": "Save to archive ({{count}})",
     "restoreFromArchive": "Restore",
