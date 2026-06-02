@@ -18,8 +18,6 @@ type Props = {
   onStrokesChange: (strokes: InkStroke[]) => void;
   textBoxes: ScratchTextBox[];
   onTextBoxesChange: (boxes: ScratchTextBox[]) => void;
-  onStrokeStart?: () => void;
-  onStrokeEnd?: () => void;
   /** Display-only — hides tools and blocks edits. */
   readOnly?: boolean;
 };
@@ -31,8 +29,6 @@ export function RecallWorkCard({
   onStrokesChange,
   textBoxes,
   onTextBoxesChange,
-  onStrokeStart,
-  onStrokeEnd,
   readOnly = false,
 }: Props) {
   const { t } = useTranslation();
@@ -108,8 +104,6 @@ export function RecallWorkCard({
           onStrokesChange={readOnly ? () => {} : onStrokesChange}
           tool={recallTool}
           allowVerticalScrollPassthrough={false}
-          onTouchStart={onStrokeStart}
-          onTouchEnd={onStrokeEnd}
         />
           </View>
           {!readOnly && editingText ? (

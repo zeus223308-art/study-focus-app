@@ -1,5 +1,4 @@
 import Svg, { Path } from 'react-native-svg';
-import Animated, { useAnimatedProps, type SharedValue } from 'react-native-reanimated';
 
 export const SPLASH_BLACK = '#000000';
 export const LOGO_WHITE = '#FFFFFF';
@@ -22,35 +21,15 @@ const MOUNTAIN_OUTLINE = `
   Z
 `;
 
-const M_SHINE_PATH = `
-  M 66 31
-  C 78 19, 90 30, 100 61
-  C 110 30, 122 19, 134 31
-`;
-
-const SHINE_PATH_LENGTH = 132;
-const SHINE_SEGMENT_LENGTH = 30;
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-
 type Props = {
   width?: number;
   height?: number;
-  /** 0 -> 1, shine moves from M start to end once. */
-  shineProgress?: SharedValue<number>;
 };
 
 /**
  * Twin-peak mountain mark — soft natural ridges (black / gray / white).
  */
-export function MountainMLogo({ width = 240, height = 168, shineProgress }: Props) {
-  const shineAnimatedProps = useAnimatedProps(() => {
-    const p = Math.max(0, Math.min(1, shineProgress?.value ?? 0));
-    return {
-      strokeDashoffset: SHINE_PATH_LENGTH - p * (SHINE_PATH_LENGTH + SHINE_SEGMENT_LENGTH),
-      opacity: p <= 0.02 || p >= 0.98 ? 0 : 1,
-    };
-  });
-
+export function MountainMLogo({ width = 240, height = 168 }: Props) {
   return (
     <Svg width={width} height={height} viewBox="0 0 200 140">
       {/* Outer rim — soft edge like inner highlight, slightly darker */}
@@ -111,18 +90,6 @@ export function MountainMLogo({ width = 240, height = 168, shineProgress }: Prop
         fill={LOGO_GRAY_LIGHT}
         d="M 96 68 C 100 58, 100 52, 100 58 C 104 68, 104 74, 100 80 C 96 74, 96 68 Z"
         opacity={0.85}
-      />
-
-      {/* M line shine sweep: start -> end, then disappears */}
-      <AnimatedPath
-        d={M_SHINE_PATH}
-        stroke={LOGO_WHITE}
-        strokeWidth={2.3}
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeDasharray={`${SHINE_SEGMENT_LENGTH} ${SHINE_PATH_LENGTH}`}
-        animatedProps={shineAnimatedProps}
       />
 
       {/* Center valley */}
