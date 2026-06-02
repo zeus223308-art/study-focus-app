@@ -92,11 +92,6 @@ export default function CaptureTabScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
   const hasSubjects = data.subjects.length > 0;
-  const selectedSubject = useMemo(
-    () => data.subjects.find((s) => s.id === subjectId),
-    [data.subjects, subjectId]
-  );
-  const captureDateLabel = useMemo(
     () =>
       formatStudyDateHeading(localToday, data.settings.language, {
         today: t('folder.dateToday'),
@@ -554,13 +549,6 @@ export default function CaptureTabScreen() {
             ) : (
               <>
                 <Text style={styles.chipLabel}>{t('capture.pickSubject')}</Text>
-                {selectedSubject ? (
-                  <View style={styles.subjectSelectedCard}>
-                    <Text style={styles.subjectSelectedLabel}>{t('capture.selectedSubject')}</Text>
-                    <Text style={styles.subjectSelectedName}>{selectedSubject.name}</Text>
-                  </View>
-                ) : null}
-                <Text style={styles.chipHint}>{t('capture.pickSubjectTap')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
                   {data.subjects.map((s) => {
                     const on = subjectId === s.id;
@@ -827,35 +815,6 @@ const styles = StyleSheet.create({
   },
   pairEmptyText: { color: theme.grayMuted, fontWeight: '700', fontSize: 24 },
   chipLabel: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray, marginTop: 16 },
-  subjectSelectedCard: {
-    marginTop: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.orange,
-    borderWidth: 2,
-    borderColor: theme.white,
-    alignItems: 'center',
-  },
-  subjectSelectedLabel: {
-    fontSize: theme.font.caption,
-    fontWeight: '700',
-    color: theme.onAccent,
-    opacity: 0.85,
-  },
-  subjectSelectedName: {
-    marginTop: 4,
-    fontSize: theme.font.heading,
-    fontWeight: '900',
-    color: theme.onAccent,
-    textAlign: 'center',
-  },
-  chipHint: {
-    fontSize: theme.font.caption,
-    color: theme.grayMuted,
-    marginTop: 10,
-    marginBottom: 4,
-  },
   chips: { marginVertical: 8 },
   chip: {
     flexDirection: 'row',
