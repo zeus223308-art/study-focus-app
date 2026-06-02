@@ -8,7 +8,6 @@ import {
   type DashboardSubjectEntry,
 } from '@/components/dashboard/DashboardReviewPicker';
 import { DashboardCalendar } from '@/components/dashboard/DashboardCalendar';
-import { SpringPressable } from '@/components/ui/SpringPressable';
 import { Button } from '@/components/ui/Button';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
@@ -16,7 +15,6 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getBundlesFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
-import { BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
 import { showMessage } from '@/lib/ui/confirm';
 
 export default function DashboardScreen() {
@@ -90,14 +88,6 @@ export default function DashboardScreen() {
       else next.add(subjectId);
       return next;
     });
-  }, []);
-
-  const selectAll = useCallback(() => {
-    setSelectedSubjectIds(new Set(subjectEntries.map((e) => e.subject.id)));
-  }, [subjectEntries]);
-
-  const clearAll = useCallback(() => {
-    setSelectedSubjectIds(new Set());
   }, []);
 
   const setPreviewIndex = useCallback((subjectId: string, index: number) => {
@@ -175,8 +165,8 @@ export default function DashboardScreen() {
             previewIndexBySubject={previewIndexBySubject}
             onToggle={toggleSubject}
             onPreviewIndexChange={setPreviewIndex}
-            onSelectAll={selectAll}
-            onClearAll={clearAll}
+            onStartReview={openReview}
+            canStart={canStart}
           />
         </>
       )}
@@ -190,19 +180,6 @@ export default function DashboardScreen() {
           onSelectDate={setSelectedDate}
         />
       </View>
-
-      {subjectEntries.length > 0 ? (
-        <SpringPressable
-          style={[styles.startBtn, !canStart && styles.startBtnDisabled]}
-          onPress={openReview}
-          disabled={!canStart}>
-          <Text style={styles.startText}>{t('dashboard.startReview')}</Text>
-        </SpringPressable>
-      ) : null}
-
-      {!canStart && subjectEntries.length > 0 ? (
-        <Text style={styles.startHint}>{t('dashboard.startReviewHint')}</Text>
-      ) : null}
 
     </Screen>
   );
@@ -233,22 +210,5 @@ const styles = StyleSheet.create({
     color: theme.grayMuted,
     marginBottom: 8,
     textAlign: 'center',
-  },
-  startBtn: {
-    alignSelf: 'center',
-    marginVertical: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.orange,
-  },
-  startBtnDisabled: { opacity: 0.45 },
-  startText: { ...BUTTON_LABEL_EMPHASIS, color: theme.onAccent },
-  startHint: {
-    textAlign: 'center',
-    fontSize: theme.font.caption,
-    color: theme.gray,
-    marginTop: -12,
-    marginBottom: 16,
   },
 });

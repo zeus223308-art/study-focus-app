@@ -22,8 +22,8 @@ type Props = {
   previewIndexBySubject: Record<string, number>;
   onToggle: (subjectId: string) => void;
   onPreviewIndexChange: (subjectId: string, index: number) => void;
-  onSelectAll: () => void;
-  onClearAll: () => void;
+  onStartReview: () => void;
+  canStart: boolean;
 };
 
 export function DashboardReviewPicker({
@@ -32,12 +32,11 @@ export function DashboardReviewPicker({
   previewIndexBySubject,
   onToggle,
   onPreviewIndexChange,
-  onSelectAll,
-  onClearAll,
+  onStartReview,
+  canStart,
 }: Props) {
   const { t } = useTranslation();
   const viewport = useViewportLayout();
-  const allSelected = entries.length > 0 && entries.every((e) => selectedIds.has(e.subject.id));
 
   const rows: DashboardSubjectEntry[][] = [];
   const perRow = viewport.dashboardCardsPerRow;
@@ -48,14 +47,13 @@ export function DashboardReviewPicker({
   return (
     <View style={styles.wrap}>
       <View style={styles.header}>
-        <View style={styles.titleCol}>
-          <Text style={styles.title}>{t('dashboard.pickSubjects')}</Text>
-          <Text style={styles.hint}>{t('dashboard.pickSubjectsHint')}</Text>
-        </View>
-        <Pressable onPress={allSelected ? onClearAll : onSelectAll} hitSlop={8}>
-          <Text style={styles.selectAll}>
-            {allSelected ? t('dashboard.deselectAll') : t('dashboard.selectAll')}
-          </Text>
+        <Text style={styles.title}>{t('dashboard.pickSubjects')}</Text>
+        <Pressable
+          onPress={onStartReview}
+          disabled={!canStart}
+          style={[styles.startReviewBtn, !canStart && styles.startReviewBtnDisabled]}
+          hitSlop={8}>
+          <Text style={styles.startReviewBtnText}>{t('dashboard.startReview')}</Text>
         </Pressable>
       </View>
       {rows.map((row, ri) => (
@@ -115,15 +113,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 4,
   },
-  titleCol: { flex: 1, marginRight: 8 },
   title: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
-  hint: {
-    fontSize: theme.font.caption,
-    color: theme.gray,
-    marginTop: 2,
-    lineHeight: 16,
+  startReviewBtn: {
+    backgroundColor: theme.orange,
+    borderRadius: theme.radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
-  selectAll: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
+  startReviewBtnDisabled: { opacity: 0.45 },
+  startReviewBtnText: { color: theme.onAccent, fontWeight: '800', fontSize: theme.font.caption },
   cardRow: {
     flexDirection: 'row',
     gap: 12,
