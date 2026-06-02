@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +15,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RecallWorkCard, type ScratchTextBox } from '@/components/review/RecallWorkCard';
-import { ScheduleAdvanceSheet } from '@/components/review/ScheduleAdvanceSheet';
 import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
@@ -30,15 +28,13 @@ import {
 } from '@/lib/review/blackout';
 import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { resolveImageUri } from '@/lib/files/resolve-image-uri';
-import { getAnswerImageUri, OCR_PASS_THRESHOLD, scoreActiveRecall } from '@/lib/review/answer-text';
-import { isProblemGradable } from '@/lib/review/problem-gradable';
+import { getAnswerImageUri } from '@/lib/review/answer-text';
 import {
   ANSWER_SLIDESHOW_SECONDS,
   FRONT_SLIDESHOW_SECONDS,
   formatAnswerSlideshowLabel,
   slideshowMsForSide,
 } from '@/lib/domain/slideshow-timing';
-import { advanceAfterReview, getNextReviewDate } from '@/lib/spacing/engine';
 import {
   parseReviewPageKeys,
   reviewPageKey,
@@ -46,10 +42,9 @@ import {
 } from '@/lib/review/parse-review-pages';
 
 const HINT_PEEK_MS = 8000;
-const AD_LOCK_MS = 5000;
 type SlideSide = 'front' | 'back';
 type Slide = { bundle: NoteBundle; page: NotePage; side: SlideSide };
-type Phase = 'front' | 'countdown' | 'recall-work' | 'peek' | 'pass' | 'fail';
+type Phase = 'front' | 'countdown' | 'recall-work' | 'peek' | 'complete';
 
 export default function ReviewSessionScreen() {
   const { t } = useTranslation();
@@ -70,8 +65,6 @@ export default function ReviewSessionScreen() {
     data,
     completeReview,
     storage,
-    updateBundle,
-    getSchedule,
   } = useApp();
 
   const slides = useMemo<Slide[]>(() => {
@@ -148,11 +141,8 @@ export default function ReviewSessionScreen() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [recallStrokes, setRecallStrokes] = useState<InkStroke[]>([]);
   const [textBoxes, setTextBoxes] = useState<ScratchTextBox[]>([]);
-  const [adLocked, setAdLocked] = useState(false);
   const [adVisible, setAdVisible] = useState(false);
   const [hintOffer, setHintOffer] = useState(false);
-  const [scheduleSheetVisible, setScheduleSheetVisible] = useState(false);
-  const [lastPassScore, setLastPassScore] = useState(0);
   const [passAnim] = useState(() => new Animated.Value(0));
   const passScale = useRef(new Animated.Value(0.7)).current;
   const frontFade = useRef(new Animated.Value(1)).current;
@@ -176,7 +166,6 @@ export default function ReviewSessionScreen() {
   const [sessionSlideSec, setSessionSlideSec] = useState<number | null>(null);
   const [slideRemainingSec, setSlideRemainingSec] = useState(0);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const adTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const goPrevSlide = useCallback(() => {
     setIndex((i) => Math.max(0, i - 1));
@@ -203,7 +192,6 @@ export default function ReviewSessionScreen() {
   useEffect(() => {
     return () => {
       if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-      if (adTimerRef.current) clearTimeout(adTimerRef.current);
     };
   }, []);
 
@@ -247,11 +235,8 @@ export default function ReviewSessionScreen() {
     setRecallStrokes([]);
     setTextBoxes([]);
     problemShift.setValue(0);
-    setAdLocked(false);
     setAdVisible(false);
     setHintOffer(false);
-    setScheduleSheetVisible(false);
-    setLastPassScore(0);
     frontFade.setValue(1);
     passAnim.setValue(0);
     passScale.setValue(0.7);
@@ -313,20 +298,6 @@ export default function ReviewSessionScreen() {
     }, 1000);
   };
 
-  const dismissFailAd = () => {
-    if (adTimerRef.current) clearTimeout(adTimerRef.current);
-    adTimerRef.current = null;
-    setAdVisible(false);
-    setAdLocked(false);
-    enterRecallPhase();
-  };
-
-  const advance = useCallback(() => {
-    if (index < slides.length - 1) {
-      setIndex((i) => i + 1);
-    }
-  }, [index, slides.length]);
-
   const finishSession = useCallback(() => {
     if (params.bundleId) {
       router.replace({
@@ -337,6 +308,42 @@ export default function ReviewSessionScreen() {
     }
     safeRouterBack(router, '/(tabs)');
   }, [params.bundleId, router]);
+
+  const dismissAd = () => setAdVisible(false);
+
+  const finishAfterComplete = useCallback(() => {
+    passAnim.setValue(0);
+    passScale.setValue(0.7);
+    setRecallStrokes([]);
+    setTextBoxes([]);
+    setPhase('front');
+    if (index < slides.length - 1) {
+      setIndex((i) => i + 1);
+    } else {
+      finishSession();
+    }
+  }, [finishSession, index, passAnim, passScale, slides.length]);
+
+  const showCompletion = useCallback(() => {
+    setPhase('complete');
+    passAnim.setValue(0);
+    passScale.setValue(0.7);
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(passAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
+        Animated.spring(passScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
+      ]),
+      Animated.delay(650),
+    ]).start(() => {
+      finishAfterComplete();
+    });
+  }, [finishAfterComplete, passAnim, passScale]);
+
+  const submitRecall = () => {
+    if (!current) return;
+    completeReview(current.bundle.id);
+    showCompletion();
+  };
 
   useEffect(() => {
     if (!auto || !current || phase !== 'front') {
@@ -361,77 +368,6 @@ export default function ReviewSessionScreen() {
       clearInterval(tick);
     };
   }, [index, auto, current, phase, effectiveSlideMs, slides.length]);
-
-  const nextReviewDateLabel = useMemo(() => {
-    if (!current) return null;
-    const schedule = getSchedule(current.bundle.review.reviewScheduleId);
-    if (!schedule) return null;
-    const advanced = advanceAfterReview(current.bundle);
-    return format(getNextReviewDate(advanced, schedule), 'yyyy-MM-dd');
-  }, [current, getSchedule]);
-
-  const finishAfterScheduleChoice = useCallback(() => {
-    setScheduleSheetVisible(false);
-    passAnim.setValue(0);
-    passScale.setValue(0.7);
-    setPhase('front');
-    advance();
-  }, [advance, passAnim, passScale]);
-
-  const showPassCelebration = (score: number) => {
-    setLastPassScore(score);
-    setPhase('pass');
-    passAnim.setValue(0);
-    passScale.setValue(0.7);
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(passAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
-        Animated.spring(passScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
-      ]),
-      Animated.delay(650),
-    ]).start(() => {
-      setScheduleSheetVisible(true);
-    });
-  };
-
-  const onScheduleYes = () => {
-    if (!current) return;
-    completeReview(current.bundle.id);
-    finishAfterScheduleChoice();
-  };
-
-  const onScheduleNo = () => {
-    finishAfterScheduleChoice();
-  };
-
-  const submitRecall = () => {
-    if (!current || adLocked) return;
-    const gradable = isProblemGradable(current.page);
-
-    if (!gradable) {
-      updateBundle(current.bundle.id, {
-        review: { ...current.bundle.review, aiScoreLast: null },
-      });
-      showPassCelebration(100);
-      return;
-    }
-
-    const score = scoreActiveRecall(recallStrokes, current.page);
-    updateBundle(current.bundle.id, {
-      review: { ...current.bundle.review, aiScoreLast: score },
-    });
-    if (score >= OCR_PASS_THRESHOLD) {
-      showPassCelebration(score);
-    } else {
-      setPhase('fail');
-      setAdLocked(true);
-      setAdVisible(true);
-      if (adTimerRef.current) clearTimeout(adTimerRef.current);
-      adTimerRef.current = setTimeout(() => {
-        dismissFailAd();
-      }, AD_LOCK_MS);
-    }
-  };
 
   const watchHintAd = () => {
     setHintOffer(false);
@@ -465,7 +401,6 @@ export default function ReviewSessionScreen() {
   }
 
   const hasAnswer = Boolean(answerUri);
-  const gradable = isProblemGradable(current.page);
   const recallMode = phase === 'recall-work' || phase === 'countdown';
   const problemLiftY = problemShift.interpolate({
     inputRange: [0, 1],
@@ -557,8 +492,8 @@ export default function ReviewSessionScreen() {
               />
               {!hasAnswer ? <Text style={styles.warn}>{t('review.noBackPhoto')}</Text> : null}
               <View style={styles.recallActions}>
-                <Button label={t('review.submitRecall')} onPress={submitRecall} disabled={adLocked} />
-                {!isPro && gradable ? (
+                <Button label={t('review.submitRecall')} onPress={submitRecall} />
+                {!isPro && hasAnswer ? (
                   <Pressable onPress={() => setHintOffer(true)} disabled={!hasAnswer}>
                     <Text style={[styles.hintLink, !hasAnswer && styles.hintDisabled]}>
                       {t('review.hintAd')}
@@ -594,12 +529,11 @@ export default function ReviewSessionScreen() {
               </View>
             )}
 
-            {phase === 'pass' && !scheduleSheetVisible && (
+            {phase === 'complete' && (
               <Animated.View style={[styles.passOverlay, { opacity: passAnim }]}>
                 <Animated.View style={{ transform: [{ scale: passScale }] }}>
-                  <Text style={styles.passEmoji}>🎉</Text>
-                  <Text style={styles.passTitle}>{t('review.passTitle')}</Text>
-                  <Text style={styles.passSub}>{t('review.passScore', { score: lastPassScore })}</Text>
+                  <Text style={styles.passEmoji}>✓</Text>
+                  <Text style={styles.passTitle}>{t('review.complete')}</Text>
                 </Animated.View>
               </Animated.View>
             )}
@@ -660,11 +594,11 @@ export default function ReviewSessionScreen() {
         </>
       )}
 
-      <Modal visible={adVisible} transparent animationType="fade" onRequestClose={dismissFailAd}>
+      <Modal visible={adVisible} transparent animationType="fade" onRequestClose={dismissAd}>
         <View style={styles.ad}>
           <Text style={styles.adTitle}>{t('review.adTitle')}</Text>
           <Text style={styles.adSub}>{t('review.adWait')}</Text>
-          <Pressable onPress={dismissFailAd} style={styles.adSkip}>
+          <Pressable onPress={dismissAd} style={styles.adSkip}>
             <Text style={styles.adSkipText}>{t('review.skipAd')}</Text>
           </Pressable>
         </View>
@@ -682,20 +616,6 @@ export default function ReviewSessionScreen() {
           </Pressable>
         </View>
       </Modal>
-
-      <ScheduleAdvanceSheet
-        visible={scheduleSheetVisible}
-        score={lastPassScore}
-        nextReviewDate={
-          nextReviewDateLabel ? t('review.advanceNextDate', { date: nextReviewDateLabel }) : null
-        }
-        title={t('review.advanceTitle')}
-        body={t('review.advanceBody')}
-        yesLabel={t('review.advanceYes')}
-        noLabel={t('review.advanceNo')}
-        onYes={onScheduleYes}
-        onNo={onScheduleNo}
-      />
     </View>
   );
 }
@@ -849,7 +769,6 @@ const styles = StyleSheet.create({
   },
   passEmoji: { color: theme.white, fontSize: 56, textAlign: 'center', marginBottom: 8 },
   passTitle: { color: theme.white, fontSize: 32, fontWeight: '900', textAlign: 'center' },
-  passSub: { color: theme.white, marginTop: 8, fontWeight: '600', textAlign: 'center' },
   ad: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.88)',
