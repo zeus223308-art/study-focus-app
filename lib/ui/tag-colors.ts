@@ -58,8 +58,8 @@ export function resolveTagColorFor(
   fallback?: string
 ): string {
   const own = tagColors?.[tagColorKey(tag)];
-  if (own && own.trim()) return own;
-  return resolveTagColor(fallback);
+  if (own && own.trim()) return normalizeTagColorHex(own);
+  return normalizeTagColorHex(resolveTagColor(fallback));
 }
 
 const TAG_TEXT_DARK = '#141414';
@@ -87,6 +87,11 @@ const PREMIUM_LIGHT_TEXT = new Set(
 
 /** Legacy global tag tint (pre–per-tag colors). */
 const LEGACY_TAG_ORANGE = '#ff6b00';
+
+/** Canonical `#rrggbb` for storage and lookups. */
+export function normalizeTagColorHex(hex: string): string {
+  return normalizeHex(hex) ?? DEFAULT_TAG_COLOR;
+}
 
 function normalizeHex(hex: string): string | null {
   const rgb = parseHexRgb(hex);
@@ -161,14 +166,25 @@ function isWarmTagHue(hue: number): boolean {
   return hue <= 150 || hue >= 325;
 }
 
-/**
- * Tag label text: 빨·주·노·초 → black, 파·남·보 → white.
- * Uses palette hex when exact; otherwise hue (not luminance — dark red/green
- * were wrongly getting white text).
- */
-export function contrastTextColor(hex: string): string {
-  const key = normalizeHex(hex);
-  if (!key) return TAG_TEXT_LIGHT;
+/** Snap any stored hex to the nearest tag palette swatch. */
+export function snapToTagPalette(hex: string): string {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return DEFAULT_TAG_COLOR;
+  let best = TAG_COLOR_PALETTE[0]!;
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (const candidate of TAG_COLOR_PALETTE) {
+    const c = parseHexRgb(candidate);
+    if (!c) continue;
+    const d = (rgb.r - c.r) ** 2 + (rgb.g - c.g) ** 2 + (rgb.b - c.b) ** 2;
+    if (d < bestDist) {
+      bestDist = d;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
+function tagLabelTextColorForPaletteKey(key: string): string {
   if (
     RAINBOW_DARK_TEXT.has(key) ||
     PREMIUM_DARK_TEXT.has(key) ||
@@ -177,11 +193,22 @@ export function contrastTextColor(hex: string): string {
     return TAG_TEXT_DARK;
   }
   if (RAINBOW_LIGHT_TEXT.has(key) || PREMIUM_LIGHT_TEXT.has(key)) return TAG_TEXT_LIGHT;
+  return TAG_TEXT_DARK;
+}
 
-  const rgb = parseHexRgb(hex);
+/**
+ * Photo tag ribbon label: 빨·주·노·초 → black, 파·남·보 → white.
+ * Snaps unknown/legacy hex to the nearest palette color first.
+ */
+export function tagLabelTextColor(backgroundHex: string): string {
+  const snapped = snapToTagPalette(backgroundHex);
+  const key = normalizeHex(snapped);
+  if (key) return tagLabelTextColorForPaletteKey(key);
+
+  const rgb = parseHexRgb(backgroundHex);
   if (!rgb) return TAG_TEXT_LIGHT;
 
-  const lum = relativeLuminance(hex);
+  const lum = relativeLuminance(backgroundHex);
   if (lum > 0.78) return TAG_TEXT_DARK;
   if (lum < 0.1) return TAG_TEXT_LIGHT;
 
@@ -191,13 +218,18 @@ export function contrastTextColor(hex: string): string {
   return isWarmTagHue(rgbHueDegrees(rgb)) ? TAG_TEXT_DARK : TAG_TEXT_LIGHT;
 }
 
+/** @deprecated Use tagLabelTextColor — kept for TagFilterBar and imports. */
+export function contrastTextColor(hex: string): string {
+  return tagLabelTextColor(hex);
+}
+
 /** Subtle shadow so tag labels stay legible on busy photo areas. */
 export function contrastTextShadow(hex: string): {
   textShadowColor: string;
   textShadowOffset: { width: number; height: number };
   textShadowRadius: number;
 } {
-  const light = contrastTextColor(hex) === TAG_TEXT_LIGHT;
+  const light = tagLabelTextColor(hex) === TAG_TEXT_LIGHT;
   return {
     textShadowColor: light ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.45)',
     textShadowOffset: { width: 0, height: 0 },

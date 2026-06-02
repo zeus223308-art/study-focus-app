@@ -19,6 +19,7 @@ import {
   removeCaptureTagPreset,
 } from '@/lib/domain/capture-tags';
 import { todayKey } from '@/lib/domain/dates';
+import { normalizeTagColorHex } from '@/lib/ui/tag-colors';
 import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
 import { movePageToSubject } from '@/lib/domain/move-page-to-subject';
 import { movePagesToSubject, type PageRef } from '@/lib/domain/move-pages-batch';
@@ -897,18 +898,20 @@ export function AppProvider({
 
   const setTagColor = useCallback((color: string) => {
     if (!color.trim()) return;
+    const normalized = normalizeTagColorHex(color);
     setData((prev) => {
       if (!prev) return prev;
-      return { ...prev, settings: { ...prev.settings, tagColor: color } };
+      return { ...prev, settings: { ...prev.settings, tagColor: normalized } };
     });
   }, []);
 
   const setTagColorFor = useCallback((tag: string, color: string) => {
     const key = tag.trim().toLowerCase();
     if (!key || !color.trim()) return;
+    const normalized = normalizeTagColorHex(color);
     setData((prev) => {
       if (!prev) return prev;
-      const tagColors = { ...(prev.settings.tagColors ?? {}), [key]: color };
+      const tagColors = { ...(prev.settings.tagColors ?? {}), [key]: normalized };
       return { ...prev, settings: { ...prev.settings, tagColors } };
     });
   }, []);

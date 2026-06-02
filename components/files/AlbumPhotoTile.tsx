@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Text as SvgText } from 'react-native-svg';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
@@ -10,11 +10,7 @@ import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
 import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
-import {
-  contrastTextColor,
-  contrastTextShadow,
-  resolveTagColorFor,
-} from '@/lib/ui/tag-colors';
+import { resolveTagColorFor, tagLabelTextColor } from '@/lib/ui/tag-colors';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
@@ -29,21 +25,31 @@ const RIBBON_PAD_R = 6;
  *  pointed end and the body are always exactly the same color. Text is overlaid. */
 function TagRibbon({ label, color }: { label: string; color: string }) {
   const [textW, setTextW] = useState(0);
+  const labelColor = tagLabelTextColor(color);
   const totalW = RIBBON_NOTCH_W + RIBBON_PAD_L + textW + RIBBON_PAD_R;
   const path = `M0 0 L${totalW} 0 L${totalW} ${RIBBON_H} L0 ${RIBBON_H} L${RIBBON_NOTCH_W} ${RIBBON_H / 2} Z`;
+
   return (
-    <View style={[styles.ribbon, textW ? { width: totalW } : null]}>
-      {textW ? (
-        <Svg key={color} width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill}>
-          <Path d={path} fill={color} />
-        </Svg>
-      ) : null}
+    <View style={[styles.ribbon, textW > 0 ? { width: totalW } : null]}>
       <Text
-        style={[styles.tagText, contrastTextShadow(color), { color: contrastTextColor(color) }]}
+        style={styles.measureText}
         numberOfLines={1}
         onLayout={(e) => setTextW(Math.ceil(e.nativeEvent.layout.width))}>
         {label}
       </Text>
+      {textW > 0 ? (
+        <Svg width={totalW} height={RIBBON_H}>
+          <Path d={path} fill={color} />
+          <SvgText
+            x={RIBBON_NOTCH_W + RIBBON_PAD_L}
+            y={RIBBON_H - 2.5}
+            fill={labelColor}
+            fontSize={8}
+            fontWeight="800">
+            {label}
+          </SvgText>
+        </Svg>
+      ) : null}
     </View>
   );
 }
@@ -319,11 +325,10 @@ const styles = StyleSheet.create({
     height: RIBBON_H,
     justifyContent: 'center',
   },
-  tagText: {
-    height: RIBBON_H,
-    lineHeight: RIBBON_H,
-    marginLeft: RIBBON_NOTCH_W + RIBBON_PAD_L,
-    marginRight: RIBBON_PAD_R,
+  measureText: {
+    position: 'absolute',
+    opacity: 0,
+    left: -9999,
     fontSize: 8,
     fontWeight: '800',
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
