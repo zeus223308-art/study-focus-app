@@ -104,14 +104,21 @@ export default function DashboardScreen() {
     setPreviewIndexBySubject((prev) => ({ ...prev, [subjectId]: index }));
   }, []);
 
-  const canStart = selectedSubjectIds.size > 0;
+  const selectedDuePageCount = useMemo(
+    () =>
+      subjectEntries
+        .filter((e) => selectedSubjectIds.has(e.subject.id))
+        .reduce((n, e) => n + e.duePages, 0),
+    [subjectEntries, selectedSubjectIds]
+  );
+  const canStart = selectedDuePageCount > 0;
 
   const openReview = () => {
     if (!canStart) return;
     const ids = Array.from(selectedSubjectIds);
     const pageCount = subjectEntries
       .filter((e) => ids.includes(e.subject.id))
-      .reduce((n, e) => n + e.previews.length, 0);
+      .reduce((n, e) => n + e.duePages, 0);
     if (pageCount === 0) {
       showMessage('', t('dashboard.noReviewPages'));
       return;
