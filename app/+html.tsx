@@ -121,8 +121,15 @@ body {
 [data-ink-canvas="1"] canvas {
   forced-color-adjust: none !important;
 }
-/* Photo tag ribbons — prevent forced-colors / inversion on mobile Chrome */
-[data-tag-ribbon="1"] [data-tag-ribbon-label="1"] {
+/* Photo tag ribbons — fixed label colors (mobile Chrome ignores JS color on spans) */
+[data-tag-ribbon-tone="dark"] [data-tag-ribbon-label="1"] {
+  color: #141414 !important;
+  -webkit-text-fill-color: #141414 !important;
+  forced-color-adjust: none !important;
+}
+[data-tag-ribbon-tone="light"] [data-tag-ribbon-label="1"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   forced-color-adjust: none !important;
 }
 `;

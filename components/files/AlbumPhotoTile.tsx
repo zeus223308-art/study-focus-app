@@ -1,4 +1,4 @@
-import { createElement, useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { createElement, useCallback, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -6,7 +6,6 @@ import {
   Text,
   View,
   type StyleProp,
-  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import { SymbolView } from 'expo-symbols';
@@ -19,7 +18,11 @@ import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
 import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
-import { resolveTagColorFor, tagLabelTextColor } from '@/lib/ui/tag-colors';
+import {
+  resolveTagColorFor,
+  tagRibbonLabelTone,
+  type TagRibbonLabelTone,
+} from '@/lib/ui/tag-colors';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
@@ -38,68 +41,46 @@ const RIBBON_NOTCH_W = 4;
 const RIBBON_PAD_L = 4;
 const RIBBON_PAD_R = 6;
 
-/** Web-only label: React requires `style` as an object (error #62 if string). */
-function TagRibbonLabelWeb({
-  label,
-  labelColor,
-  left,
-}: {
-  label: string;
-  labelColor: string;
-  left: number;
-}) {
-  const ref = useRef<HTMLSpanElement | null>(null);
+const RIBBON_LABEL_COLOR: Record<TagRibbonLabelTone, string> = {
+  dark: '#141414',
+  light: '#FFFFFF',
+};
 
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.style.setProperty('color', labelColor, 'important');
-    el.style.setProperty('-webkit-text-fill-color', labelColor, 'important');
-  }, [labelColor]);
-
-  return createElement('span', {
-    ref,
-    'data-tag-ribbon-label': '1',
-    style: {
-      position: 'absolute',
-      left,
-      top: 0,
-      height: RIBBON_H,
-      lineHeight: `${RIBBON_H}px`,
-      fontSize: 8,
-      fontWeight: 800,
-      fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
-      whiteSpace: 'nowrap',
-      pointerEvents: 'none',
-      zIndex: 2,
-      forcedColorAdjust: 'none',
-    },
-    children: label,
-  });
-}
-
-/** Label layer: mobile Chrome ignores SVG `fill` and inherits app text color (#F0EDE8). */
+/** Label on ribbon; web uses global CSS via data-tag-ribbon-tone (see app/+html.tsx). */
 function TagRibbonLabel({
   label,
-  labelColor,
+  tone,
   left,
 }: {
   label: string;
-  labelColor: string;
+  tone: TagRibbonLabelTone;
   left: number;
 }) {
   if (IS_WEB) {
-    return <TagRibbonLabelWeb label={label} labelColor={labelColor} left={left} />;
+    return createElement('span', {
+      'data-tag-ribbon-label': '1',
+      style: {
+        position: 'absolute',
+        left,
+        top: 0,
+        height: RIBBON_H,
+        lineHeight: `${RIBBON_H}px`,
+        fontSize: 8,
+        fontWeight: 800,
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+        whiteSpace: 'nowrap',
+        pointerEvents: 'none',
+        zIndex: 2,
+      },
+      children: label,
+    });
   }
 
-  const textStyle: TextStyle = {
-    ...styles.ribbonLabel,
-    left,
-    color: labelColor,
-  };
-
   return (
-    <Text style={textStyle} numberOfLines={1} pointerEvents="none">
+    <Text
+      style={[styles.ribbonLabel, { left, color: RIBBON_LABEL_COLOR[tone] }]}
+      numberOfLines={1}
+      pointerEvents="none">
       {label}
     </Text>
   );
@@ -109,7 +90,7 @@ function TagRibbonLabel({
  *  pointed end and the body are always exactly the same color. Text is overlaid. */
 function TagRibbon({ label, color }: { label: string; color: string }) {
   const [textW, setTextW] = useState(0);
-  const labelColor = tagLabelTextColor(color);
+  const tone = tagRibbonLabelTone(color);
   const contentW = IS_WEB
     ? estimateRibbonLabelWidth(label)
     : textW || estimateRibbonLabelWidth(label);
@@ -119,7 +100,7 @@ function TagRibbon({ label, color }: { label: string; color: string }) {
   return (
     <View
       style={[styles.ribbon, { width: totalW, height: RIBBON_H }]}
-      {...(IS_WEB ? { dataSet: { tagRibbon: '1' } } : {})}>
+      {...(IS_WEB ? { dataSet: { tagRibbonTone: tone } } : {})}>
       {!IS_WEB ? (
         <Text
           style={styles.measureText}
@@ -136,7 +117,7 @@ function TagRibbon({ label, color }: { label: string; color: string }) {
       <Svg width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill} pointerEvents="none">
         <Path d={path} fill={color} />
       </Svg>
-      <TagRibbonLabel label={label} labelColor={labelColor} left={labelLeft} />
+      <TagRibbonLabel label={label} tone={tone} left={labelLeft} />
     </View>
   );
 }

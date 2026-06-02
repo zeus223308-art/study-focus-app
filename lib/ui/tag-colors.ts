@@ -213,32 +213,35 @@ function isKnownPaletteKey(key: string): boolean {
   return false;
 }
 
+/** Ribbon / chip label tone from the free rainbow slot (빨주노초 vs 파남보). */
+export type TagRibbonLabelTone = 'dark' | 'light';
+
+/**
+ * Photo tag ribbon: 빨·주·노·초 → dark, 파·남·보 → light.
+ * Always maps the ribbon fill to the nearest free swatch first.
+ */
+export function tagRibbonLabelTone(backgroundHex: string): TagRibbonLabelTone {
+  const key = normalizeHex(backgroundHex);
+  const freeKey =
+    key && FREE_TAG_COLORS.some((c) => normalizeHex(c) === key)
+      ? key
+      : normalizeHex(snapToFreeTagPalette(backgroundHex));
+  if (!freeKey) return 'dark';
+  const freeIdx = FREE_TAG_COLORS.findIndex((c) => normalizeHex(c) === freeKey);
+  if (freeIdx >= 4 && freeIdx <= 6) return 'light';
+  return 'dark';
+}
+
 /**
  * Photo tag ribbon label: 빨·주·노·초 → black, 파·남·보 → white.
- * Uses the stored swatch when it matches the palette; otherwise snaps for legacy hex.
+ * Premium / legacy hex uses premium sets when exact; otherwise nearest free rainbow slot.
  */
 export function tagLabelTextColor(backgroundHex: string): string {
   const key = normalizeHex(backgroundHex);
-  if (key && isKnownPaletteKey(key)) return tagLabelTextColorForPaletteKey(key);
-
-  // Label contrast follows the free rainbow slot (초록 → black), not premium teal/slate snaps.
-  const freeSnapped = normalizeHex(snapToFreeTagPalette(backgroundHex));
-  if (freeSnapped) return tagLabelTextColorForPaletteKey(freeSnapped);
-
-  const snappedKey = normalizeHex(snapToTagPalette(backgroundHex));
-  if (snappedKey) return tagLabelTextColorForPaletteKey(snappedKey);
-
-  const rgb = parseHexRgb(backgroundHex);
-  if (!rgb) return TAG_TEXT_LIGHT;
-
-  const lum = relativeLuminance(backgroundHex);
-  if (lum > 0.78) return TAG_TEXT_DARK;
-  if (lum < 0.1) return TAG_TEXT_LIGHT;
-
-  const sat = rgbSaturation(rgb);
-  if (sat < 0.12) return lum > 0.45 ? TAG_TEXT_DARK : TAG_TEXT_LIGHT;
-
-  return isWarmTagHue(rgbHueDegrees(rgb)) ? TAG_TEXT_DARK : TAG_TEXT_LIGHT;
+  if (key && isKnownPaletteKey(key)) {
+    return tagLabelTextColorForPaletteKey(key);
+  }
+  return tagRibbonLabelTone(backgroundHex) === 'light' ? TAG_TEXT_LIGHT : TAG_TEXT_DARK;
 }
 
 /** @deprecated Use tagLabelTextColor — kept for TagFilterBar and imports. */
