@@ -21,6 +21,7 @@ import {
   toggleCaptureTag,
 } from '@/lib/domain/capture-tags';
 import type { Language } from '@/lib/domain/types';
+import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
 import { FREE_TAG_COLORS, resolveTagColorFor } from '@/lib/ui/tag-colors';
 
 type Props = {
@@ -561,9 +562,8 @@ const modalStyles = StyleSheet.create({
     backgroundColor: theme.grayLight,
   },
   applyBtnText: {
+    ...BUTTON_LABEL_EMPHASIS,
     color: theme.onAccent,
-    fontWeight: '800',
-    fontSize: theme.font.bodySmall,
   },
   customLocked: {
     width: '100%',
@@ -599,11 +599,11 @@ const modalStyles = StyleSheet.create({
     backgroundColor: '#DC2626',
   },
   btnCancelText: {
-    fontWeight: '700',
+    ...BUTTON_LABEL_DEFAULT,
     color: theme.black,
   },
   btnDeleteText: {
-    fontWeight: '800',
+    ...BUTTON_LABEL_EMPHASIS,
     color: theme.white,
   },
 });

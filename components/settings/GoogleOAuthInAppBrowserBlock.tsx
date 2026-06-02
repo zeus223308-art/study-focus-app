@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 import {
   isInAppOrEmbeddedBrowser,
   MEMORYSHERPA_WEB_APP_URL,
@@ -83,8 +84,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.orange,
   },
   btnText: {
-    fontSize: 12,
-    fontWeight: '700',
+    ...BUTTON_LABEL_COMPACT,
     color: theme.onAccent,
   },
 });

@@ -2,6 +2,7 @@ import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
 
 type Props = {
   visible: boolean;
@@ -138,11 +139,11 @@ const styles = StyleSheet.create({
     borderColor: theme.grayLight,
   },
   btnCancelText: {
-    fontWeight: '700',
+    ...BUTTON_LABEL_DEFAULT,
     color: theme.black,
   },
   btnSendText: {
-    fontWeight: '800',
+    ...BUTTON_LABEL_EMPHASIS,
     color: theme.onAccent,
   },
   btnSendTextIdle: {

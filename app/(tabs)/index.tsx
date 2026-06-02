@@ -16,6 +16,7 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getBundlesFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
+import { BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
 import { showMessage } from '@/lib/ui/confirm';
 
 export default function DashboardScreen() {
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.orange,
   },
   startBtnDisabled: { opacity: 0.45 },
-  startText: { color: theme.onAccent, fontWeight: '800', fontSize: theme.font.body },
+  startText: { ...BUTTON_LABEL_EMPHASIS, color: theme.onAccent },
   startHint: {
     textAlign: 'center',
     fontSize: theme.font.caption,

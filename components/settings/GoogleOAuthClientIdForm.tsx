@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_DEFAULT } from '@/lib/ui/button-label';
 import {
   isValidGoogleClientId,
   saveStoredGoogleClientId,
@@ -120,9 +121,8 @@ const styles = StyleSheet.create({
   },
   saveBtnBusy: { opacity: 0.85 },
   saveBtnText: {
+    ...BUTTON_LABEL_DEFAULT,
     color: theme.onAccent,
-    fontSize: theme.font.body,
-    fontWeight: '700',
   },
   error: {
     fontSize: theme.font.caption,

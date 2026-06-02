@@ -2,6 +2,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_LINK } from '@/lib/ui/button-label';
 
 type Props = {
   visible: boolean;
@@ -98,8 +99,7 @@ const styles = StyleSheet.create({
     borderTopColor: theme.grayLight,
   },
   rowText: {
-    fontSize: theme.font.bodySmall,
-    fontWeight: '700',
+    ...BUTTON_LABEL_DEFAULT,
     color: theme.black,
   },
   deleteText: {
@@ -113,8 +113,7 @@ const styles = StyleSheet.create({
     borderTopColor: theme.grayLight,
   },
   cancelText: {
-    fontSize: theme.font.bodySmall,
-    fontWeight: '600',
+    ...BUTTON_LABEL_LINK,
     color: theme.gray,
   },
 });

@@ -1,6 +1,7 @@
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
 
 type Props = {
   visible: boolean;
@@ -112,13 +113,11 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   btnCancelText: {
-    fontWeight: '700',
+    ...BUTTON_LABEL_DEFAULT,
     color: theme.black,
-    fontSize: theme.font.bodySmall,
   },
   btnConfirmText: {
-    fontWeight: '800',
+    ...BUTTON_LABEL_EMPHASIS,
     color: theme.onAccent,
-    fontSize: theme.font.bodySmall,
   },
 });

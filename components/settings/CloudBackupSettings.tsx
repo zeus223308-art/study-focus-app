@@ -13,6 +13,7 @@ import { GoogleOAuthSetupGuide } from '@/components/settings/GoogleOAuthSetupGui
 import { GoogleSignInButton } from '@/components/settings/GoogleSignInButton';
 import { SettingsRow } from '@/components/SettingsGroup';
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_DEFAULT } from '@/lib/ui/button-label';
 import { useApp } from '@/context/AppContext';
 import { useGoogleDriveAuth } from '@/hooks/useGoogleDriveAuth';
 import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
@@ -354,6 +355,6 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.grayLight,
   },
-  actionText: { fontSize: theme.font.body, fontWeight: '700', color: theme.orange },
-  signOutText: { fontSize: theme.font.body, fontWeight: '600', color: theme.graySecondary },
+  actionText: { ...BUTTON_LABEL_DEFAULT, color: theme.orange },
+  signOutText: { ...BUTTON_LABEL_DEFAULT, fontWeight: '600', color: theme.graySecondary },
 });

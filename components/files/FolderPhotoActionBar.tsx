@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 
 export type FolderPhotoAction = {
   key: string;
@@ -105,11 +106,10 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.88 },
   label: {
-    fontSize: theme.font.caption,
+    ...BUTTON_LABEL_COMPACT,
     fontWeight: '800',
     color: theme.black,
     textAlign: 'center',
-    lineHeight: 14,
   },
   labelPrimary: { color: theme.onAccent },
   ghost: {
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   ghostLabel: {
-    fontSize: theme.font.caption,
+    ...BUTTON_LABEL_COMPACT,
     fontWeight: '600',
     color: theme.gray,
     textAlign: 'center',

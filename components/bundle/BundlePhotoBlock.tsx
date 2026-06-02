@@ -5,6 +5,7 @@ import { SymbolView } from 'expo-symbols';
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import type { CloudAsset, InkToolId, NoteLayer } from '@/lib/domain/types';
 import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
@@ -216,8 +217,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.orangeSoft,
   },
   memoBtnText: {
+    ...BUTTON_LABEL_COMPACT,
     color: theme.orange,
     fontWeight: '800',
-    fontSize: theme.font.caption,
   },
 });

@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
 import type { SubjectFolder } from '@/lib/domain/types';
 
 type Props = {
@@ -176,11 +177,11 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   btnCancelText: {
-    fontWeight: '700',
+    ...BUTTON_LABEL_DEFAULT,
     color: theme.black,
   },
   btnConfirmText: {
-    fontWeight: '800',
+    ...BUTTON_LABEL_EMPHASIS,
     color: theme.onAccent,
   },
 });

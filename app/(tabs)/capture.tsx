@@ -32,6 +32,7 @@ import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { ensureManipulableImageUri } from '@/lib/files/ensure-manipulable-uri';
 import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
 import { verifyCaptureImageReadable } from '@/lib/files/verify-capture-image';
+import { BUTTON_LABEL_COMPACT, BUTTON_LABEL_LINK } from '@/lib/ui/button-label';
 import { showMessage } from '@/lib/ui/confirm';
 import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
 import {
@@ -752,7 +753,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
   },
-  importBtnText: { color: theme.white, fontSize: 13, fontWeight: '700' },
+  importBtnText: { ...BUTTON_LABEL_COMPACT, color: theme.white },
   shutter: {
     position: 'absolute',
     left: '50%',
@@ -855,5 +856,5 @@ const styles = StyleSheet.create({
   saveBtnDone: { opacity: 0.85 },
   saveSpinner: { marginTop: 8 },
   retake: { marginTop: 14, alignItems: 'center' },
-  retakeText: { color: theme.gray, fontWeight: '600' },
+  retakeText: { ...BUTTON_LABEL_LINK, color: theme.gray },
 });

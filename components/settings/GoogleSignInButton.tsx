@@ -1,6 +1,7 @@
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { BUTTON_LABEL_DEFAULT } from '@/lib/ui/button-label';
 
 type Props = {
   label: string;
@@ -96,8 +97,7 @@ const styles = StyleSheet.create({
     color: '#4285F4',
   },
   label: {
-    fontSize: 13,
-    fontWeight: '700',
+    ...BUTTON_LABEL_DEFAULT,
     color: theme.black,
     flexShrink: 1,
   },

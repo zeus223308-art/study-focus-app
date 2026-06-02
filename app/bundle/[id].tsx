@@ -575,7 +575,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: theme.orangeSoft,
   },
-  pairAddText: { color: theme.orange, fontWeight: '800', fontSize: 12 },
+  pairAddText: { ...BUTTON_LABEL_COMPACT, color: theme.orange, fontWeight: '800' },
   note: {
     minHeight: 80,
     backgroundColor: theme.surface,

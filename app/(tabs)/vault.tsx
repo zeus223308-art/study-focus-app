@@ -14,6 +14,7 @@ import type { SubjectFolder } from '@/lib/domain/types';
 import { getSubjectFrontPreviews } from '@/lib/files/subject-previews';
 import { checkSubjectLimit, countActivePagesForSubject } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
+import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 import {
   computeVaultFoldersPerPage,
   useViewportLayout,
@@ -347,8 +348,8 @@ const styles = StyleSheet.create({
   },
   deleteBtnPressed: { opacity: 0.85 },
   deleteBtnText: {
+    ...BUTTON_LABEL_COMPACT,
     color: theme.gray,
-    fontSize: theme.font.label,
     fontWeight: '800',
   },
   deleteBtnTextActive: { color: theme.onAccent },

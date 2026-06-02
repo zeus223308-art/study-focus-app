@@ -44,6 +44,10 @@ export const theme = {
     heading: 22,
     body: 17,
     bodySmall: 15,
+    /** Primary action buttons (`Button`, modal confirm rows). */
+    button: 15,
+    /** Compact actions (toolbar, overlay pills, `Button` compact). */
+    buttonCompact: 13,
     caption: 13,
     label: 11,
   },
