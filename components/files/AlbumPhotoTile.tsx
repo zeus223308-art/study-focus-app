@@ -1,7 +1,16 @@
-import { useCallback, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { createElement, useCallback, useState } from 'react';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import Svg, { Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
@@ -21,6 +30,52 @@ const RIBBON_NOTCH_W = 4;
 const RIBBON_PAD_L = 4;
 const RIBBON_PAD_R = 6;
 
+/** Label layer: mobile Chrome ignores SVG `fill` and inherits app text color (#F0EDE8). */
+function TagRibbonLabel({
+  label,
+  labelColor,
+  left,
+}: {
+  label: string;
+  labelColor: string;
+  left: number;
+}) {
+  const textStyle: TextStyle = {
+    ...styles.ribbonLabel,
+    left,
+    color: labelColor,
+  };
+
+  if (IS_WEB) {
+    return createElement('span', {
+      'data-tag-ribbon-label': '1',
+      style: {
+        position: 'absolute',
+        left,
+        top: 0,
+        height: RIBBON_H,
+        lineHeight: `${RIBBON_H}px`,
+        fontSize: 8,
+        fontWeight: 800,
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+        color: labelColor,
+        WebkitTextFillColor: labelColor,
+        whiteSpace: 'nowrap',
+        pointerEvents: 'none',
+        zIndex: 2,
+        forcedColorAdjust: 'none',
+      },
+      children: label,
+    });
+  }
+
+  return (
+    <Text style={textStyle} numberOfLines={1} pointerEvents="none">
+      {label}
+    </Text>
+  );
+}
+
 /** Whole ribbon (left fishtail + rectangle body) as ONE filled shape so the
  *  pointed end and the body are always exactly the same color. Text is overlaid. */
 function TagRibbon({ label, color }: { label: string; color: string }) {
@@ -29,6 +84,7 @@ function TagRibbon({ label, color }: { label: string; color: string }) {
   const contentW = textW || Math.max(6, Math.ceil(label.length * 4.8));
   const totalW = RIBBON_NOTCH_W + RIBBON_PAD_L + contentW + RIBBON_PAD_R;
   const path = `M0 0 L${totalW} 0 L${totalW} ${RIBBON_H} L0 ${RIBBON_H} L${RIBBON_NOTCH_W} ${RIBBON_H / 2} Z`;
+  const labelLeft = RIBBON_NOTCH_W + RIBBON_PAD_L;
 
   return (
     <View style={[styles.ribbon, { width: totalW, height: RIBBON_H }]}>
@@ -43,21 +99,10 @@ function TagRibbon({ label, color }: { label: string; color: string }) {
         }}>
         {label}
       </Text>
-      <Svg width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill}>
+      <Svg width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill} pointerEvents="none">
         <Path d={path} fill={color} />
-        <SvgText
-          x={RIBBON_NOTCH_W + RIBBON_PAD_L}
-          y={RIBBON_H / 2 + 2.5}
-          fill={labelColor}
-          fontSize={8}
-          fontWeight="800"
-          alignmentBaseline="middle"
-          {...(IS_WEB
-            ? ({ fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif' } as object)
-            : null)}>
-          {label}
-        </SvgText>
       </Svg>
+      <TagRibbonLabel label={label} labelColor={labelColor} left={labelLeft} />
     </View>
   );
 }
@@ -332,6 +377,17 @@ const styles = StyleSheet.create({
   ribbon: {
     height: RIBBON_H,
     justifyContent: 'center',
+    overflow: 'visible',
+  },
+  ribbonLabel: {
+    position: 'absolute',
+    top: 0,
+    height: RIBBON_H,
+    lineHeight: RIBBON_H,
+    fontSize: 8,
+    fontWeight: '800',
+    zIndex: 2,
+    ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   measureText: {
     opacity: 0,

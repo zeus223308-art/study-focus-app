@@ -188,14 +188,23 @@ function tagLabelTextColorForPaletteKey(key: string): string {
   return TAG_TEXT_DARK;
 }
 
+function isKnownPaletteKey(key: string): boolean {
+  if (FREE_TAG_COLORS.some((c) => normalizeHex(c) === key)) return true;
+  if (PREMIUM_DARK_TEXT.has(key) || PREMIUM_LIGHT_TEXT.has(key)) return true;
+  if (key === LEGACY_TAG_ORANGE) return true;
+  return false;
+}
+
 /**
  * Photo tag ribbon label: 빨·주·노·초 → black, 파·남·보 → white.
- * Snaps unknown/legacy hex to the nearest palette color first.
+ * Uses the stored swatch when it matches the palette; otherwise snaps for legacy hex.
  */
 export function tagLabelTextColor(backgroundHex: string): string {
-  const snapped = snapToTagPalette(backgroundHex);
-  const key = normalizeHex(snapped);
-  if (key) return tagLabelTextColorForPaletteKey(key);
+  const key = normalizeHex(backgroundHex);
+  if (key && isKnownPaletteKey(key)) return tagLabelTextColorForPaletteKey(key);
+
+  const snappedKey = normalizeHex(snapToTagPalette(backgroundHex));
+  if (snappedKey) return tagLabelTextColorForPaletteKey(snappedKey);
 
   const rgb = parseHexRgb(backgroundHex);
   if (!rgb) return TAG_TEXT_LIGHT;
