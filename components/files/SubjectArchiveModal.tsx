@@ -3,10 +3,14 @@ import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from '
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SymbolView } from 'expo-symbols';
+
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { Button } from '@/components/ui/Button';
+import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
+import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
 import {
   groupSubjectProblemsByDate,
   listArchivedSubjectProblems,
@@ -35,6 +39,8 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
 
   const [restoreSelectMode, setRestoreSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [previewItem, setPreviewItem] = useState<SubjectProblemItem | null>(null);
+  const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
 
   const archivedProblems = useMemo(
     () => listArchivedSubjectProblems(data.bundles, subjectId),
@@ -75,9 +81,19 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
     });
   };
 
-  const enterRestoreSelect = (bundleId: string, pageId: string) => {
-    setRestoreSelectMode(true);
-    setSelectedKeys(new Set([`${bundleId}:${pageId}`]));
+  const openPreview = (bundleId: string, pageId: string) => {
+    const found = archivedProblems.find(
+      (p) => p.bundleId === bundleId && p.pageId === pageId
+    );
+    if (!found) return;
+    setPreviewSide('front');
+    setPreviewItem(found);
+  };
+
+  const restoreFromPreview = () => {
+    if (!previewItem) return;
+    unarchiveBundle(previewItem.bundleId);
+    setPreviewItem(null);
   };
 
   const confirmRestore = () => {
@@ -150,7 +166,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                     onToggleSelect={toggleSelect}
                     onLiftItemForDrag={() => {}}
                     onDeleteHold={(item) => confirmDeleteProblem(item.bundleId, item.pageId)}
-                    onOpen={(bundleId, pageId) => enterRestoreSelect(bundleId, pageId)}
+                    onOpen={(bundleId, pageId) => openPreview(bundleId, pageId)}
                     reorderEnabled={false}
                   />
                 ))
@@ -174,12 +190,99 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                 />
               </View>
             ) : (
-              <Button label={t('appUsageGuide.close')} onPress={closeAll} style={styles.closeBtn} />
+              <View style={styles.selectActions}>
+                {dateSections.length > 0 ? (
+                  <Button
+                    label={t('folder.restoreMultiple')}
+                    variant="secondary"
+                    onPress={() => {
+                      setSelectedKeys(new Set());
+                      setRestoreSelectMode(true);
+                    }}
+                  />
+                ) : null}
+                <Button
+                  label={t('appUsageGuide.close')}
+                  variant="ghost"
+                  onPress={closeAll}
+                  style={dateSections.length > 0 ? { marginTop: 8 } : undefined}
+                />
+              </View>
             )}
           </View>
         </View>
       </Modal>
 
+      <Modal
+        visible={previewItem !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewItem(null)}
+        statusBarTranslucent
+        presentationStyle="overFullScreen">
+        <View style={styles.previewRoot}>
+          <Pressable style={styles.previewClose} hitSlop={12} onPress={() => setPreviewItem(null)}>
+            <SymbolView
+              name={{ ios: 'xmark', android: 'close', web: 'close' }}
+              size={24}
+              tintColor={theme.white}
+            />
+          </Pressable>
+
+          {previewItem ? (
+            <>
+              {previewItem.page.answerAsset ? (
+                <View style={styles.previewSideRow}>
+                  <Pressable
+                    onPress={() => setPreviewSide('front')}
+                    style={[styles.previewSideChip, previewSide === 'front' && styles.previewSideChipOn]}>
+                    <Text
+                      style={[
+                        styles.previewSideText,
+                        previewSide === 'front' && styles.previewSideTextOn,
+                      ]}>
+                      {t('capture.frontLabel')}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setPreviewSide('back')}
+                    style={[styles.previewSideChip, previewSide === 'back' && styles.previewSideChipOn]}>
+                    <Text
+                      style={[
+                        styles.previewSideText,
+                        previewSide === 'back' && styles.previewSideTextOn,
+                      ]}>
+                      {t('capture.backLabel')}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              <View style={styles.previewImageArea}>
+                {(() => {
+                  const asset =
+                    previewSide === 'back' && previewItem.page.answerAsset
+                      ? previewItem.page.answerAsset
+                      : previewItem.page.asset;
+                  const uri = getFullImageUri(asset) ?? getPreviewImageUri(asset);
+                  return uri ? (
+                    <ResolvedImage
+                      uri={uri}
+                      asset={asset}
+                      style={styles.previewImage}
+                      resizeMode="contain"
+                    />
+                  ) : null;
+                })()}
+              </View>
+
+              <View style={[styles.previewActions, { paddingBottom: Math.max(16, insets.bottom) }]}>
+                <Button label={t('folder.restorePhoto')} onPress={restoreFromPreview} />
+              </View>
+            </>
+          ) : null}
+        </View>
+      </Modal>
     </>
   );
 }
@@ -234,5 +337,56 @@ const styles = StyleSheet.create({
   },
   selectActions: {
     marginTop: 12,
+  },
+  previewRoot: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.92)',
+    ...Platform.select({
+      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
+      default: {},
+    }),
+  },
+  previewClose: {
+    position: 'absolute',
+    top: 44,
+    right: 20,
+    zIndex: 2,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewSideRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignSelf: 'center',
+    marginTop: 52,
+  },
+  previewSideChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  previewSideChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
+  previewSideText: { fontWeight: '700', color: theme.white },
+  previewSideTextOn: { color: theme.onAccent },
+  previewImageArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  previewActions: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
   },
 });
