@@ -30,7 +30,8 @@ import {
   buildCountdownSteps,
 } from '@/lib/review/blackout';
 import { getFullImageUri } from '@/lib/files/display-image-uri';
-import { resolveImageUri } from '@/lib/files/resolve-image-uri';
+import { getFullUriCandidates } from '@/lib/files/asset-uri-utils';
+import { resolveFirstReadableUri, resolveImageUri } from '@/lib/files/resolve-image-uri';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
 import {
   ANSWER_SLIDESHOW_SECONDS,
@@ -235,31 +236,48 @@ export default function ReviewSessionScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!frontUri) {
+    if (!current?.page.asset) {
       setResolvedFrontUri(null);
       return;
     }
-    resolveImageUri(frontUri).then((u) => {
-      if (!cancelled) setResolvedFrontUri(u);
+    const candidates = getFullUriCandidates(current.page.asset);
+    void resolveFirstReadableUri(candidates).then((u) => {
+      if (cancelled) return;
+      if (u) {
+        setResolvedFrontUri(u);
+        return;
+      }
+      // Fallback for legacy data that still stores a directly readable URI.
+      void resolveImageUri(frontUri).then((legacy) => {
+        if (!cancelled) setResolvedFrontUri(legacy);
+      });
     });
     return () => {
       cancelled = true;
     };
-  }, [frontUri, current?.page.id, current?.side]);
+  }, [frontUri, current?.page.asset, current?.page.id, current?.side]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!answerUri) {
+    if (!current?.page.answerAsset) {
       setResolvedAnswerUri(null);
       return;
     }
-    resolveImageUri(answerUri).then((u) => {
-      if (!cancelled) setResolvedAnswerUri(u);
+    const candidates = getFullUriCandidates(current.page.answerAsset);
+    void resolveFirstReadableUri(candidates).then((u) => {
+      if (cancelled) return;
+      if (u) {
+        setResolvedAnswerUri(u);
+        return;
+      }
+      void resolveImageUri(answerUri).then((legacy) => {
+        if (!cancelled) setResolvedAnswerUri(legacy);
+      });
     });
     return () => {
       cancelled = true;
     };
-  }, [answerUri, current?.page.id]);
+  }, [answerUri, current?.page.answerAsset, current?.page.id]);
   const auto = params.slideshow === '1';
   const isPro = data.settings.tier === 'pro';
 
