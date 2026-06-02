@@ -25,6 +25,7 @@ import { hasPhotoMemoContent, normalizePhotoMemo } from '@/lib/domain/photo-memo
 import type { InkToolId, NoteLayer, PhotoMemo } from '@/lib/domain/types';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
+import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { computeBundlePhotoLayout, useViewportLayout } from '@/lib/ui/viewport-layout';
 
