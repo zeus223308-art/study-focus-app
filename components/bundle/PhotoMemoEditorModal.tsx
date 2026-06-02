@@ -179,7 +179,7 @@ export function PhotoMemoEditorModal({
           <Pressable onPress={onClose} hitSlop={12}>
             <Text style={styles.close}>{t('common.close')}</Text>
           </Pressable>
-          <Text style={styles.title}>{sideLabel}</Text>
+          {sideLabel ? <Text style={styles.title}>{sideLabel}</Text> : <View style={styles.titleSpacer} />}
           <Pressable onPress={onClose} hitSlop={12}>
             <Text style={styles.done}>{t('common.done')}</Text>
           </Pressable>
@@ -269,6 +269,7 @@ const styles = StyleSheet.create({
   },
   close: { color: theme.orange, fontWeight: '800', fontSize: theme.font.body, minWidth: 48 },
   title: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
+  titleSpacer: { flex: 1 },
   done: { color: theme.orange, fontWeight: '800', fontSize: theme.font.body, minWidth: 48, textAlign: 'right' },
   textActions: { marginBottom: 8, alignItems: 'flex-end' },
   addTextBtn: {

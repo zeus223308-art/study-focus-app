@@ -11,7 +11,7 @@ import type { CloudAsset, InkToolId, NoteLayer } from '@/lib/domain/types';
 import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
 
 type Props = {
-  label: string;
+  label?: string;
   maxWidth: number;
   maxHeight?: number;
   /** Fill parent column (landscape side-by-side). */
@@ -92,7 +92,7 @@ export function BundlePhotoBlock({
           ? (e) => onWrapLayout(Math.round(e.nativeEvent.layout.width))
           : undefined
       }>
-      <Text style={styles.label}>{label}</Text>
+      {label ? <Text style={styles.label}>{label}</Text> : null}
       <Pressable
         onPress={hasImage ? onPress : onAddPress}
         style={[

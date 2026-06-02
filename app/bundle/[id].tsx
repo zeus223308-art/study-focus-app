@@ -350,7 +350,6 @@ export default function BundleScreen() {
         ]}>
       <View style={photoLayout.sideBySide ? styles.photoCol : undefined}>
         <BundlePhotoBlock
-          label={t('item.problemSection')}
           maxWidth={photoLayout.maxWidth}
           maxHeight={photoLayout.maxHeight}
           fillWidth={photoLayout.sideBySide}
@@ -443,9 +442,7 @@ export default function BundleScreen() {
 
       <PhotoMemoEditorModal
         visible={memoOpen}
-        sideLabel={
-          memoSide === 'front' ? t('item.problemSection') : t('item.answerSection')
-        }
+        sideLabel={memoSide === 'front' ? '' : t('item.answerSection')}
         asset={memoSide === 'front' ? page.asset : page.answerAsset!}
         memo={memoSide === 'front' ? frontMemo : answerMemo}
         onMemoChange={(m) => updatePageMemo(memoSide, m)}
@@ -475,7 +472,7 @@ export default function BundleScreen() {
       <PhotoCropModal
         visible={cropOpen}
         uri={cropUri}
-        sideLabel={cropSide === 'front' ? t('item.problemSection') : t('item.answerSection')}
+        sideLabel={cropSide === 'front' ? '' : t('item.answerSection')}
         onConfirm={onCropDone}
         onClose={() => setCropOpen(false)}
       />

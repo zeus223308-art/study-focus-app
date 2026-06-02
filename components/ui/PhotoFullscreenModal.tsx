@@ -111,23 +111,17 @@ export function PhotoFullscreenModal({
     <View style={styles.sideRow}>
       <Pressable
         onPress={() => setSide('front')}
+        accessibilityLabel={t('capture.frontLabel')}
         style={[
           styles.sideChip,
           {
             paddingHorizontal: m.sideChipPaddingH,
             paddingVertical: m.sideChipPaddingV,
+            minWidth: m.sideChipPaddingH * 2 + 8,
           },
           side === 'front' && styles.sideChipOn,
-        ]}>
-        <Text
-          style={[
-            styles.sideText,
-            { fontSize: m.sideFontSize },
-            side === 'front' && styles.sideTextOn,
-          ]}>
-          {t('capture.frontLabel')}
-        </Text>
-      </Pressable>
+        ]}
+      />
       <Pressable
         onPress={() => setSide('back')}
         style={[

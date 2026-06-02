@@ -268,9 +268,13 @@ export function CapturePhotoEditor({
         <Pressable onPress={busy ? undefined : onRetake} hitSlop={12} style={styles.topAction}>
           <Text style={styles.cancelText}>{t('capture.editorCancel')}</Text>
         </Pressable>
-        <Text style={styles.topTitle} numberOfLines={1}>
-          {sideLabel}
-        </Text>
+        {sideLabel ? (
+          <Text style={styles.topTitle} numberOfLines={1}>
+            {sideLabel}
+          </Text>
+        ) : (
+          <View style={styles.topTitle} />
+        )}
         <Pressable
           onPress={canConfirm ? confirm : undefined}
           hitSlop={12}

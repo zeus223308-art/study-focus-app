@@ -175,15 +175,13 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
               <View style={styles.previewSideRow}>
                 <Pressable
                   onPress={() => setPreviewSide('front')}
-                  style={[styles.previewSideChip, previewSide === 'front' && styles.previewSideChipOn]}>
-                  <Text
-                    style={[
-                      styles.previewSideText,
-                      previewSide === 'front' && styles.previewSideTextOn,
-                    ]}>
-                    {t('capture.frontLabel')}
-                  </Text>
-                </Pressable>
+                  accessibilityLabel={t('capture.frontLabel')}
+                  style={[
+                    styles.previewSideChip,
+                    styles.previewSideChipFront,
+                    previewSide === 'front' && styles.previewSideChipOn,
+                  ]}
+                />
                 <Pressable
                   onPress={() => setPreviewSide('back')}
                   style={[styles.previewSideChip, previewSide === 'back' && styles.previewSideChipOn]}>
@@ -396,6 +394,10 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.35)',
+  },
+  previewSideChipFront: {
+    minWidth: 40,
+    paddingHorizontal: 12,
   },
   previewSideChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   previewSideText: { fontWeight: '700', color: theme.white },

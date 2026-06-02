@@ -476,7 +476,6 @@ export default function CaptureTabScreen() {
             ) : null}
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
-                <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
                 {frontUri ? (
                   <Pressable onPress={() => frontUri && openEditor(frontUri, 'front', 'answer-prompt')}>
                     <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="cover" />
@@ -525,7 +524,6 @@ export default function CaptureTabScreen() {
 
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
-                <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
                 {frontUri ? (
                   <Pressable onPress={() => openEditor(frontUri, 'front', 'save-sheet')}>
                     <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="cover" />
@@ -636,7 +634,7 @@ export default function CaptureTabScreen() {
       <>
         <CapturePhotoEditor
           uri={editUri}
-          sideLabel={editSide === 'back' ? t('capture.backLabel') : t('capture.frontLabel')}
+          sideLabel={editSide === 'back' ? t('capture.backLabel') : ''}
           onConfirm={onEditConfirm}
           onRetake={onEditRetake}
         />

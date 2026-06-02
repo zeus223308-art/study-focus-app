@@ -158,7 +158,6 @@ export default function FolderScreen() {
       today: t('folder.dateToday'),
       yesterday: t('folder.dateYesterday'),
       photoCount: (count: number) => t('folder.photoCount', { count }),
-      problemLabel: (n: number) => t('folder.problemLabel', { n }),
     }),
     [t]
   );

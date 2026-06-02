@@ -93,8 +93,8 @@ export function ProblemPhotoModal({
   }, [backAsset, initialSide, visible]);
 
   const sides = useMemo(() => {
-    const list: { side: Side; asset: CloudAsset; label: string }[] = [
-      { side: 'front', asset: frontAsset, label: t('item.problemSection') },
+    const list: { side: Side; asset: CloudAsset; label: string | null }[] = [
+      { side: 'front', asset: frontAsset, label: null },
     ];
     if (backAsset) {
       list.push({ side: 'back', asset: backAsset, label: t('item.answerSection') });
@@ -188,7 +188,7 @@ export function ProblemPhotoModal({
                   getPreviewImageUri(item.asset) ?? getFullImageUri(item.asset);
                 return (
                   <View key={item.side} style={{ width: viewerW, height: viewerH }}>
-                    <Text style={styles.sideLabel}>{item.label}</Text>
+                    {item.label ? <Text style={styles.sideLabel}>{item.label}</Text> : null}
                     <View style={[styles.imageBox, { height: imageH }]}>
                       <ResolvedImage
                         uri={displayUri}

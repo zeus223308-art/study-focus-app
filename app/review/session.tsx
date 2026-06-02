@@ -473,7 +473,6 @@ export default function ReviewSessionScreen() {
   });
   const showingBack = current.side === 'back' && Boolean(answerUri);
   const displayUri = showingBack ? resolvedAnswerUri : resolvedFrontUri;
-  const sideBadge = showingBack ? t('capture.backLabel') : t('review.frontLabel');
   const timerDisplaySec =
     phase === 'countdown' ? null : auto && phase === 'front' ? slideRemainingSec : null;
   const slideSecOptions =
@@ -581,15 +580,11 @@ export default function ReviewSessionScreen() {
               ) : (
                 <View style={[styles.image, styles.imageMissing]} />
               )}
-              {phase === 'front' && (
-                <View
-                  style={[
-                    styles.frontBadge,
-                    showingBack && styles.backBadge,
-                  ]}>
-                  <Text style={styles.frontBadgeText}>{sideBadge}</Text>
+              {phase === 'front' && showingBack ? (
+                <View style={[styles.frontBadge, styles.backBadge]}>
+                  <Text style={styles.frontBadgeText}>{t('capture.backLabel')}</Text>
                 </View>
-              )}
+              ) : null}
             </Animated.View>
 
             {phase === 'peek' && resolvedAnswerUri && (

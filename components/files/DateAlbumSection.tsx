@@ -21,7 +21,6 @@ type Props = {
     today: string;
     yesterday: string;
     photoCount: (count: number) => string;
-    problemLabel: (n: number) => string;
   };
   onOpen: (bundleId: string, pageId: string) => void;
   onDragMove?: (pageX: number, pageY: number) => void;
