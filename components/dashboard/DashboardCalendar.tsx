@@ -20,8 +20,9 @@ import { SymbolView } from 'expo-symbols';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
-import { useLanguage } from '@/context/AppContext';
+import { useApp, useLanguage } from '@/context/AppContext';
 import { shiftStudyDateKey, studyDateBounds } from '@/lib/domain/dates';
+import { buildReviewMarkForDate } from '@/lib/domain/ribbon';
 import type { DateRibbonMark } from '@/lib/domain/types';
 
 type Props = {
@@ -58,7 +59,9 @@ export function DashboardCalendar({
 }: Props) {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const { data, getSchedule } = useApp();
   const locale = language === 'ko' ? ko : enUS;
+  const bundles = data?.bundles ?? [];
 
   const bounds = useMemo(
     () => studyDateBounds(firstLaunchDate),
@@ -74,15 +77,19 @@ export function DashboardCalendar({
     setViewMonth((prev) => (isSameMonth(prev, selectedMonth) ? prev : selectedMonth));
   }, [selectedDate]);
 
-  const markMap = useMemo(
-    () => Object.fromEntries(marks.map((m) => [m.date, m])),
-    [marks]
-  );
-
   const monthStart = startOfMonth(viewMonth);
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
   const gridEnd = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 0 });
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
+
+  const markMap = useMemo(() => {
+    const map: Record<string, DateRibbonMark> = {};
+    for (const day of days) {
+      const key = format(day, 'yyyy-MM-dd');
+      map[key] = buildReviewMarkForDate(day, bundles, getSchedule, localToday);
+    }
+    return map;
+  }, [days, bundles, getSchedule, localToday]);
 
   const todayDate = startOfDay(parseISO(`${localToday}T12:00:00`));
   const minDate = startOfDay(parseISO(`${bounds.min}T12:00:00`));
@@ -185,6 +192,7 @@ export function DashboardCalendar({
           const key = format(day, 'yyyy-MM-dd');
           const inMonth = isSameMonth(day, monthStart);
           const selectable = day >= minDate && day <= todayDate;
+          const isFuture = day > todayDate;
           const selected = key === selectedDate;
           const isToday = isSameDay(day, todayDate);
           const mark = markMap[key];
@@ -195,7 +203,12 @@ export function DashboardCalendar({
               key={key}
               disabled={!selectable}
               onPress={() => onSelectDate(key)}
-              style={[styles.cell, !inMonth && styles.cellDim, !selectable && styles.cellDisabled]}>
+              style={[
+                styles.cell,
+                !inMonth && styles.cellDim,
+                isFuture && inMonth && styles.cellFuture,
+                !selectable && !isFuture && styles.cellDisabled,
+              ]}>
               <View
                 style={[
                   styles.cellInner,
@@ -324,6 +337,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: '14.28%', aspectRatio: 1, padding: 2 },
   cellDim: { opacity: 0.35 },
+  cellFuture: { opacity: 0.72 },
   cellDisabled: { opacity: 0.25 },
   cellInner: {
     flex: 1,

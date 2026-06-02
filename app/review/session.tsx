@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { parseISO } from 'date-fns';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -6,11 +6,13 @@ import {
   Image,
   Modal,
   PanResponder,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  type ImageStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -36,6 +38,8 @@ import {
   formatAnswerSlideshowLabel,
   slideshowMsForSide,
 } from '@/lib/domain/slideshow-timing';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { isDueOnDate } from '@/lib/spacing/engine';
 import {
   parseReviewPageKeys,
   reviewPageKey,
@@ -43,6 +47,9 @@ import {
 } from '@/lib/review/parse-review-pages';
 
 const HINT_PEEK_MS = 8000;
+
+const problemImageBlurWeb: ImageStyle =
+  Platform.OS === 'web' ? ({ filter: 'blur(6px)' } as ImageStyle) : {};
 type SlideSide = 'front' | 'back';
 type Slide = { bundle: NoteBundle; page: NotePage; side: SlideSide };
 type Phase = 'front' | 'countdown' | 'recall-work' | 'peek' | 'debrief';
@@ -64,14 +71,19 @@ export default function ReviewSessionScreen() {
     startPage?: string;
     slideshow?: string;
     blackout?: string;
+    reviewDate?: string;
   }>();
   const {
     dueToday,
     dueSelected,
     data,
     completeReview,
+    getSchedule,
     storage,
   } = useApp();
+
+  const reviewDate = routeParamString(params.reviewDate);
+  const isBlackout = params.blackout === '1';
 
   const slides = useMemo<Slide[]>(() => {
     const pickedSubjectIds = routeParamString(params.subjectIds)
@@ -99,6 +111,13 @@ export default function ReviewSessionScreen() {
     if (params.subjectId) {
       bundles = bundles.filter((b) => b.subjectId === params.subjectId);
     }
+    if (reviewDate && /^\d{4}-\d{2}-\d{2}$/.test(reviewDate)) {
+      const d = parseISO(`${reviewDate}T12:00:00`);
+      bundles = bundles.filter((b) => {
+        const s = getSchedule(b.review.reviewScheduleId);
+        return s ? isDueOnDate(b, s, d) : false;
+      });
+    }
     const isSlideshow = params.slideshow === '1';
     const list: Slide[] = [];
     for (const bundle of bundles) {
@@ -119,6 +138,8 @@ export default function ReviewSessionScreen() {
     params.subjectIds,
     params.reviewPages,
     params.slideshow,
+    reviewDate,
+    getSchedule,
     dueSelected,
     dueToday,
     data.bundles,
@@ -149,10 +170,12 @@ export default function ReviewSessionScreen() {
   const [textBoxes, setTextBoxes] = useState<ScratchTextBox[]>([]);
   const [adVisible, setAdVisible] = useState(false);
   const [hintOffer, setHintOffer] = useState(false);
-  const [completionVisible, setCompletionVisible] = useState(false);
+  const [problemCompleteVisible, setProblemCompleteVisible] = useState(false);
+  const [sessionCompleteVisible, setSessionCompleteVisible] = useState(false);
   const [submittedRecall, setSubmittedRecall] = useState<SubmittedRecall | null>(null);
   const [passAnim] = useState(() => new Animated.Value(0));
   const passScale = useRef(new Animated.Value(0.7)).current;
+  const blackoutStartedRef = useRef(false);
   const frontFade = useRef(new Animated.Value(1)).current;
   const problemShift = useRef(new Animated.Value(0)).current;
   const viewport = useViewportLayout();
@@ -245,8 +268,9 @@ export default function ReviewSessionScreen() {
     problemShift.setValue(0);
     setAdVisible(false);
     setHintOffer(false);
-    setCompletionVisible(false);
+    setProblemCompleteVisible(false);
     setSubmittedRecall(null);
+    blackoutStartedRef.current = false;
     frontFade.setValue(1);
     passAnim.setValue(0);
     passScale.setValue(0.7);
@@ -308,6 +332,13 @@ export default function ReviewSessionScreen() {
     }, 1000);
   };
 
+  useEffect(() => {
+    if (!isBlackout || auto || phase !== 'front' || !current) return;
+    if (blackoutStartedRef.current) return;
+    blackoutStartedRef.current = true;
+    startCountdown();
+  }, [index, isBlackout, auto, phase, current]);
+
   const finishSession = useCallback(() => {
     if (params.bundleId) {
       router.replace({
@@ -327,17 +358,23 @@ export default function ReviewSessionScreen() {
     setRecallStrokes([]);
     setTextBoxes([]);
     setSubmittedRecall(null);
-    setCompletionVisible(false);
+    setProblemCompleteVisible(false);
     setPhase('front');
     if (index < slides.length - 1) {
       setIndex((i) => i + 1);
     } else {
-      finishSession();
+      passAnim.setValue(0);
+      passScale.setValue(0.7);
+      setSessionCompleteVisible(true);
+      Animated.parallel([
+        Animated.timing(passAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
+        Animated.spring(passScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
+      ]).start();
     }
-  }, [finishSession, index, passAnim, passScale, slides.length]);
+  }, [index, passAnim, passScale, slides.length]);
 
-  const showCompletion = useCallback(() => {
-    setCompletionVisible(true);
+  const showProblemComplete = useCallback(() => {
+    setProblemCompleteVisible(true);
     passAnim.setValue(0);
     passScale.setValue(0.7);
     Animated.parallel([
@@ -346,12 +383,17 @@ export default function ReviewSessionScreen() {
     ]).start();
   }, [passAnim, passScale]);
 
-  const confirmCompletion = useCallback(() => {
-    setCompletionVisible(false);
+  const confirmProblemComplete = useCallback(() => {
+    setProblemCompleteVisible(false);
     passAnim.setValue(0);
     passScale.setValue(0.7);
     setPhase('debrief');
   }, [passAnim, passScale]);
+
+  const dismissSessionComplete = useCallback(() => {
+    setSessionCompleteVisible(false);
+    finishSession();
+  }, [finishSession]);
 
   const submitRecall = () => {
     if (!current) return;
@@ -360,7 +402,7 @@ export default function ReviewSessionScreen() {
       textBoxes: textBoxes,
     });
     completeReview(current.bundle.id);
-    showCompletion();
+    showProblemComplete();
   };
 
   useEffect(() => {
@@ -419,7 +461,10 @@ export default function ReviewSessionScreen() {
   }
 
   const hasAnswer = Boolean(answerUri);
-  const recallMode = phase === 'recall-work' || phase === 'countdown';
+  const recallMode =
+    phase === 'recall-work' ||
+    phase === 'countdown' ||
+    (isBlackout && phase === 'front');
   const debriefMode = phase === 'debrief';
   const problemLiftY = problemShift.interpolate({
     inputRange: [0, 1],
@@ -501,7 +546,11 @@ export default function ReviewSessionScreen() {
             {resolvedFrontUri ? (
               <Image
                 source={{ uri: resolvedFrontUri }}
-                style={{ width: workCardW, height: problemCardH }}
+                style={[
+                  { width: workCardW, height: problemCardH },
+                  problemCompleteVisible && styles.problemImageDim,
+                  problemCompleteVisible && problemImageBlurWeb,
+                ]}
                 resizeMode="contain"
               />
             ) : (
@@ -512,9 +561,29 @@ export default function ReviewSessionScreen() {
                 <Text style={styles.countdownOnImageText}>{countdown}</Text>
               </View>
             ) : null}
+            {problemCompleteVisible ? (
+              <Animated.View
+                style={[styles.problemCompleteOverlay, { opacity: passAnim }]}
+                pointerEvents="box-none">
+                <View style={styles.problemCompleteScrim} />
+                <Animated.View
+                  style={[
+                    styles.problemCompleteContent,
+                    { transform: [{ scale: passScale }] },
+                  ]}>
+                  <Text style={styles.problemCompleteCheck}>✓</Text>
+                  <Text style={styles.problemCompleteTitle}>{t('review.reviewComplete')}</Text>
+                  <Button
+                    label={t('common.confirm')}
+                    onPress={confirmProblemComplete}
+                    style={styles.problemCompleteBtn}
+                  />
+                </Animated.View>
+              </Animated.View>
+            ) : null}
           </Animated.View>
 
-          {phase === 'recall-work' ? (
+          {phase === 'recall-work' && !problemCompleteVisible ? (
             <>
               <RecallWorkCard
                 width={workCardW}
@@ -564,7 +633,7 @@ export default function ReviewSessionScreen() {
             )}
           </View>
 
-          {phase === 'front' && !auto && (
+          {phase === 'front' && !auto && !isBlackout && (
         <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
           <Text style={styles.progress}>
             {index + 1} / {slides.length}
@@ -619,7 +688,7 @@ export default function ReviewSessionScreen() {
         </>
       )}
 
-      {completionVisible ? (
+      {sessionCompleteVisible ? (
         <View style={styles.completionOverlay}>
           <View style={styles.completionBackdrop} />
           <Animated.View
@@ -628,10 +697,10 @@ export default function ReviewSessionScreen() {
               { opacity: passAnim, transform: [{ scale: passScale }] },
             ]}>
             <Text style={styles.passEmoji}>✓</Text>
-            <Text style={styles.passTitle}>{t('review.complete')}</Text>
+            <Text style={styles.passTitle}>{t('review.todayReviewComplete')}</Text>
             <Button
               label={t('common.confirm')}
-              onPress={confirmCompletion}
+              onPress={dismissSessionComplete}
               style={styles.completionBtn}
             />
           </Animated.View>
@@ -736,6 +805,37 @@ const styles = StyleSheet.create({
     borderColor: theme.grayLight,
     overflow: 'hidden',
   },
+  problemImageDim: { opacity: 0.35 },
+  problemCompleteOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 4,
+  },
+  problemCompleteScrim: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  problemCompleteContent: {
+    zIndex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    maxWidth: '92%',
+  },
+  problemCompleteCheck: {
+    color: theme.white,
+    fontSize: 44,
+    fontWeight: '900',
+    marginBottom: 6,
+  },
+  problemCompleteTitle: {
+    color: theme.white,
+    fontSize: 24,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  problemCompleteBtn: { minWidth: 160 },
   countdownOnImage: {
     position: 'absolute',
     top: 10,

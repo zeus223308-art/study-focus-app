@@ -25,7 +25,7 @@
     "dueCount": "{{count}} pending",
     "calendarHint": "Calendar",
     "calendarTitle": "Month calendar",
-    "calendarSub": "Tap a day to update the review list below",
+    "calendarSub": "Shown by your review pattern · tap a day to update the list",
     "ribbonCaption": "Date scroll",
     "calendarPrevMonth": "Previous month",
     "calendarNextMonth": "Next month",
@@ -299,6 +299,8 @@
   },
   "review": {
     "complete": "Done",
+    "reviewComplete": "Review complete",
+    "todayReviewComplete": "Today's review complete",
     "next": "Next",
     "startCountdown": "Solve",
     "swipeProblems": "Swipe sideways to pick another problem",

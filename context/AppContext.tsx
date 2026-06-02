@@ -493,7 +493,12 @@ export function AppProvider({
 
   const ribbonMarks = useMemo(() => {
     if (!data) return [];
-    return buildDateRibbonMarks(data.bundles, getSchedule, data.settings.firstLaunchDate);
+    return buildDateRibbonMarks(
+      data.bundles,
+      getSchedule,
+      data.settings.firstLaunchDate,
+      localToday
+    );
   }, [data, getSchedule, localToday]);
 
   const dueSelected = useMemo(() => {

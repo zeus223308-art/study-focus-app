@@ -119,6 +119,7 @@ export default function DashboardScreen() {
     router.push({
       pathname: '/review/session',
       params: {
+        reviewDate: selectedDate,
         blackout: '1',
         subjectIds: ids.join(','),
         startPage: String(

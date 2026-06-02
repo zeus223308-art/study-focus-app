@@ -25,7 +25,7 @@
     "dueCount": "{{count}}개 대기",
     "calendarHint": "달력",
     "calendarTitle": "월간 달력",
-    "calendarSub": "날짜를 누르면 아래 복습 목록이 바뀝니다",
+    "calendarSub": "복습 패턴에 맞춰 표시됩니다 · 날짜를 누르면 복습 목록이 바뀝니다",
     "ribbonCaption": "날짜 스크롤",
     "calendarPrevMonth": "이전 달",
     "calendarNextMonth": "다음 달",
@@ -299,6 +299,8 @@
   },
   "review": {
     "complete": "완료",
+    "reviewComplete": "복습 완료",
+    "todayReviewComplete": "오늘 복습 완료",
     "next": "다음",
     "startCountdown": "풀기",
     "swipeProblems": "옆으로 밀어 다른 문제를 고르세요",
