@@ -13,7 +13,6 @@ import { SymbolView } from 'expo-symbols';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { DateRibbon } from '@/components/dashboard/DateRibbon';
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
@@ -29,7 +28,6 @@ import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
 import type { PageRef } from '@/lib/domain/move-pages-batch';
 import {
-  buildSubjectStudyDateMarks,
   groupSubjectProblemsByDate,
   listSubjectProblems,
 } from '@/lib/grouping/bundles';
@@ -113,11 +111,6 @@ export default function FolderScreen() {
     if (!subject?.id) return;
     setActiveFolderCapture({ subjectId: subject.id, studyDate: albumFilterDate });
   }, [subject?.id, albumFilterDate, setActiveFolderCapture]);
-
-  const subjectRibbonMarks = useMemo(
-    () => buildSubjectStudyDateMarks(problems, data.settings.firstLaunchDate),
-    [problems, data.settings.firstLaunchDate]
-  );
 
   const dateSections = useMemo(
     () => groupSubjectProblemsByDate(problems),
@@ -368,15 +361,6 @@ export default function FolderScreen() {
             </Pressable>
           )}
         </View>
-        <View style={styles.ribbonWrap}>
-          <DateRibbon
-            marks={subjectRibbonMarks}
-            selectedDate={albumFilterDate}
-            firstLaunchDate={data.settings.firstLaunchDate}
-            localToday={localToday}
-            onSelectDate={setAlbumFilterDate}
-          />
-        </View>
         <ScrollView
           ref={scrollRef}
           style={styles.albumScroll}
@@ -543,7 +527,6 @@ const styles = StyleSheet.create({
   shrink0: { flexShrink: 0 },
   header: { paddingHorizontal: 20 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ribbonWrap: { marginBottom: 8, marginHorizontal: -4 },
   exportHint: {
     fontSize: theme.font.caption,
     color: theme.gray,
