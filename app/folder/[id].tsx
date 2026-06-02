@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
+import { FolderPhotoActionBar } from '@/components/files/FolderPhotoActionBar';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { SubjectArchiveHeaderButton } from '@/components/files/SubjectArchiveHeaderButton';
 import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
@@ -22,7 +23,6 @@ import { SubjectDropDock } from '@/components/files/SubjectDropDock';
 import { SubjectPickerModal } from '@/components/files/SubjectPickerModal';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
-import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
 import type { PageRef } from '@/lib/domain/move-pages-batch';
@@ -428,57 +428,53 @@ export default function FolderScreen() {
 
       {exportSelectMode ? (
         <View style={[styles.exportBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
-          <View style={styles.actionBarColumn} {...({ dataSet: { folderActionBar: '1' } } as object)}>
-            <Button
-              label={t('folder.sendToNewFolder')}
-              size="compact"
-              layout="fit"
-              onPress={openNewFolderModal}
-              disabled={exportSelectedKeys.size === 0}
-            />
-            <Button
-              label={t('folder.sendToOtherFolder')}
-              variant="secondary"
-              size="compact"
-              layout="fit"
-              onPress={openOtherSubjectPicker}
-              disabled={exportSelectedKeys.size === 0}
-              style={styles.exportBarBtnGap}
-            />
-            <Button
-              label={t('common.cancel')}
-              variant="ghost"
-              size="compact"
-              layout="fit"
-              onPress={exitExportSelect}
-              style={styles.exportBarBtnGap}
-            />
-          </View>
+          <FolderPhotoActionBar
+            actions={[
+              {
+                key: 'new',
+                label: t('folder.sendToNewFolder'),
+                onPress: openNewFolderModal,
+                disabled: exportSelectedKeys.size === 0,
+              },
+              {
+                key: 'other',
+                label: t('folder.sendToOtherFolder'),
+                variant: 'secondary',
+                onPress: openOtherSubjectPicker,
+                disabled: exportSelectedKeys.size === 0,
+              },
+              {
+                key: 'cancel',
+                label: t('common.cancel'),
+                variant: 'ghost',
+                onPress: exitExportSelect,
+              },
+            ]}
+          />
         </View>
       ) : null}
 
       {archiveSelectMode ? (
         <View style={[styles.archiveBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
-          <View style={styles.actionBarColumn} {...({ dataSet: { folderActionBar: '1' } } as object)}>
-            <Button
-              label={t('folder.saveToArchiveCount', { count: archiveSelectedKeys.size })}
-              size="compact"
-              layout="fit"
-              onPress={confirmArchiveSelected}
-              disabled={archiveSelectedKeys.size === 0}
-            />
-            <Button
-              label={t('common.cancel')}
-              variant="ghost"
-              size="compact"
-              layout="fit"
-              onPress={() => {
-                setArchiveSelectMode(false);
-                setArchiveSelectedKeys(new Set());
-              }}
-              style={styles.exportBarBtnGap}
-            />
-          </View>
+          <FolderPhotoActionBar
+            actions={[
+              {
+                key: 'archive',
+                label: t('folder.saveToArchiveCount', { count: archiveSelectedKeys.size }),
+                onPress: confirmArchiveSelected,
+                disabled: archiveSelectedKeys.size === 0,
+              },
+              {
+                key: 'cancel',
+                label: t('common.cancel'),
+                variant: 'ghost',
+                onPress: () => {
+                  setArchiveSelectMode(false);
+                  setArchiveSelectedKeys(new Set());
+                },
+              },
+            ]}
+          />
         </View>
       ) : null}
 
@@ -566,13 +562,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: theme.grayLight,
   },
-  actionBarColumn: {
-    width: '56%',
-    maxWidth: 188,
-    alignSelf: 'center',
-    alignItems: 'stretch',
-  },
-  exportBarBtnGap: { marginTop: 6 },
   archiveBar: {
     position: 'absolute',
     left: 0,

@@ -121,16 +121,27 @@ body {
 [data-ink-canvas="1"] canvas {
   forced-color-adjust: none !important;
 }
-/* Folder photo long-press action bar — force narrow column on mobile web */
+/* Folder photo long-press actions + drag subject dock — compact pills on mobile web */
 [data-folder-action-bar="1"] {
-  width: 56% !important;
-  max-width: 188px !important;
+  width: auto !important;
+  max-width: 100% !important;
   margin-left: auto !important;
   margin-right: auto !important;
 }
-[data-folder-action-bar="1"] > * {
-  width: 100% !important;
-  max-width: 100% !important;
+[data-folder-action-bar="1"] [data-folder-action-btn="1"] {
+  width: auto !important;
+  max-width: 148px !important;
+  min-width: 0 !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  box-sizing: border-box !important;
+  flex-shrink: 1 !important;
+}
+[data-subject-drop-dock="1"] [data-subject-drop-target="1"] {
+  min-width: 0 !important;
+  max-width: 148px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
   box-sizing: border-box !important;
 }
 [data-tag-ribbon-tone="dark"] [data-tag-ribbon-label="1"] {

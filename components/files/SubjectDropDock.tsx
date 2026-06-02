@@ -21,7 +21,9 @@ export function SubjectDropDock({ currentSubjectId, subjects }: Props) {
   if (!movingBundleId || targets.length === 0) return null;
 
   return (
-    <View style={[styles.dock, { paddingBottom: Math.max(8, insets.bottom) }]}>
+    <View
+      style={[styles.dock, { paddingBottom: Math.max(8, insets.bottom) }]}
+      {...({ dataSet: { subjectDropDock: '1' } } as object)}>
       <Text style={styles.hint}>{t('folder.dropHint')}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {targets.map((s) => (
@@ -49,20 +51,19 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textAlign: 'center',
   },
-  row: { gap: 10, paddingBottom: 4 },
+  row: { gap: 8, paddingBottom: 4, paddingHorizontal: 4 },
   chip: {
-    minWidth: 88,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: theme.radius.md,
-    borderWidth: 1.5,
-    borderColor: theme.black,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
     backgroundColor: theme.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   chipText: {
-    fontSize: theme.font.body,
+    fontSize: theme.font.caption,
     fontWeight: '800',
     color: theme.black,
   },

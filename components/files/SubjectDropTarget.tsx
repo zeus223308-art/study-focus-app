@@ -33,6 +33,7 @@ export function SubjectDropTarget({ subjectId, children, style, disabled }: Prop
     <View
       ref={ref}
       onLayout={measure}
+      {...({ dataSet: { subjectDropTarget: '1' } } as object)}
       style={[
         style,
         canDrop && styles.dropReady,
