@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import Svg, { Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { HoldDragSurface } from '@/components/ui/HoldDragSurface';
@@ -28,28 +28,28 @@ function TagRibbon({ label, color }: { label: string; color: string }) {
   const labelColor = tagLabelTextColor(color);
   const totalW = RIBBON_NOTCH_W + RIBBON_PAD_L + textW + RIBBON_PAD_R;
   const path = `M0 0 L${totalW} 0 L${totalW} ${RIBBON_H} L0 ${RIBBON_H} L${RIBBON_NOTCH_W} ${RIBBON_H / 2} Z`;
+  const labelStyle = [
+    styles.tagText,
+    { color: labelColor },
+    IS_WEB ? ({ color: labelColor, WebkitTextFillColor: labelColor } as object) : null,
+  ];
 
   return (
     <View style={[styles.ribbon, textW > 0 ? { width: totalW } : null]}>
-      <Text
-        style={styles.measureText}
-        numberOfLines={1}
-        onLayout={(e) => setTextW(Math.ceil(e.nativeEvent.layout.width))}>
-        {label}
-      </Text>
       {textW > 0 ? (
-        <Svg width={totalW} height={RIBBON_H}>
+        <Svg key={color} width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill}>
           <Path d={path} fill={color} />
-          <SvgText
-            x={RIBBON_NOTCH_W + RIBBON_PAD_L}
-            y={RIBBON_H - 2.5}
-            fill={labelColor}
-            fontSize={8}
-            fontWeight="800">
-            {label}
-          </SvgText>
         </Svg>
       ) : null}
+      <Text
+        style={labelStyle}
+        numberOfLines={1}
+        onLayout={(e) => {
+          const w = Math.ceil(e.nativeEvent.layout.width);
+          if (w > 0) setTextW(w);
+        }}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -325,10 +325,12 @@ const styles = StyleSheet.create({
     height: RIBBON_H,
     justifyContent: 'center',
   },
-  measureText: {
-    position: 'absolute',
-    opacity: 0,
-    left: -9999,
+  tagText: {
+    zIndex: 1,
+    height: RIBBON_H,
+    lineHeight: RIBBON_H,
+    marginLeft: RIBBON_NOTCH_W + RIBBON_PAD_L,
+    marginRight: RIBBON_PAD_R,
     fontSize: 8,
     fontWeight: '800',
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
