@@ -201,7 +201,7 @@
     "trash": "Trash",
     "unarchive": "Restore",
     "archiveModalTitle": "{{name}} · Archive",
-    "archiveEmpty": "No archived photos",
+    "archiveEmpty": "No photos",
     "restorePhoto": "Restore",
     "saveToArchive": "Save to archive",
     "saveToArchiveCount": "Save to archive ({{count}})",
