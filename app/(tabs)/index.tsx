@@ -127,7 +127,6 @@ export default function DashboardScreen() {
       pathname: '/review/session',
       params: {
         reviewDate: selectedDate,
-        blackout: '1',
         subjectIds: ids.join(','),
         startPage: String(
           ids.length === 1
