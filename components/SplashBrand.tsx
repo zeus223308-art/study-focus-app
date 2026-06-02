@@ -1,18 +1,31 @@
 import { useCallback, useEffect } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
   runOnJS,
+  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 
-import { LOGO_WHITE, MountainMLogo, SPLASH_BLACK } from '@/components/MountainMLogo';
+import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
+
+const mountainLogo = require('@/assets/images/mountain-m-logo.png');
+
+const M_SHINE_PATH = `
+  M 79 37
+  C 93 24, 103 36, 120 73
+  C 136 36, 147 24, 161 37
+`;
+const SHINE_PATH_LENGTH = 142;
+const SHINE_SEGMENT_LENGTH = 34;
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 type Props = {
   onFinish: () => void;
@@ -93,12 +106,26 @@ export function SplashBrand({ onFinish }: Props) {
     opacity: screenOpacity.value,
   }));
 
+  const shineAnimatedProps = useAnimatedProps(() => {
+    const p = Math.max(0, Math.min(1, shineProgress.value));
+    return {
+      strokeDashoffset: SHINE_PATH_LENGTH - p * (SHINE_PATH_LENGTH + SHINE_SEGMENT_LENGTH),
+      opacity: p <= 0.02 || p >= 0.98 ? 0 : 1,
+    };
+  });
+
   return (
     <Animated.View style={[styles.root, screenStyle]} pointerEvents="auto">
       <View style={styles.center}>
         <Animated.View style={[styles.mountainWrap, mountainStyle]}>
-          <View onLayout={hideNativeSplash}>
-            <MountainMLogo width={240} height={168} shineProgress={shineProgress} />
+          <View style={styles.logoBox} onLayout={hideNativeSplash}>
+            <Image
+              source={mountainLogo}
+              style={styles.mountainLogo}
+              resizeMode="contain"
+              accessibilityLabel="MemorySherpa logo"
+            />
+            <MShineOverlay shineAnimatedProps={shineAnimatedProps} />
           </View>
         </Animated.View>
 
@@ -131,9 +158,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  logoBox: {
+    width: 240,
+    height: 168,
+  },
   mountainLogo: {
     width: 240,
     height: 168,
+  },
+  shineOverlay: {
+    ...StyleSheet.absoluteFill,
   },
   taglineWrap: {
     alignItems: 'center',
@@ -160,3 +194,22 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.45)',
   },
 });
+
+function MShineOverlay({ shineAnimatedProps }: { shineAnimatedProps: any }) {
+  return (
+    <View style={styles.shineOverlay} pointerEvents="none">
+      <Svg width={240} height={168} viewBox="0 0 240 168">
+        <AnimatedPath
+          d={M_SHINE_PATH}
+          stroke={LOGO_WHITE}
+          strokeWidth={2.3}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray={`${SHINE_SEGMENT_LENGTH} ${SHINE_PATH_LENGTH}`}
+          animatedProps={shineAnimatedProps}
+        />
+      </Svg>
+    </View>
+  );
+}
