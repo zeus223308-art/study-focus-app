@@ -65,8 +65,16 @@ export default function ReviewSessionScreen() {
     slideshow?: string;
     blackout?: string;
   }>();
-  const { dueToday, dueSelected, data, completeReview, storage, updateBundle, getSchedule } =
-    useApp();
+  const {
+    dueToday,
+    dueSelected,
+    data,
+    completeReview,
+    storage,
+    updateBundle,
+    getSchedule,
+    setPaywallVisible,
+  } = useApp();
 
   const slides = useMemo<Slide[]>(() => {
     const pickedSubjectIds = routeParamString(params.subjectIds)
@@ -487,25 +495,23 @@ export default function ReviewSessionScreen() {
         ]}>
         <View style={styles.topBarLeft}>
           {!auto ? (
-            isPro ? (
-              <View style={styles.premiumToggle}>
-                <Text style={[styles.premiumLabel, recallMode && styles.topBarDarkText]}>
-                  {t('review.answerToggle')}
-                </Text>
-                <Switch
-                  value={premiumReveal}
-                  onValueChange={setPremiumReveal}
-                  trackColor={{ false: theme.grayLight, true: theme.orange }}
-                  thumbColor={theme.white}
-                />
-              </View>
-            ) : (
-              <View style={styles.premiumLocked}>
-                <Text style={[styles.premiumLockedText, recallMode && styles.topBarDarkMuted]}>
-                  {t('review.answerPremium')}
-                </Text>
-              </View>
-            )
+            <View style={styles.premiumToggle}>
+              <Text style={[styles.premiumLabel, recallMode && styles.topBarDarkText]}>
+                {t('review.answerToggle')}
+              </Text>
+              <Switch
+                value={isPro && premiumReveal}
+                onValueChange={(on) => {
+                  if (!isPro) {
+                    if (on) setPaywallVisible(true);
+                    return;
+                  }
+                  setPremiumReveal(on);
+                }}
+                trackColor={{ false: theme.grayLight, true: theme.orange }}
+                thumbColor={theme.white}
+              />
+            </View>
           ) : (
             <Text style={[styles.slideshowProgress, recallMode && styles.topBarDarkText]}>
               {index + 1} / {slides.length}
@@ -775,8 +781,6 @@ const styles = StyleSheet.create({
   topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   premiumToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
   premiumLabel: { color: theme.white, fontSize: theme.font.caption, fontWeight: '700' },
-  premiumLocked: { flex: 1 },
-  premiumLockedText: { color: theme.grayMuted, fontSize: 11, fontWeight: '600' },
   slideshowProgress: { color: theme.white, fontSize: theme.font.caption, fontWeight: '700' },
   timerBadge: {
     minWidth: 44,
