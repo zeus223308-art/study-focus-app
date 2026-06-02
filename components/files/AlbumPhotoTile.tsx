@@ -1,4 +1,4 @@
-import { createElement, useCallback, useState } from 'react';
+import { createElement, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import {
   Platform,
   Pressable,
@@ -38,6 +38,46 @@ const RIBBON_NOTCH_W = 4;
 const RIBBON_PAD_L = 4;
 const RIBBON_PAD_R = 6;
 
+/** Web-only label: React requires `style` as an object (error #62 if string). */
+function TagRibbonLabelWeb({
+  label,
+  labelColor,
+  left,
+}: {
+  label: string;
+  labelColor: string;
+  left: number;
+}) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.setProperty('color', labelColor, 'important');
+    el.style.setProperty('-webkit-text-fill-color', labelColor, 'important');
+  }, [labelColor]);
+
+  return createElement('span', {
+    ref,
+    'data-tag-ribbon-label': '1',
+    style: {
+      position: 'absolute',
+      left,
+      top: 0,
+      height: RIBBON_H,
+      lineHeight: `${RIBBON_H}px`,
+      fontSize: 8,
+      fontWeight: 800,
+      fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+      whiteSpace: 'nowrap',
+      pointerEvents: 'none',
+      zIndex: 2,
+      forcedColorAdjust: 'none',
+    },
+    children: label,
+  });
+}
+
 /** Label layer: mobile Chrome ignores SVG `fill` and inherits app text color (#F0EDE8). */
 function TagRibbonLabel({
   label,
@@ -48,34 +88,15 @@ function TagRibbonLabel({
   labelColor: string;
   left: number;
 }) {
+  if (IS_WEB) {
+    return <TagRibbonLabelWeb label={label} labelColor={labelColor} left={left} />;
+  }
+
   const textStyle: TextStyle = {
     ...styles.ribbonLabel,
     left,
     color: labelColor,
   };
-
-  if (IS_WEB) {
-    return createElement('span', {
-      'data-tag-ribbon-label': '1',
-      style: [
-        'position:absolute',
-        `left:${left}px`,
-        'top:0',
-        `height:${RIBBON_H}px`,
-        `line-height:${RIBBON_H}px`,
-        'font-size:8px',
-        'font-weight:800',
-        'font-family:system-ui,-apple-system,"Segoe UI",sans-serif',
-        `color:${labelColor} !important`,
-        `-webkit-text-fill-color:${labelColor} !important`,
-        'white-space:nowrap',
-        'pointer-events:none',
-        'z-index:2',
-        'forced-color-adjust:none',
-      ].join(';'),
-      children: label,
-    });
-  }
 
   return (
     <Text style={textStyle} numberOfLines={1} pointerEvents="none">
