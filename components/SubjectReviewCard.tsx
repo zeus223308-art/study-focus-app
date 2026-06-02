@@ -7,8 +7,6 @@ import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 type Props = {
   subjectTag: string;
   previewItems: SubjectPreviewItem[];
-  /** Total photos in subject — drives N/N counter on the card. */
-  pageCount: number;
   totalLabel: string;
   emptyHint: string;
   selected?: boolean;
@@ -20,7 +18,6 @@ type Props = {
 export function SubjectReviewCard({
   subjectTag,
   previewItems,
-  pageCount,
   totalLabel,
   emptyHint,
   selected,
@@ -33,7 +30,6 @@ export function SubjectReviewCard({
         variant="dashboard"
         subjectTag={subjectTag}
         items={previewItems}
-        pageCount={pageCount}
         totalLabel={totalLabel}
         emptyHint={emptyHint}
         onOpen={() => {}}

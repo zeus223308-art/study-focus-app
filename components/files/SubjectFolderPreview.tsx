@@ -22,8 +22,6 @@ export type PreviewVariant = 'vault' | 'dashboard';
 
 type Props = {
   items: SubjectPreviewItem[];
-  /** Dashboard: denominator for swipe counter (e.g. 10 → 3/10). */
-  pageCount?: number;
   totalLabel: string;
   emptyHint: string;
   onOpen: () => void;
@@ -45,7 +43,6 @@ const DASHBOARD_HEIGHT = 120;
 
 export function SubjectFolderPreview({
   items,
-  pageCount,
   totalLabel,
   emptyHint,
   onOpen,
@@ -70,12 +67,8 @@ export function SubjectFolderPreview({
     previewIndexProp !== undefined
       ? Math.max(0, Math.min(previewIndexProp, Math.max(0, items.length - 1)))
       : internalIndex;
-  const counterTotal = Math.max(pageCount ?? items.length, items.length, 1);
-  const showCounter = isDashboard ? counterTotal >= 1 : items.length > 1;
-  /** Dashboard: total/total (e.g. 10/10, 1/1), not swipe index. */
-  const counterLabel = isDashboard
-    ? `${counterTotal}/${counterTotal}`
-    : `${index + 1} / ${items.length}`;
+  const showCounter = !isDashboard && items.length > 1;
+  const counterLabel = `${index + 1} / ${items.length}`;
 
   const lock = useCallback(() => onGestureLock(true), [onGestureLock]);
   const unlock = useCallback(() => onGestureLock(false), [onGestureLock]);

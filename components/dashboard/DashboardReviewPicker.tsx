@@ -87,7 +87,6 @@ export function DashboardReviewPicker({
                 <SubjectReviewCard
                   subjectTag={entry.subject.name}
                   previewItems={entry.previews}
-                  pageCount={entry.totalPages}
                   totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
                   emptyHint={t('dashboard.previewEmpty')}
                   selected={checked}
