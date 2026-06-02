@@ -126,6 +126,8 @@ export function RecallCanvas({
         commitStroke();
         touchEndRef.current?.();
       },
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
     })
   ).current;
 
