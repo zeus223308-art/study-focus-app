@@ -29,8 +29,8 @@ const M_SHINE_PATH = `
   L 170 64
   L 186 98
 `;
-const SHINE_PATH_LENGTH = 338;
-const SHINE_SEGMENT_LENGTH = 46;
+const SHINE_PATH_LENGTH = 520;
+const SHINE_SEGMENT_LENGTH = 74;
 const SHINE_GAP = 1200;
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -43,7 +43,7 @@ const EASE_OUT = Easing.out(Easing.cubic);
 
 const T = {
   mountainIn: 260,
-  shineSweep: 980,
+  shineSweep: 1220,
   mountainOut: 280,
   taglineIn: 280,
   taglineHold: 180,
@@ -118,7 +118,7 @@ export function SplashBrand({ onFinish }: Props) {
     return {
       strokeDashoffset:
         SHINE_PATH_LENGTH - p * (SHINE_PATH_LENGTH + SHINE_SEGMENT_LENGTH),
-      opacity: p <= 0.02 || p >= 0.98 ? 0 : 1,
+      opacity: 1,
     };
   });
 
