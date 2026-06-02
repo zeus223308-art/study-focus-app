@@ -65,6 +65,33 @@ export function resolveTagColorFor(
 const TAG_TEXT_DARK = '#141414';
 const TAG_TEXT_LIGHT = '#FFFFFF';
 
+/** 빨·주·노·초 — black label text. */
+const RAINBOW_DARK_TEXT = new Set(
+  FREE_TAG_COLORS.slice(0, 4).map((c) => c.toLowerCase())
+);
+
+/** 파·남·보 — white label text. */
+const RAINBOW_LIGHT_TEXT = new Set(
+  FREE_TAG_COLORS.slice(4, 7).map((c) => c.toLowerCase())
+);
+
+/** Premium warm/bright hues — same rule as 빨·주·노·초 family. */
+const PREMIUM_DARK_TEXT = new Set(
+  ['#65a30d', '#84cc16', '#d97706', '#db2777', '#f43f5e']
+);
+
+/** Premium cool/deep hues — same rule as 파·남·보 family. */
+const PREMIUM_LIGHT_TEXT = new Set(
+  ['#0891b2', '#06b6d4', '#0f766e', '#92400e', '#64748b']
+);
+
+function normalizeHex(hex: string): string | null {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return null;
+  const to2 = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${to2(rgb.r)}${to2(rgb.g)}${to2(rgb.b)}`.toLowerCase();
+}
+
 function parseHexRgb(hex: string): { r: number; g: number; b: number } | null {
   const raw = hex.trim().replace(/^#/, '');
   const full =
@@ -98,20 +125,16 @@ function relativeLuminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-function contrastRatio(l1: number, l2: number): number {
-  const lighter = Math.max(l1, l2);
-  const darker = Math.min(l1, l2);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
-/** Readable text on a tag ribbon / chip — picks dark or light by WCAG contrast. */
+/**
+ * Tag label text: 빨·주·노·초 → black, 파·남·보 → white.
+ * Custom colors fall back to luminance.
+ */
 export function contrastTextColor(hex: string): string {
-  const bg = relativeLuminance(hex);
-  const darkLum = relativeLuminance(TAG_TEXT_DARK);
-  const lightLum = relativeLuminance(TAG_TEXT_LIGHT);
-  return contrastRatio(bg, darkLum) >= contrastRatio(bg, lightLum)
-    ? TAG_TEXT_DARK
-    : TAG_TEXT_LIGHT;
+  const key = normalizeHex(hex);
+  if (!key) return TAG_TEXT_LIGHT;
+  if (RAINBOW_DARK_TEXT.has(key) || PREMIUM_DARK_TEXT.has(key)) return TAG_TEXT_DARK;
+  if (RAINBOW_LIGHT_TEXT.has(key) || PREMIUM_LIGHT_TEXT.has(key)) return TAG_TEXT_LIGHT;
+  return relativeLuminance(hex) > 0.45 ? TAG_TEXT_DARK : TAG_TEXT_LIGHT;
 }
 
 /** Subtle shadow so tag labels stay legible on busy photo areas. */
