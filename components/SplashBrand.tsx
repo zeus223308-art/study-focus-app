@@ -19,12 +19,14 @@ import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
 
 const M_SHINE_PATH = `
-  M 79 37
-  C 93 24, 103 36, 120 73
-  C 136 36, 147 24, 161 37
+  M 66 92
+  L 84 34
+  L 120 96
+  L 156 34
+  L 174 92
 `;
-const SHINE_PATH_LENGTH = 142;
-const SHINE_SEGMENT_LENGTH = 34;
+const SHINE_PATH_LENGTH = 272;
+const SHINE_SEGMENT_LENGTH = 46;
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 type Props = {
@@ -36,7 +38,7 @@ const EASE_OUT = Easing.out(Easing.cubic);
 
 const T = {
   mountainIn: 260,
-  shineSweep: 700,
+  shineSweep: 980,
   mountainOut: 280,
   taglineIn: 280,
   taglineHold: 180,
