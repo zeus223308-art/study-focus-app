@@ -607,36 +607,10 @@ export default function ReviewSessionScreen() {
 
           {phase === 'front' && !auto && (
         <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
-          {slides.length > 1 ? (
-            <View style={styles.slidePager}>
-              <Pressable
-                onPress={goPrevSlide}
-                disabled={index === 0}
-                style={[styles.pagerBtn, index === 0 && styles.pagerBtnDisabled]}
-                hitSlop={10}>
-                <Text style={styles.pagerBtnText}>‹</Text>
-              </Pressable>
-              <Text style={styles.progress}>
-                {index + 1} / {slides.length}
-                {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
-              </Text>
-              <Pressable
-                onPress={goNextSlide}
-                disabled={index >= slides.length - 1}
-                style={[
-                  styles.pagerBtn,
-                  index >= slides.length - 1 && styles.pagerBtnDisabled,
-                ]}
-                hitSlop={10}>
-                <Text style={styles.pagerBtnText}>›</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <Text style={styles.progress}>
-              {index + 1} / {slides.length}
-              {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
-            </Text>
-          )}
+          <Text style={styles.progress}>
+            {index + 1} / {slides.length}
+            {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
+          </Text>
           {slides.length > 1 ? (
             <Text style={styles.swipeHint}>{t('review.swipeProblems')}</Text>
           ) : null}
@@ -860,24 +834,7 @@ const styles = StyleSheet.create({
   hintLink: { color: theme.orange, fontWeight: '700', textAlign: 'center', marginTop: 4 },
   hintDisabled: { opacity: 0.4 },
   footer: { paddingTop: 20, paddingHorizontal: 20, backgroundColor: theme.beige, gap: 8 },
-  progress: { textAlign: 'center', color: theme.gray, fontWeight: '700', flex: 1 },
-  slidePager: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-    width: '100%',
-  },
-  pagerBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pagerBtnDisabled: { opacity: 0.35 },
-  pagerBtnText: { color: theme.white, fontSize: 28, fontWeight: '300', marginTop: -2 },
+  progress: { textAlign: 'center', color: theme.gray, fontWeight: '700', marginBottom: 4 },
   swipeHint: {
     color: theme.grayMuted,
     fontSize: theme.font.caption,
