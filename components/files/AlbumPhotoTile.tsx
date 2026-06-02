@@ -317,12 +317,11 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: '100%',
-    borderRadius: theme.radius.sm,
+    borderRadius: 2,
     overflow: 'hidden',
     backgroundColor: theme.grayLight,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.grayLight,
-    ...theme.cardShadow,
     ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'manipulation', userSelect: 'none' } as object) : null),
   },
   tileContent: {

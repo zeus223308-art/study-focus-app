@@ -150,15 +150,25 @@ export default function DashboardScreen() {
           />
         </View>
       ) : (
-        <DashboardReviewPicker
-          entries={subjectEntries}
-          selectedIds={selectedSubjectIds}
-          previewIndexBySubject={previewIndexBySubject}
-          onToggle={toggleSubject}
-          onPreviewIndexChange={setPreviewIndex}
-          onStartReview={openReview}
-          canStart={canStart}
-        />
+        <>
+          {dueSelected.length === 0 ? (
+            <Text style={styles.emptySchedule}>
+              {selectedDate === localToday
+                ? t('dashboard.empty')
+                : t('dashboard.emptyDate', { date: selectedDate })}
+            </Text>
+          ) : null}
+
+          <DashboardReviewPicker
+            entries={subjectEntries}
+            selectedIds={selectedSubjectIds}
+            previewIndexBySubject={previewIndexBySubject}
+            onToggle={toggleSubject}
+            onPreviewIndexChange={setPreviewIndex}
+            onStartReview={openReview}
+            canStart={canStart}
+          />
+        </>
       )}
 
       <View style={styles.calendarSection}>
@@ -194,4 +204,11 @@ const styles = StyleSheet.create({
   },
   emptyBtn: { alignSelf: 'center', minWidth: 240, maxWidth: 280 },
   emptyGhostBtn: { alignSelf: 'center' },
+  emptySchedule: {
+    fontSize: theme.font.caption,
+    fontWeight: '600',
+    color: theme.grayMuted,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
 });

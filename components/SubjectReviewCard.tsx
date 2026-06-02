@@ -45,8 +45,7 @@ const styles = StyleSheet.create({
   wrap: {
     flex: 1,
     minWidth: 0,
-    borderRadius: theme.radius.sm,
-    ...theme.cardShadow,
+    borderRadius: 16,
   },
   wrapSelected: {
     shadowColor: theme.orange,
