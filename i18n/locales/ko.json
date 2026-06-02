@@ -202,7 +202,7 @@
     "unarchive": "보관함으로",
     "archiveModalTitle": "{{name}} · 아카이브",
     "archiveEmpty": "아카이브된 사진이 없습니다",
-    "archiveRestoreHint": "사진을 눌러 확인하거나 복원하세요",
+    "archiveRestoreHint": "사진을 누르면 크게 보고 복원할 수 있습니다",
     "restorePhoto": "복원",
     "saveToArchive": "아카이브에 저장하기",
     "saveToArchiveCount": "아카이브에 저장 ({{count}})",

@@ -202,7 +202,7 @@
     "unarchive": "Restore",
     "archiveModalTitle": "{{name}} · Archive",
     "archiveEmpty": "No archived photos",
-    "archiveRestoreHint": "Tap a photo to view or restore it",
+    "archiveRestoreHint": "Tap a photo to view it full size and restore",
     "restorePhoto": "Restore",
     "saveToArchive": "Save to archive",
     "saveToArchiveCount": "Save to archive ({{count}})",

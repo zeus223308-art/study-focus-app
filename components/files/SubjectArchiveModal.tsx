@@ -78,13 +78,18 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
     setPreviewItem(null);
   };
 
-  const confirmDeleteProblem = (bundleId: string, pageId: string) => {
+  const confirmDeleteFromPreview = () => {
+    if (!previewItem) return;
+    const { bundleId, pageId } = previewItem;
     confirmChoice({
       title: t('item.deletePhotoTitle'),
       message: t('item.deletePhotoMessage'),
       yesLabel: t('common.yes'),
       noLabel: t('common.no'),
-      onYes: () => deletePage(bundleId, pageId),
+      onYes: () => {
+        deletePage(bundleId, pageId);
+        setPreviewItem(null);
+      },
     });
   };
 
@@ -97,9 +102,8 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
         onRequestClose={closeAll}
         statusBarTranslucent
         presentationStyle="overFullScreen">
-        <View style={styles.backdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeAll} />
-          <View
+        <Pressable style={styles.backdrop} onPress={closeAll}>
+          <Pressable
             style={[
               styles.card,
               {
@@ -107,7 +111,8 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                 maxHeight: viewport.height - insets.top - insets.bottom - 40,
                 paddingTop: 16,
               },
-            ]}>
+            ]}
+            onPress={() => {}}>
             <Text style={styles.title}>{t('folder.archiveModalTitle', { name: subjectName })}</Text>
             {dateSections.length > 0 ? (
               <Text style={styles.hint}>{t('folder.archiveRestoreHint')}</Text>
@@ -132,7 +137,6 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                     labels={albumLabels}
                     selectionMode={null}
                     onLiftItemForDrag={() => {}}
-                    onDeleteHold={(item) => confirmDeleteProblem(item.bundleId, item.pageId)}
                     onOpen={(bundleId, pageId) => openPreview(bundleId, pageId)}
                     reorderEnabled={false}
                   />
@@ -140,8 +144,8 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
               )}
             </ScrollView>
             <Button label={t('appUsageGuide.close')} onPress={closeAll} style={styles.closeBtn} />
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       <Modal
@@ -209,6 +213,12 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
 
               <View style={[styles.previewActions, { paddingBottom: Math.max(16, insets.bottom) }]}>
                 <Button label={t('folder.restorePhoto')} onPress={restoreFromPreview} />
+                <Button
+                  label={t('item.deletePhoto')}
+                  variant="ghost"
+                  onPress={confirmDeleteFromPreview}
+                  style={{ marginTop: 8 }}
+                />
               </View>
             </>
           ) : null}

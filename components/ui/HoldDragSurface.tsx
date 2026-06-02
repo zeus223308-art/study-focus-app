@@ -1,6 +1,8 @@
 import { useCallback, useRef } from 'react';
 import {
   type GestureResponderEvent,
+  Platform,
+  Pressable,
   StyleSheet,
   View,
   type StyleProp,
@@ -246,6 +248,17 @@ export function HoldDragSurface({
     [finish]
   );
 
+  // Tap-only tiles (e.g. archive): use Pressable so mouse clicks work on web.
+  if (enabled && tapOnly) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={[style, styles.surface, Platform.OS === 'web' && styles.surfaceWeb]}>
+        {children}
+      </Pressable>
+    );
+  }
+
   return (
     <View style={[style, styles.surface]} collapsable={false}>
       <View
@@ -267,4 +280,8 @@ const styles = StyleSheet.create({
   touchTarget: {
     width: '100%',
   },
+  surfaceWeb: {
+    cursor: 'pointer',
+    touchAction: 'manipulation',
+  } as object,
 });
