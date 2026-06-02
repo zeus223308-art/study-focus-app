@@ -197,6 +197,7 @@ export default function ReviewSessionScreen() {
   const recallCountdownSec = 3;
   const [sessionSlideSec, setSessionSlideSec] = useState<number | null>(null);
   const [slideRemainingSec, setSlideRemainingSec] = useState(0);
+  const [workGestureActive, setWorkGestureActive] = useState(false);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const goPrevSlide = useCallback(() => {
@@ -286,6 +287,7 @@ export default function ReviewSessionScreen() {
     problemShift.setValue(0);
     setProblemCompleteVisible(false);
     setSubmittedRecall(null);
+    setWorkGestureActive(false);
     blackoutStartedRef.current = false;
     frontFade.setValue(1);
     passAnim.setValue(0);
@@ -532,6 +534,7 @@ export default function ReviewSessionScreen() {
             styles.recallFull,
             { paddingBottom: insets.bottom + 40 },
           ]}
+          scrollEnabled={!workGestureActive}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator
           nestedScrollEnabled
@@ -593,6 +596,8 @@ export default function ReviewSessionScreen() {
                 onStrokesChange={setRecallStrokes}
                 textBoxes={textBoxes}
                 onTextBoxesChange={setTextBoxes}
+                onStrokeStart={() => setWorkGestureActive(true)}
+                onStrokeEnd={() => setWorkGestureActive(false)}
               />
               {!hasAnswer ? <Text style={styles.warn}>{t('review.noBackPhoto')}</Text> : null}
               <View style={styles.recallActions}>
