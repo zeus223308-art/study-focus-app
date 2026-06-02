@@ -30,9 +30,11 @@ const M_SHINE_PATH = `
   L 198 102
   L 216 134
 `;
-const SHINE_PATH_LENGTH = 360;
-const SHINE_SEGMENT_LENGTH = 72;
-const SHINE_GAP = 5000;
+const SHINE_PATH_LENGTH = 300;
+const SHINE_SEGMENT = 58;
+const SHINE_DASH_GAP = 800;
+const SHINE_OFFSET_START = SHINE_PATH_LENGTH + SHINE_SEGMENT;
+const SHINE_OFFSET_END = -SHINE_SEGMENT;
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 type Props = {
@@ -118,8 +120,8 @@ export function SplashBrand({ onFinish }: Props) {
     const p = Math.max(0, Math.min(1, shineProgress.value));
     return {
       strokeDashoffset:
-        SHINE_PATH_LENGTH - p * (SHINE_PATH_LENGTH + SHINE_SEGMENT_LENGTH),
-      opacity: 1,
+        SHINE_OFFSET_START + (SHINE_OFFSET_END - SHINE_OFFSET_START) * p,
+      opacity: p <= 0.01 || p >= 0.99 ? 0 : 1,
     };
   });
 
@@ -215,7 +217,7 @@ function MShineOverlay({ shineAnimatedProps }: { shineAnimatedProps: any }) {
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
-          strokeDasharray={`${SHINE_SEGMENT_LENGTH} ${SHINE_GAP}`}
+          strokeDasharray={`${SHINE_SEGMENT} ${SHINE_DASH_GAP}`}
           animatedProps={shineAnimatedProps}
         />
       </Svg>
