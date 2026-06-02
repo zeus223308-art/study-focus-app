@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -12,9 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
-
-const mountainLogo = require('@/assets/images/mountain-m-logo.png');
+import { LOGO_WHITE, MountainMLogo, SPLASH_BLACK } from '@/components/MountainMLogo';
 
 type Props = {
   onFinish: () => void;
@@ -24,12 +22,12 @@ const EASE = Easing.bezier(0.4, 0, 0.2, 1);
 const EASE_OUT = Easing.out(Easing.cubic);
 
 const T = {
-  mountainIn: 750,
-  mountainHold: 500,
-  mountainOut: 850,
-  taglineIn: 650,
-  taglineHold: 800,
-  allOut: 600,
+  mountainIn: 260,
+  shineSweep: 700,
+  mountainOut: 280,
+  taglineIn: 280,
+  taglineHold: 180,
+  allOut: 240,
 };
 
 export function SplashBrand({ onFinish }: Props) {
@@ -50,20 +48,19 @@ export function SplashBrand({ onFinish }: Props) {
   const taglineTranslateY = useSharedValue(14);
   const footerOpacity = useSharedValue(0);
   const screenOpacity = useSharedValue(1);
+  const shineProgress = useSharedValue(0);
 
   useEffect(() => {
-    const tMountainOut = T.mountainIn + T.mountainHold;
+    const tMountainOut = T.mountainIn + T.shineSweep;
     const tTaglineIn = tMountainOut + T.mountainOut;
     const tAllOut = tTaglineIn + T.taglineIn + T.taglineHold;
 
-    mountainOpacity.value = withSequence(
-      withTiming(1, { duration: T.mountainIn, easing: EASE_OUT }),
-      withDelay(T.mountainHold, withTiming(0, { duration: T.mountainOut, easing: EASE }))
-    );
+    mountainOpacity.value = withSequence(withTiming(1, { duration: T.mountainIn, easing: EASE_OUT }), withDelay(T.shineSweep, withTiming(0, { duration: T.mountainOut, easing: EASE })));
     mountainScale.value = withSequence(
       withTiming(1, { duration: T.mountainIn, easing: EASE_OUT }),
-      withDelay(T.mountainHold, withTiming(1.02, { duration: T.mountainOut, easing: EASE }))
+      withDelay(T.shineSweep, withTiming(1.01, { duration: T.mountainOut, easing: EASE }))
     );
+    shineProgress.value = withDelay(80, withTiming(1, { duration: T.shineSweep, easing: Easing.linear }));
 
     taglineOpacity.value = withDelay(tTaglineIn, withTiming(1, { duration: T.taglineIn, easing: EASE_OUT }));
     taglineTranslateY.value = withDelay(tTaglineIn, withTiming(0, { duration: T.taglineIn, easing: EASE_OUT }));
@@ -76,7 +73,7 @@ export function SplashBrand({ onFinish }: Props) {
         if (finished) runOnJS(onFinish)();
       })
     );
-  }, [onFinish, mountainOpacity, mountainScale, taglineOpacity, taglineTranslateY, footerOpacity, screenOpacity]);
+  }, [onFinish, mountainOpacity, mountainScale, taglineOpacity, taglineTranslateY, footerOpacity, screenOpacity, shineProgress]);
 
   const mountainStyle = useAnimatedStyle(() => ({
     opacity: mountainOpacity.value,
@@ -100,13 +97,9 @@ export function SplashBrand({ onFinish }: Props) {
     <Animated.View style={[styles.root, screenStyle]} pointerEvents="auto">
       <View style={styles.center}>
         <Animated.View style={[styles.mountainWrap, mountainStyle]}>
-          <Image
-            source={mountainLogo}
-            style={styles.mountainLogo}
-            resizeMode="contain"
-            accessibilityLabel="MemorySherpa logo"
-            onLayout={hideNativeSplash}
-          />
+          <View onLayout={hideNativeSplash}>
+            <MountainMLogo width={240} height={168} shineProgress={shineProgress} />
+          </View>
         </Animated.View>
 
         <Animated.View style={[styles.taglineWrap, taglineStyle]}>
