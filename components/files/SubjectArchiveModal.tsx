@@ -239,9 +239,6 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
               },
             ]}>
             <Text style={styles.title}>{t('folder.archiveModalTitle', { name: subjectName })}</Text>
-            {dateSections.length > 0 ? (
-              <Text style={styles.hint}>{t('folder.archiveRestoreHint')}</Text>
-            ) : null}
             <ScrollView
               style={styles.scroll}
               contentContainerStyle={styles.scrollContent}
@@ -296,12 +293,6 @@ const styles = StyleSheet.create({
     fontSize: theme.font.heading,
     fontWeight: '800',
     color: theme.black,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  hint: {
-    fontSize: theme.font.caption,
-    color: theme.gray,
     textAlign: 'center',
     marginBottom: 12,
   },
