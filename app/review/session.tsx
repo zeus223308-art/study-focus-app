@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Animated,
   Image,
-  Modal,
   PanResponder,
   Platform,
   Pressable,
@@ -172,8 +171,6 @@ export default function ReviewSessionScreen() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [recallStrokes, setRecallStrokes] = useState<InkStroke[]>([]);
   const [textBoxes, setTextBoxes] = useState<ScratchTextBox[]>([]);
-  const [adVisible, setAdVisible] = useState(false);
-  const [hintOffer, setHintOffer] = useState(false);
   const [problemCompleteVisible, setProblemCompleteVisible] = useState(false);
   const [sessionCompleteVisible, setSessionCompleteVisible] = useState(false);
   const [submittedRecall, setSubmittedRecall] = useState<SubmittedRecall | null>(null);
@@ -287,8 +284,6 @@ export default function ReviewSessionScreen() {
     setRecallStrokes([]);
     setTextBoxes([]);
     problemShift.setValue(0);
-    setAdVisible(false);
-    setHintOffer(false);
     setProblemCompleteVisible(false);
     setSubmittedRecall(null);
     blackoutStartedRef.current = false;
@@ -371,8 +366,6 @@ export default function ReviewSessionScreen() {
     safeRouterBack(router, '/(tabs)');
   }, [params.bundleId, router]);
 
-  const dismissAd = () => setAdVisible(false);
-
   const finishAfterComplete = useCallback(() => {
     passAnim.setValue(0);
     passScale.setValue(0.7);
@@ -449,19 +442,6 @@ export default function ReviewSessionScreen() {
       clearInterval(tick);
     };
   }, [index, auto, current, phase, effectiveSlideMs, slides.length]);
-
-  const watchHintAd = () => {
-    setHintOffer(false);
-    setAdVisible(true);
-    const peekMs = current?.page.answerAsset ? HINT_PEEK_MS : 5000;
-    setTimeout(() => {
-      setAdVisible(false);
-      setPhase('peek');
-      setTimeout(() => {
-        enterRecallPhase();
-      }, peekMs);
-    }, 2000);
-  };
 
   if (slides.length === 0) {
     return (
@@ -606,24 +586,22 @@ export default function ReviewSessionScreen() {
 
           {phase === 'recall-work' && !problemCompleteVisible ? (
             <>
-              <RecallWorkCard
-                width={workCardW}
-                height={workCardH}
-                strokes={recallStrokes}
-                onStrokesChange={setRecallStrokes}
-                textBoxes={textBoxes}
-                onTextBoxesChange={setTextBoxes}
-              />
+              <View
+                style={styles.workCardTouchGuard}
+                onStartShouldSetResponderCapture={() => true}
+                onMoveShouldSetResponderCapture={() => true}>
+                <RecallWorkCard
+                  width={workCardW}
+                  height={workCardH}
+                  strokes={recallStrokes}
+                  onStrokesChange={setRecallStrokes}
+                  textBoxes={textBoxes}
+                  onTextBoxesChange={setTextBoxes}
+                />
+              </View>
               {!hasAnswer ? <Text style={styles.warn}>{t('review.noBackPhoto')}</Text> : null}
               <View style={styles.recallActions}>
                 <Button label={t('review.submitRecall')} onPress={submitRecall} />
-                {!isPro && hasAnswer ? (
-                  <Pressable onPress={() => setHintOffer(true)} disabled={!hasAnswer}>
-                    <Text style={[styles.hintLink, !hasAnswer && styles.hintDisabled]}>
-                      {t('review.hintAd')}
-                    </Text>
-                  </Pressable>
-                ) : null}
               </View>
             </>
           ) : null}
@@ -728,28 +706,6 @@ export default function ReviewSessionScreen() {
         </View>
       ) : null}
 
-      <Modal visible={adVisible} transparent animationType="fade" onRequestClose={dismissAd}>
-        <View style={styles.ad}>
-          <Text style={styles.adTitle}>{t('review.adTitle')}</Text>
-          <Text style={styles.adSub}>{t('review.adWait')}</Text>
-          <Pressable onPress={dismissAd} style={styles.adSkip}>
-            <Text style={styles.adSkipText}>{t('review.skipAd')}</Text>
-          </Pressable>
-        </View>
-      </Modal>
-
-      <Modal visible={hintOffer} transparent animationType="fade">
-        <View style={styles.ad}>
-          <Text style={styles.adTitle}>{t('review.hintTitle')}</Text>
-          <Text style={styles.adSub}>{t('review.hintAdSub')}</Text>
-          <Pressable onPress={watchHintAd}>
-            <Text style={styles.hintBtn}>{t('review.watchAd')}</Text>
-          </Pressable>
-          <Pressable onPress={() => setHintOffer(false)}>
-            <Text style={styles.cancel}>{t('common.cancel')}</Text>
-          </Pressable>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -897,6 +853,7 @@ const styles = StyleSheet.create({
   durationChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   durationChipText: { fontWeight: '700', color: theme.black, fontSize: theme.font.caption },
   durationChipTextOn: { color: theme.onAccent },
+  workCardTouchGuard: { width: '100%', alignItems: 'center' },
   recallActions: { gap: 8, paddingTop: 4 },
   peekOverlay: { ...StyleSheet.absoluteFill, backgroundColor: theme.beige },
   peekHint: {
@@ -916,8 +873,6 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   warn: { fontSize: 11, color: theme.orange, fontWeight: '600' },
-  hintLink: { color: theme.orange, fontWeight: '700', textAlign: 'center', marginTop: 4 },
-  hintDisabled: { opacity: 0.4 },
   footer: { paddingTop: 20, paddingHorizontal: 20, backgroundColor: theme.beige, gap: 8 },
   progress: { textAlign: 'center', color: theme.gray, fontWeight: '700', marginBottom: 4 },
   swipeHint: {
@@ -957,17 +912,6 @@ const styles = StyleSheet.create({
   completionBtn: { alignSelf: 'stretch', marginTop: 20 },
   passEmoji: { color: theme.white, fontSize: 56, textAlign: 'center', marginBottom: 8 },
   passTitle: { color: theme.white, fontSize: 32, fontWeight: '900', textAlign: 'center' },
-  ad: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.88)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  adTitle: { color: theme.white, fontSize: 22, fontWeight: '800' },
-  adSub: { color: theme.grayMuted, marginTop: 12, textAlign: 'center' },
-  adSkip: { marginTop: 20, paddingVertical: 10, paddingHorizontal: 20 },
-  adSkipText: { color: theme.white, fontWeight: '700', fontSize: theme.font.body },
   emptyRoot: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
   emptyTitle: {
     fontSize: theme.font.body,
@@ -976,6 +920,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 24,
   },
-  hintBtn: { color: theme.orange, fontWeight: '800', marginTop: 24, fontSize: 18 },
-  cancel: { color: theme.white, marginTop: 16 },
 });

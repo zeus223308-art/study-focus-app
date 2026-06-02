@@ -103,7 +103,7 @@ export function RecallWorkCard({
           strokes={strokes}
           onStrokesChange={readOnly ? () => {} : onStrokesChange}
           tool={recallTool}
-          allowVerticalScrollPassthrough={!readOnly}
+          allowVerticalScrollPassthrough={false}
         />
           </View>
           {!readOnly && editingText ? (
