@@ -7,6 +7,8 @@ type Props = {
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'ghost';
   size?: 'default' | 'compact';
+  /** `fit` — shrink to parent column instead of stretching full screen width. */
+  layout?: 'fill' | 'fit';
   style?: ViewStyle;
   disabled?: boolean;
 };
@@ -16,6 +18,7 @@ export function Button({
   onPress,
   variant = 'primary',
   size = 'default',
+  layout = 'fill',
   style,
   disabled,
 }: Props) {
@@ -27,6 +30,7 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         compact && styles.baseCompact,
+        layout === 'fit' && styles.fit,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && styles.secondary,
         variant === 'ghost' && styles.ghost,
@@ -56,17 +60,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   baseCompact: {
-    paddingVertical: 9,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
     borderRadius: theme.radius.sm,
-    minHeight: 38,
+    minHeight: 36,
+  },
+  fit: {
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: '100%',
   },
   primary: { backgroundColor: theme.orange },
   primaryPressed: { backgroundColor: theme.gray },
   secondary: { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.grayLight },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: theme.font.body, fontWeight: '700' },
-  textCompact: { fontSize: theme.font.bodySmall, fontWeight: '700' },
+  textCompact: { fontSize: theme.font.caption, fontWeight: '700' },
   textPrimary: { color: theme.onAccent },
   textSecondary: { color: theme.black },
   textGhost: { color: theme.orange },

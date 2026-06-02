@@ -153,13 +153,6 @@ export default function FolderScreen() {
     viewport.contentMaxWidth - 32
   );
 
-  /** Bottom action buttons — inset from screen edges, capped width on phone. */
-  const actionBarWidth = useMemo(() => {
-    const sideInset = viewport.isPhone ? 96 : 128;
-    const maxW = viewport.isPhone ? 252 : 300;
-    return Math.min(maxW, viewport.width - sideInset, albumContentWidth);
-  }, [albumContentWidth, viewport.isPhone, viewport.width]);
-
   const albumLabels = useMemo(
     () => ({
       today: t('folder.dateToday'),
@@ -435,10 +428,11 @@ export default function FolderScreen() {
 
       {exportSelectMode ? (
         <View style={[styles.exportBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
-          <View style={[styles.actionBarColumn, { width: actionBarWidth }]}>
+          <View style={styles.actionBarColumn} {...({ dataSet: { folderActionBar: '1' } } as object)}>
             <Button
               label={t('folder.sendToNewFolder')}
               size="compact"
+              layout="fit"
               onPress={openNewFolderModal}
               disabled={exportSelectedKeys.size === 0}
             />
@@ -446,6 +440,7 @@ export default function FolderScreen() {
               label={t('folder.sendToOtherFolder')}
               variant="secondary"
               size="compact"
+              layout="fit"
               onPress={openOtherSubjectPicker}
               disabled={exportSelectedKeys.size === 0}
               style={styles.exportBarBtnGap}
@@ -454,6 +449,7 @@ export default function FolderScreen() {
               label={t('common.cancel')}
               variant="ghost"
               size="compact"
+              layout="fit"
               onPress={exitExportSelect}
               style={styles.exportBarBtnGap}
             />
@@ -463,10 +459,11 @@ export default function FolderScreen() {
 
       {archiveSelectMode ? (
         <View style={[styles.archiveBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
-          <View style={[styles.actionBarColumn, { width: actionBarWidth }]}>
+          <View style={styles.actionBarColumn} {...({ dataSet: { folderActionBar: '1' } } as object)}>
             <Button
               label={t('folder.saveToArchiveCount', { count: archiveSelectedKeys.size })}
               size="compact"
+              layout="fit"
               onPress={confirmArchiveSelected}
               disabled={archiveSelectedKeys.size === 0}
             />
@@ -474,6 +471,7 @@ export default function FolderScreen() {
               label={t('common.cancel')}
               variant="ghost"
               size="compact"
+              layout="fit"
               onPress={() => {
                 setArchiveSelectMode(false);
                 setArchiveSelectedKeys(new Set());
@@ -569,7 +567,10 @@ const styles = StyleSheet.create({
     borderTopColor: theme.grayLight,
   },
   actionBarColumn: {
+    width: '56%',
+    maxWidth: 188,
     alignSelf: 'center',
+    alignItems: 'stretch',
   },
   exportBarBtnGap: { marginTop: 6 },
   archiveBar: {

@@ -121,7 +121,18 @@ body {
 [data-ink-canvas="1"] canvas {
   forced-color-adjust: none !important;
 }
-/* Photo tag ribbons — fixed label colors (mobile Chrome ignores JS color on spans) */
+/* Folder photo long-press action bar — force narrow column on mobile web */
+[data-folder-action-bar="1"] {
+  width: 56% !important;
+  max-width: 188px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+[data-folder-action-bar="1"] > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
 [data-tag-ribbon-tone="dark"] [data-tag-ribbon-label="1"] {
   color: #141414 !important;
   -webkit-text-fill-color: #141414 !important;
