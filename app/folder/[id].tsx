@@ -18,7 +18,6 @@ import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { SubjectArchiveHeaderButton } from '@/components/files/SubjectArchiveHeaderButton';
 import { SubjectArchiveModal } from '@/components/files/SubjectArchiveModal';
-import { SubjectTrashModal } from '@/components/files/SubjectTrashModal';
 import { SubjectDropDock } from '@/components/files/SubjectDropDock';
 import { SubjectPickerModal } from '@/components/files/SubjectPickerModal';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -85,7 +84,6 @@ export default function FolderScreen() {
   const [otherPickerOpen, setOtherPickerOpen] = useState(false);
   const [otherSubjectId, setOtherSubjectId] = useState<string | null>(null);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
-  const [trashModalOpen, setTrashModalOpen] = useState(false);
   const [archiveSelectMode, setArchiveSelectMode] = useState(false);
   const [archiveSelectedKeys, setArchiveSelectedKeys] = useState<Set<string>>(new Set());
   const [exportSelectMode, setExportSelectMode] = useState(false);
@@ -342,10 +340,6 @@ export default function FolderScreen() {
             right={
               <View style={styles.headerActions}>
                 <SubjectArchiveHeaderButton
-                  label={t('folder.trash')}
-                  onPress={() => setTrashModalOpen(true)}
-                />
-                <SubjectArchiveHeaderButton
                   label={t('folder.archive')}
                   onPress={() => setArchiveModalOpen(true)}
                 />
@@ -484,13 +478,6 @@ export default function FolderScreen() {
         subjectId={subject.id}
         subjectName={subject.name}
         onClose={() => setArchiveModalOpen(false)}
-      />
-
-      <SubjectTrashModal
-        visible={trashModalOpen}
-        subjectId={subject.id}
-        subjectName={subject.name}
-        onClose={() => setTrashModalOpen(false)}
       />
 
       <SendToNewFolderModal

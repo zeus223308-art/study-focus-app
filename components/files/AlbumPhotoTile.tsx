@@ -102,6 +102,9 @@ export function AlbumPhotoTile({
   const contextLifted = movingBundleId === bundleId && draggingItemKey === itemDragKey;
   const itemHover = dragHoverItemKey === itemDragKey && !contextLifted;
   const dragEnabled = !pickMode && Boolean(onDragMove);
+  // Keep the touch surface live for tap-to-open / delete-hold even when this
+  // tile isn't draggable (e.g. archive preview), otherwise taps do nothing.
+  const surfaceEnabled = !pickMode && (dragEnabled || Boolean(onDeleteHold) || Boolean(onOpen));
 
   const handlePress = useCallback(() => {
     if (pickMode) {
@@ -192,7 +195,8 @@ export function AlbumPhotoTile({
   return (
     <View style={[styles.cell, { width: cellWidth }, style]}>
       <HoldDragSurface
-        enabled={dragEnabled}
+        enabled={surfaceEnabled}
+        tapOnly={!dragEnabled}
         onLift={handleLift}
         onHoldMenu={onHoldMenu}
         onDragMove={onDragMove}
