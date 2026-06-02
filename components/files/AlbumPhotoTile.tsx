@@ -24,6 +24,14 @@ import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
 
+function estimateRibbonLabelWidth(label: string): number {
+  let units = 0;
+  for (const ch of label) {
+    units += ch.charCodeAt(0) > 0x7f ? 8 : 4.8;
+  }
+  return Math.max(6, Math.ceil(units));
+}
+
 /** Horizontal ribbon banner: body height + left fishtail notch width + text padding. */
 const RIBBON_H = 12;
 const RIBBON_NOTCH_W = 4;
@@ -49,22 +57,22 @@ function TagRibbonLabel({
   if (IS_WEB) {
     return createElement('span', {
       'data-tag-ribbon-label': '1',
-      style: {
-        position: 'absolute',
-        left,
-        top: 0,
-        height: RIBBON_H,
-        lineHeight: `${RIBBON_H}px`,
-        fontSize: 8,
-        fontWeight: 800,
-        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
-        color: labelColor,
-        WebkitTextFillColor: labelColor,
-        whiteSpace: 'nowrap',
-        pointerEvents: 'none',
-        zIndex: 2,
-        forcedColorAdjust: 'none',
-      },
+      style: [
+        'position:absolute',
+        `left:${left}px`,
+        'top:0',
+        `height:${RIBBON_H}px`,
+        `line-height:${RIBBON_H}px`,
+        'font-size:8px',
+        'font-weight:800',
+        'font-family:system-ui,-apple-system,"Segoe UI",sans-serif',
+        `color:${labelColor} !important`,
+        `-webkit-text-fill-color:${labelColor} !important`,
+        'white-space:nowrap',
+        'pointer-events:none',
+        'z-index:2',
+        'forced-color-adjust:none',
+      ].join(';'),
       children: label,
     });
   }
@@ -81,24 +89,29 @@ function TagRibbonLabel({
 function TagRibbon({ label, color }: { label: string; color: string }) {
   const [textW, setTextW] = useState(0);
   const labelColor = tagLabelTextColor(color);
-  const contentW = textW || Math.max(6, Math.ceil(label.length * 4.8));
+  const contentW = IS_WEB
+    ? estimateRibbonLabelWidth(label)
+    : textW || estimateRibbonLabelWidth(label);
   const totalW = RIBBON_NOTCH_W + RIBBON_PAD_L + contentW + RIBBON_PAD_R;
   const path = `M0 0 L${totalW} 0 L${totalW} ${RIBBON_H} L0 ${RIBBON_H} L${RIBBON_NOTCH_W} ${RIBBON_H / 2} Z`;
   const labelLeft = RIBBON_NOTCH_W + RIBBON_PAD_L;
-
   return (
-    <View style={[styles.ribbon, { width: totalW, height: RIBBON_H }]}>
-      <Text
-        style={styles.measureText}
-        numberOfLines={1}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        onLayout={(e) => {
-          const w = Math.ceil(e.nativeEvent.layout.width);
-          if (w > 0 && w !== textW) setTextW(w);
-        }}>
-        {label}
-      </Text>
+    <View
+      style={[styles.ribbon, { width: totalW, height: RIBBON_H }]}
+      {...(IS_WEB ? { dataSet: { tagRibbon: '1' } } : {})}>
+      {!IS_WEB ? (
+        <Text
+          style={styles.measureText}
+          numberOfLines={1}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          onLayout={(e) => {
+            const w = Math.ceil(e.nativeEvent.layout.width);
+            if (w > 0 && w !== textW) setTextW(w);
+          }}>
+          {label}
+        </Text>
+      ) : null}
       <Svg width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill} pointerEvents="none">
         <Path d={path} fill={color} />
       </Svg>
@@ -390,14 +403,15 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   measureText: {
+    position: 'absolute',
     opacity: 0,
+    color: 'transparent',
     height: RIBBON_H,
     lineHeight: RIBBON_H,
-    marginLeft: RIBBON_NOTCH_W + RIBBON_PAD_L,
-    marginRight: RIBBON_PAD_R,
+    left: RIBBON_NOTCH_W + RIBBON_PAD_L,
     fontSize: 8,
     fontWeight: '800',
-    alignSelf: 'flex-start',
+    zIndex: -1,
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
   },
   memoBadge: {

@@ -156,6 +156,24 @@ function isWarmTagHue(hue: number): boolean {
   return hue <= 150 || hue >= 325;
 }
 
+/** Snap to the nearest free rainbow swatch (빨주노초파남보) for label contrast rules. */
+export function snapToFreeTagPalette(hex: string): string {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return FREE_TAG_COLORS[0]!;
+  let best = FREE_TAG_COLORS[0]!;
+  let bestDist = Number.POSITIVE_INFINITY;
+  for (const candidate of FREE_TAG_COLORS) {
+    const c = parseHexRgb(candidate);
+    if (!c) continue;
+    const d = (rgb.r - c.r) ** 2 + (rgb.g - c.g) ** 2 + (rgb.b - c.b) ** 2;
+    if (d < bestDist) {
+      bestDist = d;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
 /** Snap any stored hex to the nearest tag palette swatch. */
 export function snapToTagPalette(hex: string): string {
   const rgb = parseHexRgb(hex);
@@ -202,6 +220,10 @@ function isKnownPaletteKey(key: string): boolean {
 export function tagLabelTextColor(backgroundHex: string): string {
   const key = normalizeHex(backgroundHex);
   if (key && isKnownPaletteKey(key)) return tagLabelTextColorForPaletteKey(key);
+
+  // Label contrast follows the free rainbow slot (초록 → black), not premium teal/slate snaps.
+  const freeSnapped = normalizeHex(snapToFreeTagPalette(backgroundHex));
+  if (freeSnapped) return tagLabelTextColorForPaletteKey(freeSnapped);
 
   const snappedKey = normalizeHex(snapToTagPalette(backgroundHex));
   if (snappedKey) return tagLabelTextColorForPaletteKey(snappedKey);

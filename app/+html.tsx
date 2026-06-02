@@ -121,8 +121,8 @@ body {
 [data-ink-canvas="1"] canvas {
   forced-color-adjust: none !important;
 }
-/* Photo tag ribbons — inline color must win over app default text on mobile Chrome */
-[data-tag-ribbon-label="1"] {
+/* Photo tag ribbons — prevent forced-colors / inversion on mobile Chrome */
+[data-tag-ribbon="1"] [data-tag-ribbon-label="1"] {
   forced-color-adjust: none !important;
 }
 `;
