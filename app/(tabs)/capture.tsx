@@ -135,7 +135,8 @@ export default function CaptureTabScreen() {
   useCaptureLeaveRegistration(hasPendingCapture, resetCamera);
 
   useEffect(() => {
-    setEditorFullscreen(step === 'edit');
+    // Hide top tabs for the whole post-shutter flow (edit → save), not just the editor.
+    setEditorFullscreen(step !== 'camera');
     return () => setEditorFullscreen(false);
   }, [step, setEditorFullscreen]);
 
