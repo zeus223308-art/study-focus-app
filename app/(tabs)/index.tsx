@@ -9,7 +9,6 @@ import {
 } from '@/components/dashboard/DashboardReviewPicker';
 import { DashboardCalendar } from '@/components/dashboard/DashboardCalendar';
 import { Button } from '@/components/ui/Button';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -132,8 +131,6 @@ export default function DashboardScreen() {
 
   return (
     <Screen scroll nestedScrollEnabled>
-      <ScreenHeader title={t('dashboard.title')} showSettings={false} />
-
       {subjectEntries.length === 0 ? (
         <View style={styles.emptyBlock}>
           <Text style={styles.empty}>{t('dashboard.noSubjects')}</Text>
@@ -151,14 +148,6 @@ export default function DashboardScreen() {
         </View>
       ) : (
         <>
-          {dueSelected.length === 0 ? (
-            <Text style={styles.emptySchedule}>
-              {selectedDate === localToday
-                ? t('dashboard.empty')
-                : t('dashboard.emptyDate', { date: selectedDate })}
-            </Text>
-          ) : null}
-
           <DashboardReviewPicker
             entries={subjectEntries}
             selectedIds={selectedSubjectIds}
@@ -204,11 +193,4 @@ const styles = StyleSheet.create({
   },
   emptyBtn: { alignSelf: 'center', minWidth: 240, maxWidth: 280 },
   emptyGhostBtn: { alignSelf: 'center' },
-  emptySchedule: {
-    fontSize: theme.font.caption,
-    fontWeight: '600',
-    color: theme.grayMuted,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
 });
