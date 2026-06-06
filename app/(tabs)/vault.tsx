@@ -182,13 +182,14 @@ export default function FilesScreen() {
         <Text style={styles.moveBanner}>{t('vault.reorderDragHint')}</Text>
       ) : null}
 
-      <View style={styles.panel}>
+      <View style={styles.filesSection}>
             <View style={styles.filesTopRow}>
               <Text style={styles.filesTitle}>{t('vault.title')}</Text>
               <Pressable onPress={() => router.push('/search')} hitSlop={8}>
                 <Text style={styles.headerAction}>{t('item.search')}</Text>
               </Pressable>
             </View>
+            <View style={styles.panel}>
             <View
               style={styles.carouselSlot}
               onLayout={(e) => {
@@ -238,6 +239,7 @@ export default function FilesScreen() {
                   : t('vault.deleteSubjects')}
               </Text>
             </Pressable>
+            </View>
           </View>
 
           {adding ? (
@@ -298,19 +300,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 12,
   },
-  panel: {
-    borderRadius: theme.radius.sm,
-    paddingBottom: PANEL_PAD,
-    backgroundColor: theme.surface,
-    overflow: 'hidden',
+  filesSection: {
+    width: '100%',
   },
   filesTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: PANEL_PAD,
-    paddingTop: 8,
-    paddingBottom: 2,
+    marginBottom: 0,
     gap: 8,
   },
   filesTitle: {
@@ -320,9 +318,19 @@ const styles = StyleSheet.create({
     color: theme.black,
     letterSpacing: -0.3,
     lineHeight: theme.font.title,
+    marginBottom: 0,
+    paddingBottom: 0,
+  },
+  panel: {
+    borderRadius: theme.radius.sm,
+    paddingTop: 0,
+    paddingBottom: PANEL_PAD,
+    backgroundColor: theme.surface,
+    overflow: 'hidden',
   },
   carouselSlot: {
     width: '100%',
+    marginTop: 0,
   },
   addBox: {
     marginTop: 20,
