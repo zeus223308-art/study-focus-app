@@ -182,14 +182,13 @@ export default function FilesScreen() {
         <Text style={styles.moveBanner}>{t('vault.reorderDragHint')}</Text>
       ) : null}
 
-      <View style={styles.filesSection}>
+      <View style={styles.panel}>
             <View style={styles.filesTopRow}>
               <Text style={styles.filesTitle}>{t('vault.title')}</Text>
               <Pressable onPress={() => router.push('/search')} hitSlop={8}>
                 <Text style={styles.headerAction}>{t('item.search')}</Text>
               </Pressable>
             </View>
-            <View style={styles.panel}>
             <View
               style={styles.carouselSlot}
               onLayout={(e) => {
@@ -239,7 +238,6 @@ export default function FilesScreen() {
                   : t('vault.deleteSubjects')}
               </Text>
             </Pressable>
-            </View>
           </View>
 
           {adding ? (
@@ -300,15 +298,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 12,
   },
-  filesSection: {
-    width: '100%',
-  },
   filesTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: PANEL_PAD,
-    marginBottom: 0,
+    paddingTop: PANEL_PAD,
+    paddingBottom: 4,
     gap: 8,
   },
   filesTitle: {
@@ -323,7 +319,6 @@ const styles = StyleSheet.create({
   },
   panel: {
     borderRadius: theme.radius.sm,
-    paddingTop: 0,
     paddingBottom: PANEL_PAD,
     backgroundColor: theme.surface,
     overflow: 'hidden',

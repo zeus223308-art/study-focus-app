@@ -268,6 +268,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: PANEL_PAD,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
   tileSlot: {
     flexGrow: 0,
