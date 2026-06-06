@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: PANEL_PAD,
     paddingTop: 10,
-    paddingBottom: 0,
+    paddingBottom: 6,
     gap: 8,
   },
   filesTitle: {
