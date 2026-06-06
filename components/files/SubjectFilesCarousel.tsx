@@ -203,6 +203,7 @@ export function SubjectFilesCarousel({
         name={subject.name}
         totalLabel={totalLabelFor(subject.id)}
         previewItems={previewItemsFor(subject.id)}
+        vaultLayout
         onPreviewGestureLock={setPreviewGestureLock}
         onPress={() => onSubjectPress(subject.id)}
         onLiftForReorder={() => onSubjectLift(subject.id)}

@@ -2,11 +2,11 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { SettingsGroup } from '@/components/SettingsGroup';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
 import { SubjectFilesCarousel } from '@/components/files/SubjectFilesCarousel';
 import { TrashContents, useTrashContents } from '@/components/trash/TrashContents';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -40,7 +40,7 @@ export default function FilesScreen() {
     cancelSubjectMerge,
     setPaywallVisible,
   } = useApp();
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth } = useWindowDimensions();
   const viewport = useViewportLayout();
   const trash = useTrashContents();
   const [adding, setAdding] = useState(false);
@@ -182,17 +182,13 @@ export default function FilesScreen() {
         <Text style={styles.moveBanner}>{t('vault.reorderDragHint')}</Text>
       ) : null}
 
-      <ScreenHeader
-        title={t('vault.title')}
-        showSettings={false}
-        right={
-          <Pressable onPress={() => router.push('/search')} hitSlop={8}>
-            <Text style={styles.headerAction}>{t('item.search')}</Text>
-          </Pressable>
-        }
-      />
-
-      <View style={[styles.panel, { marginTop: Math.round(windowHeight * 0.16) }]}>
+      <View style={styles.panel}>
+            <View style={styles.filesTopRow}>
+              <Text style={styles.filesTitle}>{t('vault.title')}</Text>
+              <Pressable onPress={() => router.push('/search')} hitSlop={8}>
+                <Text style={styles.headerAction}>{t('item.search')}</Text>
+              </Pressable>
+            </View>
             <View
               style={styles.carouselSlot}
               onLayout={(e) => {
@@ -258,16 +254,15 @@ export default function FilesScreen() {
             </View>
           ) : null}
 
-          <View style={styles.trashCard}>
-            <View style={styles.trashCardHeader}>
-              <Text style={styles.trashCardTitle}>{t('trash.title')}</Text>
-              {trash.count > 0 ? (
-                <View style={styles.trashCount}>
-                  <Text style={styles.trashCountText}>{trash.count}</Text>
-                </View>
-              ) : null}
-            </View>
-            <TrashContents />
+          <View style={styles.trashSection}>
+            <SettingsGroup
+              title={
+                trash.count > 0
+                  ? `${t('trash.title')} (${trash.count})`
+                  : t('trash.title')
+              }>
+              <TrashContents />
+            </SettingsGroup>
           </View>
 
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
@@ -305,9 +300,26 @@ const styles = StyleSheet.create({
   },
   panel: {
     borderRadius: theme.radius.sm,
-    paddingVertical: PANEL_PAD,
+    paddingBottom: PANEL_PAD,
     backgroundColor: theme.surface,
     overflow: 'hidden',
+  },
+  filesTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: PANEL_PAD,
+    paddingTop: 8,
+    paddingBottom: 2,
+    gap: 8,
+  },
+  filesTitle: {
+    flex: 1,
+    fontSize: theme.font.title,
+    fontWeight: '800',
+    color: theme.black,
+    letterSpacing: -0.3,
+    lineHeight: theme.font.title,
   },
   carouselSlot: {
     width: '100%',
@@ -334,48 +346,24 @@ const styles = StyleSheet.create({
   deleteBtn: {
     marginTop: 12,
     alignSelf: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 12,
-    borderRadius: theme.radius.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: theme.grayLight,
-    backgroundColor: theme.beige,
+    backgroundColor: theme.surface,
     alignItems: 'center',
   },
   deleteBtnActive: {
-    borderColor: theme.orange,
-    backgroundColor: theme.orange,
+    borderColor: theme.danger,
+    backgroundColor: theme.danger,
   },
   deleteBtnPressed: { opacity: 0.85 },
   deleteBtnText: {
     ...BUTTON_LABEL_COMPACT,
     color: theme.gray,
-    fontWeight: '800',
+    fontWeight: '700',
   },
-  deleteBtnTextActive: { color: theme.onAccent },
-  trashCard: {
-    marginTop: 24,
-    padding: 16,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-  },
-  trashCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
-  },
-  trashCardTitle: { fontSize: theme.font.heading, fontWeight: '900', color: theme.black },
-  trashCount: {
-    minWidth: 22,
-    height: 22,
-    paddingHorizontal: 7,
-    borderRadius: 11,
-    backgroundColor: theme.grayLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  trashCountText: { fontSize: 12, fontWeight: '800', color: theme.black },
+  deleteBtnTextActive: { color: theme.white },
+  trashSection: { marginTop: 24 },
 });

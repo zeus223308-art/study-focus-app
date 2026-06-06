@@ -19,6 +19,7 @@ type Props = {
   lifted?: boolean;
   disabled?: boolean;
   onEditingChange?: (editing: boolean) => void;
+  belowPreview?: boolean;
 };
 
 export function SubjectFolderName({
@@ -27,6 +28,7 @@ export function SubjectFolderName({
   lifted,
   disabled,
   onEditingChange,
+  belowPreview = false,
 }: Props) {
   const { renameSubject } = useApp();
   const lastTapRef = useRef(0);
@@ -69,7 +71,7 @@ export function SubjectFolderName({
 
   if (editing) {
     return (
-      <View style={styles.nameRow}>
+      <View style={[styles.nameRow, belowPreview && styles.nameRowBelow]}>
         <TextInput
           value={draft}
           onChangeText={setDraft}
@@ -97,7 +99,7 @@ export function SubjectFolderName({
       onPress={handlePress}
       disabled={disabled}
       hitSlop={8}
-      style={styles.nameRow}
+      style={[styles.nameRow, belowPreview && styles.nameRowBelow]}
       accessibilityRole="button"
       accessibilityLabel={name}
       accessibilityHint="Double tap to rename">
@@ -115,6 +117,11 @@ const styles = StyleSheet.create({
     marginRight: 2,
     minHeight: 24,
     justifyContent: 'center',
+  },
+  nameRowBelow: {
+    marginTop: 6,
+    marginBottom: 0,
+    minHeight: 20,
   },
   name: {
     fontSize: theme.font.body,

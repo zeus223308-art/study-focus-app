@@ -9,19 +9,18 @@ type Props = {
   onPress: () => void;
 };
 
-/** Trailing “+ add folder” slot — layout matches SubjectFolderTile + SubjectFolderName. */
+/** Trailing “+ add folder” slot — preview card first (under page title), label below. */
 export function VaultAddFolderTile({ width, label, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.wrap, { width }, pressed && styles.pressed]}>
-      <View style={styles.nameRow} />
       <View style={styles.card}>
         <Text style={styles.plus}>+</Text>
-        <Text style={styles.label} numberOfLines={2}>
-          {label}
-        </Text>
       </View>
+      <Text style={styles.label} numberOfLines={2}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -34,12 +33,6 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.85,
   },
-  nameRow: {
-    marginBottom: 8,
-    marginLeft: 2,
-    marginRight: 2,
-    minHeight: 24,
-  },
   card: {
     width: '100%',
     height: VAULT_PREVIEW_HEIGHT,
@@ -51,7 +44,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
-    gap: 6,
     overflow: 'hidden',
     ...(Platform.OS === 'web' ? ({ cursor: 'pointer', touchAction: 'manipulation' } as object) : null),
   },
@@ -59,12 +51,15 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '300',
     color: theme.orange,
-    lineHeight: 30,
+    lineHeight: 32,
   },
   label: {
-    fontSize: theme.font.caption,
+    marginTop: 6,
+    marginLeft: 2,
+    marginRight: 2,
+    fontSize: theme.font.body,
     fontWeight: '800',
-    color: theme.orange,
+    color: theme.black,
     textAlign: 'center',
   },
 });

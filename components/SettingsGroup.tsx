@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 
+const styles = settingsGroupStyles;
+
 export function SettingsGroup({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <View style={styles.wrap}>
@@ -43,7 +45,7 @@ export function SettingsRow({
   return <View style={[styles.row, !last && styles.rowBorder]}>{content}</View>;
 }
 
-const styles = StyleSheet.create({
+export const settingsGroupStyles = StyleSheet.create({
   wrap: { marginBottom: 16 },
   title: {
     fontSize: 13,

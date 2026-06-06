@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '@/constants/theme';
 import { useCaptureLeaveGuard } from '@/components/capture/CaptureLeaveGuard';
 
-export const DOCK_EDGE_GAP = 12;
+export const DOCK_EDGE_GAP = 20;
 export const DOCK_HEIGHT = 48;
 /** Space to reserve below the top dock (safe area + dock + gap). */
 export const dockTopContentInset = (safeTop: number) =>

@@ -28,6 +28,8 @@ type Props = {
   selectionMode?: boolean;
   selected?: boolean;
   onToggleSelect?: () => void;
+  /** Vault files tab: preview under page title, folder name below preview. */
+  vaultLayout?: boolean;
 };
 
 export function SubjectFolderTile({
@@ -44,6 +46,7 @@ export function SubjectFolderTile({
   selectionMode = false,
   selected = false,
   onToggleSelect,
+  vaultLayout = false,
 }: Props) {
   const { t } = useTranslation();
   const {
@@ -100,61 +103,124 @@ export function SubjectFolderTile({
         register={registerSubjectReorderZone}
         hover={reorderHover}
         lifted={isActive}>
-        <SubjectFolderName
-          subjectId={subjectId}
-          name={name}
-          lifted={isActive}
-          disabled={
-            selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)
-          }
-          onEditingChange={setNameEditing}
-        />
-        <HoldDragSurface
-          enabled={selectionMode || dragEnabled}
-          tapOnly={selectionMode}
-          onLift={handleLift}
-          onDragMove={selectionMode ? undefined : onReorderDragMove}
-          onDragEnd={selectionMode ? undefined : handleDragEnd}
-          onPress={openFolder}
-          onDeleteHold={selectionMode ? undefined : onDeleteHold}
-          onGestureActiveChange={selectionMode ? undefined : onPreviewGestureLock}
-          style={[
-            styles.dragSurface,
-            isActive && styles.dragSurfaceLifted,
-            reorderHover && styles.dragSurfaceHover,
-            selectionMode && selected && styles.dragSurfaceSelected,
-          ]}>
-          <View ref={cardRef} collapsable={false} pointerEvents="box-none" style={styles.previewWrap}>
-            {selectionMode ? (
-              <Pressable
-                onPress={onToggleSelect}
-                style={[styles.checkHit, selected && styles.checkHitOn]}
-                hitSlop={6}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}>
-                <View style={[styles.checkbox, selected && styles.checkboxOn]}>
-                  {selected ? (
-                    <SymbolView
-                      name={{ ios: 'checkmark', android: 'check', web: 'check' }}
-                      size={14}
-                      tintColor={theme.onAccent}
-                    />
-                  ) : null}
-                </View>
-              </Pressable>
-            ) : null}
-            <SubjectFolderPreview
-              variant="vault"
-              items={previewItems}
-              totalLabel={totalLabel}
-              emptyHint={t('vault.previewEmpty')}
-              passthroughGestures
-              onOpen={openFolder}
-              onLongPress={selectionMode ? undefined : handleLift}
-              onGestureLock={onPreviewGestureLock}
+        {vaultLayout ? (
+          <>
+            <HoldDragSurface
+              enabled={selectionMode || dragEnabled}
+              tapOnly={selectionMode}
+              onLift={handleLift}
+              onDragMove={selectionMode ? undefined : onReorderDragMove}
+              onDragEnd={selectionMode ? undefined : handleDragEnd}
+              onPress={openFolder}
+              onDeleteHold={selectionMode ? undefined : onDeleteHold}
+              onGestureActiveChange={selectionMode ? undefined : onPreviewGestureLock}
+              style={[
+                styles.dragSurface,
+                isActive && styles.dragSurfaceLifted,
+                reorderHover && styles.dragSurfaceHover,
+                selectionMode && selected && styles.dragSurfaceSelected,
+              ]}>
+              <View ref={cardRef} collapsable={false} pointerEvents="box-none" style={styles.previewWrap}>
+                {selectionMode ? (
+                  <Pressable
+                    onPress={onToggleSelect}
+                    style={[styles.checkHit, selected && styles.checkHitOn]}
+                    hitSlop={6}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}>
+                    <View style={[styles.checkbox, selected && styles.checkboxOn]}>
+                      {selected ? (
+                        <SymbolView
+                          name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                          size={14}
+                          tintColor={theme.onAccent}
+                        />
+                      ) : null}
+                    </View>
+                  </Pressable>
+                ) : null}
+                <SubjectFolderPreview
+                  variant="vault"
+                  items={previewItems}
+                  totalLabel={totalLabel}
+                  emptyHint={t('vault.previewEmpty')}
+                  passthroughGestures
+                  onOpen={openFolder}
+                  onLongPress={selectionMode ? undefined : handleLift}
+                  onGestureLock={onPreviewGestureLock}
+                />
+              </View>
+            </HoldDragSurface>
+            <SubjectFolderName
+              subjectId={subjectId}
+              name={name}
+              lifted={isActive}
+              disabled={
+                selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)
+              }
+              onEditingChange={setNameEditing}
+              belowPreview
             />
-          </View>
-        </HoldDragSurface>
+          </>
+        ) : (
+          <>
+            <SubjectFolderName
+              subjectId={subjectId}
+              name={name}
+              lifted={isActive}
+              disabled={
+                selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)
+              }
+              onEditingChange={setNameEditing}
+            />
+            <HoldDragSurface
+              enabled={selectionMode || dragEnabled}
+              tapOnly={selectionMode}
+              onLift={handleLift}
+              onDragMove={selectionMode ? undefined : onReorderDragMove}
+              onDragEnd={selectionMode ? undefined : handleDragEnd}
+              onPress={openFolder}
+              onDeleteHold={selectionMode ? undefined : onDeleteHold}
+              onGestureActiveChange={selectionMode ? undefined : onPreviewGestureLock}
+              style={[
+                styles.dragSurface,
+                isActive && styles.dragSurfaceLifted,
+                reorderHover && styles.dragSurfaceHover,
+                selectionMode && selected && styles.dragSurfaceSelected,
+              ]}>
+              <View ref={cardRef} collapsable={false} pointerEvents="box-none" style={styles.previewWrap}>
+                {selectionMode ? (
+                  <Pressable
+                    onPress={onToggleSelect}
+                    style={[styles.checkHit, selected && styles.checkHitOn]}
+                    hitSlop={6}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}>
+                    <View style={[styles.checkbox, selected && styles.checkboxOn]}>
+                      {selected ? (
+                        <SymbolView
+                          name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                          size={14}
+                          tintColor={theme.onAccent}
+                        />
+                      ) : null}
+                    </View>
+                  </Pressable>
+                ) : null}
+                <SubjectFolderPreview
+                  variant="vault"
+                  items={previewItems}
+                  totalLabel={totalLabel}
+                  emptyHint={t('vault.previewEmpty')}
+                  passthroughGestures
+                  onOpen={openFolder}
+                  onLongPress={selectionMode ? undefined : handleLift}
+                  onGestureLock={onPreviewGestureLock}
+                />
+              </View>
+            </HoldDragSurface>
+          </>
+        )}
       </SubjectReorderTarget>
     </SubjectDropTarget>
   );

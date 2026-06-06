@@ -15,6 +15,8 @@ type Props = {
   right?: React.ReactNode;
   /** Placed between title and settings (e.g. folder import). */
   center?: React.ReactNode;
+  /** Tighter gap between title row and content below (e.g. files tab folder cards). */
+  compactBottom?: boolean;
 };
 
 export function ScreenHeader({
@@ -24,7 +26,10 @@ export function ScreenHeader({
   showSettings = true,
   right,
   center,
+  compactBottom = false,
 }: Props) {
+  const rowStyle = [styles.row, compactBottom && styles.rowCompact];
+  const rowThreeStyle = [styles.rowThree, compactBottom && styles.rowCompact];
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -44,7 +49,7 @@ export function ScreenHeader({
 
   if (center) {
     return (
-      <View style={styles.rowThree}>
+      <View style={rowThreeStyle}>
         {backButton}
         <Text style={styles.titleFlex} numberOfLines={1}>
           {title}
@@ -70,7 +75,7 @@ export function ScreenHeader({
   }
 
   return (
-    <View style={styles.row}>
+    <View style={rowStyle}>
       <View style={styles.left}>
         {backButton}
         <Text style={[styles.title, showBack && styles.titleWithBack]} numberOfLines={1}>
@@ -109,6 +114,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     gap: 8,
+  },
+  rowCompact: {
+    marginBottom: 0,
   },
   left: {
     flex: 1,

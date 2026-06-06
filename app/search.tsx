@@ -82,13 +82,14 @@ export default function SearchScreen() {
     <View
       style={[
         styles.root,
-        { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+        { paddingTop: insets.top + 26, paddingBottom: insets.bottom + 16 },
       ]}>
       <ScreenHeader
         title={t('item.search')}
         showBack
         backFallback="/(tabs)/vault"
         showSettings={false}
+        compactBottom
       />
       <TextInput
         style={styles.input}
