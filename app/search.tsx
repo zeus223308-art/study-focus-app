@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 
+import { stackModalTopInset } from '@/components/DockTabBar';
 import { TagFilterBar } from '@/components/files/TagFilterBar';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { theme } from '@/constants/theme';
@@ -82,7 +83,7 @@ export default function SearchScreen() {
     <View
       style={[
         styles.root,
-        { paddingTop: insets.top + 26, paddingBottom: insets.bottom + 16 },
+        { paddingTop: stackModalTopInset(insets.top), paddingBottom: insets.bottom + 16 },
       ]}>
       <ScreenHeader
         title={t('item.search')}

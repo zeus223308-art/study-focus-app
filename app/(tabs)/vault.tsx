@@ -303,8 +303,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: PANEL_PAD,
-    paddingTop: PANEL_PAD,
-    paddingBottom: 4,
+    paddingTop: 10,
+    paddingBottom: 0,
     gap: 8,
   },
   filesTitle: {

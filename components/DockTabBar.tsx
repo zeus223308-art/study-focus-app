@@ -6,11 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { theme } from '@/constants/theme';
 import { useCaptureLeaveGuard } from '@/components/capture/CaptureLeaveGuard';
 
-export const DOCK_EDGE_GAP = 20;
+export const DOCK_EDGE_GAP = 26;
 export const DOCK_HEIGHT = 48;
+/** Gap between dock pill bottom and scrollable tab content. */
+export const DOCK_CONTENT_GAP = 10;
 /** Space to reserve below the top dock (safe area + dock + gap). */
 export const dockTopContentInset = (safeTop: number) =>
-  safeTop + DOCK_EDGE_GAP + DOCK_HEIGHT + 8;
+  safeTop + DOCK_EDGE_GAP + DOCK_HEIGHT + DOCK_CONTENT_GAP;
+/** Stack modals without dock (search) — same top rhythm as tabs. */
+export const stackModalTopInset = (safeTop: number) => safeTop + DOCK_EDGE_GAP + 8;
 
 /** Left → center → right */
 const DOCK_ORDER = ['vault', 'index', 'settings'] as const;
