@@ -353,8 +353,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: theme.grayLight,
-    backgroundColor: theme.surface,
+    borderColor: 'rgba(248, 113, 113, 0.45)',
+    backgroundColor: 'rgba(248, 113, 113, 0.12)',
     alignItems: 'center',
   },
   deleteBtnActive: {
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   deleteBtnPressed: { opacity: 0.85 },
   deleteBtnText: {
     ...BUTTON_LABEL_COMPACT,
-    color: theme.gray,
+    color: theme.danger,
     fontWeight: '700',
   },
   deleteBtnTextActive: { color: theme.white },
