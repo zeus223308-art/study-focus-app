@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 
+import { FolderPhotoActionBar } from '@/components/files/FolderPhotoActionBar';
 import { Button } from '@/components/ui/Button';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
@@ -15,7 +16,7 @@ import {
   listArchivedSubjectProblems,
   type SubjectProblemItem,
 } from '@/lib/grouping/bundles';
-import { confirmChoice } from '@/lib/ui/confirm';
+import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
 import { ALBUM_TILE_GAP, useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -26,35 +27,55 @@ type Props = {
   onClose: () => void;
 };
 
+function itemKey(item: SubjectProblemItem) {
+  return `${item.bundleId}:${item.pageId}`;
+}
+
 function ArchivePhotoGrid({
   items,
   columns,
   contentWidth,
   gap,
+  pickMode,
+  selectedKeys,
   onOpen,
+  onEnterSelect,
+  onToggleSelect,
 }: {
   items: SubjectProblemItem[];
   columns: number;
   contentWidth: number;
   gap: number;
+  pickMode: boolean;
+  selectedKeys: Set<string>;
   onOpen: (item: SubjectProblemItem) => void;
+  onEnterSelect: (item: SubjectProblemItem) => void;
+  onToggleSelect: (item: SubjectProblemItem) => void;
 }) {
   const cellW = Math.floor((contentWidth - gap * (columns - 1)) / columns);
 
   return (
     <View style={[styles.grid, { gap }]}>
       {items.map((item) => {
+        const key = itemKey(item);
+        const selected = pickMode && selectedKeys.has(key);
         const uri = getPreviewImageUri(item.page.asset);
         return (
           <Pressable
-            key={`${item.bundleId}:${item.pageId}`}
-            onPress={() => onOpen(item)}
+            key={key}
+            onPress={() => (pickMode ? onToggleSelect(item) : onOpen(item))}
+            onLongPress={() => {
+              if (!pickMode) onEnterSelect(item);
+            }}
+            delayLongPress={400}
             style={({ pressed }) => [
               styles.gridCell,
               { width: cellW, height: cellW },
+              selected && styles.gridCellSelected,
               pressed && styles.gridCellPressed,
             ]}
-            accessibilityRole="button">
+            accessibilityRole={pickMode ? 'checkbox' : 'button'}
+            accessibilityState={pickMode ? { checked: selected } : undefined}>
             {uri ? (
               <ResolvedImage
                 uri={uri}
@@ -65,6 +86,17 @@ function ArchivePhotoGrid({
             ) : (
               <View style={[styles.gridImg, styles.gridEmpty]} />
             )}
+            {pickMode ? (
+              <View style={[styles.pickBadge, selected && styles.pickBadgeOn]}>
+                {selected ? (
+                  <SymbolView
+                    name={{ ios: 'checkmark', android: 'check', web: 'check' }}
+                    size={11}
+                    tintColor={theme.onAccent}
+                  />
+                ) : null}
+              </View>
+            ) : null}
           </Pressable>
         );
       })}
@@ -81,6 +113,17 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
 
   const [previewItem, setPreviewItem] = useState<SubjectProblemItem | null>(null);
   const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!visible) {
+      setPreviewItem(null);
+      setPreviewSide('front');
+      setSelectMode(false);
+      setSelectedKeys(new Set());
+    }
+  }, [visible]);
 
   const archivedProblems = useMemo(
     () => listArchivedSubjectProblems(data.bundles, subjectId),
@@ -95,6 +138,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
   const cardWidth = Math.min(viewport.width - pad * 2, viewport.contentMaxWidth);
   const albumContentWidth = cardWidth - 32;
   const columns = viewport.albumNumColumns;
+  const selectedCount = selectedKeys.size;
 
   const dateLabels = useMemo(
     () => ({
@@ -107,10 +151,47 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
   const closeAll = () => {
     setPreviewItem(null);
     setPreviewSide('front');
+    setSelectMode(false);
+    setSelectedKeys(new Set());
     onClose();
   };
 
+  const exitSelect = useCallback(() => {
+    setSelectMode(false);
+    setSelectedKeys(new Set());
+  }, []);
+
+  const enterSelect = useCallback((item: SubjectProblemItem) => {
+    setSelectMode(true);
+    setSelectedKeys(new Set([itemKey(item)]));
+  }, []);
+
+  const toggleSelect = useCallback((item: SubjectProblemItem) => {
+    const key = itemKey(item);
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const restoreSelected = useCallback(() => {
+    if (selectedKeys.size === 0) return;
+    const bundleIds = new Set<string>();
+    for (const key of selectedKeys) {
+      bundleIds.add(key.split(':')[0]!);
+    }
+    for (const bid of bundleIds) {
+      unarchiveBundle(bid);
+    }
+    const count = bundleIds.size;
+    exitSelect();
+    showMessage('', t('folder.restoredCount', { count }));
+  }, [exitSelect, selectedKeys, t, unarchiveBundle]);
+
   const openPreview = (item: SubjectProblemItem) => {
+    if (selectMode) return;
     setPreviewSide('front');
     setPreviewItem(item);
   };
@@ -237,9 +318,15 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
               },
             ]}>
             <Text style={styles.title}>{t('folder.archiveModalTitle', { name: subjectName })}</Text>
+            {selectMode ? (
+              <Text style={styles.selectHint}>{t('folder.archiveSelectHint')}</Text>
+            ) : null}
             <ScrollView
               style={styles.scroll}
-              contentContainerStyle={styles.scrollContent}
+              contentContainerStyle={[
+                styles.scrollContent,
+                selectMode && styles.scrollContentSelecting,
+              ]}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled">
               {dateSections.length === 0 ? (
@@ -253,13 +340,38 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
                       columns={columns}
                       contentWidth={albumContentWidth}
                       gap={ALBUM_TILE_GAP}
+                      pickMode={selectMode}
+                      selectedKeys={selectedKeys}
                       onOpen={openPreview}
+                      onEnterSelect={enterSelect}
+                      onToggleSelect={toggleSelect}
                     />
                   </View>
                 ))
               )}
             </ScrollView>
-            <Button label={t('appUsageGuide.close')} onPress={closeAll} style={styles.closeBtn} />
+            {selectMode ? (
+              <View style={styles.selectBar}>
+                <FolderPhotoActionBar
+                  actions={[
+                    {
+                      key: 'restore',
+                      label: t('folder.restoreSelected', { count: selectedCount }),
+                      onPress: restoreSelected,
+                      disabled: selectedCount === 0,
+                    },
+                    {
+                      key: 'cancel',
+                      label: t('common.cancel'),
+                      variant: 'ghost',
+                      onPress: exitSelect,
+                    },
+                  ]}
+                />
+              </View>
+            ) : (
+              <Button label={t('appUsageGuide.close')} onPress={closeAll} style={styles.closeBtn} />
+            )}
           </View>
         )}
       </View>
@@ -294,11 +406,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 12,
   },
+  selectHint: {
+    fontSize: theme.font.caption,
+    color: theme.gray,
+    textAlign: 'center',
+    marginBottom: 8,
+    marginTop: -4,
+  },
   scroll: {
     flexGrow: 0,
   },
   scrollContent: {
     paddingBottom: 8,
+  },
+  scrollContentSelecting: {
+    paddingBottom: 16,
   },
   empty: {
     textAlign: 'center',
@@ -308,6 +430,10 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     marginTop: 12,
+  },
+  selectBar: {
+    marginTop: 12,
+    alignItems: 'center',
   },
   section: {
     marginBottom: 16,
@@ -341,13 +467,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
     backgroundColor: theme.surface,
-    /** Thin edge so dark/black photos are visible on the dark card. */
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255, 255, 255, 0.22)',
     ...Platform.select({
-      web: { cursor: 'pointer' as const },
+      web: { cursor: 'pointer' as const, touchAction: 'manipulation' as const },
       default: {},
     }),
+  },
+  gridCellSelected: {
+    borderColor: theme.orange,
+    borderWidth: 2,
   },
   gridCellPressed: {
     opacity: 0.85,
@@ -358,6 +487,23 @@ const styles = StyleSheet.create({
   },
   gridEmpty: {
     backgroundColor: theme.grayLight,
+  },
+  pickBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: theme.white,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickBadgeOn: {
+    backgroundColor: theme.orange,
+    borderColor: theme.orange,
   },
   previewPanel: {
     ...StyleSheet.absoluteFill,

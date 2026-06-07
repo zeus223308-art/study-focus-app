@@ -210,6 +210,8 @@
     "saveToArchiveCount": "아카이브에 저장 ({{count}})",
     "restoreFromArchive": "불러오기",
     "restoreSelected": "불러오기 ({{count}})",
+    "archiveSelectHint": "사진을 탭해 선택 · 꾹 눌러 시작",
+    "restoredCount": "{{count}}개를 보관함으로 불러왔습니다",
     "archivedCount": "{{count}}개를 아카이브했습니다",
     "sendToNewFolder": "새로운 폴더로 보내기",
     "sendToNewFolderTitle": "새 폴더 만들기",

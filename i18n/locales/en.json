@@ -210,6 +210,8 @@
     "saveToArchiveCount": "Save to archive ({{count}})",
     "restoreFromArchive": "Restore",
     "restoreSelected": "Restore ({{count}})",
+    "archiveSelectHint": "Tap to select · long-press to start",
+    "restoredCount": "Restored {{count}} to your folder",
     "archivedCount": "{{count}} item(s) archived",
     "sendToNewFolder": "Send to new folder",
     "sendToNewFolderTitle": "Create new folder",
