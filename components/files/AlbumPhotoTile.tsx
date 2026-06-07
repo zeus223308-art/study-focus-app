@@ -1,9 +1,8 @@
-import { createElement, useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   View,
   type StyleProp,
   type ViewStyle,
@@ -18,106 +17,26 @@ import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
 import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
-import {
-  resolveTagColorFor,
-  tagRibbonLabelTone,
-  type TagRibbonLabelTone,
-} from '@/lib/ui/tag-colors';
+import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const IS_WEB = Platform.OS === 'web';
 
-function estimateRibbonLabelWidth(label: string): number {
-  let units = 0;
-  for (const ch of label) {
-    units += ch.charCodeAt(0) > 0x7f ? 8 : 4.8;
-  }
-  return Math.max(6, Math.ceil(units));
-}
+/** Small color ribbon on photo thumbnails — no label text. */
+const TAG_MARK_H = 8;
+const TAG_MARK_W = 14;
+const TAG_MARK_NOTCH = 3;
 
-/** Horizontal ribbon banner: body height + left fishtail notch width + text padding. */
-const RIBBON_H = 12;
-const RIBBON_NOTCH_W = 4;
-const RIBBON_PAD_L = 4;
-const RIBBON_PAD_R = 6;
-
-const RIBBON_LABEL_COLOR: Record<TagRibbonLabelTone, string> = {
-  dark: '#141414',
-  light: '#FFFFFF',
-};
-
-/** Label on ribbon; web uses global CSS via data-tag-ribbon-tone (see app/+html.tsx). */
-function TagRibbonLabel({
-  label,
-  tone,
-  left,
-}: {
-  label: string;
-  tone: TagRibbonLabelTone;
-  left: number;
-}) {
-  if (IS_WEB) {
-    return createElement('span', {
-      'data-tag-ribbon-label': '1',
-      style: {
-        position: 'absolute',
-        left,
-        top: 0,
-        height: RIBBON_H,
-        lineHeight: `${RIBBON_H}px`,
-        fontSize: 8,
-        fontWeight: 800,
-        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
-        whiteSpace: 'nowrap',
-        pointerEvents: 'none',
-        zIndex: 2,
-      },
-      children: label,
-    });
-  }
-
-  return (
-    <Text
-      style={[styles.ribbonLabel, { left, color: RIBBON_LABEL_COLOR[tone] }]}
-      numberOfLines={1}
-      pointerEvents="none">
-      {label}
-    </Text>
-  );
-}
-
-/** Whole ribbon (left fishtail + rectangle body) as ONE filled shape so the
- *  pointed end and the body are always exactly the same color. Text is overlaid. */
-function TagRibbon({ label, color }: { label: string; color: string }) {
-  const [textW, setTextW] = useState(0);
-  const tone = tagRibbonLabelTone(color);
-  const contentW = IS_WEB
-    ? estimateRibbonLabelWidth(label)
-    : textW || estimateRibbonLabelWidth(label);
-  const totalW = RIBBON_NOTCH_W + RIBBON_PAD_L + contentW + RIBBON_PAD_R;
-  const path = `M0 0 L${totalW} 0 L${totalW} ${RIBBON_H} L0 ${RIBBON_H} L${RIBBON_NOTCH_W} ${RIBBON_H / 2} Z`;
-  const labelLeft = RIBBON_NOTCH_W + RIBBON_PAD_L;
+function TagColorMark({ color, label }: { color: string; label: string }) {
+  const path = `M0 0 L${TAG_MARK_W} 0 L${TAG_MARK_W} ${TAG_MARK_H} L0 ${TAG_MARK_H} L${TAG_MARK_NOTCH} ${TAG_MARK_H / 2} Z`;
   return (
     <View
-      style={[styles.ribbon, { width: totalW, height: RIBBON_H }]}
-      {...(IS_WEB ? { dataSet: { tagRibbonTone: tone } } : {})}>
-      {!IS_WEB ? (
-        <Text
-          style={styles.measureText}
-          numberOfLines={1}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          onLayout={(e) => {
-            const w = Math.ceil(e.nativeEvent.layout.width);
-            if (w > 0 && w !== textW) setTextW(w);
-          }}>
-          {label}
-        </Text>
-      ) : null}
-      <Svg width={totalW} height={RIBBON_H} style={StyleSheet.absoluteFill} pointerEvents="none">
+      style={styles.tagMark}
+      accessibilityLabel={label}
+      importantForAccessibility="yes">
+      <Svg width={TAG_MARK_W} height={TAG_MARK_H} pointerEvents="none">
         <Path d={path} fill={color} />
       </Svg>
-      <TagRibbonLabel label={label} tone={tone} left={labelLeft} />
     </View>
   );
 }
@@ -212,7 +131,7 @@ export function AlbumPhotoTile({
     visibleTags.length > 0 && !showLifted ? (
       <View style={styles.tagRow} pointerEvents="none">
         {visibleTags.map((tag, i) => (
-          <TagRibbon
+          <TagColorMark
             key={`${tag}-${i}`}
             label={tag}
             color={resolveTagColorFor(tag, tagColors, tagFallback)}
@@ -385,38 +304,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 6,
     bottom: 6,
-    right: 6,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    rowGap: 6,
-    columnGap: 7,
+    alignItems: 'center',
+    gap: 4,
+    maxWidth: '72%',
   },
-  ribbon: {
-    height: RIBBON_H,
-    justifyContent: 'center',
-    overflow: 'visible',
-  },
-  ribbonLabel: {
-    position: 'absolute',
-    top: 0,
-    height: RIBBON_H,
-    lineHeight: RIBBON_H,
-    fontSize: 8,
-    fontWeight: '800',
-    zIndex: 2,
-    ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
-  },
-  measureText: {
-    position: 'absolute',
-    opacity: 0,
-    color: 'transparent',
-    height: RIBBON_H,
-    lineHeight: RIBBON_H,
-    left: RIBBON_NOTCH_W + RIBBON_PAD_L,
-    fontSize: 8,
-    fontWeight: '800',
-    zIndex: -1,
-    ...(Platform.OS === 'android' ? { includeFontPadding: false } : null),
+  tagMark: {
+    width: TAG_MARK_W,
+    height: TAG_MARK_H,
   },
   memoBadge: {
     position: 'absolute',

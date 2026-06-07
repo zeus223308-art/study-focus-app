@@ -149,14 +149,4 @@ body {
   padding-right: 10px !important;
   box-sizing: border-box !important;
 }
-[data-tag-ribbon-tone="dark"] [data-tag-ribbon-label="1"] {
-  color: #141414 !important;
-  -webkit-text-fill-color: #141414 !important;
-  forced-color-adjust: none !important;
-}
-[data-tag-ribbon-tone="light"] [data-tag-ribbon-label="1"] {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
-  forced-color-adjust: none !important;
-}
 `;
