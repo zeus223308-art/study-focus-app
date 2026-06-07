@@ -49,7 +49,24 @@ import {
 const HINT_PEEK_MS = 8000;
 
 const problemImageBlurWeb: ImageStyle =
-  Platform.OS === 'web' ? ({ filter: 'blur(6px)' } as ImageStyle) : {};
+  Platform.OS === 'web'
+    ? ({ filter: 'blur(6px)', WebkitFilter: 'blur(6px)' } as ImageStyle)
+    : {};
+
+/** Mobile Safari (RN Web): opacity with useNativeDriver often never runs — overlay stays invisible. */
+function runRevealAnim(passAnim: Animated.Value, passScale: Animated.Value) {
+  passAnim.setValue(0);
+  passScale.setValue(0.7);
+  if (Platform.OS === 'web') {
+    passAnim.setValue(1);
+    passScale.setValue(1);
+    return;
+  }
+  Animated.parallel([
+    Animated.timing(passAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
+    Animated.spring(passScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
+  ]).start();
+}
 type SlideSide = 'front' | 'back';
 type Slide = { bundle: NoteBundle; page: NotePage; side: SlideSide };
 type Phase = 'front' | 'countdown' | 'recall-work' | 'peek' | 'debrief';
@@ -381,21 +398,13 @@ export default function ReviewSessionScreen() {
       passAnim.setValue(0);
       passScale.setValue(0.7);
       setSessionCompleteVisible(true);
-      Animated.parallel([
-        Animated.timing(passAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
-        Animated.spring(passScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
-      ]).start();
+      runRevealAnim(passAnim, passScale);
     }
   }, [index, passAnim, passScale, slides.length]);
 
   const showProblemComplete = useCallback(() => {
     setProblemCompleteVisible(true);
-    passAnim.setValue(0);
-    passScale.setValue(0.7);
-    Animated.parallel([
-      Animated.timing(passAnim, { toValue: 1, duration: 380, useNativeDriver: true }),
-      Animated.spring(passScale, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
-    ]).start();
+    runRevealAnim(passAnim, passScale);
   }, [passAnim, passScale]);
 
   const confirmProblemComplete = useCallback(() => {
