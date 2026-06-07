@@ -247,6 +247,8 @@ export function AlbumPhotoTile({
     return (
       <View style={[styles.cell, { width: cellWidth }, style]}>
         <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: pickSelected }}
           onPress={handlePress}
           style={[
             styles.tile,

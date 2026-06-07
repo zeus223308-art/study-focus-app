@@ -13,6 +13,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BulkTagModal } from '@/components/files/BulkTagModal';
 import { DateAlbumSection } from '@/components/files/DateAlbumSection';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { FolderPhotoActionBar } from '@/components/files/FolderPhotoActionBar';
@@ -25,12 +26,13 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
+import { mergeCaptureTagPresets } from '@/lib/domain/capture-tags';
 import type { PageRef } from '@/lib/domain/move-pages-batch';
 import {
   groupSubjectProblemsByDate,
   listSubjectProblems,
+  type SubjectProblemItem,
 } from '@/lib/grouping/bundles';
-import type { SubjectProblemItem } from '@/lib/grouping/bundles';
 import { remainingPhotoSlots } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { NotFoundView } from '@/components/ui/NotFoundView';
@@ -74,6 +76,10 @@ export default function FolderScreen() {
     archiveBundle,
     moveProblemsToNewSubject,
     moveProblemsToSubject,
+    updateBundle,
+    updateSettings,
+    setTagColorFor,
+    removeCaptureTag,
     setPaywallVisible,
     setActiveFolderCapture,
   } = useApp();
@@ -84,10 +90,9 @@ export default function FolderScreen() {
   const [otherPickerOpen, setOtherPickerOpen] = useState(false);
   const [otherSubjectId, setOtherSubjectId] = useState<string | null>(null);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
-  const [archiveSelectMode, setArchiveSelectMode] = useState(false);
-  const [archiveSelectedKeys, setArchiveSelectedKeys] = useState<Set<string>>(new Set());
-  const [exportSelectMode, setExportSelectMode] = useState(false);
-  const [exportSelectedKeys, setExportSelectedKeys] = useState<Set<string>>(new Set());
+  const [photoSelectMode, setPhotoSelectMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
   const [tileGestureActive, setTileGestureActive] = useState(false);
   const viewport = useViewportLayout();
   const insets = useSafeAreaInsets();
@@ -137,8 +142,15 @@ export default function FolderScreen() {
     return () => clearTimeout(id);
   }, [albumFilterDate, scrollToDate, dateSections.length]);
 
-  const pickMode = exportSelectMode || archiveSelectMode;
-  const activeSelectedKeys = exportSelectMode ? exportSelectedKeys : archiveSelectedKeys;
+  const pickMode = photoSelectMode;
+  const selectedCount = selectedKeys.size;
+
+  const tagPresets = useMemo(
+    () => data.settings.captureTagPresets ?? [],
+    [data.settings.captureTagPresets]
+  );
+
+  const isPro = data.settings.tier === 'pro';
 
   const otherSubjects = useMemo(
     () =>
@@ -162,21 +174,20 @@ export default function FolderScreen() {
     [t]
   );
 
-  const exitExportSelect = useCallback(() => {
-    setExportSelectMode(false);
-    setExportSelectedKeys(new Set());
+  const exitPhotoSelect = useCallback(() => {
+    setPhotoSelectMode(false);
+    setSelectedKeys(new Set());
+    setBulkTagOpen(false);
   }, []);
 
-  const enterExportSelect = useCallback((item: SubjectProblemItem) => {
-    setArchiveSelectMode(false);
-    setArchiveSelectedKeys(new Set());
-    setExportSelectMode(true);
-    setExportSelectedKeys(new Set([itemKey(item)]));
+  const enterPhotoSelect = useCallback((item: SubjectProblemItem) => {
+    setPhotoSelectMode(true);
+    setSelectedKeys(new Set([itemKey(item)]));
   }, []);
 
-  const toggleExportSelect = useCallback((item: SubjectProblemItem) => {
+  const togglePhotoSelect = useCallback((item: SubjectProblemItem) => {
     const key = itemKey(item);
-    setExportSelectedKeys((prev) => {
+    setSelectedKeys((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
@@ -232,47 +243,101 @@ export default function FolderScreen() {
     }
   };
 
-  const toggleArchiveSelect = (item: SubjectProblemItem) => {
-    const key = itemKey(item);
-    setArchiveSelectedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
   const confirmArchiveSelected = () => {
+    if (selectedKeys.size === 0) return;
     const bundleIds = new Set<string>();
-    for (const key of archiveSelectedKeys) {
+    for (const key of selectedKeys) {
       bundleIds.add(key.split(':')[0]!);
     }
     for (const bid of bundleIds) {
       archiveBundle(bid);
     }
-    setArchiveSelectMode(false);
-    setArchiveSelectedKeys(new Set());
+    exitPhotoSelect();
     showMessage('', t('folder.archivedCount', { count: bundleIds.size }));
   };
+
+  const confirmDeleteSelected = () => {
+    if (selectedKeys.size === 0) return;
+    confirmChoice({
+      title: t('folder.deleteSelectedTitle'),
+      message: t('folder.deleteSelectedMessage', { count: selectedKeys.size }),
+      yesLabel: t('common.yes'),
+      noLabel: t('common.no'),
+      onYes: () => {
+        const items = keysToPageRefs(selectedKeys);
+        for (const { bundleId, pageId } of items) {
+          deletePage(bundleId, pageId);
+        }
+        exitPhotoSelect();
+      },
+    });
+  };
+
+  const applyBulkTags = useCallback(
+    (tags: string[]) => {
+      const trimmed = tags.map((tag) => tag.trim()).filter(Boolean);
+      if (trimmed.length === 0 || selectedKeys.size === 0) return;
+
+      const byBundle = new Map<string, Set<string>>();
+      for (const key of selectedKeys) {
+        const [bundleId, pageId] = key.split(':');
+        if (!bundleId || !pageId) continue;
+        if (!byBundle.has(bundleId)) byBundle.set(bundleId, new Set());
+        byBundle.get(bundleId)!.add(pageId);
+      }
+
+      for (const [bundleId, pageIds] of byBundle) {
+        const bundle = data.bundles.find((b) => b.id === bundleId);
+        if (!bundle) continue;
+        updateBundle(bundleId, {
+          pages: bundle.pages.map((page) => {
+            if (!pageIds.has(page.id)) return page;
+            const merged = [...(page.tags ?? []), ...trimmed];
+            const unique = [...new Set(merged.map((tag) => tag.trim()).filter(Boolean))];
+            return { ...page, tags: unique };
+          }),
+        });
+      }
+
+      setBulkTagOpen(false);
+      const count = selectedKeys.size;
+      exitPhotoSelect();
+      showMessage('', t('folder.bulkTagDone', { count }));
+    },
+    [data.bundles, exitPhotoSelect, selectedKeys, t, updateBundle]
+  );
+
+  const addTagPreset = useCallback(
+    (label: string) => {
+      updateSettings({
+        captureTagPresets: mergeCaptureTagPresets(
+          data.settings.captureTagPresets,
+          data.settings.language,
+          label
+        ),
+      });
+    },
+    [data.settings.captureTagPresets, data.settings.language, updateSettings]
+  );
 
   const lockTileGesture = useCallback((active: boolean) => {
     setTileGestureActive(active);
   }, []);
 
   const openNewFolderModal = () => {
-    if (exportSelectedKeys.size === 0) return;
+    if (selectedKeys.size === 0) return;
     setNewFolderName('');
     setSendModalOpen(true);
   };
 
   const confirmSendToNewFolder = () => {
     const trimmed = newFolderName.trim();
-    if (!trimmed || exportSelectedKeys.size === 0) return;
+    if (!trimmed || selectedKeys.size === 0) return;
 
-    const items = keysToPageRefs(exportSelectedKeys);
+    const items = keysToPageRefs(selectedKeys);
     const newSubjectId = moveProblemsToNewSubject(items, trimmed);
     setSendModalOpen(false);
-    exitExportSelect();
+    exitPhotoSelect();
 
     if (!newSubjectId) return;
     showMessage('', t('folder.sendToNewFolderDone', { name: trimmed }));
@@ -280,17 +345,17 @@ export default function FolderScreen() {
   };
 
   const openOtherSubjectPicker = () => {
-    if (exportSelectedKeys.size === 0) return;
+    if (selectedKeys.size === 0) return;
     setOtherSubjectId(null);
     setOtherPickerOpen(true);
   };
 
   const confirmSendToOtherSubject = () => {
-    if (!otherSubjectId || exportSelectedKeys.size === 0) return;
-    const items = keysToPageRefs(exportSelectedKeys);
+    if (!otherSubjectId || selectedKeys.size === 0) return;
+    const items = keysToPageRefs(selectedKeys);
     const ok = moveProblemsToSubject(items, otherSubjectId);
     setOtherPickerOpen(false);
-    exitExportSelect();
+    exitPhotoSelect();
     if (!ok) return;
     const name = data.subjects.find((s) => s.id === otherSubjectId)?.name ?? '';
     showMessage(
@@ -302,7 +367,7 @@ export default function FolderScreen() {
     }
   };
 
-  const albumScrollEnabled = !movingBundleId && !pickMode && !tileGestureActive;
+  const albumScrollEnabled = !movingBundleId && !tileGestureActive;
 
   if (!subject) {
     return (
@@ -345,8 +410,8 @@ export default function FolderScreen() {
               </View>
             }
           />
-          {exportSelectMode ? (
-            <Text style={styles.exportHint}>{t('folder.exportSelectHint')}</Text>
+          {photoSelectMode ? (
+            <Text style={styles.exportHint}>{t('folder.selectHint')}</Text>
           ) : null}
           {movingBundleId && (
             <Pressable onPress={cancelMovingBundle} style={styles.cancelMove}>
@@ -363,6 +428,7 @@ export default function FolderScreen() {
           showsVerticalScrollIndicator
           contentContainerStyle={[
             styles.scroll,
+            photoSelectMode && styles.scrollSelecting,
             problems.length === 0 && styles.scrollEmpty,
             viewport.isTablet && {
               maxWidth: viewport.contentMaxWidth,
@@ -397,7 +463,7 @@ export default function FolderScreen() {
                     })
                   }
                   onLiftItemForDrag={onLiftItemForDrag}
-                  onHoldMenu={pickMode ? undefined : (item) => enterExportSelect(item)}
+                  onHoldMenu={pickMode ? undefined : (item) => enterPhotoSelect(item)}
                   onDragMove={pickMode ? undefined : onDragMove}
                   onDragEnd={
                     pickMode
@@ -413,10 +479,8 @@ export default function FolderScreen() {
                       : (item) => confirmDeleteProblem(item.bundleId, item.pageId)
                   }
                   selectionMode={pickMode ? 'pick' : null}
-                  selectedKeys={activeSelectedKeys}
-                  onToggleSelect={
-                    exportSelectMode ? toggleExportSelect : toggleArchiveSelect
-                  }
+                  selectedKeys={selectedKeys}
+                  onToggleSelect={togglePhotoSelect}
                 />
               </View>
             ))
@@ -425,59 +489,60 @@ export default function FolderScreen() {
         </ScrollView>
       </Screen>
 
-      {exportSelectMode ? (
+      {photoSelectMode ? (
         <View style={[styles.exportBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
+          <FolderPhotoActionBar
+            actions={[
+              {
+                key: 'delete',
+                label: t('folder.deleteSelected', { count: selectedCount }),
+                variant: 'secondary',
+                onPress: confirmDeleteSelected,
+                disabled: selectedCount === 0,
+              },
+              {
+                key: 'archive',
+                label: t('folder.saveToArchiveCount', { count: selectedCount }),
+                variant: 'secondary',
+                onPress: confirmArchiveSelected,
+                disabled: selectedCount === 0,
+              },
+              {
+                key: 'tag',
+                label: t('folder.tagSelected', { count: selectedCount }),
+                variant: 'secondary',
+                onPress: () => setBulkTagOpen(true),
+                disabled: selectedCount === 0,
+              },
+            ]}
+          />
           <FolderPhotoActionBar
             actions={[
               {
                 key: 'new',
                 label: t('folder.sendToNewFolder'),
                 onPress: openNewFolderModal,
-                disabled: exportSelectedKeys.size === 0,
+                disabled: selectedCount === 0,
               },
               {
                 key: 'other',
                 label: t('folder.sendToOtherFolder'),
                 variant: 'secondary',
                 onPress: openOtherSubjectPicker,
-                disabled: exportSelectedKeys.size === 0,
+                disabled: selectedCount === 0,
               },
               {
                 key: 'cancel',
                 label: t('common.cancel'),
                 variant: 'ghost',
-                onPress: exitExportSelect,
+                onPress: exitPhotoSelect,
               },
             ]}
           />
         </View>
       ) : null}
 
-      {archiveSelectMode ? (
-        <View style={[styles.archiveBar, { paddingBottom: Math.max(12, insets.bottom) }]}>
-          <FolderPhotoActionBar
-            actions={[
-              {
-                key: 'archive',
-                label: t('folder.saveToArchiveCount', { count: archiveSelectedKeys.size }),
-                onPress: confirmArchiveSelected,
-                disabled: archiveSelectedKeys.size === 0,
-              },
-              {
-                key: 'cancel',
-                label: t('common.cancel'),
-                variant: 'ghost',
-                onPress: () => {
-                  setArchiveSelectMode(false);
-                  setArchiveSelectedKeys(new Set());
-                },
-              },
-            ]}
-          />
-        </View>
-      ) : null}
-
-      {!exportSelectMode ? (
+      {!photoSelectMode ? (
         <SubjectDropDock currentSubjectId={subject.id} subjects={data.subjects} />
       ) : null}
       <DragMoveGhost pageX={ghost.x} pageY={ghost.y} visible={ghost.visible} />
@@ -492,7 +557,7 @@ export default function FolderScreen() {
       <SendToNewFolderModal
         visible={sendModalOpen}
         title={t('folder.sendToNewFolderTitle')}
-        hint={t('folder.sendToNewFolderBulkHint', { count: exportSelectedKeys.size })}
+        hint={t('folder.sendToNewFolderBulkHint', { count: selectedCount })}
         name={newFolderName}
         placeholder={t('folder.sendToNewFolderPlaceholder')}
         sendLabel={t('common.send')}
@@ -514,6 +579,22 @@ export default function FolderScreen() {
         onConfirm={confirmSendToOtherSubject}
         onClose={() => setOtherPickerOpen(false)}
       />
+
+      <BulkTagModal
+        visible={bulkTagOpen}
+        photoCount={selectedCount}
+        language={language}
+        presets={tagPresets}
+        tagColors={data.settings.tagColors}
+        tagColorFallback={data.settings.tagColor}
+        isPro={isPro}
+        onRequirePremium={() => setPaywallVisible(true)}
+        onAddPreset={addTagPreset}
+        onRemovePreset={removeCaptureTag}
+        onSetTagColor={setTagColorFor}
+        onApply={applyBulkTags}
+        onClose={() => setBulkTagOpen(false)}
+      />
     </View>
   );
 }
@@ -533,6 +614,7 @@ const styles = StyleSheet.create({
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   albumScroll: { flex: 1, minHeight: 0 },
   scroll: { paddingHorizontal: 16, paddingBottom: 120 },
+  scrollSelecting: { paddingBottom: 200 },
   scrollEmpty: { flexGrow: 1, justifyContent: 'center' },
   emptyBlock: { alignItems: 'center', gap: 20, paddingVertical: 40 },
   empty: { fontSize: theme.font.body, color: theme.gray, textAlign: 'center' },

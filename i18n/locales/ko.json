@@ -222,6 +222,15 @@
     "sendToOtherFolderHint": "과목을 하나만 선택하세요.",
     "sendToOtherFolderDone": "「{{name}}」(으)로 {{count}}장을 보냈습니다",
     "exportSelectHint": "보낼 사진을 선택하세요 (꾹 눌러 선택)",
+    "selectHint": "사진을 탭해 선택 · 꾹 눌러 시작",
+    "deleteSelected": "삭제 ({{count}})",
+    "deleteSelectedTitle": "선택한 사진을 삭제할까요?",
+    "deleteSelectedMessage": "{{count}}장을 휴지통으로 보냅니다.",
+    "tagSelected": "태그 ({{count}})",
+    "bulkTagTitle": "태그 달기",
+    "bulkTagHint": "선택한 {{count}}장에 아래 태그를 추가합니다.",
+    "bulkTagApply": "태그 적용 ({{count}})",
+    "bulkTagDone": "{{count}}장에 태그를 적용했습니다",
     "holdMenuReorder": "순서 변경 (끌어서 이동)"
   },
   "item": {

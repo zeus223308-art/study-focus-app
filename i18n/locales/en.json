@@ -222,6 +222,15 @@
     "sendToOtherFolderHint": "Select one subject only.",
     "sendToOtherFolderDone": "Moved {{count}} photo(s) to \"{{name}}\"",
     "exportSelectHint": "Select photos to move (long-press to start)",
+    "selectHint": "Tap to select · long-press to start",
+    "deleteSelected": "Delete ({{count}})",
+    "deleteSelectedTitle": "Delete selected photos?",
+    "deleteSelectedMessage": "{{count}} photo(s) will move to Trash.",
+    "tagSelected": "Tag ({{count}})",
+    "bulkTagTitle": "Add tags",
+    "bulkTagHint": "Add these tags to {{count}} selected photo(s).",
+    "bulkTagApply": "Apply tags ({{count}})",
+    "bulkTagDone": "Tags applied to {{count}} photo(s)",
     "holdMenuReorder": "Reorder (drag to move)"
   },
   "item": {
