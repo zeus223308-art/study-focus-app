@@ -449,7 +449,7 @@
     "cloudSyncedMinutes": "{{count}}분 전",
     "cloudSyncedHours": "{{count}}시간 전",
     "cloudSyncedDays": "{{count}}일 전",
-    "cloudHint": "로그인하면 5분마다 Google Drive에 과목·사진·설정이 자동 백업됩니다. 다른 기기에서는 Drive 복원을 사용하세요.",
+    "cloudHint": "무료·Pro 공통 — Google 로그인 시 5분마다 과목·사진·설정이 자동 백업됩니다. 다른 기기에서는 Drive 복원을 사용하세요.",
     "cloudAutoSync": "자동 동기화",
     "cloudAutoSyncValue": "5분마다",
     "cloudWebMobileHint": "모바일·APK 없이: Chrome/Safari에서 github.io/study-focus-app 으로 접속 후 로그인. 인앱 브라우저(카톡 등)는 실패할 수 있습니다.",
@@ -532,7 +532,8 @@
     "imagesBody": "무료 플랜은 사진 {{max}}장까지 저장할 수 있어요. (현재 {{used}}장)",
     "memosBody": "무료 플랜은 메모 {{max}}개까지 저장할 수 있어요. (현재 {{used}}개)",
     "subjectsBody": "무료 플랜은 과목 {{max}}개까지 만들 수 있어요. (현재 {{used}}개) 더 추가하려면 Pro가 필요해요.",
-    "proBenefits": "Pro: 무제한 과목 · 무제한 저장 · 클라우드 백업 · 해답 숨기기",
+    "proBenefits": "Pro: 무제한 과목 · 무제한 저장 · 프리미엄 태그 색 · 패턴·태그 유지",
+    "cloudFreeNote": "Google Drive 백업은 무료 플랜에도 포함됩니다.",
     "gotIt": "확인",
     "later": "나중에"
   },

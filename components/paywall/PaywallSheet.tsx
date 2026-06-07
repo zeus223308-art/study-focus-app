@@ -38,6 +38,7 @@ export function PaywallSheet({ visible, reason, used, max, onClose }: Props) {
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.body}>{body}</Text>
           <Text style={styles.pro}>{t('paywall.proBenefits')}</Text>
+          <Text style={styles.cloudFree}>{t('paywall.cloudFreeNote')}</Text>
           <Button label={t('paywall.gotIt')} onPress={onClose} style={{ marginTop: 20 }} />
           <Button label={t('paywall.later')} variant="ghost" onPress={onClose} style={{ marginTop: 8 }} />
         </View>
@@ -69,4 +70,5 @@ const styles = StyleSheet.create({
   title: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
   body: { fontSize: theme.font.body, color: theme.gray, marginTop: 10, lineHeight: 24 },
   pro: { fontSize: theme.font.bodySmall, color: theme.graySecondary, marginTop: 16 },
+  cloudFree: { fontSize: theme.font.bodySmall, color: theme.gray, marginTop: 8, lineHeight: 20 },
 });

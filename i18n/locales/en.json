@@ -449,7 +449,7 @@
     "cloudSyncedMinutes": "{{count}}m ago",
     "cloudSyncedHours": "{{count}}h ago",
     "cloudSyncedDays": "{{count}}d ago",
-    "cloudHint": "When signed in, subjects, photos, and settings back up to Google Drive every 5 minutes. On another device, use Drive restore.",
+    "cloudHint": "Free & Pro — when signed in, subjects, photos, and settings back up to Google Drive every 5 minutes. On another device, use Drive restore.",
     "cloudAutoSync": "Auto sync",
     "cloudAutoSyncValue": "Every 5 min",
     "cloudWebMobileHint": "Mobile without APK: open github.io/study-focus-app in Chrome/Safari, then sign in. In-app browsers (e.g. messenger) may fail.",
@@ -532,7 +532,8 @@
     "imagesBody": "Free plan allows up to {{max}} photos ({{used}} used).",
     "memosBody": "Free plan allows up to {{max}} memos ({{used}} used).",
     "subjectsBody": "Free plan allows up to {{max}} subjects ({{used}} used). Upgrade to add more.",
-    "proBenefits": "Pro: unlimited subjects · unlimited saves · cloud backup · hide answers",
+    "proBenefits": "Pro: unlimited subjects · unlimited saves · premium tag colors · keep custom patterns",
+    "cloudFreeNote": "Google Drive backup is included on the free plan.",
     "gotIt": "OK",
     "later": "Later"
   },
