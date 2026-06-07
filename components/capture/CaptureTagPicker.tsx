@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Modal,
@@ -242,6 +242,22 @@ export function CaptureTagPicker({
   const colorEnabled = Boolean(onSetTagColor);
   const colorForTag = (tag: string) => resolveTagColorFor(tag, tagColors, tagColorFallback);
 
+  const displayTags = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const push = (tag: string) => {
+      const n = normalizeCaptureTagLabel(tag);
+      if (!n) return;
+      const key = n.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(n);
+    };
+    for (const p of presets) push(p);
+    for (const s of selectedTags) push(s);
+    return out;
+  }, [presets, selectedTags]);
+
   const isOn = (tag: string) =>
     selectedTags.some((s) => s.toLowerCase() === tag.toLowerCase());
 
@@ -290,9 +306,18 @@ export function CaptureTagPicker({
     <View style={styles.wrap}>
       <View style={styles.header}>
         <Text style={styles.label}>{t('capture.pickTags')}</Text>
+        {selectedTags.length > 0 ? (
+          <Pressable
+            disabled={disabled}
+            onPress={() => onChangeSelected([])}
+            hitSlop={8}
+            accessibilityRole="button">
+            <Text style={styles.clearAll}>{t('capture.clearAllTags')}</Text>
+          </Pressable>
+        ) : null}
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
-        {presets.map((tag) => {
+        {displayTags.map((tag) => {
           const deletable = canDeleteCaptureTagPreset(tag, language);
           const on = isOn(tag);
           return (
@@ -396,6 +421,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   label: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray },
+  clearAll: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.orange,
+  },
   chips: { marginVertical: 12 },
   chip: {
     flexDirection: 'row',

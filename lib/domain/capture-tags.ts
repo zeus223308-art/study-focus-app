@@ -57,27 +57,20 @@ export function mergeCaptureTagPresets(
   return normalizeCaptureTagPresets([...(current ?? []), normalized], language);
 }
 
-export function isDefaultCaptureTagPreset(tag: string, language: Language): boolean {
-  const key = normalizeCaptureTagLabel(tag).toLowerCase();
-  return key === defaultCaptureTagPreset(language).toLowerCase();
-}
-
-/** User-added presets only — default exam-before tag cannot be removed. */
-export function canDeleteCaptureTagPreset(tag: string, language: Language): boolean {
-  return !isDefaultCaptureTagPreset(tag, language);
-}
-
 export function removeCaptureTagPreset(
   current: string[] | undefined,
   language: Language,
   labelToRemove: string
 ): string[] {
-  if (!canDeleteCaptureTagPreset(labelToRemove, language)) {
-    return normalizeCaptureTagPresets(current, language);
-  }
   const removeKey = normalizeCaptureTagLabel(labelToRemove).toLowerCase();
+  if (!removeKey) return normalizeCaptureTagPresets(current, language);
   const without = (current ?? []).filter(
     (p) => normalizeCaptureTagLabel(p).toLowerCase() !== removeKey
   );
   return normalizeCaptureTagPresets(without, language);
+}
+
+/** All presets including legacy exam tag can be removed from the app. */
+export function canDeleteCaptureTagPreset(_tag: string, _language: Language): boolean {
+  return true;
 }
