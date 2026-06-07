@@ -17,6 +17,12 @@ export default function Root({ children }: { children: ReactNode }) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
         />
+        <meta name="theme-color" content="#0A0A0A" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="MemorySherpa" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="format-detection" content="telephone=no" />
         <meta name="color-scheme" content="only light" />
         <ScrollViewStyleReset />
         <script
@@ -74,6 +80,9 @@ body {
   overflow-x: hidden;
   touch-action: manipulation;
   -webkit-touch-callout: none;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior-x: none;
   forced-color-adjust: none;
 }
 @media (prefers-color-scheme: dark) {
