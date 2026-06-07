@@ -47,15 +47,15 @@ export function TagFilterBar({ tags, colorForTag, activeTag, onSelect }: Props) 
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 4 },
-  row: { gap: 8, paddingVertical: 2, paddingRight: 8 },
+  wrap: { marginTop: 10, marginBottom: 12 },
+  row: { gap: 6, paddingVertical: 4, paddingRight: 8 },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: theme.radius.pill,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: 'transparent',
   },
   chipActive: { borderColor: theme.black },
-  chipText: { fontSize: theme.font.bodySmall, fontWeight: '800' },
+  chipText: { fontSize: theme.font.caption, fontWeight: '700' },
 });
