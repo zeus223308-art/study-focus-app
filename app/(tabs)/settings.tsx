@@ -4,6 +4,7 @@ import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'reac
 
 import { CloudBackupSettings } from '@/components/settings/CloudBackupSettings';
 import { ReviewPatternHelpModal } from '@/components/settings/ReviewPatternHelpModal';
+import { SettingsTagsSection } from '@/components/settings/SettingsTagsSection';
 import { SettingsSectionHeader } from '@/components/settings/SettingsSectionHeader';
 import { SettingsGroup, SettingsRow } from '@/components/SettingsGroup';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -137,6 +138,8 @@ export default function SettingsScreen() {
             last
           />
         </SettingsGroup>
+
+        <SettingsTagsSection />
 
         <SettingsGroup title={t('settings.cloudSection')}>
           <CloudBackupSettings />

@@ -1,4 +1,4 @@
-import type { Language } from './types';
+import type { Language, NoteBundle } from './types';
 
 /** Legacy stored tag id (search / filters). */
 export const EXAM_TAG_LEGACY = 'exam';
@@ -73,4 +73,61 @@ export function removeCaptureTagPreset(
 /** All presets including legacy exam tag can be removed from the app. */
 export function canDeleteCaptureTagPreset(_tag: string, _language: Language): boolean {
   return true;
+}
+
+/** Presets plus every tag on stored photos, deduped and sorted. */
+export function collectAllCaptureTags(
+  presets: string[] | undefined,
+  bundles: NoteBundle[]
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (label: string) => {
+    const n = normalizeCaptureTagLabel(label);
+    if (!n) return;
+    const key = n.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(n);
+  };
+  for (const p of presets ?? []) push(p);
+  for (const bundle of bundles) {
+    for (const page of bundle.pages) {
+      for (const tag of page.tags ?? []) push(tag);
+    }
+  }
+  return out.sort((a, b) => a.localeCompare(b));
+}
+
+export function captureTagKey(tag: string): string {
+  return normalizeCaptureTagLabel(tag).toLowerCase();
+}
+
+export function captureTagExists(
+  tag: string,
+  presets: string[] | undefined,
+  bundles: NoteBundle[],
+  exceptKey?: string
+): boolean {
+  const key = captureTagKey(tag);
+  if (!key) return false;
+  const skip = exceptKey?.toLowerCase();
+  return collectAllCaptureTags(presets, bundles).some(
+    (t) => t.toLowerCase() === key && t.toLowerCase() !== skip
+  );
+}
+
+export function renameCaptureTagPreset(
+  current: string[] | undefined,
+  language: Language,
+  fromLabel: string,
+  toLabel: string
+): string[] {
+  const fromKey = captureTagKey(fromLabel);
+  const toNorm = normalizeCaptureTagLabel(toLabel);
+  if (!fromKey || !toNorm) return normalizeCaptureTagPresets(current, language);
+  const mapped = (current ?? []).map((p) =>
+    captureTagKey(p) === fromKey ? toNorm : p
+  );
+  return normalizeCaptureTagPresets(mapped, language);
 }

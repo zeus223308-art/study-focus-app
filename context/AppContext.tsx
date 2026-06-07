@@ -15,8 +15,10 @@ import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
 import { appendCaptureToData } from '@/lib/domain/bundle-factory';
 import {
+  mergeCaptureTagPresets,
   normalizeCaptureTagLabel,
   removeCaptureTagPreset,
+  renameCaptureTagPreset,
 } from '@/lib/domain/capture-tags';
 import { applyMonthlyCustomizationReset } from '@/lib/domain/customization-reset';
 import { todayKey } from '@/lib/domain/dates';
@@ -139,6 +141,8 @@ type AppContextValue = {
   updateSettings: (patch: Partial<AppSettings>) => void;
   setTagColor: (color: string) => void;
   setTagColorFor: (tag: string, color: string) => void;
+  renameCaptureTag: (fromLabel: string, toLabel: string) => void;
+  addCaptureTagPreset: (label: string) => void;
   removeCaptureTag: (label: string) => void;
   getSchedule: (id: string) => ReviewSchedule | undefined;
   syncCloud: () => Promise<void>;
@@ -952,6 +956,67 @@ export function AppProvider({
     });
   }, []);
 
+  const renameCaptureTag = useCallback((fromLabel: string, toLabel: string) => {
+    const fromKey = normalizeCaptureTagLabel(fromLabel).toLowerCase();
+    const toNorm = normalizeCaptureTagLabel(toLabel);
+    const toKey = toNorm.toLowerCase();
+    if (!fromKey || !toNorm || fromKey === toKey) return;
+
+    setData((prev) => {
+      if (!prev) return prev;
+      const presets = renameCaptureTagPreset(
+        prev.settings.captureTagPresets,
+        prev.settings.language,
+        fromLabel,
+        toNorm
+      );
+      const tagColors = { ...(prev.settings.tagColors ?? {}) };
+      const oldColor = tagColors[fromKey];
+      if (oldColor) {
+        tagColors[toKey] = oldColor;
+        delete tagColors[fromKey];
+      }
+      const bundles = prev.bundles.map((bundle) => {
+        let changed = false;
+        const pages = bundle.pages.map((page) => {
+          if (!page.tags?.length) return page;
+          let pageChanged = false;
+          const tags = page.tags.map((tg) => {
+            if (normalizeCaptureTagLabel(tg).toLowerCase() === fromKey) {
+              pageChanged = true;
+              return toNorm;
+            }
+            return tg;
+          });
+          if (!pageChanged) return page;
+          changed = true;
+          return { ...page, tags };
+        });
+        return changed ? { ...bundle, pages } : bundle;
+      });
+      const captureTagPresets = mergeCaptureTagPresets(presets, prev.settings.language, toNorm);
+      return {
+        ...prev,
+        bundles,
+        settings: { ...prev.settings, captureTagPresets, tagColors },
+      };
+    });
+  }, []);
+
+  const addCaptureTagPreset = useCallback((label: string) => {
+    const normalized = normalizeCaptureTagLabel(label);
+    if (!normalized) return;
+    setData((prev) => {
+      if (!prev) return prev;
+      const captureTagPresets = mergeCaptureTagPresets(
+        prev.settings.captureTagPresets,
+        prev.settings.language,
+        normalized
+      );
+      return { ...prev, settings: { ...prev.settings, captureTagPresets } };
+    });
+  }, []);
+
   /** Delete a tag: remove it from presets, every photo, and its saved color. */
   const removeCaptureTag = useCallback((label: string) => {
     const key = normalizeCaptureTagLabel(label).toLowerCase();
@@ -1471,6 +1536,8 @@ export function AppProvider({
       updateSettings,
       setTagColor,
       setTagColorFor,
+      renameCaptureTag,
+      addCaptureTagPreset,
       removeCaptureTag,
       getSchedule,
       syncCloud,
@@ -1552,6 +1619,8 @@ export function AppProvider({
     updateSettings,
     setTagColor,
     setTagColorFor,
+    renameCaptureTag,
+    addCaptureTagPreset,
     removeCaptureTag,
     getSchedule,
     syncCloud,

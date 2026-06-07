@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Modal,
@@ -7,13 +7,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle } from 'react-native-svg';
 
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
+import { TagColorModal } from '@/components/tags/TagColorModal';
 import { theme } from '@/constants/theme';
 import {
   canDeleteCaptureTagPreset,
@@ -22,7 +21,7 @@ import {
 } from '@/lib/domain/capture-tags';
 import type { Language } from '@/lib/domain/types';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
-import { FREE_TAG_COLORS, resolveTagColorFor } from '@/lib/ui/tag-colors';
+import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 
 type Props = {
   presets: string[];
@@ -42,137 +41,6 @@ type Props = {
   onRequirePremium?: () => void;
   disabled?: boolean;
 };
-
-/** Accepts `#abc`, `abc`, `#aabbcc`, `aabbcc` → normalized `#aabbcc`, else null. */
-function normalizeHexColor(input: string): string | null {
-  const raw = input.trim().replace(/^#/, '').toLowerCase();
-  if (/^[0-9a-f]{3}$/.test(raw)) {
-    return `#${raw[0]}${raw[0]}${raw[1]}${raw[1]}${raw[2]}${raw[2]}`;
-  }
-  if (/^[0-9a-f]{6}$/.test(raw)) return `#${raw}`;
-  return null;
-}
-
-function TagColorModal({
-  visible,
-  tag,
-  current,
-  isPro,
-  title,
-  freeLabel,
-  customLabel,
-  customHint,
-  applyLabel,
-  cancelLabel,
-  onPick,
-  onRequirePremium,
-  onClose,
-}: {
-  visible: boolean;
-  tag: string;
-  current: string;
-  isPro: boolean;
-  title: string;
-  freeLabel: string;
-  customLabel: string;
-  customHint: string;
-  applyLabel: string;
-  cancelLabel: string;
-  onPick: (color: string) => void;
-  onRequirePremium: () => void;
-  onClose: () => void;
-}) {
-  const insets = useSafeAreaInsets();
-  const [hex, setHex] = useState('');
-  useEffect(() => {
-    if (visible) setHex(current.replace(/^#/, '').toUpperCase());
-  }, [visible, current]);
-  const normalizedHex = normalizeHexColor(hex);
-  const renderSwatch = (color: string, locked: boolean) => {
-    const selected = color.toLowerCase() === current.toLowerCase();
-    return (
-      <Pressable
-        key={color}
-        onPress={() => (locked ? onRequirePremium() : onPick(color))}
-        style={modalStyles.swatch}>
-        <Svg key={color} width={40} height={40} viewBox="0 0 40 40">
-          <Circle
-            cx={20}
-            cy={20}
-            r={18}
-            fill={color}
-            stroke={selected ? theme.black : 'transparent'}
-            strokeWidth={selected ? 3 : 0}
-          />
-        </Svg>
-      </Pressable>
-    );
-  };
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={modalStyles.backdrop} onPress={onClose}>
-        <Pressable
-          style={[modalStyles.card, { marginBottom: Math.max(24, insets.bottom) }]}
-          onPress={() => {}}>
-          <Text style={modalStyles.title}>{title}</Text>
-          {tag ? (
-            <View style={modalStyles.tagPill}>
-              <Text style={modalStyles.tagPillText}>{tag}</Text>
-            </View>
-          ) : null}
-
-          <Text style={modalStyles.sectionLabel}>{freeLabel}</Text>
-          <View style={modalStyles.swatchGrid}>
-            {FREE_TAG_COLORS.map((color) => renderSwatch(color, false))}
-          </View>
-
-          <Text style={modalStyles.sectionLabel}>{customLabel}</Text>
-          {isPro ? (
-            <View style={modalStyles.customRow}>
-              <View style={modalStyles.customPreview}>
-                <Svg
-                  key={normalizedHex ?? current}
-                  width={36}
-                  height={36}
-                  viewBox="0 0 36 36">
-                  <Circle cx={18} cy={18} r={17} fill={normalizedHex ?? current} />
-                </Svg>
-              </View>
-              <View style={modalStyles.hexField}>
-                <Text style={modalStyles.hexHash}>#</Text>
-                <TextInput
-                  style={modalStyles.hexInput}
-                  value={hex}
-                  onChangeText={(v) => setHex(v.replace(/[^0-9a-fA-F]/g, '').slice(0, 6))}
-                  onSubmitEditing={() => normalizedHex && onPick(normalizedHex)}
-                  placeholder="FF8800"
-                  placeholderTextColor={theme.grayMuted}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                  maxLength={6}
-                />
-              </View>
-              <Pressable
-                disabled={!normalizedHex}
-                onPress={() => normalizedHex && onPick(normalizedHex)}
-                style={[modalStyles.applyBtn, !normalizedHex && modalStyles.applyBtnOff]}>
-                <Text style={modalStyles.applyBtnText}>{applyLabel}</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable style={modalStyles.customLocked} onPress={onRequirePremium}>
-              <Text style={modalStyles.customLockedText}>{customHint}</Text>
-            </Pressable>
-          )}
-
-          <Pressable style={[modalStyles.btn, modalStyles.btnCancel]} onPress={onClose}>
-            <Text style={modalStyles.btnCancelText}>{cancelLabel}</Text>
-          </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
 
 function CaptureTagDeleteModal({
   visible,
@@ -517,98 +385,6 @@ const modalStyles = StyleSheet.create({
     borderColor: theme.grayLight,
   },
   tagPillText: { fontWeight: '800', color: theme.black, fontSize: theme.font.body },
-  sectionLabel: {
-    alignSelf: 'flex-start',
-    fontSize: theme.font.caption,
-    fontWeight: '700',
-    color: theme.graySecondary,
-    marginTop: 12,
-    marginBottom: 2,
-  },
-  swatchGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 4,
-  },
-  swatch: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  swatchOn: {
-    borderColor: theme.black,
-  },
-  customRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    width: '100%',
-    paddingVertical: 4,
-  },
-  customPreview: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hexField: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    backgroundColor: theme.surface,
-  },
-  hexHash: {
-    color: theme.grayMuted,
-    fontWeight: '800',
-    fontSize: theme.font.body,
-  },
-  hexInput: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingLeft: 2,
-    color: theme.black,
-    fontSize: theme.font.body,
-    fontWeight: '700',
-    letterSpacing: 1,
-    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null),
-  },
-  applyBtn: {
-    backgroundColor: theme.orange,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  applyBtnOff: {
-    backgroundColor: theme.grayLight,
-  },
-  applyBtnText: {
-    ...BUTTON_LABEL_EMPHASIS,
-    color: theme.onAccent,
-  },
-  customLocked: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    borderStyle: 'dashed',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  customLockedText: {
-    color: theme.graySecondary,
-    fontWeight: '700',
-    fontSize: theme.font.bodySmall,
-  },
   actions: {
     flexDirection: 'row',
     gap: 10,
