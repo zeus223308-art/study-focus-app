@@ -1,77 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="app-build" content="95cd6944c5f9c4ccb1f831da6ffc1dbfcaff83f3"><script>(function(){try{var c="95cd6944c5f9c4ccb1f831da6ffc1dbfcaff83f3";fetch("/study-focus-app/version.json?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r&&r.ok?r.json():null;}).then(function(j){if(!j||!j.build||j.build===c)return;var k="app-build-reloaded";if(sessionStorage.getItem(k)===j.build)return;sessionStorage.setItem(k,j.build);var u=new URL(location.href);u.searchParams.set("u",j.build);location.replace(u.toString());}).catch(function(){});}catch(e){}})();</script><script data-legacy-safari-polyfill="1">/** Inline in index.html before app bundle — iPhone 7 / iOS 12–15 Safari. Keep in sync with +html.tsx. */
-(function () {
-  var g =
-    typeof globalThis !== 'undefined'
-      ? globalThis
-      : typeof window !== 'undefined'
-        ? window
-        : this;
-  if (typeof g.globalThis === 'undefined') g.globalThis = g;
-
-  if (typeof Object.hasOwn !== 'function') {
-    Object.hasOwn = function (obj, prop) {
-      return Object.prototype.hasOwnProperty.call(obj, prop);
-    };
-  }
-
-  if (typeof g.structuredClone !== 'function') {
-    g.structuredClone = function (val) {
-      if (val === undefined) return val;
-      if (typeof val === 'function') return val;
-      return JSON.parse(JSON.stringify(val));
-    };
-  }
-
-  if (!Array.prototype.at) {
-    Array.prototype.at = function (n) {
-      var len = this.length;
-      var i = Math.trunc(Number(n)) || 0;
-      if (i < 0) i += len;
-      return i < 0 || i >= len ? undefined : this[i];
-    };
-  }
-
-  if (!String.prototype.at) {
-    String.prototype.at = function (n) {
-      var len = this.length;
-      var i = Math.trunc(Number(n)) || 0;
-      if (i < 0) i += len;
-      return i < 0 || i >= len ? undefined : this[i];
-    };
-  }
-
-  if (typeof Promise.withResolvers !== 'function') {
-    Promise.withResolvers = function () {
-      var resolve, reject;
-      var promise = new Promise(function (res, rej) {
-        resolve = res;
-        reject = rej;
-      });
-      return { promise: promise, resolve: resolve, reject: reject };
-    };
-  }
-
-  if (!Array.prototype.findLast) {
-    Array.prototype.findLast = function (fn, thisArg) {
-      for (var i = this.length - 1; i >= 0; i--) {
-        if (fn.call(thisArg, this[i], i, this)) return this[i];
-      }
-      return undefined;
-    };
-  }
-
-  if (!Array.prototype.findLastIndex) {
-    Array.prototype.findLastIndex = function (fn, thisArg) {
-      for (var i = this.length - 1; i >= 0; i--) {
-        if (fn.call(thisArg, this[i], i, this)) return i;
-      }
-      return -1;
-    };
-  }
-})();
-</script><script data-ms-base-path="1">(function(){try{var p=location.pathname||"";if(p.indexOf("/study-focus-app")!==0){location.replace("/study-focus-app/"+(location.search||"")+(location.hash||""));}}catch(e){}})();</script><style data-web-mobile-shell="1">html,body,#root{height:100%;margin:0;padding:0;width:100%;max-width:100%;overflow-x:hidden;box-sizing:border-box}html{color-scheme:light;-webkit-text-size-adjust:100%;text-size-adjust:100%}body{background-color:#F9F8F6;overflow-x:hidden;touch-action:manipulation;-webkit-touch-callout:none;min-height:100%;min-height:-webkit-fill-available}#root{display:flex;flex-direction:column;flex:1;min-height:100%;min-height:-webkit-fill-available;overflow-x:hidden}[data-subject-carousel="scroll"]{touch-action:pan-x!important;-webkit-overflow-scrolling:touch;overflow-x:auto!important;overflow-y:hidden!important}[data-recall-canvas="1"],[data-hold-drag="active"]{touch-action:none!important;-webkit-user-select:none!important;user-select:none!important}</style>
+  <head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="app-build" content="5774a6cb382eb389b11c9da8e8e095227120f468"><script>(function(){try{var c="5774a6cb382eb389b11c9da8e8e095227120f468";fetch("/study-focus-app/version.json?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r&&r.ok?r.json():null;}).then(function(j){if(!j||!j.build||j.build===c)return;var k="app-build-reloaded";if(sessionStorage.getItem(k)===j.build)return;sessionStorage.setItem(k,j.build);var u=new URL(location.href);u.searchParams.set("u",j.build);location.replace(u.toString());}).catch(function(){});}catch(e){}})();</script>
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
@@ -98,98 +27,15 @@
 <meta name="description" content="암기·복습 플래시카드 앱 — 웹에서 미리보기">
 <link rel="icon" href="/study-focus-app/favicon.ico" /></head>
 
-  <body><div id="ms-boot" style="position:fixed;inset:0;z-index:2147483647;background:#F9F8F6;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,system-ui,sans-serif;color:#1a1a1a;text-align:center;padding:24px"><div style="font-size:18px;font-weight:700;margin-bottom:8px">MemorySherpa</div><div id="ms-boot-msg" style="font-size:14px;color:#666;line-height:1.5;max-width:280px">Loading…</div><button id="ms-boot-retry" type="button" style="display:none;margin-top:20px;padding:12px 20px;font-size:15px;font-weight:600;border:none;border-radius:10px;background:#FF6B00;color:#fff" onclick="location.reload()">Refresh</button></div><script data-ms-boot="1">(function(){
-  var msgEl=null;
-  var phase="boot";
-  var timerIds=[];
-  function msg(t){if(!msgEl)msgEl=document.getElementById("ms-boot-msg");if(msgEl)msgEl.textContent=t;}
-  function dismiss(){var el=document.getElementById("ms-boot");if(el)el.remove();}
-  function rootHasContent(){var r=document.getElementById("root");return !!(r&&r.childNodes&&r.childNodes.length);}
-  function setPhase(next,text){
-    if(phase==="error"||phase==="done")return;
-    var rank={boot:0,download:1,start:2};
-    if((rank[next]||0)<(rank[phase]||0))return;
-    phase=next;
-    msg(text);
-  }
-  function clearTimers(){timerIds.forEach(clearTimeout);timerIds=[];}
-  window.__MS_DISMISS_BOOT=dismiss;
-  window.__MS_BOOT_SET_PHASE=setPhase;
-  window.addEventListener("error",function(e){
-    phase="error";
-    clearTimers();
-    var m=(e&&e.message)||"Unknown error";
-    msg("Unable to start: "+String(m).slice(0,120));
-  });
-  window.addEventListener("unhandledrejection",function(e){
-    phase="error";
-    clearTimers();
-    var r=e&&e.reason;
-    var m=(r&&r.message)||String(r||"");
-    msg("Unable to start: "+String(m).slice(0,120));
-  });
-  setPhase("boot","Loading…");
-  timerIds.push(setTimeout(function(){
-    if(phase!=="boot")return;
-    setPhase("download","Downloading app (first visit only)…");
-  },4000));
-  timerIds.push(setTimeout(function(){
-    if(phase!=="boot"&&phase!=="download")return;
-    msg("Still downloading… Wi‑Fi recommended.");
-  },20000));
-  timerIds.push(setTimeout(function(){
-    if(phase!=="start")return;
-    msg("Starting app… first visit on iPhone 7 can take 1–2 min.");
-  },15000));
-  timerIds.push(setTimeout(function(){
-    if(phase==="done"||phase==="error")return;
-    var btn=document.getElementById("ms-boot-retry");
-    if(btn)btn.style.display="inline-block";
-    msg("Taking longer than usual. Tap Refresh — the second load is usually instant.");
-  },90000));
-  var poll=setInterval(function(){
-    if(window.__MS_SPLASH_MOUNTED||window.__MS_BOOT_DISMISS){
-      phase="done";
-      clearTimers();
-      clearInterval(poll);
-      dismiss();
-    }
-  },400);
-  setTimeout(function(){clearInterval(poll);},180000);
-})();</script>
+  <body>
     <!-- Use static rendering with Expo Router to support running without JavaScript. -->
     <noscript>
       You need to enable JavaScript to run this app.
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
-  <script src="/study-focus-app/_expo/static/js/web/entry-1ada0ebd9d695f3f1af91a83fc84a4d8.js" defer></script>
-<script data-ms-script-loader="1">(function(){
-  var scripts=document.querySelectorAll("script[src][defer]");
-  if(!scripts.length)return;
-  var el=scripts[scripts.length-1];
-  var src=el.getAttribute("src");
-  if(!src||el.getAttribute("data-ms-wrapped"))return;
-  el.parentNode.removeChild(el);
-  var s=document.createElement("script");
-  s.src=src;
-  s.defer=true;
-  s.setAttribute("data-ms-wrapped","1");
-  s.onerror=function(){
-    var m=document.getElementById("ms-boot-msg");
-    if(m)m.textContent="Failed to download app. Check connection and refresh.";
-  };
-  s.onload=function(){
-    window.__MS_SCRIPT_LOADED=Date.now();
-    if(window.__MS_BOOT_SET_PHASE){
-      window.__MS_BOOT_SET_PHASE("start","Starting app…");
-    }else{
-      var m=document.getElementById("ms-boot-msg");
-      if(m)m.textContent="Starting app…";
-    }
-  };
-  document.body.appendChild(s);
-})();</script></body>
+  <script src="/study-focus-app/_expo/static/js/web/entry-c82bf4d8d0cf78a57d82c0ba91dfb100.js" defer></script>
+</body>
 </html>
 
-<!-- deploy 2026-06-08T13:39:51.346Z 95cd6944c5f9c4ccb1f831da6ffc1dbfcaff83f3 -->
+<!-- deploy 2026-06-08T13:51:24.518Z 5774a6cb382eb389b11c9da8e8e095227120f468 -->
