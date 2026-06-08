@@ -21,6 +21,7 @@ import { SymbolView } from 'expo-symbols';
 import { CalendarTagDots } from '@/components/dashboard/CalendarTagDots';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
+import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { buildReviewMarkForDate } from '@/lib/domain/ribbon';
 import type { DateRibbonMark } from '@/lib/domain/types';
@@ -109,11 +110,25 @@ export function DashboardCalendar({
   const canGoNextMonth = monthStart < startOfMonth(horizonDate);
 
   const monthLabel = formatMonthTitle(viewMonth, language);
+  const selectedMonth = startOfMonth(parseISO(`${selectedDate}T12:00:00`));
+  const selectedInViewMonth = isSameMonth(selectedMonth, monthStart);
+  const selectedDateHeading = useMemo(
+    () =>
+      formatStudyDateHeading(selectedDate, language, {
+        today: t('dashboard.calendarJumpToday'),
+        yesterday: t('folder.dateYesterday'),
+      }),
+    [language, selectedDate, t]
+  );
   const selectedMark = markMap[selectedDate];
   const dueSummary =
     selectedMark && selectedMark.bundleCount > 0
       ? t('dashboard.calendarDueCount', { count: selectedMark.bundleCount })
       : t('dashboard.calendarNoDue');
+
+  const jumpToSelectedMonth = () => {
+    setViewMonth(selectedMonth);
+  };
 
   const statusColor = (status: DateRibbonMark['status'] | undefined) => {
     switch (status) {
@@ -142,7 +157,36 @@ export function DashboardCalendar({
     <View style={[styles.wrap, compact && styles.wrapCompact, theme.cardShadow]}>
       <View style={styles.titleBlock}>
         <Text style={styles.title}>{t('dashboard.calendarTitle')}</Text>
+        <View style={styles.selectedRow}>
+          <View style={styles.selectedPill}>
+            <Text style={styles.selectedPillText}>
+              {t('dashboard.calendarSelected', { date: selectedDateHeading })}
+            </Text>
+          </View>
+          {selectedDate !== localToday ? (
+            <Pressable
+              onPress={() => onSelectDate(localToday)}
+              hitSlop={8}
+              accessibilityLabel={t('dashboard.calendarJumpToday')}
+              style={styles.todayBtn}>
+              <Text style={styles.todayBtnText}>{t('dashboard.calendarJumpToday')}</Text>
+            </Pressable>
+          ) : null}
+        </View>
         <Text style={styles.dueSummary}>{dueSummary}</Text>
+        {!selectedInViewMonth ? (
+          <Pressable
+            onPress={jumpToSelectedMonth}
+            hitSlop={8}
+            accessibilityLabel={t('dashboard.calendarShowSelected', {
+              date: selectedDateHeading,
+            })}
+            style={styles.showSelectedBtn}>
+            <Text style={styles.showSelectedText}>
+              {t('dashboard.calendarShowSelected', { date: selectedDateHeading })}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.monthNav}>
@@ -197,18 +241,23 @@ export function DashboardCalendar({
               key={key}
               disabled={!selectable}
               onPress={() => onSelectDate(key)}
+              accessibilityRole="button"
+              accessibilityState={{ selected, disabled: !selectable }}
+              accessibilityLabel={key}
               style={[
                 styles.cell,
                 compact && styles.cellCompact,
                 !inMonth && styles.cellDim,
-                isFuture && inMonth && styles.cellFuture,
+                isFuture && inMonth && !selected && styles.cellFuture,
                 !selectable && !isFuture && styles.cellDisabled,
+                selected && styles.cellSelectedOuter,
               ]}>
               <View
                 style={[
                   styles.cellInner,
                   selected && styles.cellSelected,
                   isToday && !selected && styles.cellToday,
+                  isToday && selected && styles.cellSelectedToday,
                 ]}>
                 <Text
                   style={[
@@ -225,7 +274,12 @@ export function DashboardCalendar({
                     <View
                       style={[
                         styles.dot,
-                        { backgroundColor: statusColor(mark.status) },
+                        selected && styles.dotSelected,
+                        {
+                          backgroundColor: selected
+                            ? theme.onAccent
+                            : statusColor(mark.status),
+                        },
                       ]}
                     />
                   )
@@ -257,8 +311,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 10,
   },
-  titleBlock: { gap: 4, marginBottom: 10 },
+  titleBlock: { gap: 6, marginBottom: 10 },
   title: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
+  selectedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  selectedPill: {
+    backgroundColor: theme.orange,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.orange,
+  },
+  selectedPillText: {
+    fontSize: theme.font.caption,
+    fontWeight: '800',
+    color: theme.onAccent,
+  },
+  todayBtn: {
+    minHeight: 32,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    justifyContent: 'center',
+  },
+  todayBtnText: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.gray,
+  },
+  showSelectedBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 2,
+  },
+  showSelectedText: {
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    color: theme.orange,
+    textDecorationLine: 'underline',
+  },
   dueSummary: { fontSize: theme.font.caption, fontWeight: '700', color: theme.graySecondary },
   monthNav: {
     flexDirection: 'row',
@@ -298,17 +395,32 @@ const styles = StyleSheet.create({
   cellDim: { opacity: 0.35 },
   cellFuture: { opacity: 0.72 },
   cellDisabled: { opacity: 0.25 },
+  cellSelectedOuter: {
+    borderWidth: 2,
+    borderColor: theme.orange,
+    borderRadius: 10,
+    opacity: 1,
+  },
   cellInner: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
   },
-  cellSelected: { backgroundColor: theme.orange },
+  cellSelected: {
+    backgroundColor: theme.orange,
+    borderWidth: 1,
+    borderColor: theme.orange,
+  },
+  cellSelectedToday: {
+    borderWidth: 2,
+    borderColor: theme.black,
+  },
   cellToday: { borderWidth: 1, borderColor: theme.orange },
   dayNum: { fontSize: theme.font.caption, fontWeight: '600', color: theme.black },
   dayNumSelected: { color: theme.onAccent, fontWeight: '800' },
   dayDue: { fontWeight: '800' },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
+  dotSelected: { borderWidth: 1, borderColor: theme.grayLight },
   dotPlaceholder: { width: 5, height: 5, marginTop: 2 },
 });
