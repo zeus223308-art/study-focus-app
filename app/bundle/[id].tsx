@@ -8,7 +8,9 @@ import { BundlePhotoBlock } from '@/components/bundle/BundlePhotoBlock';
 import { PhotoCropModal } from '@/components/bundle/PhotoCropModal';
 import { PhotoMemoEditorModal } from '@/components/bundle/PhotoMemoEditorModal';
 import { ProblemPhotoModal } from '@/components/bundle/ProblemPhotoModal';
+import { RestoreDateChoiceSheet } from '@/components/files/RestoreDateChoiceSheet';
 import { Button } from '@/components/ui/Button';
+import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { CaptureTagPicker } from '@/components/capture/CaptureTagPicker';
 import { NotFoundView } from '@/components/ui/NotFoundView';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -54,6 +56,7 @@ export default function BundleScreen() {
   const router = useRouter();
   const {
     data,
+    localToday,
     storage,
     updateBundle,
     updateSettings,
@@ -62,6 +65,7 @@ export default function BundleScreen() {
     setPaywallVisible,
     archiveBundle,
     unarchiveBundle,
+    changeBundleStudyDate,
     moveBundleToTrash,
     deletePage,
     applyLayerCycleChoice,
@@ -83,6 +87,7 @@ export default function BundleScreen() {
   const [cropUri, setCropUri] = useState('');
   const [cropSide, setCropSide] = useState<'front' | 'back'>('front');
   const [archivePickerOpen, setArchivePickerOpen] = useState(false);
+  const [restoreDateOpen, setRestoreDateOpen] = useState(false);
   const [memoOpen, setMemoOpen] = useState(false);
   const [memoSide, setMemoSide] = useState<'front' | 'back'>('front');
   const [undoStack, setUndoStack] = useState<NoteLayer['strokes'][]>([]);
@@ -352,7 +357,16 @@ export default function BundleScreen() {
         showSettings={false}
       />
       <View style={styles.titleBlock}>
-        <Text style={styles.studyDateLine}>{bundle.studyDate}</Text>
+        <Text style={styles.changeDateLabel}>{t('capture.changeDate')}</Text>
+        <StudyDateStepper
+          studyDate={bundle.studyDate}
+          onChange={(next) => {
+            changeBundleStudyDate(bundle.id, next);
+            showMessage('', t('folder.dateChanged'));
+          }}
+          firstLaunchDate={data.settings.firstLaunchDate}
+        />
+        <Text style={styles.changeDateHint}>{t('item.changeDateHint')}</Text>
         <CaptureTagPicker
           presets={tagPresets}
           selectedTags={page?.tags ?? []}
@@ -433,11 +447,11 @@ export default function BundleScreen() {
         style={{ marginTop: 8 }}
       />
       <Button
-        label={t('item.archive')}
+        label={bundle.archived ? t('folder.restoreFromArchive') : t('item.archive')}
         variant="secondary"
         onPress={() => {
           if (bundle.archived) {
-            unarchiveBundle(bundle.id);
+            setRestoreDateOpen(true);
             return;
           }
           setArchivePickerOpen(true);
@@ -506,6 +520,21 @@ export default function BundleScreen() {
         onClose={() => setCropOpen(false)}
       />
 
+      <RestoreDateChoiceSheet
+        visible={restoreDateOpen}
+        onClose={() => setRestoreDateOpen(false)}
+        onRestoreToday={() => {
+          unarchiveBundle(bundle.id, { studyDate: localToday });
+          setRestoreDateOpen(false);
+          showMessage('', t('folder.restoredCount', { count: 1 }));
+        }}
+        onRestoreKeepDate={() => {
+          unarchiveBundle(bundle.id);
+          setRestoreDateOpen(false);
+          showMessage('', t('folder.restoredCount', { count: 1 }));
+        }}
+      />
+
       <ArchiveSubjectPickerModal
         visible={archivePickerOpen}
         subjects={data.subjects}
@@ -530,10 +559,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.grayLight,
   },
-  studyDateLine: {
+  changeDateLabel: {
     fontSize: theme.font.caption,
     fontWeight: '700',
-    color: theme.orange,
+    color: theme.graySecondary,
+    marginBottom: 4,
+  },
+  changeDateHint: {
+    marginTop: 6,
+    fontSize: theme.font.label,
+    color: theme.grayMuted,
+    lineHeight: 16,
   },
   photosColumn: {
     width: '100%',

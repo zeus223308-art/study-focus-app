@@ -21,6 +21,7 @@ import {
   removeCaptureTagPreset,
   renameCaptureTagPreset,
 } from '@/lib/domain/capture-tags';
+import { changeBundleStudyDateInData } from '@/lib/domain/change-bundle-date';
 import { applyMonthlyCustomizationReset } from '@/lib/domain/customization-reset';
 import { todayKey } from '@/lib/domain/dates';
 import {
@@ -144,7 +145,8 @@ type AppContextValue = {
   updateBundle: (id: string, patch: Partial<NoteBundle>) => void;
   completeReview: (bundleId: string) => void;
   archiveBundle: (id: string) => void;
-  unarchiveBundle: (id: string) => void;
+  unarchiveBundle: (id: string, options?: { studyDate?: string }) => void;
+  changeBundleStudyDate: (bundleId: string, studyDate: string) => void;
   moveBundleToTrash: (id: string) => void;
   deletePage: (bundleId: string, pageId: string) => void;
   restoreTrash: (trashId: string) => void;
@@ -826,9 +828,37 @@ export function AppProvider({
     updateBundle(id, { archived: true, archivedAt: new Date().toISOString() });
   }, [updateBundle]);
 
-  const unarchiveBundle = useCallback((id: string) => {
-    updateBundle(id, { archived: false, archivedAt: null });
-  }, [updateBundle]);
+  const unarchiveBundle = useCallback(
+    (id: string, options?: { studyDate?: string }) => {
+      const prev = dataRef.current;
+      if (!prev) return;
+      let next = prev;
+      if (options?.studyDate) {
+        const changed = changeBundleStudyDateInData(next, id, options.studyDate);
+        if (!changed) return;
+        next = changed;
+      }
+      persist({
+        ...next,
+        bundles: next.bundles.map((b) =>
+          b.id === id
+            ? { ...b, archived: false, archivedAt: null, updatedAt: new Date().toISOString() }
+            : b
+        ),
+      });
+    },
+    [persist]
+  );
+
+  const changeBundleStudyDate = useCallback(
+    (bundleId: string, studyDate: string) => {
+      const prev = dataRef.current;
+      if (!prev) return;
+      const next = changeBundleStudyDateInData(prev, bundleId, studyDate);
+      if (next && next !== prev) persist(next);
+    },
+    [persist]
+  );
 
   const moveBundleToTrash = useCallback(
     (id: string) => {
@@ -1577,6 +1607,7 @@ export function AppProvider({
       completeReview,
       archiveBundle,
       unarchiveBundle,
+      changeBundleStudyDate,
       moveBundleToTrash,
       deletePage,
       restoreTrash,
@@ -1662,6 +1693,7 @@ export function AppProvider({
     completeReview,
     archiveBundle,
     unarchiveBundle,
+    changeBundleStudyDate,
     moveBundleToTrash,
     deletePage,
     restoreTrash,

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 
 import { FolderPhotoActionBar } from '@/components/files/FolderPhotoActionBar';
+import { RestoreDateChoiceSheet } from '@/components/files/RestoreDateChoiceSheet';
 import { Button } from '@/components/ui/Button';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
@@ -107,7 +108,7 @@ function ArchivePhotoGrid({
 export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }: Props) {
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { data, unarchiveBundle, deletePage } = useApp();
+  const { data, localToday, unarchiveBundle, deletePage } = useApp();
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
 
@@ -115,6 +116,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
   const [previewSide, setPreviewSide] = useState<'front' | 'back'>('front');
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [restorePromptIds, setRestorePromptIds] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!visible) {
@@ -122,6 +124,7 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
       setPreviewSide('front');
       setSelectMode(false);
       setSelectedKeys(new Set());
+      setRestorePromptIds(null);
     }
   }, [visible]);
 
@@ -176,19 +179,29 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
     });
   }, []);
 
+  const closePreview = useCallback(() => {
+    setPreviewItem(null);
+    setPreviewSide('front');
+  }, []);
+
+  const finishRestore = useCallback(
+    (bundleIds: string[], useTodayDate: boolean) => {
+      for (const bid of bundleIds) {
+        unarchiveBundle(bid, useTodayDate ? { studyDate: localToday } : undefined);
+      }
+      setRestorePromptIds(null);
+      exitSelect();
+      closePreview();
+      showMessage('', t('folder.restoredCount', { count: bundleIds.length }));
+    },
+    [closePreview, exitSelect, localToday, t, unarchiveBundle]
+  );
+
   const restoreSelected = useCallback(() => {
     if (selectedKeys.size === 0) return;
-    const bundleIds = new Set<string>();
-    for (const key of selectedKeys) {
-      bundleIds.add(key.split(':')[0]!);
-    }
-    for (const bid of bundleIds) {
-      unarchiveBundle(bid);
-    }
-    const count = bundleIds.size;
-    exitSelect();
-    showMessage('', t('folder.restoredCount', { count }));
-  }, [exitSelect, selectedKeys, t, unarchiveBundle]);
+    const bundleIds = [...new Set([...selectedKeys].map((key) => key.split(':')[0]!))];
+    setRestorePromptIds(bundleIds);
+  }, [selectedKeys]);
 
   const openPreview = (item: SubjectProblemItem) => {
     if (selectMode) return;
@@ -196,15 +209,9 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
     setPreviewItem(item);
   };
 
-  const closePreview = () => {
-    setPreviewItem(null);
-    setPreviewSide('front');
-  };
-
   const restoreFromPreview = () => {
     if (!previewItem) return;
-    unarchiveBundle(previewItem.bundleId);
-    closePreview();
+    setRestorePromptIds([previewItem.bundleId]);
   };
 
   const confirmDeleteFromPreview = () => {
@@ -375,6 +382,17 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
           </View>
         )}
       </View>
+
+      <RestoreDateChoiceSheet
+        visible={restorePromptIds != null && restorePromptIds.length > 0}
+        onClose={() => setRestorePromptIds(null)}
+        onRestoreToday={() => {
+          if (restorePromptIds) finishRestore(restorePromptIds, true);
+        }}
+        onRestoreKeepDate={() => {
+          if (restorePromptIds) finishRestore(restorePromptIds, false);
+        }}
+      />
     </Modal>
   );
 }
