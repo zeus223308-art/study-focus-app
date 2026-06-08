@@ -15,14 +15,18 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
-import { computeVaultFolderTileWidth, VAULT_TILE_HEIGHT } from '@/lib/ui/viewport-layout';
+import {
+  computeVaultFolderTileWidth,
+  useViewportLayout,
+  vaultPanelPad,
+  VAULT_TILE_HEIGHT,
+} from '@/lib/ui/viewport-layout';
 
 type CarouselSlot =
   | { key: string; kind: 'subject'; subject: SubjectFolder }
   | { key: string; kind: 'add' };
 
 const TILE_GAP = 14;
-const PANEL_PAD = 14;
 const REORDER_EDGE_PX = 52;
 const REORDER_SCROLL_STEP = 22;
 
@@ -81,6 +85,8 @@ export function SubjectFilesCarousel({
   const [listScrollEnabled, setListScrollEnabled] = useState(true);
 
   const { reorderingSubjectId, bumpSubjectReorderMeasure } = useApp();
+  const viewport = useViewportLayout();
+  const panelPad = vaultPanelPad(viewport.isPhone);
 
   const subjects = useMemo(() => pages.flat(), [pages]);
 
@@ -97,8 +103,8 @@ export function SubjectFilesCarousel({
   }, [addFolderLabel, onAddFolder, subjects]);
 
   const tileWidth = useMemo(
-    () => computeVaultFolderTileWidth(pageWidth, foldersPerPage),
-    [pageWidth, foldersPerPage]
+    () => computeVaultFolderTileWidth(pageWidth, foldersPerPage, panelPad),
+    [pageWidth, foldersPerPage, panelPad]
   );
 
   const slotWidth = tileWidth + TILE_GAP;
@@ -106,8 +112,8 @@ export function SubjectFilesCarousel({
   const slotCount = subjects.length + (onAddFolder ? 1 : 0);
 
   const updateMaxScroll = useCallback(() => {
-    maxScrollXRef.current = Math.max(0, slotCount * slotWidth - pageWidth + PANEL_PAD * 2);
-  }, [pageWidth, slotCount, slotWidth]);
+    maxScrollXRef.current = Math.max(0, slotCount * slotWidth - pageWidth + panelPad * 2);
+  }, [pageWidth, slotCount, slotWidth, panelPad]);
 
   useEffect(() => {
     updateMaxScroll();
@@ -193,7 +199,7 @@ export function SubjectFilesCarousel({
     setListScrollEnabled(false);
     const idx = subjects.findIndex((s) => s.id === reorderingSubjectId);
     if (idx >= 0) {
-      scrollToX(Math.max(0, idx * slotWidth - PANEL_PAD));
+      scrollToX(Math.max(0, idx * slotWidth - panelPad));
     }
     bumpSubjectReorderMeasure();
   }, [
@@ -205,6 +211,7 @@ export function SubjectFilesCarousel({
     stopAutoScroll,
     subjects,
     slotCount,
+    panelPad,
   ]);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -282,7 +289,7 @@ export function SubjectFilesCarousel({
         renderItem={renderItem}
         scrollEventThrottle={16}
         onScroll={onScroll}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingHorizontal: panelPad }]}
         getItemLayout={(_, index) => ({
           length: slotWidth,
           offset: slotWidth * index,
@@ -300,7 +307,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   listContent: {
-    paddingHorizontal: PANEL_PAD,
     alignItems: 'flex-start',
     paddingBottom: 2,
   },
@@ -309,7 +315,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   empty: {
-    paddingHorizontal: PANEL_PAD,
     fontSize: theme.font.body,
     fontWeight: '600',
     color: theme.gray,

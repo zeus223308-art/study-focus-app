@@ -18,10 +18,9 @@ import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 import {
   computeVaultFoldersPerPage,
   useViewportLayout,
+  vaultPanelPad,
   VAULT_TILE_HEIGHT,
 } from '@/lib/ui/viewport-layout';
-
-const PANEL_PAD = 14;
 
 export default function FilesScreen() {
   const { t } = useTranslation();
@@ -43,6 +42,7 @@ export default function FilesScreen() {
   } = useApp();
   const { width: windowWidth } = useWindowDimensions();
   const viewport = useViewportLayout();
+  const panelPad = vaultPanelPad(viewport.isPhone);
   const trash = useTrashContents();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
@@ -183,8 +183,8 @@ export default function FilesScreen() {
         <Text style={styles.moveBanner}>{t('vault.reorderDragHint')}</Text>
       ) : null}
 
-      <View style={styles.panel}>
-            <View style={styles.filesTopRow}>
+      <View style={[styles.panel, { paddingBottom: panelPad }]}>
+            <View style={[styles.filesTopRow, { paddingHorizontal: panelPad }]}>
               <Text style={styles.filesTitle}>{t('vault.title')}</Text>
               <Pressable onPress={() => router.push('/search')} hitSlop={8}>
                 <Text style={styles.headerAction}>{t('item.search')}</Text>
@@ -219,7 +219,9 @@ export default function FilesScreen() {
             </View>
 
             {subjectDeleteMode ? (
-              <Text style={styles.deleteHint}>{t('vault.deleteSubjectsHint')}</Text>
+              <Text style={[styles.deleteHint, { marginHorizontal: panelPad }]}>
+                {t('vault.deleteSubjectsHint')}
+              </Text>
             ) : null}
 
             <Pressable
@@ -303,7 +305,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: PANEL_PAD,
     paddingTop: 10,
     paddingBottom: 10,
     gap: 8,
@@ -320,7 +321,6 @@ const styles = StyleSheet.create({
   },
   panel: {
     borderRadius: theme.radius.sm,
-    paddingBottom: PANEL_PAD,
     backgroundColor: theme.surface,
     overflow: 'hidden',
   },
@@ -344,7 +344,6 @@ const styles = StyleSheet.create({
   save: { color: theme.orange, fontWeight: '800' },
   deleteHint: {
     marginTop: 14,
-    marginHorizontal: PANEL_PAD,
     fontSize: theme.font.caption,
     color: theme.gray,
     textAlign: 'center',

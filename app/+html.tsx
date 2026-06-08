@@ -81,8 +81,6 @@ html {
 body {
   background-color: #0A0A0A;
   overflow-x: hidden;
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
   box-sizing: border-box;
   touch-action: manipulation;
   -webkit-touch-callout: none;

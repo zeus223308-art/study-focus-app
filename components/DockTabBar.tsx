@@ -31,7 +31,7 @@ export function DockTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
   const { requestLeave, editorFullscreen } = useCaptureLeaveGuard();
-  const edgeGap = viewport.isPhone ? 16 : DOCK_EDGE_GAP;
+  const edgeGap = viewport.isPhone ? 12 : DOCK_EDGE_GAP;
 
   const currentRoute = state.routes[state.index]?.name;
   if (currentRoute === 'capture' && editorFullscreen) {

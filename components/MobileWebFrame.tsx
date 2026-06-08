@@ -55,8 +55,15 @@ export function MobileWebFrame({ children }: Props) {
   const showBezel = !useFullBleed && windowWidth > frameWidth + 48;
 
   return (
-    <View style={styles.shell}>
-      <View style={[styles.frame, { width: frameWidth }, showBezel && WEB_BEZEL]}>{children}</View>
+    <View style={[styles.shell, useFullBleed && styles.shellFullBleed]}>
+      <View
+        style={[
+          styles.frame,
+          useFullBleed ? styles.frameFullBleed : { width: frameWidth },
+          showBezel && WEB_BEZEL,
+        ]}>
+        {children}
+      </View>
     </View>
   );
 }
@@ -69,10 +76,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#2A2826',
     alignItems: 'center',
   },
+  shellFullBleed: {
+    alignItems: 'stretch',
+  },
   frame: {
     flex: 1,
     minHeight: 0,
     backgroundColor: theme.beige,
     overflow: 'hidden',
+  },
+  frameFullBleed: {
+    width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'stretch',
   },
 });

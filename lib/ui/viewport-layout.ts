@@ -61,6 +61,12 @@ export function computePagerSize(width: number, height: number, deviceClass: Dev
   return Math.round(Math.max(280, Math.min(cap, available)));
 }
 
+/** Files tab white panel inset — keep tight on phone to avoid horizontal clip on mobile web. */
+export function vaultPanelPad(isPhone: boolean): number {
+  return isPhone ? 8 : 14;
+}
+
+/** @deprecated Use vaultPanelPad(isPhone) — default for non-viewport call sites. */
 export const VAULT_PANEL_PAD = 14;
 export const VAULT_TILE_GAP = 14;
 export const VAULT_MIN_TILE_WIDTH = 72;
@@ -77,8 +83,12 @@ export function computeVaultFoldersPerPage(_pageWidth: number): number {
 }
 
 /** 금고 캐러셀 — 페이지에 과목 수가 적어도 타일 너비를 동일하게 유지 */
-export function computeVaultFolderTileWidth(pageWidth: number, foldersPerPage: number): number {
-  const inner = pageWidth - VAULT_PANEL_PAD * 2;
+export function computeVaultFolderTileWidth(
+  pageWidth: number,
+  foldersPerPage: number,
+  panelPad = VAULT_PANEL_PAD
+): number {
+  const inner = pageWidth - panelPad * 2;
   const gaps = Math.max(0, foldersPerPage - 1) * VAULT_TILE_GAP;
   return Math.floor((inner - gaps) / Math.max(1, foldersPerPage));
 }
@@ -181,12 +191,12 @@ export function useViewportLayout(): ViewportLayout {
 
     const horizontalPadding = isLandscape
       ? isPhone
-        ? 12
+        ? 8
         : deviceClass === 'tablet'
           ? 16
           : 20
       : isPhone
-        ? 12
+        ? 8
         : deviceClass === 'tablet'
           ? 24
           : 32;
