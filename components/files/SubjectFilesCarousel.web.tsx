@@ -298,7 +298,6 @@ const styles = StyleSheet.create({
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
-    alignSelf: 'flex-start',
   },
   empty: {
     paddingHorizontal: PANEL_PAD,

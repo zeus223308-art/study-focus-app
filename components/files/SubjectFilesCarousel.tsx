@@ -17,6 +17,10 @@ import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
 import { computeVaultFolderTileWidth } from '@/lib/ui/viewport-layout';
 
+type CarouselSlot =
+  | { key: string; kind: 'subject'; subject: SubjectFolder }
+  | { key: string; kind: 'add' };
+
 const TILE_GAP = 14;
 const PANEL_PAD = 14;
 const REORDER_EDGE_PX = 52;
@@ -67,7 +71,7 @@ export function SubjectFilesCarousel({
   selectedSubjectIds,
   onToggleSubjectDelete,
 }: Props) {
-  const listRef = useRef<FlatList<SubjectFolder>>(null);
+  const listRef = useRef<FlatList<CarouselSlot>>(null);
   const panelRef = useRef<View | null>(null);
   const scrollXRef = useRef(0);
   const panelBoundsRef = useRef({ left: 0, right: 0 });
@@ -79,6 +83,18 @@ export function SubjectFilesCarousel({
   const { reorderingSubjectId, bumpSubjectReorderMeasure } = useApp();
 
   const subjects = useMemo(() => pages.flat(), [pages]);
+
+  const slots = useMemo((): CarouselSlot[] => {
+    const out: CarouselSlot[] = subjects.map((subject) => ({
+      key: subject.id,
+      kind: 'subject',
+      subject,
+    }));
+    if (onAddFolder && addFolderLabel) {
+      out.push({ key: '__add_folder__', kind: 'add' });
+    }
+    return out;
+  }, [addFolderLabel, onAddFolder, subjects]);
 
   const tileWidth = useMemo(
     () => computeVaultFolderTileWidth(pageWidth, foldersPerPage),
@@ -196,62 +212,68 @@ export function SubjectFilesCarousel({
     if (reorderingSubjectId) bumpSubjectReorderMeasure();
   };
 
-  const renderItem = ({ item: subject }: ListRenderItemInfo<SubjectFolder>) => (
-    <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
-      <SubjectFolderTile
-        subjectId={subject.id}
-        name={subject.name}
-        totalLabel={totalLabelFor(subject.id)}
-        previewItems={previewItemsFor(subject.id)}
-        vaultLayout
-        onPreviewGestureLock={setPreviewGestureLock}
-        onPress={() => onSubjectPress(subject.id)}
-        onLiftForReorder={() => onSubjectLift(subject.id)}
-        onReorderDragMove={handleReorderDragMove}
-        onReorderDragEnd={(moved, pageX, pageY) => {
-          stopAutoScroll();
-          onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
-        }}
-        onDeleteHold={
-          subjectDeleteMode || !onSubjectDeleteHold
-            ? undefined
-            : () => onSubjectDeleteHold(subject.id, subject.name)
-        }
-        selectionMode={subjectDeleteMode}
-        selected={selectedSubjectIds?.has(subject.id) ?? false}
-        onToggleSelect={
-          onToggleSubjectDelete ? () => onToggleSubjectDelete(subject.id) : undefined
-        }
-      />
-    </View>
-  );
+  const renderItem = ({ item }: ListRenderItemInfo<CarouselSlot>) => {
+    if (item.kind === 'add') {
+      return (
+        <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+          <VaultAddFolderTile
+            width={tileWidth}
+            label={addFolderLabel ?? ''}
+            onPress={onAddFolder!}
+          />
+        </View>
+      );
+    }
+
+    const subject = item.subject;
+    return (
+      <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+        <SubjectFolderTile
+          subjectId={subject.id}
+          name={subject.name}
+          totalLabel={totalLabelFor(subject.id)}
+          previewItems={previewItemsFor(subject.id)}
+          vaultLayout
+          onPreviewGestureLock={setPreviewGestureLock}
+          onPress={() => onSubjectPress(subject.id)}
+          onLiftForReorder={() => onSubjectLift(subject.id)}
+          onReorderDragMove={handleReorderDragMove}
+          onReorderDragEnd={(moved, pageX, pageY) => {
+            stopAutoScroll();
+            onSubjectReorderEnd(subject.id, subject.name, moved, pageX, pageY);
+          }}
+          onDeleteHold={
+            subjectDeleteMode || !onSubjectDeleteHold
+              ? undefined
+              : () => onSubjectDeleteHold(subject.id, subject.name)
+          }
+          selectionMode={subjectDeleteMode}
+          selected={selectedSubjectIds?.has(subject.id) ?? false}
+          onToggleSelect={
+            onToggleSubjectDelete ? () => onToggleSubjectDelete(subject.id) : undefined
+          }
+        />
+      </View>
+    );
+  };
 
   if (pageWidth <= 0 || tileWidth <= 0) return null;
-
-  const addFolderTile =
-    onAddFolder && addFolderLabel ? (
-      <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
-        <VaultAddFolderTile width={tileWidth} label={addFolderLabel} onPress={onAddFolder} />
-      </View>
-    ) : null;
 
   return (
     <View ref={panelRef} onLayout={measurePanelBounds} style={styles.wrap}>
       <SubjectReorderInsertLine panelRef={panelRef} />
       <FlatList
         ref={listRef}
-        data={subjects}
+        data={slots}
         horizontal
         scrollEnabled={listScrollEnabled}
         nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.key}
         renderItem={renderItem}
         scrollEventThrottle={16}
         onScroll={onScroll}
         contentContainerStyle={styles.listContent}
-        ListFooterComponent={addFolderTile}
-        ListFooterComponentStyle={styles.footerSlot}
         getItemLayout={(_, index) => ({
           length: slotWidth,
           offset: slotWidth * index,
@@ -269,17 +291,12 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: PANEL_PAD,
-    paddingTop: 0,
-    paddingBottom: 2,
     alignItems: 'flex-start',
+    paddingBottom: 2,
   },
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
-    alignSelf: 'flex-start',
-  },
-  footerSlot: {
-    alignSelf: 'flex-start',
   },
   empty: {
     paddingHorizontal: PANEL_PAD,
