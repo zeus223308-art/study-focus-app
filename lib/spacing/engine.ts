@@ -14,7 +14,7 @@ export function getScheduleIntervals(schedule: ReviewSchedule): number[] {
   if (schedule.mode === 'everyNDays' && schedule.everyNDays) {
     return [schedule.everyNDays];
   }
-  return schedule.customIntervals ?? [1, 3, 5, 14, 30];
+  return schedule.customIntervals ?? [1, 3, 7, 14, 30];
 }
 
 export function getNextReviewDate(

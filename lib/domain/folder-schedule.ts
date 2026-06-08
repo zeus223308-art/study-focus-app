@@ -1,12 +1,12 @@
 import type { Language } from './types';
 
 export const SCHEDULE_DAILY_ID = 'sched_daily';
-/** Row 1 — standard 1-3-5-14-30 interval review */
+/** Row 1 — standard 1-3-7-14-30 interval review */
 export const SCHEDULE_EVERY_TWO_DAYS_ID = 'sched_135714';
 /** Premium +추가 — custom user patterns only (not used for folder toggle) */
 export const SCHEDULE_ADD_ID = 'sched_2days';
 
-/** Folder list only supports 매일 ↔ 1-3-5-14-30. */
+/** Folder list only supports 매일 ↔ 1-3-7-14-30. */
 export function normalizeFolderScheduleId(scheduleId: string): string {
   if (scheduleId === SCHEDULE_DAILY_ID) return SCHEDULE_DAILY_ID;
   if (scheduleId === SCHEDULE_ADD_ID) return SCHEDULE_EVERY_TWO_DAYS_ID;

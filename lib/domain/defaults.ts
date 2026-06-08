@@ -8,10 +8,10 @@ import type { AppData, ReviewSchedule, SubjectFolder } from './types';
 export const DEFAULT_SCHEDULES: ReviewSchedule[] = [
   {
     id: 'sched_135714',
-    name: '1-3-5-14-30',
-    nameEn: '1-3-5-14-30',
+    name: '1-3-7-14-30',
+    nameEn: '1-3-7-14-30',
     mode: 'customIntervals',
-    customIntervals: [1, 3, 5, 14, 30],
+    customIntervals: [1, 3, 7, 14, 30],
     tier: 'standard',
   },
   {
