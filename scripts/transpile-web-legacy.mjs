@@ -44,6 +44,12 @@ for (const file of files) {
     ? `window.__MS_EVAL_START=Date.now();try{${code}\nwindow.__MS_EVAL_DONE=Date.now();}catch(e){window.__MS_BOOT_ERR=e;throw e;}`
     : code;
   fs.writeFileSync(abs, wrapped);
+  const lookbehind = (wrapped.match(/\(\?<=|\(\?<!/g) ?? []).length;
+  if (lookbehind > 0) {
+    throw new Error(
+      `transpile-web-legacy: ${file} still has ${lookbehind} RegExp lookbehind — breaks iOS 15 Safari`
+    );
+  }
   console.log(`transpile-web-legacy: ${file} ${src.length} → ${code.length}`);
 }
 

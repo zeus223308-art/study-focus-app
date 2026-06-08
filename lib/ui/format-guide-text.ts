@@ -1,11 +1,18 @@
 import { theme } from '@/constants/theme';
 
-/** One display line per sentence (split after . ! ? 。). */
+/** One display line per sentence (split after . ! ? 。). Safari 15 has no RegExp lookbehind. */
 export function splitGuideSentences(text: string): string[] {
-  return text
-    .split(/(?<=[.!?。])\s+/)
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0);
+  const parts: string[] = [];
+  let cursor = 0;
+  const re = /[.!?。]\s+/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(text)) !== null) {
+    parts.push(text.slice(cursor, match.index + match[0].length).trim());
+    cursor = match.index + match[0].length;
+  }
+  const tail = text.slice(cursor).trim();
+  if (tail.length > 0) parts.push(tail);
+  return parts.filter((part) => part.length > 0);
 }
 
 export type GuideFontMetrics = {
