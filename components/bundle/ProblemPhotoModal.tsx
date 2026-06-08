@@ -17,11 +17,12 @@ import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
 import { FullscreenInkControls } from '@/components/annotation/FullscreenInkControls';
 import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink-flow';
 import { PhotoInkToolbar, type PhotoInkToolKind } from '@/components/bundle/PhotoInkToolbar';
-import { WidthFitPreviewImage } from '@/components/ui/WidthFitPreviewImage';
+import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 import { inkToolKind } from '@/lib/domain/ink-tool-labels';
 import type { CloudAsset, InkToolId, NoteLayer, PenToolId } from '@/lib/domain/types';
+import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 
 type Side = 'front' | 'back';
@@ -70,6 +71,7 @@ export function ProblemPhotoModal({
   const layout = useFullscreenViewerLayout();
   const [pageIndex, setPageIndex] = useState(0);
   const [viewerSize, setViewerSize] = useState({ w: 0, h: 0 });
+  const [inkSurfaceH, setInkSurfaceH] = useState(0);
   const [inkKind, setInkKind] = useState<PhotoInkToolKind | null>(null);
 
   const flowApi = useFullscreenInkFlow({
@@ -147,28 +149,26 @@ export function ProblemPhotoModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}>
-        <View style={styles.chrome}>
-          <View style={styles.header}>
-            <Pressable onPress={onClose} hitSlop={12}>
-              <Text style={styles.close}>{t('common.close')}</Text>
-            </Pressable>
-            <Text style={styles.hint}>{t('item.swipeForBack')}</Text>
-          </View>
-
-          <PhotoInkToolbar activeKind={inkKind} penTool={penTool} onSelectKind={onSelectKind} />
-
-          {inkKind !== null && flowApi.flow !== null && (
-            <FullscreenInkControls
-              tool={tool}
-              penWidth={penWidth}
-              highlighterWidth={highlighterWidth}
-              eraserWidth={eraserWidth}
-              layout={layout}
-              flowApi={flowApi}
-              pickerOnly
-            />
-          )}
+        <View style={styles.header}>
+          <Pressable onPress={onClose} hitSlop={12}>
+            <Text style={styles.close}>{t('common.close')}</Text>
+          </Pressable>
+          <Text style={styles.hint}>{t('item.swipeForBack')}</Text>
         </View>
+
+        <PhotoInkToolbar activeKind={inkKind} penTool={penTool} onSelectKind={onSelectKind} />
+
+        {inkKind !== null && flowApi.flow !== null && (
+          <FullscreenInkControls
+            tool={tool}
+            penWidth={penWidth}
+            highlighterWidth={highlighterWidth}
+            eraserWidth={eraserWidth}
+            layout={layout}
+            flowApi={flowApi}
+            pickerOnly
+          />
+        )}
 
         <View style={styles.viewer} onLayout={onLayout}>
           {viewerW > 0 && viewerH > 0 ? (
@@ -183,38 +183,43 @@ export function ProblemPhotoModal({
               style={{ width: viewerW, height: viewerH }}
               contentContainerStyle={{ width: viewerW * sides.length, height: viewerH }}>
               {sides.map((item) => {
-                const labelH = item.label ? 22 : 0;
-                const imageH = Math.max(1, viewerH - labelH);
+                const displayUri =
+                  getPreviewImageUri(item.asset) ?? getFullImageUri(item.asset);
                 return (
                   <View key={item.side} style={[styles.page, { width: viewerW, height: viewerH }]}>
                     {item.label ? <Text style={styles.sideLabel}>{item.label}</Text> : null}
-                    <View style={styles.imageBox}>
-                      <WidthFitPreviewImage
+                    <View
+                      style={styles.imageBox}
+                      onLayout={
+                        item.side === 'front'
+                          ? (e) => {
+                              const h = Math.round(e.nativeEvent.layout.height);
+                              if (h > 0) setInkSurfaceH(h);
+                            }
+                          : undefined
+                      }>
+                      <ResolvedImage
+                        uri={displayUri}
                         asset={item.asset}
-                        containerW={viewerW}
-                        containerH={imageH}
                         preferPreview={false}
-                        overlay={
-                          item.side === 'front' && layer
-                            ? ({ width, height }) => (
-                                <AnnotationCanvas
-                                  layer={layer}
-                                  tool={tool}
-                                  strokeWidth={strokeWidth}
-                                  visible
-                                  interactive={inkKind !== null}
-                                  onStrokesChange={onStrokesChange}
-                                  height={height}
-                                  style={[
-                                    styles.ink,
-                                    { width, height },
-                                    inkKind === null && styles.inkPassthrough,
-                                  ]}
-                                />
-                              )
-                            : undefined
-                        }
+                        style={styles.image}
+                        resizeMode="contain"
                       />
+                      {item.side === 'front' && layer ? (
+                        <AnnotationCanvas
+                          layer={layer}
+                          tool={tool}
+                          strokeWidth={strokeWidth}
+                          visible
+                          interactive={inkKind !== null}
+                          onStrokesChange={onStrokesChange}
+                          height={inkSurfaceH || viewerH}
+                          style={[
+                            styles.ink,
+                            inkKind === null && styles.inkPassthrough,
+                          ]}
+                        />
+                      ) : null}
                     </View>
                   </View>
                 );
@@ -222,7 +227,7 @@ export function ProblemPhotoModal({
             </ScrollView>
           ) : null}
           {sides.length > 1 ? (
-            <Text style={[styles.pager, styles.pagerPad]}>
+            <Text style={styles.pager}>
               {pageIndex + 1} / {sides.length}
             </Text>
           ) : null}
@@ -233,8 +238,7 @@ export function ProblemPhotoModal({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.beige },
-  chrome: { paddingHorizontal: 16 },
+  root: { flex: 1, backgroundColor: theme.beige, paddingHorizontal: 16 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -251,11 +255,10 @@ const styles = StyleSheet.create({
     color: theme.gray,
     marginBottom: 4,
     textAlign: 'center',
-    paddingHorizontal: 16,
   },
-  imageBox: { flex: 1, minHeight: 0 },
-  ink: { position: 'absolute', left: 0, top: 0 },
+  imageBox: { flex: 1, minHeight: 0, position: 'relative' },
+  image: { width: '100%', height: '100%' },
+  ink: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   inkPassthrough: { pointerEvents: 'none' as const },
   pager: { textAlign: 'center', color: theme.gray, marginTop: 8, fontWeight: '700' },
-  pagerPad: { paddingHorizontal: 16 },
 });

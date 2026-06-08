@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
-import { WidthFitPreviewBox } from '@/components/ui/WidthFitPreviewImage';
+import { CapturePreviewImage } from '@/components/capture/CapturePreviewImage';
 import { CaptureTagPicker } from '@/components/capture/CaptureTagPicker';
 import {
   useCaptureLeaveGuard,
@@ -472,13 +472,13 @@ export default function CaptureTabScreen() {
             {...sheetPressableProps}>
             <Text style={styles.sheetTitle}>{t('capture.pairTitle')}</Text>
             {frontUri ? (
-              <WidthFitPreviewBox uri={frontUri} style={styles.preview} />
+              <CapturePreviewImage uri={frontUri} style={styles.preview} resizeMode="contain" />
             ) : null}
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
                 {frontUri ? (
                   <Pressable onPress={() => frontUri && openEditor(frontUri, 'front', 'answer-prompt')}>
-                    <WidthFitPreviewBox uri={frontUri} style={styles.pairThumb} />
+                    <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="contain" />
                     <Text style={styles.editLink}>{t('capture.editPhoto')}</Text>
                   </Pressable>
                 ) : null}
@@ -526,7 +526,7 @@ export default function CaptureTabScreen() {
               <View style={styles.pairSlot}>
                 {frontUri ? (
                   <Pressable onPress={() => openEditor(frontUri, 'front', 'save-sheet')}>
-                    <WidthFitPreviewBox uri={frontUri} style={styles.pairThumb} />
+                    <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="contain" />
                   </Pressable>
                 ) : null}
               </View>
@@ -534,7 +534,7 @@ export default function CaptureTabScreen() {
                 <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
                 {backUri ? (
                   <Pressable onPress={() => openEditor(backUri, 'back', 'save-sheet')}>
-                    <WidthFitPreviewBox uri={backUri} style={styles.pairThumb} />
+                    <CapturePreviewImage uri={backUri} style={styles.pairThumb} resizeMode="contain" />
                   </Pressable>
                 ) : (
                   <View style={styles.pairEmpty}>
@@ -802,24 +802,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   successTitle: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
-  preview: {
-    width: '100%',
-    height: 160,
-    borderRadius: theme.radius.md,
-    marginTop: 16,
-    overflow: 'hidden',
-    backgroundColor: theme.surface,
-  },
+  preview: { width: '100%', height: 160, borderRadius: theme.radius.md, marginTop: 16 },
   pairRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   pairSlot: { flex: 1, gap: 6 },
   pairLabel: { fontSize: 11, fontWeight: '800', color: theme.gray },
-  pairThumb: {
-    width: '100%',
-    height: 100,
-    borderRadius: theme.radius.sm,
-    backgroundColor: theme.surface,
-    overflow: 'hidden',
-  },
+  pairThumb: { width: '100%', height: 100, borderRadius: theme.radius.sm, backgroundColor: theme.surface },
   editLink: {
     fontSize: 10,
     fontWeight: '700',

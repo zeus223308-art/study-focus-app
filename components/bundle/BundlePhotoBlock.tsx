@@ -1,12 +1,12 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
-import {
-  WidthFitPreviewBox,
-} from '@/components/ui/WidthFitPreviewImage';
+import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
+import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import type { CloudAsset, InkToolId, NoteLayer } from '@/lib/domain/types';
 import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
 
@@ -14,7 +14,6 @@ type Props = {
   label?: string;
   maxWidth: number;
   maxHeight?: number;
-  /** @deprecated Always stretches to parent width; kept for call-site compat. */
   fillWidth?: boolean;
   asset: CloudAsset | null;
   onPress: () => void;
@@ -33,7 +32,9 @@ type Props = {
 
 export function BundlePhotoBlock({
   label,
+  maxWidth,
   maxHeight = 220,
+  fillWidth = false,
   asset,
   onPress,
   showInkPreview = false,
@@ -50,41 +51,59 @@ export function BundlePhotoBlock({
 }: Props) {
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
+  const [aspect, setAspect] = useState(4 / 3);
+  const [measuredW, setMeasuredW] = useState(0);
 
-  const showInk =
-    Boolean(layer && (showInkPreview || (inkEnabled && onStrokesChange)));
+  useEffect(() => {
+    if (!uri) return;
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (w > 0) setAspect(h / w);
+      },
+      () => setAspect(4 / 3)
+    );
+  }, [uri]);
+
+  const width = measuredW > 0 ? measuredW : maxWidth;
+  const landscapeH = Math.round(width / LANDSCAPE_CARD_RATIO);
+  const height = fillWidth
+    ? Math.min(maxHeight, Math.max(72, landscapeH))
+    : Math.min(maxHeight, Math.max(72, Math.round(width * aspect)));
+
+  const onWrapLayout = useCallback((w: number) => {
+    if (w > 0 && w !== measuredW) setMeasuredW(w);
+  }, [measuredW]);
 
   return (
-    <View style={styles.wrap}>
+    <View
+      style={styles.wrap}
+      onLayout={(e) => onWrapLayout(Math.round(e.nativeEvent.layout.width))}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <Pressable
         onPress={hasImage ? onPress : onAddPress}
-        style={[styles.frame, { height: maxHeight }]}
+        style={[styles.frame, { height }]}
         accessibilityRole="button">
         {hasImage ? (
           <>
-            <WidthFitPreviewBox
+            <ResolvedImage
               uri={uri}
               asset={asset}
-              style={{ width: '100%', height: maxHeight }}
-              preferPreview
-              overlay={
-                showInk && layer
-                  ? ({ width, height }) => (
-                      <AnnotationCanvas
-                        layer={layer}
-                        tool={tool}
-                        strokeWidth={strokeWidth}
-                        visible
-                        interactive={Boolean(inkEnabled && onStrokesChange)}
-                        onStrokesChange={onStrokesChange ?? (() => {})}
-                        height={height}
-                        style={[styles.ink, { width, height }]}
-                      />
-                    )
-                  : undefined
-              }
+              style={{ width: '100%', height }}
+              resizeMode="contain"
             />
+            {layer && (showInkPreview || (inkEnabled && onStrokesChange)) ? (
+              <AnnotationCanvas
+                layer={layer}
+                tool={tool}
+                strokeWidth={strokeWidth}
+                visible
+                interactive={Boolean(inkEnabled && onStrokesChange)}
+                onStrokesChange={onStrokesChange ?? (() => {})}
+                height={height}
+                style={styles.ink}
+              />
+            ) : null}
             {showMemoBadge ? (
               <View style={styles.memoBadge} pointerEvents="none">
                 <SymbolView
@@ -96,7 +115,7 @@ export function BundlePhotoBlock({
             ) : null}
           </>
         ) : (
-          <View style={[styles.empty, { height: maxHeight }]}>
+          <View style={[styles.empty, { height }]}>
             <Text style={styles.emptyText}>{placeholder ?? '+'}</Text>
           </View>
         )}
@@ -140,6 +159,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
+    right: 0,
+    bottom: 0,
   },
   empty: {
     width: '100%',
