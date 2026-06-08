@@ -9,6 +9,7 @@ import { isExamBeforeTag } from '@/lib/domain/capture-tags';
 import { normalizeAppSettings } from '@/lib/domain/dates';
 
 import { normalizeFolderScheduleId } from '@/lib/domain/folder-schedule';
+import { normalizeSubjectsColors } from '@/lib/domain/subject-colors';
 
 import type { AppData } from '@/lib/domain/types';
 
@@ -97,13 +98,12 @@ function normalizeLoadedData(data: AppData): AppData {
 
     schedules: mergeSchedulesFromDefaults(data.schedules),
 
-    subjects: data.subjects.map((s) => ({
-
-      ...s,
-
-      reviewScheduleId: normalizeFolderScheduleId(s.reviewScheduleId),
-
-    })),
+    subjects: normalizeSubjectsColors(
+      data.subjects.map((s) => ({
+        ...s,
+        reviewScheduleId: normalizeFolderScheduleId(s.reviewScheduleId),
+      }))
+    ),
 
     bundles: normalizePages(data),
 

@@ -74,7 +74,7 @@ export function SubjectFolderName({
     lastTapRef.current = now;
   }, [disabled, editing]);
 
-  const nameColor = color ? resolveSubjectColor(color, colorSortOrder) : theme.black;
+  const nameColor = resolveSubjectColor(color, colorSortOrder);
 
   if (editing) {
     return (

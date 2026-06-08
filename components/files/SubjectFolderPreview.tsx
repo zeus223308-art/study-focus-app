@@ -46,10 +46,7 @@ const VAULT_HEIGHT = 112;
 const DASHBOARD_HEIGHT = 120;
 
 function subjectNameTextStyle(color?: string, sortOrder = 0) {
-  return [
-    styles.subjectTagText,
-    { color: color ? resolveSubjectColor(color, sortOrder) : theme.black },
-  ];
+  return [styles.subjectTagText, { color: resolveSubjectColor(color, sortOrder) }];
 }
 
 export function SubjectFolderPreview({

@@ -64,7 +64,12 @@ import {
 } from '@/lib/trash/lifecycle';
 import { bundleSnapshotForTrashedPage } from '@/lib/trash/page-trash';
 import { buildTrashEntriesForDeletedSubjects, trashEntriesForSubject } from '@/lib/trash/subject-trash';
-import { defaultSubjectColor, normalizeSubjectColor } from '@/lib/domain/subject-colors';
+import {
+  defaultSubjectColor,
+  mergeGuestSubjectColors,
+  normalizeSubjectColor,
+  normalizeSubjectsColors,
+} from '@/lib/domain/subject-colors';
 import { ensureTagColorMap, normalizeTagColorHex } from '@/lib/ui/tag-colors';
 import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/google-session';
 import {
@@ -76,7 +81,7 @@ import {
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
 import { clearCaptureDraft } from '@/services/storage/capture-draft';
 import { countAppPages, hasRecoverableContent } from '@/services/storage/data-safety';
-import { clearGuestSession } from '@/services/storage/guest-session';
+import { clearGuestSession, getGuestSessionData } from '@/services/storage/guest-session';
 import { readRecoveryManifest } from '@/services/storage/recovery-manifest';
 import type { FreemiumCheck, PaywallReason, StorageProvider } from '@/services/storage/types';
 
@@ -299,6 +304,7 @@ export function AppProvider({
 
   const hydrateFromStorage = useCallback(
     async (options?: { clearGuestFirst?: boolean }) => {
+      const guestSnapshot = options?.clearGuestFirst ? getGuestSessionData() : null;
       if (options?.clearGuestFirst) clearGuestSession();
       await ensureGoogleDriveSession();
 
@@ -337,6 +343,19 @@ export function AppProvider({
 
       const recovery = await runAutoRecovery(storage, next);
       next = { ...recovery.data, trash: filterActiveTrash(recovery.data.trash) };
+
+      if (guestSnapshot?.subjects?.length) {
+        next = {
+          ...next,
+          subjects: mergeGuestSubjectColors(next.subjects, guestSnapshot.subjects),
+        };
+      }
+
+      const upgradedSubjects = normalizeSubjectsColors(next.subjects);
+      if (JSON.stringify(upgradedSubjects) !== JSON.stringify(next.subjects)) {
+        next = { ...next, subjects: upgradedSubjects };
+        await storage.saveAppData(next);
+      }
 
       let recoveryNotice: AutoRecoverySource | null = null;
       if (recovery.recovered && recovery.source) {
