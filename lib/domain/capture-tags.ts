@@ -103,6 +103,22 @@ export function captureTagKey(tag: string): string {
   return normalizeCaptureTagLabel(tag).toLowerCase();
 }
 
+/** Tags stored on a photo that should appear in UI (no legacy exam tag). */
+export function visibleCaptureTags(tags: string[] | undefined): string[] {
+  return (tags ?? [])
+    .map(normalizeCaptureTagLabel)
+    .filter((tag) => tag.length > 0 && !isExamBeforeTag(tag));
+}
+
+/** First visible tag on a bundle — matches album thumbnail tag marks. */
+export function primaryCaptureTagForBundle(bundle: NoteBundle): string | null {
+  for (const page of bundle.pages) {
+    const visible = visibleCaptureTags(page.tags);
+    if (visible[0]) return visible[0];
+  }
+  return null;
+}
+
 export function captureTagExists(
   tag: string,
   presets: string[] | undefined,

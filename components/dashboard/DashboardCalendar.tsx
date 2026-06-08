@@ -240,7 +240,16 @@ export function DashboardCalendar({
                   {format(day, 'd')}
                 </Text>
                 {mark && mark.bundleCount > 0 ? (
-                  <CalendarTagDots colors={tagDots} size={5} gap={2} max={4} />
+                  tagDots.length > 0 ? (
+                    <CalendarTagDots colors={tagDots} size={5} gap={2} max={4} />
+                  ) : (
+                    <View
+                      style={[
+                        styles.dot,
+                        { backgroundColor: statusColor(mark.status) },
+                      ]}
+                    />
+                  )
                 ) : (
                   <View style={styles.dotPlaceholder} />
                 )}

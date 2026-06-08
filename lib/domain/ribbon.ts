@@ -1,6 +1,6 @@
 import { format, startOfDay } from 'date-fns';
 
-import { normalizeCaptureTagLabel } from '@/lib/domain/capture-tags';
+import { primaryCaptureTagForBundle } from '@/lib/domain/capture-tags';
 import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { buildRibbonDays } from './dates';
 import type { AppData, DateRibbonMark, NoteBundle, ReviewSchedule } from './types';
@@ -8,30 +8,21 @@ import { getNextReviewDate, isDueOnDate } from '@/lib/spacing/engine';
 
 const MAX_TAG_DOTS_PER_DAY = 5;
 
-function primaryTagColorForBundle(
-  bundle: NoteBundle,
-  tagColors?: Record<string, string>,
-  tagFallback?: string
-): string {
-  for (const page of bundle.pages) {
-    for (const raw of page.tags ?? []) {
-      const tag = normalizeCaptureTagLabel(raw);
-      if (tag) return resolveTagColorFor(tag, tagColors, tagFallback);
-    }
-  }
-  return resolveTagColorFor('', tagColors, tagFallback);
-}
-
-/** One dot per due photo — first tag color, or default when untagged. */
+/** One dot per tagged due photo — same tag/color rules as album thumbnails. */
 export function buildDueTagDotColors(
   due: NoteBundle[],
   tagColors?: Record<string, string>,
   tagFallback?: string,
   max = MAX_TAG_DOTS_PER_DAY
 ): string[] {
-  return due
-    .map((bundle) => primaryTagColorForBundle(bundle, tagColors, tagFallback))
-    .slice(0, max);
+  const colors: string[] = [];
+  for (const bundle of due) {
+    const tag = primaryCaptureTagForBundle(bundle);
+    if (!tag) continue;
+    colors.push(resolveTagColorFor(tag, tagColors, tagFallback));
+    if (colors.length >= max) break;
+  }
+  return colors;
 }
 
 export function buildReviewMarkForDate(
