@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   wrap: {
     backgroundColor: theme.surface,
     borderRadius: theme.radius.md,
-    padding: 14,
+    padding: 12,
     borderWidth: 1,
     borderColor: theme.grayLight,
     marginBottom: 12,
@@ -252,8 +252,8 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   wrapCompact: {
-    paddingHorizontal: 10,
-    paddingVertical: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 10,
   },
   titleBlock: { gap: 4, marginBottom: 10 },
   title: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },

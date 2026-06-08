@@ -12,8 +12,11 @@ export const DOCK_HEIGHT = 48;
 /** Gap between dock pill bottom and scrollable tab content. */
 export const DOCK_CONTENT_GAP = 12;
 /** Space to reserve below the top dock (safe area + dock + gap). */
-export const dockTopContentInset = (safeTop: number) =>
-  safeTop + DOCK_EDGE_GAP + DOCK_HEIGHT + DOCK_CONTENT_GAP;
+export const dockTopContentInset = (
+  safeTop: number,
+  edgeGap = DOCK_EDGE_GAP,
+  contentGap = DOCK_CONTENT_GAP
+) => safeTop + edgeGap + DOCK_HEIGHT + contentGap;
 /** Stack modals without dock (search) — same top rhythm as tabs. */
 export const stackModalTopInset = (safeTop: number) => safeTop + DOCK_EDGE_GAP + 10;
 
@@ -31,7 +34,7 @@ export function DockTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
   const { requestLeave, editorFullscreen } = useCaptureLeaveGuard();
-  const edgeGap = viewport.isPhone ? 12 : DOCK_EDGE_GAP;
+  const edgeGap = viewport.dockEdgeGap;
 
   const currentRoute = state.routes[state.index]?.name;
   if (currentRoute === 'capture' && editorFullscreen) {

@@ -18,6 +18,10 @@ export type ViewportLayout = {
   /** 본문 최대 너비 (태블릿에서 가독성) */
   contentMaxWidth: number;
   horizontalPadding: number;
+  /** Top dock inset from screen edge (matches DockTabBar). */
+  dockEdgeGap: number;
+  /** Gap between dock pill and scroll content. */
+  dockContentGap: number;
   /** 문제 카드 가로 페이저 한 페이지 크기 */
   pagerSize: number;
   /** 폴더·검색 등 리스트 열 수 */
@@ -46,7 +50,7 @@ export function computePagerSize(width: number, height: number, deviceClass: Dev
         ? 24
         : 32
     : deviceClass === 'phone'
-      ? 32
+      ? 16
       : deviceClass === 'tablet'
         ? 48
         : 64;
@@ -63,7 +67,12 @@ export function computePagerSize(width: number, height: number, deviceClass: Dev
 
 /** Files tab white panel inset — keep tight on phone to avoid horizontal clip on mobile web. */
 export function vaultPanelPad(isPhone: boolean): number {
-  return isPhone ? 8 : 14;
+  return isPhone ? 4 : 14;
+}
+
+/** Settings rows / in-panel lists on phone. */
+export function settingsRowPad(isPhone: boolean): number {
+  return isPhone ? 10 : 16;
 }
 
 /** @deprecated Use vaultPanelPad(isPhone) — default for non-viewport call sites. */
@@ -134,7 +143,7 @@ export function computeContentMaxWidth(
 ): number {
   const isLandscape = width > height;
   if (isLandscape) {
-    const pad = deviceClass === 'phone' ? 12 : deviceClass === 'tablet' ? 16 : 24;
+    const pad = deviceClass === 'phone' ? 8 : deviceClass === 'tablet' ? 16 : 24;
     return width - pad * 2;
   }
   if (deviceClass === 'phone') return width;
@@ -191,15 +200,17 @@ export function useViewportLayout(): ViewportLayout {
 
     const horizontalPadding = isLandscape
       ? isPhone
-        ? 8
+        ? 4
         : deviceClass === 'tablet'
           ? 16
           : 20
       : isPhone
-        ? 8
+        ? 4
         : deviceClass === 'tablet'
           ? 24
           : 32;
+    const dockEdgeGap = isPhone ? 8 : 28;
+    const dockContentGap = isPhone ? 8 : 12;
     const contentMaxWidth = computeContentMaxWidth(width, height, deviceClass);
     const pagerSize = computePagerSize(width, height, deviceClass);
 
@@ -219,6 +230,8 @@ export function useViewportLayout(): ViewportLayout {
       isTablet,
       contentMaxWidth,
       horizontalPadding,
+      dockEdgeGap,
+      dockContentGap,
       pagerSize,
       listNumColumns,
       albumNumColumns,

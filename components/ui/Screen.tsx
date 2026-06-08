@@ -26,16 +26,18 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
   const pad = padded ? viewport.horizontalPadding : 0;
-  const padLeft = pad + (viewport.isPhone ? insets.left : 0);
-  const padRight = pad + (viewport.isPhone ? insets.right : 0);
 
   const innerBody = (
     <View
       style={[
         {
-          paddingTop: dockTopContentInset(insets.top),
-          paddingLeft: padLeft,
-          paddingRight: padRight,
+          paddingTop: dockTopContentInset(
+            insets.top,
+            viewport.dockEdgeGap,
+            viewport.dockContentGap
+          ),
+          paddingLeft: pad,
+          paddingRight: pad,
         },
         fill && screenLayoutStyles.fillColumn,
         style,

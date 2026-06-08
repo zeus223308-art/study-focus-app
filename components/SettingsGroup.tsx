@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { settingsRowPad, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export function SettingsGroup({ title, children }: { title?: string; children: ReactNode }) {
   return (
@@ -25,6 +26,9 @@ export function SettingsRow({
   right?: ReactNode;
   last?: boolean;
 }) {
+  const viewport = useViewportLayout();
+  const rowPad = settingsRowPad(viewport.isPhone);
+
   const content = (
     <>
       <Text style={styles.label}>{label}</Text>
@@ -34,13 +38,19 @@ export function SettingsRow({
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={[styles.row, !last && styles.rowBorder]}>
+      <Pressable
+        onPress={onPress}
+        style={[styles.row, { paddingHorizontal: rowPad }, !last && styles.rowBorder]}>
         {content}
       </Pressable>
     );
   }
 
-  return <View style={[styles.row, !last && styles.rowBorder]}>{content}</View>;
+  return (
+    <View style={[styles.row, { paddingHorizontal: rowPad }, !last && styles.rowBorder]}>
+      {content}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -66,7 +76,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 10,
-    paddingHorizontal: 16,
     minHeight: 42,
   },
   rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },

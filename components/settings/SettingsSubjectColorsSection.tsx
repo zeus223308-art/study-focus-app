@@ -8,12 +8,15 @@ import { TagColorModal } from '@/components/tags/TagColorModal';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { normalizeSubjectColor, resolveSubjectColor } from '@/lib/domain/subject-colors';
+import { settingsRowPad, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export function SettingsSubjectColorsSection() {
   const { t } = useTranslation();
   const { data, setPaywallVisible, setSubjectColor } = useApp();
   const [colorSubjectId, setColorSubjectId] = useState<string | null>(null);
 
+  const viewport = useViewportLayout();
+  const rowPad = settingsRowPad(viewport.isPhone);
   const isPro = data.settings.tier === 'pro';
   const subjects = [...data.subjects].sort((a, b) => a.sortOrder - b.sortOrder);
   const activeSubject = subjects.find((s) => s.id === colorSubjectId);
@@ -23,7 +26,7 @@ export function SettingsSubjectColorsSection() {
       <SettingsSectionHeader title={t('settings.subjectColorsSection')} />
       <SettingsGroup>
         {subjects.length === 0 ? (
-          <View style={styles.emptyRow}>
+          <View style={[styles.emptyRow, { paddingHorizontal: rowPad }]}>
             <Text style={styles.emptyText}>{t('settings.subjectColorsEmpty')}</Text>
           </View>
         ) : (
@@ -31,7 +34,11 @@ export function SettingsSubjectColorsSection() {
             <Pressable
               key={subject.id}
               onPress={() => setColorSubjectId(subject.id)}
-              style={[styles.row, i < subjects.length - 1 && styles.rowBorder]}>
+              style={[
+                styles.row,
+                { paddingHorizontal: rowPad },
+                i < subjects.length - 1 && styles.rowBorder,
+              ]}>
               <Text
                 style={[
                   styles.label,
@@ -80,7 +87,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
-    paddingHorizontal: 16,
     minHeight: 46,
   },
   rowBorder: {
@@ -100,7 +106,6 @@ const styles = StyleSheet.create({
   },
   emptyRow: {
     paddingVertical: 14,
-    paddingHorizontal: 16,
   },
   emptyText: {
     fontSize: theme.font.bodySmall,
