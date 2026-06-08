@@ -29,53 +29,68 @@ const headInject =
 
 const bootScript = `(function(){
   var msgEl=null;
+  var phase="boot";
+  var timerIds=[];
   function msg(t){if(!msgEl)msgEl=document.getElementById("ms-boot-msg");if(msgEl)msgEl.textContent=t;}
   function dismiss(){var el=document.getElementById("ms-boot");if(el)el.remove();}
   function rootHasContent(){var r=document.getElementById("root");return !!(r&&r.childNodes&&r.childNodes.length);}
+  function setPhase(next,text){
+    if(phase==="error"||phase==="done")return;
+    var rank={boot:0,download:1,start:2};
+    if((rank[next]||0)<(rank[phase]||0))return;
+    phase=next;
+    msg(text);
+  }
+  function clearTimers(){timerIds.forEach(clearTimeout);timerIds=[];}
   window.__MS_DISMISS_BOOT=dismiss;
+  window.__MS_BOOT_SET_PHASE=setPhase;
   window.addEventListener("error",function(e){
+    phase="error";
+    clearTimers();
     var m=(e&&e.message)||"Unknown error";
     msg("Unable to start: "+String(m).slice(0,120));
   });
   window.addEventListener("unhandledrejection",function(e){
+    phase="error";
+    clearTimers();
     var r=e&&e.reason;
     var m=(r&&r.message)||String(r||"");
     msg("Unable to start: "+String(m).slice(0,120));
   });
-  var t0=Date.now();
-  var timers=[3000,8000,15000,30000,60000,120000];
-  var hints=[
-    "Loading app…",
-    "Downloading… (first open can be slow)",
-    "Still loading… iPhone 7 may need up to 2 minutes",
-    "Processing… please wait",
-    "Almost there… do not close Safari",
-    "Still working… tap below if nothing happens"
-  ];
-  timers.forEach(function(ms,i){
-    setTimeout(function(){
-      if(!document.getElementById("ms-boot"))return;
-      if(rootHasContent()||window.__MS_ROOT_LAYOUT)return;
-      msg(hints[i]||hints[hints.length-1]);
-    },ms);
-  });
-  setTimeout(function(){
-    if(!document.getElementById("ms-boot"))return;
-    if(rootHasContent()||window.__MS_ROOT_LAYOUT)return;
+  setPhase("boot","Loading…");
+  timerIds.push(setTimeout(function(){
+    if(phase!=="boot")return;
+    setPhase("download","Downloading app (first visit only)…");
+  },4000));
+  timerIds.push(setTimeout(function(){
+    if(phase!=="boot"&&phase!=="download")return;
+    msg("Still downloading… Wi‑Fi recommended.");
+  },20000));
+  timerIds.push(setTimeout(function(){
+    if(phase!=="start")return;
+    msg("Starting app… first visit on iPhone 7 can take 1–2 min.");
+  },15000));
+  timerIds.push(setTimeout(function(){
+    if(phase==="done"||phase==="error")return;
     var btn=document.getElementById("ms-boot-retry");
     if(btn)btn.style.display="inline-block";
-  },120000);
+    msg("Taking longer than usual. Tap Refresh — the second load is usually instant.");
+  },90000));
   var poll=setInterval(function(){
-    if(rootHasContent()||window.__MS_ROOT_LAYOUT){clearInterval(poll);dismiss();}
+    if(rootHasContent()||window.__MS_ROOT_LAYOUT){
+      phase="done";
+      clearTimers();
+      clearInterval(poll);
+      dismiss();
+    }
   },400);
   setTimeout(function(){clearInterval(poll);},180000);
-  window.__MS_BOOT_T0=t0;
 })();`;
 
 const bootOverlay =
   '<div id="ms-boot" style="position:fixed;inset:0;z-index:2147483647;background:#F9F8F6;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,system-ui,sans-serif;color:#1a1a1a;text-align:center;padding:24px">' +
   '<div style="font-size:18px;font-weight:700;margin-bottom:8px">MemorySherpa</div>' +
-  '<div id="ms-boot-msg" style="font-size:14px;color:#666;line-height:1.5;max-width:280px">Loading app…</div>' +
+  '<div id="ms-boot-msg" style="font-size:14px;color:#666;line-height:1.5;max-width:280px">Loading…</div>' +
   '<button id="ms-boot-retry" type="button" style="display:none;margin-top:20px;padding:12px 20px;font-size:15px;font-weight:600;border:none;border-radius:10px;background:#FF6B00;color:#fff" onclick="location.reload()">Refresh</button>' +
   '</div>' +
   '<script data-ms-boot="1">' +
@@ -99,9 +114,11 @@ const scriptLoader = `(function(){
   };
   s.onload=function(){
     window.__MS_SCRIPT_LOADED=Date.now();
-    var m=document.getElementById("ms-boot-msg");
-    if(m&&!window.__MS_ROOT_LAYOUT&&!document.getElementById("root").childNodes.length){
-      m.textContent="Starting… (iPhone 7: up to 2 min)";
+    if(window.__MS_BOOT_SET_PHASE){
+      window.__MS_BOOT_SET_PHASE("start","Starting app…");
+    }else{
+      var m=document.getElementById("ms-boot-msg");
+      if(m)m.textContent="Starting app…";
     }
   };
   document.body.appendChild(s);
