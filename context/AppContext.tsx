@@ -9,12 +9,9 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
-import { Platform } from 'react-native';
 
-import { theme } from '@/constants/theme';
 import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
-import { isLegacyMobileSafari } from '@/lib/ui/legacy-mobile-safari';
 import { appendCaptureToData } from '@/lib/domain/bundle-factory';
 import {
   captureTagKey,
@@ -25,7 +22,6 @@ import {
   renameCaptureTagPreset,
 } from '@/lib/domain/capture-tags';
 import { applyMonthlyCustomizationReset } from '@/lib/domain/customization-reset';
-import { DEFAULT_DATA } from '@/lib/domain/defaults';
 import { todayKey } from '@/lib/domain/dates';
 import {
   defaultMergedSubjectName,
@@ -40,7 +36,17 @@ import {
   reorderItemKeys,
   reorderSubjectFolders,
 } from '@/lib/domain/reorder';
-import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
+import {
+  buildDateRibbonMarks,
+  computeRibbonHorizon,
+  getDueBundlesForDate,
+} from '@/lib/domain/ribbon';
+import {
+  defaultSubjectColor,
+  mergeGuestSubjectColors,
+  normalizeSubjectColor,
+  normalizeSubjectsColors,
+} from '@/lib/domain/subject-colors';
 import {
   hitTestSubjectReorderDrag,
   type SubjectReorderHit,
@@ -67,12 +73,6 @@ import {
 } from '@/lib/trash/lifecycle';
 import { bundleSnapshotForTrashedPage } from '@/lib/trash/page-trash';
 import { buildTrashEntriesForDeletedSubjects, trashEntriesForSubject } from '@/lib/trash/subject-trash';
-import {
-  defaultSubjectColor,
-  mergeGuestSubjectColors,
-  normalizeSubjectColor,
-  normalizeSubjectsColors,
-} from '@/lib/domain/subject-colors';
 import { ensureTagColorMap, normalizeTagColorHex } from '@/lib/ui/tag-colors';
 import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/google-session';
 import {
@@ -94,6 +94,7 @@ type AppContextValue = {
   data: AppData;
   dueToday: NoteBundle[];
   ribbonMarks: ReturnType<typeof buildDateRibbonMarks>;
+  ribbonHorizon: string;
   localToday: string;
   selectedDate: string;
   setSelectedDate: (d: string) => void;
@@ -385,54 +386,22 @@ export function AppProvider({
   }, []);
 
   const load = useCallback(async () => {
-    let finished = false;
-    const finish = (next: AppData, recoveryNotice: AutoRecoverySource | null) => {
-      if (finished) return;
-      finished = true;
-      applyLoadedData(next, recoveryNotice);
-      setReady(true);
-    };
-
-    if (Platform.OS === 'web' && isLegacyMobileSafari()) {
-      finish(structuredClone(DEFAULT_DATA), null);
-      try {
-        const { next, recoveryNotice } = await hydrateFromStorage();
-        applyLoadedData(next, recoveryNotice);
-      } catch {
-        /* keep defaults — UI already visible */
-      }
-      return;
-    }
-
-    try {
-      const { next, recoveryNotice } = await hydrateFromStorage();
-      finish(next, recoveryNotice);
-    } catch {
-      finish(structuredClone(DEFAULT_DATA), null);
-    }
+    const { next, recoveryNotice } = await hydrateFromStorage();
+    applyLoadedData(next, recoveryNotice);
+    setReady(true);
   }, [hydrateFromStorage, applyLoadedData]);
 
   const reloadAccountData = useCallback(async () => {
     skipPersistRef.current = true;
     storageEpochRef.current += 1;
     try {
-      clearGuestSession();
-      await ensureGoogleDriveSession();
-      const token = await getValidAccessToken();
-      if (token) {
-        const fromCloud = await storage.restoreFromCloudBackup();
-        if (fromCloud && hasRecoverableContent(fromCloud)) {
-          applyLoadedData(fromCloud, null);
-          return;
-        }
-      }
       const { next, recoveryNotice } = await hydrateFromStorage({ clearGuestFirst: true });
       applyLoadedData(next, recoveryNotice);
     } finally {
       storageEpochRef.current += 1;
       skipPersistRef.current = false;
     }
-  }, [hydrateFromStorage, applyLoadedData, storage]);
+  }, [hydrateFromStorage, applyLoadedData]);
 
   const dismissAutoRecoveryNotice = useCallback(() => {
     setAutoRecoveryNotice(null);
@@ -464,11 +433,7 @@ export function AppProvider({
     const prev = prevLocalTodayRef.current;
     if (prev !== localToday) {
       prevLocalTodayRef.current = localToday;
-      setSelectedDate((cur) => {
-        if (cur > localToday) return localToday;
-        if (cur === prev) return localToday;
-        return cur;
-      });
+      setSelectedDate((cur) => (cur === prev ? localToday : cur));
     }
     setData((prev) => {
       if (!prev) return prev;
@@ -552,6 +517,11 @@ export function AppProvider({
     });
   }, [data, getSchedule]);
 
+  const ribbonHorizon = useMemo(() => {
+    if (!data) return localToday;
+    return computeRibbonHorizon(data.bundles, getSchedule, localToday);
+  }, [data, getSchedule, localToday]);
+
   const ribbonMarks = useMemo(() => {
     if (!data) return [];
     return buildDateRibbonMarks(
@@ -560,14 +530,15 @@ export function AppProvider({
       data.settings.firstLaunchDate,
       localToday,
       data.settings.tagColors,
-      data.settings.tagColor
+      data.settings.tagColor,
+      ribbonHorizon
     );
-  }, [data, getSchedule, localToday]);
+  }, [data, getSchedule, localToday, ribbonHorizon]);
 
   const dueSelected = useMemo(() => {
     if (!data) return [];
-    return getDueBundlesForDate(data, selectedDate, getSchedule);
-  }, [data, selectedDate, getSchedule]);
+    return getDueBundlesForDate(data, selectedDate, getSchedule, localToday);
+  }, [data, selectedDate, getSchedule, localToday]);
 
   const captureFlashcardPair = useCallback(
     async (
@@ -1576,6 +1547,7 @@ export function AppProvider({
       dueToday,
       localToday,
       ribbonMarks,
+      ribbonHorizon,
       selectedDate,
       setSelectedDate,
       activeFolderCapture,
@@ -1662,6 +1634,7 @@ export function AppProvider({
     dueToday,
     localToday,
     ribbonMarks,
+    ribbonHorizon,
     selectedDate,
     activeFolderCapture,
     dueSelected,

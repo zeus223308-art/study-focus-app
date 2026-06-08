@@ -21,7 +21,6 @@ import { SymbolView } from 'expo-symbols';
 import { CalendarTagDots } from '@/components/dashboard/CalendarTagDots';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
-import { studyDateBounds } from '@/lib/domain/dates';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { buildReviewMarkForDate } from '@/lib/domain/ribbon';
 import type { DateRibbonMark } from '@/lib/domain/types';
@@ -30,6 +29,7 @@ type Props = {
   marks: DateRibbonMark[];
   selectedDate: string;
   localToday: string;
+  ribbonHorizon: string;
   firstLaunchDate: string;
   onSelectDate: (date: string) => void;
 };
@@ -47,6 +47,7 @@ export function DashboardCalendar({
   marks,
   selectedDate,
   localToday,
+  ribbonHorizon,
   firstLaunchDate,
   onSelectDate,
 }: Props) {
@@ -58,8 +59,8 @@ export function DashboardCalendar({
   const bundles = data?.bundles ?? [];
 
   const bounds = useMemo(
-    () => studyDateBounds(firstLaunchDate),
-    [firstLaunchDate, localToday]
+    () => ({ min: firstLaunchDate, max: ribbonHorizon }),
+    [firstLaunchDate, ribbonHorizon]
   );
 
   const [viewMonth, setViewMonth] = useState(() =>
@@ -86,7 +87,7 @@ export function DashboardCalendar({
     );
     for (const day of days) {
       const key = format(day, 'yyyy-MM-dd');
-      if (key > localToday || !map[key]) {
+      if (!map[key]) {
         map[key] = buildReviewMarkForDate(
           day,
           bundles,
@@ -101,10 +102,11 @@ export function DashboardCalendar({
   }, [monthKey, marks, days, bundles, getSchedule, localToday, data.settings.tagColors, data.settings.tagColor]);
 
   const todayDate = startOfDay(parseISO(`${localToday}T12:00:00`));
+  const horizonDate = startOfDay(parseISO(`${ribbonHorizon}T12:00:00`));
   const minDate = startOfDay(parseISO(`${bounds.min}T12:00:00`));
 
   const canGoPrevMonth = monthStart > startOfMonth(minDate);
-  const canGoNextMonth = monthStart < startOfMonth(todayDate);
+  const canGoNextMonth = monthStart < startOfMonth(horizonDate);
 
   const monthLabel = formatMonthTitle(viewMonth, language);
   const selectedMark = markMap[selectedDate];
@@ -183,7 +185,7 @@ export function DashboardCalendar({
         {days.map((day) => {
           const key = format(day, 'yyyy-MM-dd');
           const inMonth = isSameMonth(day, monthStart);
-          const selectable = day >= minDate && day <= todayDate;
+          const selectable = day >= minDate && day <= horizonDate;
           const isFuture = day > todayDate;
           const selected = key === selectedDate;
           const isToday = isSameDay(day, todayDate);

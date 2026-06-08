@@ -74,20 +74,24 @@ export function normalizeAppSettings(settings: AppSettings, data: AppData): AppS
   };
 }
 
-/** Inclusive range from first app day through today (local). No future days. */
-export function buildRibbonDays(firstLaunchDate: string): Date[] {
+/** Inclusive range from first app day through `endDate` (defaults to local today). */
+export function buildRibbonDays(firstLaunchDate: string, endDate?: string): Date[] {
   const start = startOfDay(parseISO(`${firstLaunchDate}T12:00:00`));
-  const end = startOfDay(new Date());
-  const from = start > end ? end : start;
+  const today = startOfDay(new Date());
+  const end = endDate
+    ? startOfDay(parseISO(`${endDate}T12:00:00`))
+    : today;
+  const actualEnd = end < today ? today : end;
+  const from = start > actualEnd ? actualEnd : start;
   const days: Date[] = [];
-  for (let cursor = from; cursor <= end; cursor = addDays(cursor, 1)) {
+  for (let cursor = from; cursor <= actualEnd; cursor = addDays(cursor, 1)) {
     days.push(cursor);
   }
   return days;
 }
 
-export function ribbonDayCount(firstLaunchDate: string): number {
-  return buildRibbonDays(firstLaunchDate).length;
+export function ribbonDayCount(firstLaunchDate: string, endDate?: string): number {
+  return buildRibbonDays(firstLaunchDate, endDate).length;
 }
 
 export function studyDateBounds(firstLaunchDate: string): { min: string; max: string } {

@@ -47,10 +47,18 @@ type Props = {
   selectedDate: string;
   firstLaunchDate: string;
   localToday: string;
+  ribbonHorizon?: string;
   onSelectDate: (date: string) => void;
 };
 
-export function DateRibbon({ marks, selectedDate, firstLaunchDate, localToday, onSelectDate }: Props) {
+export function DateRibbon({
+  marks,
+  selectedDate,
+  firstLaunchDate,
+  localToday,
+  ribbonHorizon,
+  onSelectDate,
+}: Props) {
   const listRef = useRef<FlatList<DayItem>>(null);
   const [listWidth, setListWidth] = useState(0);
   const scrollXRef = useRef(0);
@@ -67,11 +75,11 @@ export function DateRibbon({ marks, selectedDate, firstLaunchDate, localToday, o
 
   const days = useMemo<DayItem[]>(
     () =>
-      buildRibbonDays(firstLaunchDate).map((date) => ({
+      buildRibbonDays(firstLaunchDate, ribbonHorizon ?? localToday).map((date) => ({
         key: format(date, 'yyyy-MM-dd'),
         date,
       })),
-    [firstLaunchDate, localToday]
+    [firstLaunchDate, localToday, ribbonHorizon]
   );
 
   const sidePad = Math.max(0, (listWidth - CHIP_WIDTH) / 2);

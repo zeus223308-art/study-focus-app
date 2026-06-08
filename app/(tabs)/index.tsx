@@ -23,6 +23,7 @@ export default function DashboardScreen() {
     data,
     dueSelected,
     ribbonMarks,
+    ribbonHorizon,
     localToday,
     selectedDate,
     setSelectedDate,
@@ -146,29 +147,30 @@ export default function DashboardScreen() {
             style={styles.emptyGhostBtn}
           />
         </View>
-      ) : (
-        <>
-          <DashboardReviewPicker
-            entries={subjectEntries}
-            selectedIds={selectedSubjectIds}
-            previewIndexBySubject={previewIndexBySubject}
-            onToggle={toggleSubject}
-            onPreviewIndexChange={setPreviewIndex}
-            onStartReview={openReview}
-            canStart={canStart}
-          />
-        </>
-      )}
+      ) : null}
 
       <View style={styles.calendarSection}>
         <DashboardCalendar
           marks={ribbonMarks}
           selectedDate={selectedDate}
           localToday={localToday}
+          ribbonHorizon={ribbonHorizon}
           firstLaunchDate={data.settings.firstLaunchDate}
           onSelectDate={setSelectedDate}
         />
       </View>
+
+      {subjectEntries.length > 0 ? (
+        <DashboardReviewPicker
+          entries={subjectEntries}
+          selectedIds={selectedSubjectIds}
+          previewIndexBySubject={previewIndexBySubject}
+          onToggle={toggleSubject}
+          onPreviewIndexChange={setPreviewIndex}
+          onStartReview={openReview}
+          canStart={canStart}
+        />
+      ) : null}
 
     </Screen>
   );
