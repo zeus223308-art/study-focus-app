@@ -522,6 +522,9 @@ export default function BundleScreen() {
 
       <RestoreDateChoiceSheet
         visible={restoreDateOpen}
+        firstLaunchDate={data.settings.firstLaunchDate}
+        localToday={localToday}
+        defaultStudyDate={bundle.studyDate}
         onClose={() => setRestoreDateOpen(false)}
         onRestoreToday={() => {
           unarchiveBundle(bundle.id, { studyDate: localToday });
@@ -530,6 +533,11 @@ export default function BundleScreen() {
         }}
         onRestoreKeepDate={() => {
           unarchiveBundle(bundle.id);
+          setRestoreDateOpen(false);
+          showMessage('', t('folder.restoredCount', { count: 1 }));
+        }}
+        onRestoreCustom={(studyDate) => {
+          unarchiveBundle(bundle.id, { studyDate });
           setRestoreDateOpen(false);
           showMessage('', t('folder.restoredCount', { count: 1 }));
         }}

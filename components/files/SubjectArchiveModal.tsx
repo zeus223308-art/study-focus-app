@@ -184,17 +184,23 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
     setPreviewSide('front');
   }, []);
 
+  const restoreDefaultDate = useMemo(() => {
+    if (!restorePromptIds || restorePromptIds.length !== 1) return localToday;
+    const bundle = data.bundles.find((b) => b.id === restorePromptIds[0]);
+    return bundle?.studyDate ?? localToday;
+  }, [data.bundles, localToday, restorePromptIds]);
+
   const finishRestore = useCallback(
-    (bundleIds: string[], useTodayDate: boolean) => {
+    (bundleIds: string[], studyDate?: string) => {
       for (const bid of bundleIds) {
-        unarchiveBundle(bid, useTodayDate ? { studyDate: localToday } : undefined);
+        unarchiveBundle(bid, studyDate ? { studyDate } : undefined);
       }
       setRestorePromptIds(null);
       exitSelect();
       closePreview();
       showMessage('', t('folder.restoredCount', { count: bundleIds.length }));
     },
-    [closePreview, exitSelect, localToday, t, unarchiveBundle]
+    [closePreview, exitSelect, t, unarchiveBundle]
   );
 
   const restoreSelected = useCallback(() => {
@@ -385,12 +391,18 @@ export function SubjectArchiveModal({ visible, subjectId, subjectName, onClose }
 
       <RestoreDateChoiceSheet
         visible={restorePromptIds != null && restorePromptIds.length > 0}
+        firstLaunchDate={data.settings.firstLaunchDate}
+        localToday={localToday}
+        defaultStudyDate={restoreDefaultDate}
         onClose={() => setRestorePromptIds(null)}
         onRestoreToday={() => {
-          if (restorePromptIds) finishRestore(restorePromptIds, true);
+          if (restorePromptIds) finishRestore(restorePromptIds, localToday);
         }}
         onRestoreKeepDate={() => {
-          if (restorePromptIds) finishRestore(restorePromptIds, false);
+          if (restorePromptIds) finishRestore(restorePromptIds);
+        }}
+        onRestoreCustom={(studyDate) => {
+          if (restorePromptIds) finishRestore(restorePromptIds, studyDate);
         }}
       />
     </Modal>

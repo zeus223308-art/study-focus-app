@@ -1,4 +1,4 @@
-import { addDays, format, parseISO, startOfDay } from 'date-fns';
+import { addDays, format, isValid, parseISO, startOfDay } from 'date-fns';
 
 import { theme } from '@/constants/theme';
 import { collectAllCaptureTags, normalizeCaptureTagPresets } from '@/lib/domain/capture-tags';
@@ -96,6 +96,26 @@ export function ribbonDayCount(firstLaunchDate: string, endDate?: string): numbe
 
 export function studyDateBounds(firstLaunchDate: string): { min: string; max: string } {
   return { min: firstLaunchDate, max: todayKey() };
+}
+
+const STUDY_DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Parse `yyyy-MM-dd` and clamp to first-launch…`maxDate` (defaults to local today). */
+export function parseStudyDateInput(
+  raw: string,
+  firstLaunchDate: string,
+  maxDate?: string
+): string | null {
+  const trimmed = raw.trim();
+  if (!STUDY_DATE_KEY_RE.test(trimmed)) return null;
+
+  const date = parseISO(`${trimmed}T12:00:00`);
+  if (!isValid(date) || format(date, 'yyyy-MM-dd') !== trimmed) return null;
+
+  const { min, max } = studyDateBounds(firstLaunchDate);
+  const cap = maxDate ?? max;
+  if (trimmed < min || trimmed > cap) return null;
+  return trimmed;
 }
 
 /** Move study date by N days, clamped to first-launch…today (no future). */
