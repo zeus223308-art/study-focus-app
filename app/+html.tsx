@@ -73,21 +73,34 @@ html, body, #root {
   padding: 0;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
+  box-sizing: border-box;
 }
 html {
   color-scheme: only light;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 body {
   background-color: #0A0A0A;
-  overflow-x: hidden;
+  overflow-x: clip;
   box-sizing: border-box;
   touch-action: manipulation;
   -webkit-touch-callout: none;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
   overscroll-behavior-x: none;
   forced-color-adjust: none;
+  min-height: 100%;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+#root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100%;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  overflow-x: clip;
 }
 @media (prefers-color-scheme: dark) {
   html {

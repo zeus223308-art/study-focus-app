@@ -1,9 +1,9 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
-import { useWindowDimensions } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { getDeviceClass } from '@/lib/ui/viewport-layout';
+import { useLayoutViewportSize } from '@/lib/ui/mobile-web-viewport';
 
 /** iPhone 14 class width — default web phone preview */
 export const MOBILE_FRAME_WIDTH = 390;
@@ -32,7 +32,7 @@ export function MobileWebFrame({ children }: Props) {
     return <>{children}</>;
   }
 
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useLayoutViewportSize();
   const deviceClass = getDeviceClass(windowWidth, windowHeight);
   const isLandscape = windowWidth > windowHeight;
   const isPhone = deviceClass === 'phone';
@@ -84,10 +84,12 @@ const styles = StyleSheet.create({
     minHeight: 0,
     backgroundColor: theme.beige,
     overflow: 'hidden',
+    ...(Platform.OS === 'web' ? ({ overflowX: 'clip' } as object) : null),
   },
   frameFullBleed: {
     width: '100%',
     maxWidth: '100%',
     alignSelf: 'stretch',
+    overflowX: 'clip' as const,
   },
 });

@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
-import { useWindowDimensions } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 
 import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
+import { useLayoutViewportSize } from '@/lib/ui/mobile-web-viewport';
 
 /** Phone: short edge < 600. Tablet: 600–767. Large tablet (iPad Pro, Tab S): >= 768. */
 export type DeviceClass = 'phone' | 'tablet' | 'largeTablet';
@@ -188,7 +189,10 @@ export function computeBundlePhotoLayout(layout: ViewportLayout): BundlePhotoLay
 }
 
 export function useViewportLayout(): ViewportLayout {
-  const { width, height } = useWindowDimensions();
+  const windowDims = useWindowDimensions();
+  const layoutSize = useLayoutViewportSize();
+  const width = Platform.OS === 'web' ? layoutSize.width : windowDims.width;
+  const height = Platform.OS === 'web' ? layoutSize.height : windowDims.height;
 
   return useMemo(() => {
     const shortEdge = Math.min(width, height);
