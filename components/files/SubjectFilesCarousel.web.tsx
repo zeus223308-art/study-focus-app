@@ -251,6 +251,7 @@ export function SubjectFilesCarousel({
               subjectId={subject.id}
               name={subject.name}
               subjectColor={subject.color}
+              subjectSortOrder={subject.sortOrder}
               totalLabel={totalLabelFor(subject.id)}
               previewItems={previewItemsFor(subject.id)}
               vaultLayout

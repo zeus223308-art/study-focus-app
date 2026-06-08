@@ -10,7 +10,7 @@ import {
 
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { normalizeSubjectColor } from '@/lib/domain/subject-colors';
+import { resolveSubjectColor } from '@/lib/domain/subject-colors';
 
 const DOUBLE_TAP_MS = 320;
 
@@ -18,6 +18,7 @@ type Props = {
   subjectId: string;
   name: string;
   color?: string;
+  colorSortOrder?: number;
   lifted?: boolean;
   disabled?: boolean;
   onEditingChange?: (editing: boolean) => void;
@@ -28,6 +29,7 @@ export function SubjectFolderName({
   subjectId,
   name,
   color,
+  colorSortOrder = 0,
   lifted,
   disabled,
   onEditingChange,
@@ -72,7 +74,7 @@ export function SubjectFolderName({
     lastTapRef.current = now;
   }, [disabled, editing]);
 
-  const nameColor = color ? normalizeSubjectColor(color) : theme.black;
+  const nameColor = color ? resolveSubjectColor(color, colorSortOrder) : theme.black;
 
   if (editing) {
     return (

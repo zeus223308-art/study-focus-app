@@ -18,6 +18,7 @@ type Props = {
   subjectId: string;
   name: string;
   subjectColor?: string;
+  subjectSortOrder?: number;
   totalLabel: string;
   previewItems: SubjectPreviewItem[];
   onPress: () => void;
@@ -37,6 +38,7 @@ export function SubjectFolderTile({
   subjectId,
   name,
   subjectColor,
+  subjectSortOrder = 0,
   totalLabel,
   previewItems,
   onPress,
@@ -157,6 +159,7 @@ export function SubjectFolderTile({
               subjectId={subjectId}
               name={name}
               color={subjectColor}
+              colorSortOrder={subjectSortOrder}
               lifted={isActive}
               disabled={
                 selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)
@@ -171,6 +174,7 @@ export function SubjectFolderTile({
               subjectId={subjectId}
               name={name}
               color={subjectColor}
+              colorSortOrder={subjectSortOrder}
               lifted={isActive}
               disabled={
                 selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)

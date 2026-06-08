@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import { normalizeSubjectColor } from '@/lib/domain/subject-colors';
+import { resolveSubjectColor } from '@/lib/domain/subject-colors';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
@@ -33,8 +33,9 @@ type Props = {
   variant?: PreviewVariant;
   /** Shown as small tag on top-left inside the card (dashboard). */
   subjectTag?: string;
-  /** Background for the subject tag pill (dashboard). */
+  /** Subject color for the dashboard name label (top-left). */
   subjectColor?: string;
+  subjectSortOrder?: number;
   onInteraction?: () => void;
   /** Controlled carousel index (dashboard problem picker). */
   previewIndex?: number;
@@ -44,8 +45,11 @@ type Props = {
 const VAULT_HEIGHT = 112;
 const DASHBOARD_HEIGHT = 120;
 
-function subjectNameTextStyle(color?: string) {
-  return [styles.subjectTagText, { color: normalizeSubjectColor(color ?? theme.black) }];
+function subjectNameTextStyle(color?: string, sortOrder = 0) {
+  return [
+    styles.subjectTagText,
+    { color: color ? resolveSubjectColor(color, sortOrder) : theme.black },
+  ];
 }
 
 export function SubjectFolderPreview({
@@ -59,6 +63,7 @@ export function SubjectFolderPreview({
   variant = 'vault',
   subjectTag,
   subjectColor,
+  subjectSortOrder,
   onInteraction,
   previewIndex: previewIndexProp,
   onPreviewIndexChange,
@@ -77,7 +82,21 @@ export function SubjectFolderPreview({
       : internalIndex;
   const showCounter = !isDashboard && items.length > 1;
   const counterLabel = `${index + 1} / ${items.length}`;
-  const subjectNameStyle = subjectNameTextStyle(subjectColor);
+  const subjectNameStyle = subjectNameTextStyle(subjectColor, subjectSortOrder);
+
+  const subjectNameLabel =
+    subjectTag ? (
+      <Text
+        style={[
+          styles.subjectTag,
+          isDashboard && styles.subjectTagOnPhoto,
+          subjectNameStyle,
+        ]}
+        numberOfLines={1}
+        pointerEvents="none">
+        {subjectTag}
+      </Text>
+    ) : null;
 
   const lock = useCallback(() => onGestureLock(true), [onGestureLock]);
   const unlock = useCallback(() => onGestureLock(false), [onGestureLock]);
@@ -161,9 +180,7 @@ export function SubjectFolderPreview({
           onPress={onOpen}
           onLongPress={onLongPress}
           delayLongPress={500}>
-          {subjectTag ? (
-            <Text style={[styles.subjectTag, subjectNameStyle]}>{subjectTag}</Text>
-          ) : null}
+          {subjectNameLabel}
           <Text style={styles.emptyHint}>{emptyHint}</Text>
           <Text style={styles.total}>{totalLabel}</Text>
         </Pressable>
@@ -175,9 +192,7 @@ export function SubjectFolderPreview({
         onPress={onOpen}
         onLongPress={onLongPress}
         delayLongPress={450}>
-        {subjectTag ? (
-          <Text style={[styles.subjectTag, subjectNameStyle]}>{subjectTag}</Text>
-        ) : null}
+        {subjectNameLabel}
         <Text style={styles.emptyHint}>{emptyHint}</Text>
         <Text style={styles.total}>{totalLabel}</Text>
       </Pressable>
@@ -194,11 +209,7 @@ export function SubjectFolderPreview({
           const w = Math.round(e.nativeEvent.layout.width);
           if (w > 0 && w !== cardWidth) setCardWidth(w);
         }}>
-        {subjectTag ? (
-          <Text style={[styles.subjectTag, subjectNameStyle]} numberOfLines={1}>
-            {subjectTag}
-          </Text>
-        ) : null}
+        {subjectNameLabel}
         <View style={[styles.slide, { height: slideHeight }]}>
           <ResolvedImage uri={first.thumbnailUri} style={styles.image} resizeMode="cover" />
         </View>
@@ -240,11 +251,6 @@ export function SubjectFolderPreview({
         const w = Math.round(e.nativeEvent.layout.width);
         if (w > 0 && w !== cardWidth) setCardWidth(w);
       }}>
-      {subjectTag ? (
-        <Text style={[styles.subjectTag, subjectNameStyle]} numberOfLines={1} pointerEvents="none">
-          {subjectTag}
-        </Text>
-      ) : null}
       {cardWidth > 0 && (
         <FlatList
           ref={listRef}
@@ -267,12 +273,13 @@ export function SubjectFolderPreview({
           })}
         />
       )}
-      <View style={styles.overlay} pointerEvents="none">
+      <View style={[styles.overlay, isDashboard && styles.overlayUnderSubject]} pointerEvents="none">
         <Text style={styles.badge}>{totalLabel}</Text>
         {showCounter ? (
           <Text style={[styles.counter, isDashboard && styles.counterPick]}>{counterLabel}</Text>
         ) : null}
       </View>
+      {subjectNameLabel}
       {!isDashboard ? (
         <Pressable
           style={styles.openFab}
@@ -321,12 +328,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     left: 8,
-    zIndex: 2,
+    zIndex: 4,
     maxWidth: '72%',
+  },
+  subjectTagOnPhoto: {
+    zIndex: 12,
+    elevation: 12,
+    textShadowColor: 'rgba(255,255,255,0.92)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
   },
   subjectTagText: {
     fontSize: theme.font.bodySmall,
     fontWeight: '800',
+  },
+  overlayUnderSubject: {
+    zIndex: 3,
   },
   overlay: {
     position: 'absolute',

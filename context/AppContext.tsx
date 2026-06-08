@@ -646,19 +646,20 @@ export function AppProvider({
     );
   }, []);
 
-  const setSubjectColor = useCallback((subjectId: string, color: string) => {
-    const normalized = normalizeSubjectColor(color);
-    setData((prev) =>
-      prev
-        ? {
-          ...prev,
-          subjects: prev.subjects.map((s) =>
-            s.id === subjectId ? { ...s, color: normalized } : s
-          ),
-        }
-        : prev
-    );
-  }, []);
+  const setSubjectColor = useCallback(
+    (subjectId: string, color: string) => {
+      const prev = dataRef.current;
+      if (!prev) return;
+      const normalized = normalizeSubjectColor(color);
+      persist({
+        ...prev,
+        subjects: prev.subjects.map((s) =>
+          s.id === subjectId ? { ...s, color: normalized } : s
+        ),
+      });
+    },
+    [persist]
+  );
 
   const moveProblemsToNewSubject = useCallback(
     (items: PageRef[], newSubjectName: string) => {

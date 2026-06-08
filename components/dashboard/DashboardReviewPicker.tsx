@@ -85,6 +85,7 @@ export function DashboardReviewPicker({
                 <SubjectReviewCard
                   subjectTag={entry.subject.name}
                   subjectColor={entry.subject.color}
+                  subjectSortOrder={entry.subject.sortOrder}
                   previewItems={entry.previews}
                   totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
                   emptyHint={t('dashboard.previewEmpty')}

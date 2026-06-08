@@ -7,7 +7,7 @@ import { SettingsSectionHeader } from '@/components/settings/SettingsSectionHead
 import { TagColorModal } from '@/components/tags/TagColorModal';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { normalizeSubjectColor } from '@/lib/domain/subject-colors';
+import { normalizeSubjectColor, resolveSubjectColor } from '@/lib/domain/subject-colors';
 
 export function SettingsSubjectColorsSection() {
   const { t } = useTranslation();
@@ -35,7 +35,7 @@ export function SettingsSubjectColorsSection() {
               <Text
                 style={[
                   styles.label,
-                  { color: normalizeSubjectColor(subject.color) },
+                  { color: resolveSubjectColor(subject.color, subject.sortOrder) },
                 ]}
                 numberOfLines={1}>
                 {subject.name}
@@ -49,7 +49,10 @@ export function SettingsSubjectColorsSection() {
       <TagColorModal
         visible={colorSubjectId !== null}
         tag={activeSubject?.name ?? ''}
-        current={normalizeSubjectColor(activeSubject?.color ?? theme.orange)}
+        current={resolveSubjectColor(
+          activeSubject?.color ?? theme.orange,
+          activeSubject?.sortOrder ?? 0
+        )}
         isPro={isPro}
         title={t('settings.subjectColorPick')}
         freeLabel={t('capture.tagColorsFree')}

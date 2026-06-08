@@ -7,6 +7,7 @@ import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 type Props = {
   subjectTag: string;
   subjectColor?: string;
+  subjectSortOrder?: number;
   previewItems: SubjectPreviewItem[];
   totalLabel: string;
   emptyHint: string;
@@ -19,6 +20,7 @@ type Props = {
 export function SubjectReviewCard({
   subjectTag,
   subjectColor,
+  subjectSortOrder,
   previewItems,
   totalLabel,
   emptyHint,
@@ -32,6 +34,7 @@ export function SubjectReviewCard({
         variant="dashboard"
         subjectTag={subjectTag}
         subjectColor={subjectColor}
+        subjectSortOrder={subjectSortOrder}
         items={previewItems}
         totalLabel={totalLabel}
         emptyHint={emptyHint}
