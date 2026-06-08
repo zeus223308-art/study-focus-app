@@ -52,7 +52,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "export:web": "expo export --platform web",
+    "export:web": "expo export --platform web && node scripts/inject-web-shell.mjs",
     "serve:web": "npx --yes serve dist -s -l 4173",
     "setup:google-oauth": "node scripts/setup-google-oauth.mjs",
     "setup:google-native": "node scripts/setup-google-oauth-native.mjs",
@@ -62,5 +62,11 @@
     "build:ios:sim": "eas build -p ios --profile preview-simulator --non-interactive",
     "build:native:preview": "eas build -p all --profile preview --non-interactive"
   },
-  "private": true
+  "private": true,
+  "browserslist": [
+    "iOS >= 12",
+    "Safari >= 12",
+    "Chrome >= 64",
+    "Firefox >= 67"
+  ]
 }

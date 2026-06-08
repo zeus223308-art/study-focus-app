@@ -1,3 +1,4 @@
+import '@/lib/polyfills/web-legacy';
 import '@/lib/auth/complete-oauth-popup';
 import 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';

@@ -84,12 +84,12 @@ const styles = StyleSheet.create({
     minHeight: 0,
     backgroundColor: theme.beige,
     overflow: 'hidden',
-    ...(Platform.OS === 'web' ? ({ overflowX: 'clip' } as object) : null),
+    ...(Platform.OS === 'web' ? ({ overflowX: 'hidden' } as object) : null),
   },
   frameFullBleed: {
     width: '100%',
     maxWidth: '100%',
     alignSelf: 'stretch',
-    overflowX: 'clip' as const,
+    overflowX: 'hidden' as const,
   },
 });
