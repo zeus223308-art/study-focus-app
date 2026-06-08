@@ -43,6 +43,8 @@
     "react-native-worklets": "0.8.3"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-env": "^7.29.7",
     "@types/react": "~19.2.2",
     "@types/react-dom": "~19.2.2",
     "typescript": "~6.0.3"
@@ -52,7 +54,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "export:web": "expo export --platform web && node scripts/inject-web-shell.mjs",
+    "export:web": "expo export --platform web && node scripts/inject-web-shell.mjs && node scripts/transpile-web-legacy.mjs",
     "serve:web": "npx --yes serve dist -s -l 4173",
     "setup:google-oauth": "node scripts/setup-google-oauth.mjs",
     "setup:google-native": "node scripts/setup-google-oauth-native.mjs",
