@@ -1,5 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
@@ -116,3 +123,44 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
 });
+
+type BoxProps = {
+  asset?: CloudAsset | null;
+  uri?: string | null;
+  style?: StyleProp<ViewStyle>;
+  preferPreview?: boolean;
+  overlay?: (layout: OverlayLayout) => ReactNode;
+};
+
+/** Measures its layout box and renders a width-fit preview inside (cards, capture sheet). */
+export function WidthFitPreviewBox({
+  asset,
+  uri,
+  style,
+  preferPreview = false,
+  overlay,
+}: BoxProps) {
+  const [size, setSize] = useState({ w: 0, h: 0 });
+
+  return (
+    <View
+      style={style}
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        if (width > 0 && height > 0) {
+          setSize({ w: Math.round(width), h: Math.round(height) });
+        }
+      }}>
+      {size.w > 0 && size.h > 0 ? (
+        <WidthFitPreviewImage
+          asset={asset}
+          uri={uri}
+          containerW={size.w}
+          containerH={size.h}
+          preferPreview={preferPreview}
+          overlay={overlay}
+        />
+      ) : null}
+    </View>
+  );
+}
