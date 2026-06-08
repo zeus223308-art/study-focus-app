@@ -137,7 +137,7 @@ html {
   text-size-adjust: 100%;
 }
 body {
-  background-color: #0A0A0A;
+  background-color: #F9F8F6;
   overflow-x: hidden;
   box-sizing: border-box;
   touch-action: manipulation;

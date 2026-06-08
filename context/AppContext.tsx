@@ -9,10 +9,12 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
+import { Platform } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
+import { isLegacyMobileSafari } from '@/lib/ui/legacy-mobile-safari';
 import { appendCaptureToData } from '@/lib/domain/bundle-factory';
 import {
   captureTagKey,
@@ -23,6 +25,7 @@ import {
   renameCaptureTagPreset,
 } from '@/lib/domain/capture-tags';
 import { applyMonthlyCustomizationReset } from '@/lib/domain/customization-reset';
+import { DEFAULT_DATA } from '@/lib/domain/defaults';
 import { todayKey } from '@/lib/domain/dates';
 import {
   defaultMergedSubjectName,
@@ -382,9 +385,34 @@ export function AppProvider({
   }, []);
 
   const load = useCallback(async () => {
-    const { next, recoveryNotice } = await hydrateFromStorage();
-    applyLoadedData(next, recoveryNotice);
-    setReady(true);
+    let finished = false;
+    const finish = (next: AppData, recoveryNotice: AutoRecoverySource | null) => {
+      if (finished) return;
+      finished = true;
+      applyLoadedData(next, recoveryNotice);
+      setReady(true);
+    };
+
+    if (Platform.OS === 'web' && isLegacyMobileSafari()) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        timer = setTimeout(() => finish(structuredClone(DEFAULT_DATA), null), 9000);
+        const { next, recoveryNotice } = await hydrateFromStorage();
+        clearTimeout(timer);
+        finish(next, recoveryNotice);
+      } catch {
+        clearTimeout(timer);
+        finish(structuredClone(DEFAULT_DATA), null);
+      }
+      return;
+    }
+
+    try {
+      const { next, recoveryNotice } = await hydrateFromStorage();
+      finish(next, recoveryNotice);
+    } catch {
+      finish(structuredClone(DEFAULT_DATA), null);
+    }
   }, [hydrateFromStorage, applyLoadedData]);
 
   const reloadAccountData = useCallback(async () => {
