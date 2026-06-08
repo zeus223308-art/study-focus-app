@@ -54,7 +54,7 @@ export function BundlePhotoBlock({
   onMemoPress,
   memoButtonLabel,
 }: Props) {
-  const uri = asset ? getFullImageUri(asset) ?? getPreviewImageUri(asset) : null;
+  const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
   const [measuredW, setMeasuredW] = useState(0);
 
@@ -84,9 +84,8 @@ export function BundlePhotoBlock({
             <ResolvedImage
               uri={uri}
               asset={asset}
-              preferPreview={false}
               style={{ width: '100%', height }}
-              resizeMode="stretch"
+              resizeMode="contain"
             />
             {inkVisible || (inkEnabled && onStrokesChange) ? (
               <PhotoInkOverlay

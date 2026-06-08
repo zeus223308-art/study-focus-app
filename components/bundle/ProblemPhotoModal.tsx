@@ -171,7 +171,8 @@ export function ProblemPhotoModal({
           />
         )}
 
-        <View style={styles.viewer} onLayout={onLayout}>
+        <View style={styles.viewer}>
+          <View style={styles.viewerStage} onLayout={onLayout}>
           {viewerW > 0 && viewerH > 0 ? (
             <ScrollView
               horizontal
@@ -188,7 +189,11 @@ export function ProblemPhotoModal({
                   getPreviewImageUri(item.asset) ?? getFullImageUri(item.asset);
                 return (
                   <View key={item.side} style={[styles.page, { width: viewerW, height: viewerH }]}>
-                    {item.label ? <Text style={styles.sideLabel}>{item.label}</Text> : null}
+                    {item.label ? (
+                      <Text style={styles.sideLabel} pointerEvents="none">
+                        {item.label}
+                      </Text>
+                    ) : null}
                     <View
                       style={styles.imageBox}
                       onLayout={(e) => {
@@ -204,7 +209,7 @@ export function ProblemPhotoModal({
                         asset={item.asset}
                         preferPreview={false}
                         style={styles.image}
-                        resizeMode="stretch"
+                        resizeMode="contain"
                       />
                       <PhotoInkOverlay
                         memo={item.side === 'front' ? frontMemo : answerMemo}
@@ -223,8 +228,9 @@ export function ProblemPhotoModal({
               })}
             </ScrollView>
           ) : null}
-          {sides.length > 1 ? (
-            <Text style={styles.pager}>
+          </View>
+          {sides.length > 1 && viewerW > 0 ? (
+            <Text style={styles.pager} pointerEvents="none">
               {pageIndex + 1} / {sides.length}
             </Text>
           ) : null}
@@ -244,17 +250,31 @@ const styles = StyleSheet.create({
   },
   close: { color: theme.orange, fontWeight: '800', fontSize: theme.font.body },
   hint: { color: theme.gray, fontSize: theme.font.caption, fontWeight: '600' },
-  viewer: { flex: 1, minHeight: 0 },
+  viewer: { flex: 1, minHeight: 0, position: 'relative' },
+  viewerStage: { flex: 1, minHeight: 0 },
   page: { flex: 1, minHeight: 0 },
   sideLabel: {
+    position: 'absolute',
+    top: 4,
+    left: 0,
+    right: 0,
+    zIndex: 4,
     fontSize: theme.font.caption,
     fontWeight: '700',
     color: theme.gray,
-    marginBottom: 4,
     textAlign: 'center',
   },
   imageBox: { flex: 1, minHeight: 0, position: 'relative' },
   image: { width: '100%', height: '100%' },
   inkPassthrough: { pointerEvents: 'none' as const },
-  pager: { textAlign: 'center', color: theme.gray, marginTop: 8, fontWeight: '700' },
+  pager: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 4,
+    zIndex: 4,
+    textAlign: 'center',
+    color: theme.gray,
+    fontWeight: '700',
+  },
 });

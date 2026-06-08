@@ -180,13 +180,9 @@ export function computeBundlePhotoLayout(layout: ViewportLayout): BundlePhotoLay
       columnGap,
     };
   }
-  const maxHeight = Math.min(
-    Math.round(innerW * 1.35),
-    Math.max(280, Math.round(layout.height * 0.42))
-  );
   return {
     maxWidth: innerW,
-    maxHeight,
+    maxHeight: 220,
     sideBySide: false,
     columnGap: 0,
   };
