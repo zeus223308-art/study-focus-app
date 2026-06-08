@@ -22,6 +22,7 @@ type Props = Omit<ImageProps, 'source'> & {
   uri?: string | null | undefined;
   asset?: CloudAsset | null;
   preferPreview?: boolean;
+  blurred?: boolean;
   style?: StyleProp<ImageStyle>;
 };
 
@@ -42,7 +43,8 @@ function webObjectFit(resizeMode: NonNullable<ImageProps['resizeMode']>): React.
 
 function webImgStyle(
   style: StyleProp<ImageStyle>,
-  resizeMode: NonNullable<ImageProps['resizeMode']>
+  resizeMode: NonNullable<ImageProps['resizeMode']>,
+  blurred?: boolean
 ): React.CSSProperties {
   const flat = StyleSheet.flatten(style) ?? {};
   return {
@@ -51,6 +53,9 @@ function webImgStyle(
     objectFit: webObjectFit(resizeMode),
     borderRadius: typeof flat.borderRadius === 'number' ? flat.borderRadius : undefined,
     display: 'block',
+    ...(blurred
+      ? { filter: 'blur(18px) saturate(1.08)', transform: 'scale(1.08)' }
+      : null),
   };
 }
 
@@ -58,6 +63,7 @@ export function ResolvedImage({
   uri,
   asset,
   preferPreview = true,
+  blurred = false,
   style,
   resizeMode = 'cover',
   ...rest
@@ -106,13 +112,21 @@ export function ResolvedImage({
         {createElement('img', {
           src: resolved,
           alt: '',
-          style: webImgStyle(style, resizeMode),
+          style: webImgStyle(style, resizeMode, blurred),
         })}
       </View>
     );
   }
 
-  return <Image {...rest} source={{ uri: resolved }} style={style} resizeMode={resizeMode} />;
+  return (
+    <Image
+      {...rest}
+      source={{ uri: resolved }}
+      style={style}
+      resizeMode={resizeMode}
+      blurRadius={blurred ? 16 : 0}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

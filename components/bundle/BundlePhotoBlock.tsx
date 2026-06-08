@@ -1,11 +1,12 @@
-import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { PhotoInkOverlay } from '@/components/bundle/PhotoInkOverlay';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
+import { fitImageInBox } from '@/lib/ui/image-fit';
 import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import { hasPhotoSideInk } from '@/lib/domain/photo-memo';
 import type { CloudAsset, InkToolId, NoteLayer, PhotoMemo } from '@/lib/domain/types';
@@ -57,6 +58,18 @@ export function BundlePhotoBlock({
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
   const [measuredW, setMeasuredW] = useState(0);
+  const [aspect, setAspect] = useState(4 / 3);
+
+  useEffect(() => {
+    if (!uri) return;
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (w > 0) setAspect(h / w);
+      },
+      () => setAspect(4 / 3)
+    );
+  }, [uri]);
 
   const width = measuredW > 0 ? measuredW : maxWidth;
   const inkVisible =
@@ -65,6 +78,7 @@ export function BundlePhotoBlock({
   const height = fillWidth
     ? Math.min(maxHeight, Math.max(72, landscapeH))
     : maxHeight;
+  const fit = useMemo(() => fitImageInBox(width, height, aspect), [width, height, aspect]);
 
   const onWrapLayout = useCallback((w: number) => {
     if (w > 0 && w !== measuredW) setMeasuredW(w);
@@ -84,22 +98,32 @@ export function BundlePhotoBlock({
             <ResolvedImage
               uri={uri}
               asset={asset}
-              style={{ width: '100%', height }}
-              resizeMode="contain"
+              blurred
+              style={styles.ambient}
+              resizeMode="cover"
             />
-            {inkVisible || (inkEnabled && onStrokesChange) ? (
-              <PhotoInkOverlay
-                memo={memo}
-                legacyLayer={legacyLayer ?? layer}
-                surfaceWidth={width}
-                surfaceHeight={height}
-                inkInteractive={Boolean(inkEnabled && onStrokesChange)}
-                tool={tool}
-                strokeWidth={strokeWidth}
-                onStrokesChange={onStrokesChange}
-                style={styles.ink}
+            <View style={styles.ambientVeil} pointerEvents="none" />
+            <View style={[styles.fitStage, { width: fit.width, height: fit.height }]}>
+              <ResolvedImage
+                uri={uri}
+                asset={asset}
+                style={styles.fitImage}
+                resizeMode="stretch"
               />
-            ) : null}
+              {inkVisible || (inkEnabled && onStrokesChange) ? (
+                <PhotoInkOverlay
+                  memo={memo}
+                  legacyLayer={legacyLayer ?? layer}
+                  surfaceWidth={fit.width}
+                  surfaceHeight={fit.height}
+                  inkInteractive={Boolean(inkEnabled && onStrokesChange)}
+                  tool={tool}
+                  strokeWidth={strokeWidth}
+                  onStrokesChange={onStrokesChange}
+                  style={styles.ink}
+                />
+              ) : null}
+            </View>
             {showMemoBadge ? (
               <View style={styles.memoBadge} pointerEvents="none">
                 <SymbolView
@@ -150,6 +174,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.grayLight,
     position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ambient: {
+    ...StyleSheet.absoluteFill,
+    opacity: 0.42,
+  },
+  ambientVeil: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(249, 248, 246, 0.5)',
+  },
+  fitStage: {
+    position: 'relative',
+    zIndex: 2,
+    overflow: 'hidden',
+  },
+  fitImage: {
+    width: '100%',
+    height: '100%',
   },
   ink: {
     position: 'absolute',
