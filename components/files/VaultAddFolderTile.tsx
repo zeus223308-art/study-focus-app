@@ -9,19 +9,23 @@ type Props = {
   onPress: () => void;
 };
 
-/** Trailing “+ add folder” slot — preview card first (under page title), label below. */
+/** Trailing “+ add subject” slot — label inside dashed preview card (matches vault folder tiles). */
 export function VaultAddFolderTile({ width, label, onPress }: Props) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.wrap, { width }, pressed && styles.pressed]}>
-      <View style={styles.card}>
+    <View style={[styles.wrap, { width }]} {...(Platform.OS === 'web' ? { dataSet: { vaultTile: '1' } } : {})}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+        accessibilityRole="button"
+        accessibilityLabel={label}>
         <Text style={styles.plus}>+</Text>
-      </View>
-      <Text style={styles.label} numberOfLines={2}>
-        {label}
-      </Text>
-    </Pressable>
+        <Text style={styles.label} numberOfLines={2}>
+          {label}
+        </Text>
+      </Pressable>
+      {/* Align with SubjectFolderName belowPreview row under other vault tiles */}
+      <View style={styles.nameSpacer} />
+    </View>
   );
 }
 
@@ -44,22 +48,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
+    paddingVertical: 10,
+    gap: 4,
     overflow: 'hidden',
     ...(Platform.OS === 'web' ? ({ cursor: 'pointer', touchAction: 'manipulation' } as object) : null),
   },
   plus: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '300',
     color: theme.orange,
-    lineHeight: 32,
+    lineHeight: 26,
   },
   label: {
-    marginTop: 6,
-    marginLeft: 2,
-    marginRight: 2,
-    fontSize: theme.font.body,
+    fontSize: theme.font.bodySmall,
     fontWeight: '800',
     color: theme.black,
     textAlign: 'center',
+    lineHeight: 18,
+  },
+  nameSpacer: {
+    marginTop: 6,
+    minHeight: 20,
   },
 });

@@ -18,6 +18,7 @@ import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 import {
   computeVaultFoldersPerPage,
   useViewportLayout,
+  VAULT_TILE_HEIGHT,
 } from '@/lib/ui/viewport-layout';
 
 const PANEL_PAD = 14;
@@ -326,6 +327,8 @@ const styles = StyleSheet.create({
   carouselSlot: {
     width: '100%',
     marginTop: 0,
+    minHeight: VAULT_TILE_HEIGHT + 4,
+    overflow: 'hidden',
   },
   addBox: {
     marginTop: 20,

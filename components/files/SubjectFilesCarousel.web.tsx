@@ -15,7 +15,7 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
-import { computeVaultFolderTileWidth } from '@/lib/ui/viewport-layout';
+import { computeVaultFolderTileWidth, VAULT_TILE_HEIGHT } from '@/lib/ui/viewport-layout';
 import { resolveWebElement } from '@/lib/ui/resolve-web-element';
 
 const TILE_GAP = 14;
@@ -234,7 +234,12 @@ export function SubjectFilesCarousel({
         style={styles.scroller}
         contentContainerStyle={styles.row}>
         {subjects.map((subject) => (
-          <View key={subject.id} style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+          <View
+            key={subject.id}
+            style={[
+              styles.tileSlot,
+              { width: tileWidth, marginRight: TILE_GAP, minHeight: VAULT_TILE_HEIGHT },
+            ]}>
             <SubjectFolderTile
               subjectId={subject.id}
               name={subject.name}
@@ -263,7 +268,11 @@ export function SubjectFilesCarousel({
           </View>
         ))}
         {onAddFolder && addFolderLabel ? (
-          <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+          <View
+            style={[
+              styles.tileSlot,
+              { width: tileWidth, marginRight: TILE_GAP, minHeight: VAULT_TILE_HEIGHT },
+            ]}>
             <VaultAddFolderTile
               width={tileWidth}
               label={addFolderLabel}

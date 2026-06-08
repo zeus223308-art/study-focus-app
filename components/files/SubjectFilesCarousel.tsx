@@ -15,7 +15,7 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
 import type { SubjectFolder } from '@/lib/domain/types';
-import { computeVaultFolderTileWidth } from '@/lib/ui/viewport-layout';
+import { computeVaultFolderTileWidth, VAULT_TILE_HEIGHT } from '@/lib/ui/viewport-layout';
 
 type CarouselSlot =
   | { key: string; kind: 'subject'; subject: SubjectFolder }
@@ -215,7 +215,11 @@ export function SubjectFilesCarousel({
   const renderItem = ({ item }: ListRenderItemInfo<CarouselSlot>) => {
     if (item.kind === 'add') {
       return (
-        <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+        <View
+          style={[
+            styles.tileSlot,
+            { width: tileWidth, marginRight: TILE_GAP, minHeight: VAULT_TILE_HEIGHT },
+          ]}>
           <VaultAddFolderTile
             width={tileWidth}
             label={addFolderLabel ?? ''}
@@ -227,7 +231,11 @@ export function SubjectFilesCarousel({
 
     const subject = item.subject;
     return (
-      <View style={[styles.tileSlot, { width: tileWidth, marginRight: TILE_GAP }]}>
+      <View
+        style={[
+          styles.tileSlot,
+          { width: tileWidth, marginRight: TILE_GAP, minHeight: VAULT_TILE_HEIGHT },
+        ]}>
         <SubjectFolderTile
           subjectId={subject.id}
           name={subject.name}
@@ -288,6 +296,7 @@ const styles = StyleSheet.create({
   wrap: {
     width: '100%',
     position: 'relative',
+    overflow: 'hidden',
   },
   listContent: {
     paddingHorizontal: PANEL_PAD,
