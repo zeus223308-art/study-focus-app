@@ -143,6 +143,7 @@
     "toolCrop": "Crop",
     "toolDraw": "Draw",
     "toolRotate": "Rotate",
+    "restoreOriginal": "Restore original",
     "drawInkHint": "Pen, highlighter, and eraser work like in the file viewer",
     "editorUndo": "Undo",
     "kakaoCropHint": "Drag photo · use ± to zoom",

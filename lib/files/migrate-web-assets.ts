@@ -43,12 +43,16 @@ async function migrateCloudAsset(
   const originalLocalUri = asset.originalLocalUri
     ? await migrateAssetUri(asset.originalLocalUri, bundleId, pageId, 'master')
     : null;
+  const uncroppedLocalUri = asset.uncroppedLocalUri
+    ? await migrateAssetUri(asset.uncroppedLocalUri, bundleId, pageId, 'source')
+    : null;
 
   return {
     ...asset,
     thumbnailUri,
     localMiniUri,
     originalLocalUri,
+    uncroppedLocalUri,
   };
 }
 

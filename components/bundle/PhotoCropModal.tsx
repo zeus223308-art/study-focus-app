@@ -7,12 +7,20 @@ import { theme } from '@/constants/theme';
 type Props = {
   visible: boolean;
   uri: string;
+  restoreUri?: string | null;
   sideLabel: string;
   onConfirm: (uri: string) => void;
   onClose: () => void;
 };
 
-export function PhotoCropModal({ visible, uri, sideLabel, onConfirm, onClose }: Props) {
+export function PhotoCropModal({
+  visible,
+  uri,
+  restoreUri = null,
+  sideLabel,
+  onConfirm,
+  onClose,
+}: Props) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -20,6 +28,7 @@ export function PhotoCropModal({ visible, uri, sideLabel, onConfirm, onClose }: 
       <View style={[styles.root, { paddingTop: insets.top }]}>
         <CapturePhotoEditor
           uri={uri}
+          restoreUri={restoreUri}
           sideLabel={sideLabel}
           onConfirm={async (result) => {
             onConfirm(result.uri);

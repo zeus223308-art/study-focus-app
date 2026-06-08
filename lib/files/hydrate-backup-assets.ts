@@ -99,6 +99,9 @@ function remapCloudAsset(asset: CloudAsset, resolved: Map<string, string>): Clou
     originalLocalUri: asset.originalLocalUri
       ? remapUri(asset.originalLocalUri, resolved)
       : null,
+    uncroppedLocalUri: asset.uncroppedLocalUri
+      ? remapUri(asset.uncroppedLocalUri, resolved)
+      : null,
   };
 }
 

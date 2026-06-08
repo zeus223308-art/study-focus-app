@@ -6,7 +6,7 @@ const SCHEME = 'msherpa-asset://';
 
 const objectUrlCache = new Map<string, string>();
 
-export type WebAssetRole = 'master' | 'thumb' | 'mini' | 'back';
+export type WebAssetRole = 'master' | 'thumb' | 'mini' | 'back' | 'source';
 
 export function webAssetKey(bundleId: string, pageId: string, role: WebAssetRole): string {
   return `${bundleId}/${pageId}/${role}`;

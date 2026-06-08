@@ -52,6 +52,7 @@ function legacyAsset(uri: string): CloudAsset {
     thumbnailUri: uri,
     localMiniUri: uri,
     originalLocalUri: uri,
+    uncroppedLocalUri: null,
     syncStatus: 'local_only',
     uploadedAt: null,
     lastFetchedAt: null,

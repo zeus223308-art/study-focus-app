@@ -88,6 +88,8 @@ export type CloudAsset = {
   thumbnailUri: string;
   localMiniUri: string;
   originalLocalUri: string | null;
+  /** Full image before the first in-app crop; null when master was never cropped. */
+  uncroppedLocalUri: string | null;
   syncStatus: CloudSyncStatus;
   uploadedAt: string | null;
   lastFetchedAt: string | null;

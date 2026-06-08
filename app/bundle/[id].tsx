@@ -18,7 +18,7 @@ import { useApp } from '@/context/AppContext';
 import { attachAnswerToPage } from '@/lib/domain/attach-answer';
 import { mergeCaptureTagPresets } from '@/lib/domain/capture-tags';
 import { replacePageAnswerPhoto, replacePageFrontPhoto } from '@/lib/files/replace-page-photo';
-import { getFullImageUri } from '@/lib/files/display-image-uri';
+import { getFullImageUri, getUncroppedImageUri } from '@/lib/files/display-image-uri';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { ERASER_WIDTHS, HIGHLIGHTER_WIDTHS, PEN_WIDTHS, isHighlighterTool } from '@/lib/domain/ink-sizes';
 import { hasPhotoMemoContent, normalizePhotoMemo } from '@/lib/domain/photo-memo';
@@ -77,6 +77,7 @@ export default function BundleScreen() {
   const [modalInitialSide, setModalInitialSide] = useState<'front' | 'back'>('front');
   const [cropOpen, setCropOpen] = useState(false);
   const [cropUri, setCropUri] = useState('');
+  const [cropRestoreUri, setCropRestoreUri] = useState<string | null>(null);
   const [cropSide, setCropSide] = useState<'front' | 'back'>('front');
   const [archivePickerOpen, setArchivePickerOpen] = useState(false);
   const [memoOpen, setMemoOpen] = useState(false);
@@ -159,11 +160,13 @@ export default function BundleScreen() {
   };
 
   const openCrop = (side: 'front' | 'back') => {
-    const uri =
-      side === 'front' ? getFullImageUri(page.asset) : getFullImageUri(page.answerAsset);
+    const asset = side === 'front' ? page.asset : page.answerAsset;
+    const uri = getFullImageUri(asset);
     if (!uri) return;
+    const uncropped = getUncroppedImageUri(asset);
     setCropSide(side);
     setCropUri(uri);
+    setCropRestoreUri(uncropped && uncropped !== uri ? uncropped : null);
     setCropOpen(true);
   };
 
@@ -472,6 +475,7 @@ export default function BundleScreen() {
       <PhotoCropModal
         visible={cropOpen}
         uri={cropUri}
+        restoreUri={cropRestoreUri}
         sideLabel={cropSide === 'front' ? '' : t('item.answerSection')}
         onConfirm={onCropDone}
         onClose={() => setCropOpen(false)}
