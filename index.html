@@ -1,6 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="app-build" content="00b50ade8e368427ecf9a8f76966ec590fa040f4"><script>(function(){try{var c="00b50ade8e368427ecf9a8f76966ec590fa040f4";fetch("/study-focus-app/version.json?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r&&r.ok?r.json():null;}).then(function(j){if(!j||!j.build||j.build===c)return;var k="app-build-reloaded";if(sessionStorage.getItem(k)===j.build)return;sessionStorage.setItem(k,j.build);var u=new URL(location.href);u.searchParams.set("u",j.build);location.replace(u.toString());}).catch(function(){});}catch(e){}})();</script>
+  <head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="app-build" content="8907588a44d07c76c2560e97a19851166304544a"><script>(function(){try{var c="8907588a44d07c76c2560e97a19851166304544a";fetch("/study-focus-app/version.json?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r&&r.ok?r.json():null;}).then(function(j){if(!j||!j.build||j.build===c)return;var k="app-build-reloaded";if(sessionStorage.getItem(k)===j.build)return;sessionStorage.setItem(k,j.build);var u=new URL(location.href);u.searchParams.set("u",j.build);location.replace(u.toString());}).catch(function(){});}catch(e){}})();</script><script data-legacy-safari-polyfill="1">/** Inline in index.html before app bundle — iPhone 7 / iOS 12–15 Safari. Keep in sync with +html.tsx. */
+(function () {
+  var g =
+    typeof globalThis !== 'undefined'
+      ? globalThis
+      : typeof window !== 'undefined'
+        ? window
+        : this;
+  if (typeof g.globalThis === 'undefined') g.globalThis = g;
+
+  if (typeof Object.hasOwn !== 'function') {
+    Object.hasOwn = function (obj, prop) {
+      return Object.prototype.hasOwnProperty.call(obj, prop);
+    };
+  }
+
+  if (typeof g.structuredClone !== 'function') {
+    g.structuredClone = function (val) {
+      if (val === undefined) return val;
+      if (typeof val === 'function') return val;
+      return JSON.parse(JSON.stringify(val));
+    };
+  }
+
+  if (!Array.prototype.at) {
+    Array.prototype.at = function (n) {
+      var len = this.length;
+      var i = Math.trunc(Number(n)) || 0;
+      if (i < 0) i += len;
+      return i < 0 || i >= len ? undefined : this[i];
+    };
+  }
+
+  if (!String.prototype.at) {
+    String.prototype.at = function (n) {
+      var len = this.length;
+      var i = Math.trunc(Number(n)) || 0;
+      if (i < 0) i += len;
+      return i < 0 || i >= len ? undefined : this[i];
+    };
+  }
+
+  if (typeof Promise.withResolvers !== 'function') {
+    Promise.withResolvers = function () {
+      var resolve, reject;
+      var promise = new Promise(function (res, rej) {
+        resolve = res;
+        reject = rej;
+      });
+      return { promise: promise, resolve: resolve, reject: reject };
+    };
+  }
+})();
+</script><style data-web-mobile-shell="1">html,body,#root{height:100%;margin:0;padding:0;width:100%;max-width:100%;overflow-x:hidden;box-sizing:border-box}html{color-scheme:light;-webkit-text-size-adjust:100%;text-size-adjust:100%}body{background-color:#0A0A0A;overflow-x:hidden;touch-action:manipulation;-webkit-touch-callout:none;min-height:100%;min-height:-webkit-fill-available}#root{display:flex;flex-direction:column;flex:1;min-height:100%;min-height:-webkit-fill-available;overflow-x:hidden}[data-subject-carousel="scroll"]{touch-action:pan-x!important;-webkit-overflow-scrolling:touch;overflow-x:auto!important;overflow-y:hidden!important}[data-recall-canvas="1"],[data-hold-drag="active"]{touch-action:none!important;-webkit-user-select:none!important;user-select:none!important}</style>
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
@@ -34,8 +87,8 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
-  <script src="/study-focus-app/_expo/static/js/web/entry-d8b6f9cc9543162342b070e5523415de.js" defer></script>
+  <script src="/study-focus-app/_expo/static/js/web/entry-c131add3f51d9a0c41dbeb558efad9fa.js" defer></script>
 </body>
 </html>
 
-<!-- deploy 2026-06-08T08:40:17.568Z 00b50ade8e368427ecf9a8f76966ec590fa040f4 -->
+<!-- deploy 2026-06-08T08:47:14.205Z 8907588a44d07c76c2560e97a19851166304544a -->
