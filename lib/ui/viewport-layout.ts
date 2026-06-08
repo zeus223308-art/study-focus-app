@@ -182,7 +182,10 @@ export function computeBundlePhotoLayout(layout: ViewportLayout): BundlePhotoLay
   }
   return {
     maxWidth: innerW,
-    maxHeight: 220,
+    maxHeight: Math.max(
+      220,
+      Math.min(Math.round(innerW * 1.45), Math.round(layout.height * 0.52))
+    ),
     sideBySide: false,
     columnGap: 0,
   };

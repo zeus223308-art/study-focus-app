@@ -26,7 +26,7 @@ type Props = {
   overlay?: (layout: OverlayLayout) => ReactNode;
 };
 
-function pickUri(
+function pickDisplayUri(
   uriProp: string | null | undefined,
   asset: CloudAsset | null | undefined,
   preferPreview: boolean
@@ -36,6 +36,15 @@ function pickUri(
   return preferPreview
     ? getPreviewImageUri(asset) ?? getFullImageUri(asset)
     : getFullImageUri(asset) ?? getPreviewImageUri(asset);
+}
+
+/** Master/full URI for aspect — preview thumbs can differ in edge cases. */
+function pickDimensionUri(
+  uriProp: string | null | undefined,
+  asset: CloudAsset | null | undefined
+): string | null {
+  if (asset) return getFullImageUri(asset) ?? getPreviewImageUri(asset) ?? uriProp ?? null;
+  return uriProp ?? null;
 }
 
 export function useWidthFitImageLayout(
@@ -74,8 +83,8 @@ export function useWidthFitImageLayout(
   const imgW = Math.max(1, containerW);
   const ratio = aspect ?? 4 / 3;
   const imgH = Math.max(1, Math.round(containerW * ratio));
-  const offsetY = imgH < containerH ? Math.round((containerH - imgH) / 2) : 0;
   const scrolls = imgH > containerH + 1;
+  const offsetY = !scrolls && imgH < containerH ? Math.round((containerH - imgH) / 2) : 0;
   return { imgW, imgH, offsetY, scrolls, ready: aspect !== null };
 }
 
@@ -88,14 +97,15 @@ export function WidthFitPreviewImage({
   preferPreview = false,
   overlay,
 }: Props) {
-  const resolvedUri = pickUri(uriProp, asset, preferPreview);
+  const displayUri = pickDisplayUri(uriProp, asset, preferPreview);
+  const dimensionUri = pickDimensionUri(uriProp, asset);
   const { imgW, imgH, offsetY, scrolls, ready } = useWidthFitImageLayout(
-    resolvedUri,
+    dimensionUri,
     containerW,
     containerH
   );
 
-  if (containerW < 1 || containerH < 1 || !resolvedUri) {
+  if (containerW < 1 || containerH < 1 || !displayUri) {
     return <View style={{ width: containerW, height: containerH }} />;
   }
 
@@ -105,11 +115,11 @@ export function WidthFitPreviewImage({
     <View style={[imageStyle, styles.imageWrap]}>
       {ready ? (
         <ResolvedImage
-          uri={resolvedUri}
+          uri={displayUri}
           asset={asset ?? undefined}
           preferPreview={preferPreview}
           style={imageStyle}
-          resizeMode="stretch"
+          resizeMode="contain"
         />
       ) : (
         <View style={[imageStyle, styles.placeholder]} />
@@ -122,8 +132,9 @@ export function WidthFitPreviewImage({
     return (
       <ScrollView
         style={[styles.scroll, { width: containerW, height: containerH }]}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ width: containerW, minHeight: imgH }}
+        showsVerticalScrollIndicator={Platform.OS !== 'web'}
+        nestedScrollEnabled
         bounces={false}>
         {imageContent}
       </ScrollView>
@@ -144,16 +155,15 @@ const styles = StyleSheet.create({
   },
   imageWrap: {
     position: 'relative',
-    overflow: 'hidden',
   },
   placeholder: {
     backgroundColor: theme.grayLight,
   },
   scroll: {
-    ...(Platform.OS === 'web' ? ({ overflowX: 'hidden' } as object) : null),
-  },
-  scrollContent: {
-    flexGrow: 1,
+    backgroundColor: theme.surface,
+    ...(Platform.OS === 'web'
+      ? ({ overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' } as object)
+      : null),
   },
   box: {
     width: '100%',
