@@ -43,8 +43,9 @@ export function PhotoInkOverlay({
   );
   const hasInk = layer.strokes.length > 0;
   const hasText = memo.textBoxes.length > 0;
+  const showInk = hasInk || inkInteractive;
 
-  if (!hasInk && !hasText) return null;
+  if (!showInk && !hasText) return null;
 
   const passthrough = !inkInteractive && !textInteractive;
 
@@ -52,7 +53,7 @@ export function PhotoInkOverlay({
     <View
       style={[styles.root, passthrough && styles.passthrough, style]}
       pointerEvents={passthrough ? 'none' : 'box-none'}>
-      {hasInk ? (
+      {showInk ? (
         <AnnotationCanvas
           layer={layer}
           tool={tool}
