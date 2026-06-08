@@ -204,7 +204,7 @@ export function ProblemPhotoModal({
                         asset={item.asset}
                         preferPreview={false}
                         style={styles.image}
-                        resizeMode="stretch"
+                        resizeMode="contain"
                       />
                       <PhotoInkOverlay
                         memo={item.side === 'front' ? frontMemo : answerMemo}

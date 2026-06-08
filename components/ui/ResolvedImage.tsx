@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { createElement, useEffect, useMemo, useState } from 'react';
 import {
   Image,
   Platform,
@@ -17,7 +17,6 @@ import {
 } from '@/lib/files/asset-uri-utils';
 import { isDirectImageUri } from '@/lib/files/direct-image-uri';
 import { resolveFirstReadableUri } from '@/lib/files/resolve-image-uri';
-import { needsWebNativeImage, WebNativeImage } from '@/lib/ui/web-native-image';
 
 type Props = Omit<ImageProps, 'source'> & {
   uri?: string | null | undefined;
@@ -26,8 +25,43 @@ type Props = Omit<ImageProps, 'source'> & {
   style?: StyleProp<ImageStyle>;
 };
 
-export function ResolvedImage({ uri, asset, preferPreview = true, style, ...rest }: Props) {
-  const resizeMode = rest.resizeMode ?? 'cover';
+function webObjectFit(resizeMode: NonNullable<ImageProps['resizeMode']>): React.CSSProperties['objectFit'] {
+  switch (resizeMode) {
+    case 'contain':
+      return 'contain';
+    case 'cover':
+      return 'cover';
+    case 'stretch':
+      return 'fill';
+    case 'center':
+      return 'none';
+    default:
+      return 'contain';
+  }
+}
+
+function webImgStyle(
+  style: StyleProp<ImageStyle>,
+  resizeMode: NonNullable<ImageProps['resizeMode']>
+): React.CSSProperties {
+  const flat = StyleSheet.flatten(style) ?? {};
+  return {
+    width: '100%',
+    height: '100%',
+    objectFit: webObjectFit(resizeMode),
+    borderRadius: typeof flat.borderRadius === 'number' ? flat.borderRadius : undefined,
+    display: 'block',
+  };
+}
+
+export function ResolvedImage({
+  uri,
+  asset,
+  preferPreview = true,
+  style,
+  resizeMode = 'cover',
+  ...rest
+}: Props) {
   const candidates = useMemo(() => {
     if (asset) {
       return preferPreview ? getPreviewUriCandidates(asset) : getFullUriCandidates(asset);
@@ -66,15 +100,26 @@ export function ResolvedImage({ uri, asset, preferPreview = true, style, ...rest
     return <View style={[styles.placeholder, style]} />;
   }
 
-  if (Platform.OS === 'web' && needsWebNativeImage(resolved)) {
-    return <WebNativeImage uri={resolved} style={style} resizeMode={resizeMode} />;
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.clip, style]}>
+        {createElement('img', {
+          src: resolved,
+          alt: '',
+          style: webImgStyle(style, resizeMode),
+        })}
+      </View>
+    );
   }
 
-  return <Image {...rest} source={{ uri: resolved }} style={style} />;
+  return <Image {...rest} source={{ uri: resolved }} style={style} resizeMode={resizeMode} />;
 }
 
 const styles = StyleSheet.create({
   placeholder: {
     backgroundColor: theme.grayLight,
+  },
+  clip: {
+    overflow: 'hidden',
   },
 });
