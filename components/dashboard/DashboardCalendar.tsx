@@ -250,14 +250,12 @@ export function DashboardCalendar({
                 !inMonth && styles.cellDim,
                 isFuture && inMonth && !selected && styles.cellFuture,
                 !selectable && !isFuture && styles.cellDisabled,
-                selected && styles.cellSelectedOuter,
               ]}>
               <View
                 style={[
                   styles.cellInner,
                   selected && styles.cellSelected,
                   isToday && !selected && styles.cellToday,
-                  isToday && selected && styles.cellSelectedToday,
                 ]}>
                 <Text
                   style={[
@@ -395,28 +393,14 @@ const styles = StyleSheet.create({
   cellDim: { opacity: 0.35 },
   cellFuture: { opacity: 0.72 },
   cellDisabled: { opacity: 0.25 },
-  cellSelectedOuter: {
-    borderWidth: 2,
-    borderColor: theme.orange,
-    borderRadius: 10,
-    opacity: 1,
-  },
   cellInner: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
   },
-  cellSelected: {
-    backgroundColor: theme.orange,
-    borderWidth: 1,
-    borderColor: theme.orange,
-  },
-  cellSelectedToday: {
-    borderWidth: 2,
-    borderColor: theme.black,
-  },
-  cellToday: { borderWidth: 1, borderColor: theme.orange },
+  cellSelected: { backgroundColor: theme.orange },
+  cellToday: { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.orange },
   dayNum: { fontSize: theme.font.caption, fontWeight: '600', color: theme.black },
   dayNumSelected: { color: theme.onAccent, fontWeight: '800' },
   dayDue: { fontWeight: '800' },
