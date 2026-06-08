@@ -239,6 +239,7 @@ export function SubjectFilesCarousel({
         <SubjectFolderTile
           subjectId={subject.id}
           name={subject.name}
+          subjectColor={subject.color}
           totalLabel={totalLabelFor(subject.id)}
           previewItems={previewItemsFor(subject.id)}
           vaultLayout

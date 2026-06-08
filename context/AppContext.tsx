@@ -24,26 +24,24 @@ import {
 } from '@/lib/domain/capture-tags';
 import { applyMonthlyCustomizationReset } from '@/lib/domain/customization-reset';
 import { todayKey } from '@/lib/domain/dates';
-import { ensureTagColorMap, normalizeTagColorHex } from '@/lib/ui/tag-colors';
-import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
-import { movePageToSubject } from '@/lib/domain/move-page-to-subject';
-import { movePagesToSubject, type PageRef } from '@/lib/domain/move-pages-batch';
-import { removePageFromData } from '@/lib/domain/remove-page';
 import {
   defaultMergedSubjectName,
   mergeSubjectFoldersInData,
 } from '@/lib/domain/merge-subjects';
+import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
+import { movePagesToSubject, type PageRef } from '@/lib/domain/move-pages-batch';
+import { removePageFromData } from '@/lib/domain/remove-page';
 import {
   insertSubjectFolderAt,
   mergeItemOrder,
   reorderItemKeys,
   reorderSubjectFolders,
 } from '@/lib/domain/reorder';
+import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
 import {
   hitTestSubjectReorderDrag,
   type SubjectReorderHit,
 } from '@/lib/domain/subject-reorder-hit';
-import { buildDateRibbonMarks, getDueBundlesForDate } from '@/lib/domain/ribbon';
 import type {
   AppData,
   AppSettings,
@@ -66,6 +64,8 @@ import {
 } from '@/lib/trash/lifecycle';
 import { bundleSnapshotForTrashedPage } from '@/lib/trash/page-trash';
 import { buildTrashEntriesForDeletedSubjects, trashEntriesForSubject } from '@/lib/trash/subject-trash';
+import { defaultSubjectColor, normalizeSubjectColor } from '@/lib/domain/subject-colors';
+import { ensureTagColorMap, normalizeTagColorHex } from '@/lib/ui/tag-colors';
 import { ensureGoogleDriveSession, getValidAccessToken } from '@/services/cloud/google-session';
 import {
   checkFreemiumLimits,
@@ -74,10 +74,10 @@ import {
   type ImportPhotosResult,
 } from '@/services/storage';
 import { runAutoRecovery, stampRecoverySettings, type AutoRecoverySource } from '@/services/storage/auto-recovery';
-import { countAppPages, hasRecoverableContent } from '@/services/storage/data-safety';
-import { readRecoveryManifest } from '@/services/storage/recovery-manifest';
 import { clearCaptureDraft } from '@/services/storage/capture-draft';
+import { countAppPages, hasRecoverableContent } from '@/services/storage/data-safety';
 import { clearGuestSession } from '@/services/storage/guest-session';
+import { readRecoveryManifest } from '@/services/storage/recovery-manifest';
 import type { FreemiumCheck, PaywallReason, StorageProvider } from '@/services/storage/types';
 
 type AppContextValue = {
@@ -116,6 +116,7 @@ type AppContextValue = {
   importPhotosToBundle: (bundleId: string, imageUris: string[]) => Promise<ImportPhotosResult>;
   addSubject: (name: string, scheduleId: string) => void;
   renameSubject: (subjectId: string, name: string) => void;
+  setSubjectColor: (subjectId: string, color: string) => void;
   /** Create a new subject folder and move one photo into it. Returns new subject id. */
   moveProblemToNewSubject: (
     bundleId: string,
@@ -623,7 +624,7 @@ export function AppProvider({
       id: `folder_${Date.now()}`,
       name: name.trim(),
       reviewScheduleId: scheduleId,
-      color: theme.gray,
+      color: defaultSubjectColor(prev.subjects.length),
       sortOrder: prev.subjects.length,
       createdAt: new Date().toISOString(),
     };
@@ -639,6 +640,20 @@ export function AppProvider({
           ...prev,
           subjects: prev.subjects.map((s) =>
             s.id === subjectId ? { ...s, name: trimmed } : s
+          ),
+        }
+        : prev
+    );
+  }, []);
+
+  const setSubjectColor = useCallback((subjectId: string, color: string) => {
+    const normalized = normalizeSubjectColor(color);
+    setData((prev) =>
+      prev
+        ? {
+          ...prev,
+          subjects: prev.subjects.map((s) =>
+            s.id === subjectId ? { ...s, color: normalized } : s
           ),
         }
         : prev
@@ -662,7 +677,7 @@ export function AppProvider({
         id: `folder_${Date.now()}`,
         name: trimmed,
         reviewScheduleId: scheduleId,
-        color: theme.gray,
+        color: defaultSubjectColor(prev.subjects.length),
         sortOrder: prev.subjects.length,
         createdAt: new Date().toISOString(),
       };
@@ -1523,6 +1538,7 @@ export function AppProvider({
       importPhotosToBundle,
       addSubject,
       renameSubject,
+      setSubjectColor,
       moveProblemToNewSubject,
       moveProblemsToNewSubject,
       moveProblemsToSubject,
@@ -1606,6 +1622,7 @@ export function AppProvider({
     importPhotosToBundle,
     addSubject,
     renameSubject,
+    setSubjectColor,
     moveProblemToNewSubject,
     moveProblemsToNewSubject,
     moveProblemsToSubject,

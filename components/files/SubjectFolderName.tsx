@@ -10,12 +10,14 @@ import {
 
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { normalizeSubjectColor } from '@/lib/domain/subject-colors';
 
 const DOUBLE_TAP_MS = 320;
 
 type Props = {
   subjectId: string;
   name: string;
+  color?: string;
   lifted?: boolean;
   disabled?: boolean;
   onEditingChange?: (editing: boolean) => void;
@@ -25,6 +27,7 @@ type Props = {
 export function SubjectFolderName({
   subjectId,
   name,
+  color,
   lifted,
   disabled,
   onEditingChange,
@@ -69,9 +72,12 @@ export function SubjectFolderName({
     lastTapRef.current = now;
   }, [disabled, editing]);
 
+  const dotColor = normalizeSubjectColor(color ?? theme.orange);
+
   if (editing) {
     return (
       <View style={[styles.nameRow, belowPreview && styles.nameRowBelow]}>
+        <View style={[styles.dot, { backgroundColor: dotColor }]} />
         <TextInput
           value={draft}
           onChangeText={setDraft}
@@ -103,6 +109,7 @@ export function SubjectFolderName({
       accessibilityRole="button"
       accessibilityLabel={name}
       accessibilityHint="Double tap to rename">
+      <View style={[styles.dot, { backgroundColor: dotColor }]} />
       <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
         {name}
       </Text>
@@ -112,11 +119,21 @@ export function SubjectFolderName({
 
 const styles = StyleSheet.create({
   nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 8,
     marginLeft: 2,
     marginRight: 2,
     minHeight: 24,
-    justifyContent: 'center',
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.12)',
+    flexShrink: 0,
   },
   nameRowBelow: {
     marginTop: 6,
@@ -124,6 +141,8 @@ const styles = StyleSheet.create({
     minHeight: 20,
   },
   name: {
+    flex: 1,
+    minWidth: 0,
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.black,
@@ -132,6 +151,8 @@ const styles = StyleSheet.create({
     color: theme.orange,
   },
   input: {
+    flex: 1,
+    minWidth: 0,
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.black,

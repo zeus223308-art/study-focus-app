@@ -14,7 +14,9 @@ import {
 } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { normalizeSubjectColor } from '@/lib/domain/subject-colors';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
+import { tagLabelTextColor } from '@/lib/ui/tag-colors';
 import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -32,6 +34,8 @@ type Props = {
   variant?: PreviewVariant;
   /** Shown as small tag on top-left inside the card (dashboard). */
   subjectTag?: string;
+  /** Background for the subject tag pill (dashboard). */
+  subjectColor?: string;
   onInteraction?: () => void;
   /** Controlled carousel index (dashboard problem picker). */
   previewIndex?: number;
@@ -40,6 +44,14 @@ type Props = {
 
 const VAULT_HEIGHT = 112;
 const DASHBOARD_HEIGHT = 120;
+
+function subjectTagStyles(color?: string) {
+  const bg = normalizeSubjectColor(color ?? theme.orange);
+  return {
+    tag: [styles.subjectTag, { backgroundColor: bg }],
+    text: [styles.subjectTagText, { color: tagLabelTextColor(bg) }],
+  };
+}
 
 export function SubjectFolderPreview({
   items,
@@ -51,6 +63,7 @@ export function SubjectFolderPreview({
   passthroughGestures = false,
   variant = 'vault',
   subjectTag,
+  subjectColor,
   onInteraction,
   previewIndex: previewIndexProp,
   onPreviewIndexChange,
@@ -69,6 +82,7 @@ export function SubjectFolderPreview({
       : internalIndex;
   const showCounter = !isDashboard && items.length > 1;
   const counterLabel = `${index + 1} / ${items.length}`;
+  const tagStyles = subjectTagStyles(subjectColor);
 
   const lock = useCallback(() => onGestureLock(true), [onGestureLock]);
   const unlock = useCallback(() => onGestureLock(false), [onGestureLock]);
@@ -153,8 +167,8 @@ export function SubjectFolderPreview({
           onLongPress={onLongPress}
           delayLongPress={500}>
           {subjectTag ? (
-            <View style={styles.subjectTag}>
-              <Text style={styles.subjectTagText}>{subjectTag}</Text>
+            <View style={tagStyles.tag}>
+              <Text style={tagStyles.text}>{subjectTag}</Text>
             </View>
           ) : null}
           <Text style={styles.emptyHint}>{emptyHint}</Text>
@@ -169,8 +183,8 @@ export function SubjectFolderPreview({
         onLongPress={onLongPress}
         delayLongPress={450}>
         {subjectTag ? (
-          <View style={styles.subjectTag}>
-            <Text style={styles.subjectTagText}>{subjectTag}</Text>
+          <View style={tagStyles.tag}>
+            <Text style={tagStyles.text}>{subjectTag}</Text>
           </View>
         ) : null}
         <Text style={styles.emptyHint}>{emptyHint}</Text>
@@ -190,8 +204,8 @@ export function SubjectFolderPreview({
           if (w > 0 && w !== cardWidth) setCardWidth(w);
         }}>
         {subjectTag ? (
-          <View style={styles.subjectTag}>
-            <Text style={styles.subjectTagText} numberOfLines={1}>
+          <View style={tagStyles.tag}>
+            <Text style={tagStyles.text} numberOfLines={1}>
               {subjectTag}
             </Text>
           </View>
@@ -238,8 +252,8 @@ export function SubjectFolderPreview({
         if (w > 0 && w !== cardWidth) setCardWidth(w);
       }}>
       {subjectTag ? (
-        <View style={styles.subjectTag} pointerEvents="none">
-          <Text style={styles.subjectTagText} numberOfLines={1}>
+        <View style={tagStyles.tag} pointerEvents="none">
+          <Text style={tagStyles.text} numberOfLines={1}>
             {subjectTag}
           </Text>
         </View>
@@ -321,7 +335,6 @@ const styles = StyleSheet.create({
     top: 8,
     left: 8,
     zIndex: 2,
-    backgroundColor: theme.orange,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: theme.radius.pill,
@@ -330,7 +343,6 @@ const styles = StyleSheet.create({
   subjectTagText: {
     fontSize: 11,
     fontWeight: '800',
-    color: theme.onAccent,
   },
   overlay: {
     position: 'absolute',

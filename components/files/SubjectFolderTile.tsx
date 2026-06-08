@@ -17,6 +17,7 @@ const IS_WEB = Platform.OS === 'web';
 type Props = {
   subjectId: string;
   name: string;
+  subjectColor?: string;
   totalLabel: string;
   previewItems: SubjectPreviewItem[];
   onPress: () => void;
@@ -35,6 +36,7 @@ type Props = {
 export function SubjectFolderTile({
   subjectId,
   name,
+  subjectColor,
   totalLabel,
   previewItems,
   onPress,
@@ -154,6 +156,7 @@ export function SubjectFolderTile({
             <SubjectFolderName
               subjectId={subjectId}
               name={name}
+              color={subjectColor}
               lifted={isActive}
               disabled={
                 selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)
@@ -167,6 +170,7 @@ export function SubjectFolderTile({
             <SubjectFolderName
               subjectId={subjectId}
               name={name}
+              color={subjectColor}
               lifted={isActive}
               disabled={
                 selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)

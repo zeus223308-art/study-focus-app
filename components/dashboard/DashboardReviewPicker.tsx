@@ -84,6 +84,7 @@ export function DashboardReviewPicker({
                 </Pressable>
                 <SubjectReviewCard
                   subjectTag={entry.subject.name}
+                  subjectColor={entry.subject.color}
                   previewItems={entry.previews}
                   totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
                   emptyHint={t('dashboard.previewEmpty')}
