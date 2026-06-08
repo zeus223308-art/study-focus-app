@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { PhotoInkOverlay } from '@/components/bundle/PhotoInkOverlay';
@@ -11,6 +11,7 @@ import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import { hasPhotoSideInk } from '@/lib/domain/photo-memo';
 import type { CloudAsset, InkToolId, NoteLayer, PhotoMemo } from '@/lib/domain/types';
 import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
+import { loadImageDimensions } from '@/lib/files/image-dimensions';
 
 type Props = {
   label?: string;
@@ -55,21 +56,25 @@ export function BundlePhotoBlock({
   onMemoPress,
   memoButtonLabel,
 }: Props) {
-  const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
-  const hasImage = Boolean(uri && asset);
+  const displayUri = asset ? getFullImageUri(asset) ?? getPreviewImageUri(asset) : null;
+  const hasImage = Boolean(displayUri && asset);
   const [measuredW, setMeasuredW] = useState(0);
   const [aspect, setAspect] = useState(4 / 3);
 
   useEffect(() => {
-    if (!uri) return;
-    Image.getSize(
-      uri,
-      (w, h) => {
-        if (w > 0) setAspect(h / w);
-      },
-      () => setAspect(4 / 3)
-    );
-  }, [uri]);
+    if (!displayUri) return;
+    let cancelled = false;
+    void loadImageDimensions(displayUri)
+      .then(({ width, height }) => {
+        if (!cancelled && width > 0) setAspect(height / width);
+      })
+      .catch(() => {
+        if (!cancelled) setAspect(4 / 3);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [displayUri]);
 
   const width = measuredW > 0 ? measuredW : maxWidth;
   const inkVisible =
@@ -97,10 +102,11 @@ export function BundlePhotoBlock({
           <>
             <View style={[styles.fitStage, { width: fit.width, height: fit.height }]}>
               <ResolvedImage
-                uri={uri}
+                uri={displayUri}
                 asset={asset}
+                preferPreview={false}
                 style={styles.photo}
-                resizeMode="contain"
+                resizeMode="stretch"
               />
               {inkVisible || (inkEnabled && onStrokesChange) ? (
                 <PhotoInkOverlay
