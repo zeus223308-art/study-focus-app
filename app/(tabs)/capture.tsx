@@ -16,7 +16,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
-import { CapturePreviewImage } from '@/components/capture/CapturePreviewImage';
+import {
+  DEFAULT_PHOTO_PREVIEW_MAX_HEIGHT,
+  PhotoAspectPreview,
+} from '@/components/ui/PhotoAspectPreview';
 import { CaptureTagPicker } from '@/components/capture/CaptureTagPicker';
 import {
   useCaptureLeaveGuard,
@@ -472,22 +475,36 @@ export default function CaptureTabScreen() {
             {...sheetPressableProps}>
             <Text style={styles.sheetTitle}>{t('capture.pairTitle')}</Text>
             {frontUri ? (
-              <CapturePreviewImage uri={frontUri} style={styles.preview} resizeMode="contain" />
+              <View style={styles.previewWrap}>
+                <PhotoAspectPreview uri={frontUri} maxHeight={DEFAULT_PHOTO_PREVIEW_MAX_HEIGHT} />
+              </View>
             ) : null}
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
                 {frontUri ? (
-                  <Pressable onPress={() => frontUri && openEditor(frontUri, 'front', 'answer-prompt')}>
-                    <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="contain" />
+                  <View>
+                    <PhotoAspectPreview
+                      uri={frontUri}
+                      maxHeight={DEFAULT_PHOTO_PREVIEW_MAX_HEIGHT}
+                      fillWidth
+                      onPress={() => openEditor(frontUri, 'front', 'answer-prompt')}
+                    />
                     <Text style={styles.editLink}>{t('capture.editPhoto')}</Text>
-                  </Pressable>
+                  </View>
                 ) : null}
               </View>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
-                <View style={styles.pairEmpty}>
-                  <Text style={styles.pairEmptyText}>—</Text>
-                </View>
+                <PhotoAspectPreview
+                  uri={null}
+                  maxHeight={DEFAULT_PHOTO_PREVIEW_MAX_HEIGHT}
+                  fillWidth
+                  empty={
+                    <View style={styles.pairEmptyInner}>
+                      <Text style={styles.pairEmptyText}>—</Text>
+                    </View>
+                  }
+                />
               </View>
             </View>
             <Button label={t('capture.saveFrontOnly')} onPress={goToSaveSheet} />
@@ -525,21 +542,34 @@ export default function CaptureTabScreen() {
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
                 {frontUri ? (
-                  <Pressable onPress={() => openEditor(frontUri, 'front', 'save-sheet')}>
-                    <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="contain" />
-                  </Pressable>
+                  <PhotoAspectPreview
+                    uri={frontUri}
+                    maxHeight={DEFAULT_PHOTO_PREVIEW_MAX_HEIGHT}
+                    fillWidth
+                    onPress={() => openEditor(frontUri, 'front', 'save-sheet')}
+                  />
                 ) : null}
               </View>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
                 {backUri ? (
-                  <Pressable onPress={() => openEditor(backUri, 'back', 'save-sheet')}>
-                    <CapturePreviewImage uri={backUri} style={styles.pairThumb} resizeMode="contain" />
-                  </Pressable>
+                  <PhotoAspectPreview
+                    uri={backUri}
+                    maxHeight={DEFAULT_PHOTO_PREVIEW_MAX_HEIGHT}
+                    fillWidth
+                    onPress={() => openEditor(backUri, 'back', 'save-sheet')}
+                  />
                 ) : (
-                  <View style={styles.pairEmpty}>
-                    <Text style={styles.pairEmptyText}>—</Text>
-                  </View>
+                  <PhotoAspectPreview
+                    uri={null}
+                    maxHeight={DEFAULT_PHOTO_PREVIEW_MAX_HEIGHT}
+                    fillWidth
+                    empty={
+                      <View style={styles.pairEmptyInner}>
+                        <Text style={styles.pairEmptyText}>—</Text>
+                      </View>
+                    }
+                  />
                 )}
               </View>
             </View>
@@ -802,11 +832,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   successTitle: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
-  preview: { width: '100%', height: 160, borderRadius: theme.radius.md, marginTop: 16 },
+  previewWrap: { marginTop: 16 },
   pairRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   pairSlot: { flex: 1, gap: 6 },
   pairLabel: { fontSize: 11, fontWeight: '800', color: theme.gray },
-  pairThumb: { width: '100%', height: 100, borderRadius: theme.radius.sm, backgroundColor: theme.surface },
   editLink: {
     fontSize: 10,
     fontWeight: '700',
@@ -814,15 +843,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
-  pairEmpty: {
-    height: 100,
-    borderRadius: theme.radius.sm,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: theme.grayLight,
+  pairEmptyInner: {
+    flex: 1,
+    width: '100%',
+    minHeight: 72,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.surface,
   },
   pairEmptyText: { color: theme.grayMuted, fontWeight: '700', fontSize: 24 },
   chipLabel: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray, marginTop: 16 },
