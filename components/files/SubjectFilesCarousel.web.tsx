@@ -240,6 +240,7 @@ export function SubjectFilesCarousel({
               name={subject.name}
               totalLabel={totalLabelFor(subject.id)}
               previewItems={previewItemsFor(subject.id)}
+              vaultLayout
               onPreviewGestureLock={setPreviewGestureLock}
               onPress={() => onSubjectPress(subject.id)}
               onLiftForReorder={() => onSubjectLift(subject.id)}
@@ -292,10 +293,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: PANEL_PAD,
+    paddingBottom: 2,
   },
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
+    alignSelf: 'flex-start',
   },
   empty: {
     paddingHorizontal: PANEL_PAD,

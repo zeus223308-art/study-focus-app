@@ -251,6 +251,7 @@ export function SubjectFilesCarousel({
         onScroll={onScroll}
         contentContainerStyle={styles.listContent}
         ListFooterComponent={addFolderTile}
+        ListFooterComponentStyle={styles.footerSlot}
         getItemLayout={(_, index) => ({
           length: slotWidth,
           offset: slotWidth * index,
@@ -269,11 +270,16 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: PANEL_PAD,
     paddingTop: 0,
-    paddingBottom: 0,
+    paddingBottom: 2,
+    alignItems: 'flex-start',
   },
   tileSlot: {
     flexGrow: 0,
     flexShrink: 0,
+    alignSelf: 'flex-start',
+  },
+  footerSlot: {
+    alignSelf: 'flex-start',
   },
   empty: {
     paddingHorizontal: PANEL_PAD,
