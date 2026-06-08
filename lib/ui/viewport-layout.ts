@@ -186,7 +186,7 @@ export function useViewportLayout(): ViewportLayout {
           ? 16
           : 20
       : isPhone
-        ? 16
+        ? 12
         : deviceClass === 'tablet'
           ? 24
           : 32;

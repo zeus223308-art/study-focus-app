@@ -19,10 +19,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { CalendarTagDots } from '@/components/dashboard/CalendarTagDots';
-import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
-import { shiftStudyDateKey, studyDateBounds } from '@/lib/domain/dates';
+import { studyDateBounds } from '@/lib/domain/dates';
+import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { buildReviewMarkForDate } from '@/lib/domain/ribbon';
 import type { DateRibbonMark } from '@/lib/domain/types';
 
@@ -43,14 +43,6 @@ function formatMonthTitle(date: Date, language: 'ko' | 'en'): string {
   return format(date, 'MMMM yyyy', { locale: enUS });
 }
 
-function formatSelectedDayTitle(dateKey: string, language: 'ko' | 'en'): string {
-  const d = parseISO(`${dateKey}T12:00:00`);
-  if (language === 'ko') {
-    return format(d, 'yyyy년 M월 d일 (EEE)', { locale: ko });
-  }
-  return format(d, 'EEE, MMM d, yyyy', { locale: enUS });
-}
-
 export function DashboardCalendar({
   marks,
   selectedDate,
@@ -61,7 +53,8 @@ export function DashboardCalendar({
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { data, getSchedule } = useApp();
-  const locale = language === 'ko' ? ko : enUS;
+  const viewport = useViewportLayout();
+  const compact = viewport.isPhone;
   const bundles = data?.bundles ?? [];
 
   const bounds = useMemo(
@@ -113,25 +106,12 @@ export function DashboardCalendar({
   const canGoPrevMonth = monthStart > startOfMonth(minDate);
   const canGoNextMonth = monthStart < startOfMonth(todayDate);
 
-  const canGoPrevDay = selectedDate > bounds.min;
-  const canGoNextDay = selectedDate < bounds.max;
-  const isTodaySelected = selectedDate === localToday;
-
   const monthLabel = formatMonthTitle(viewMonth, language);
   const selectedMark = markMap[selectedDate];
-
-  const statusLabel = (status: DateRibbonMark['status'] | undefined) => {
-    switch (status) {
-      case 'overdue':
-        return t('dashboard.statusOverdue');
-      case 'upcoming':
-        return t('dashboard.statusDue');
-      case 'complete':
-        return t('dashboard.statusDone');
-      default:
-        return t('dashboard.statusNone');
-    }
-  };
+  const dueSummary =
+    selectedMark && selectedMark.bundleCount > 0
+      ? t('dashboard.calendarDueCount', { count: selectedMark.bundleCount })
+      : t('dashboard.calendarNoDue');
 
   const statusColor = (status: DateRibbonMark['status'] | undefined) => {
     switch (status) {
@@ -146,10 +126,6 @@ export function DashboardCalendar({
     }
   };
 
-  const shiftDay = (delta: number) => {
-    onSelectDate(shiftStudyDateKey(selectedDate, delta, bounds));
-  };
-
   const goPrevMonth = () => {
     if (!canGoPrevMonth) return;
     setViewMonth((m) => subMonths(m, 1));
@@ -161,10 +137,10 @@ export function DashboardCalendar({
   };
 
   return (
-    <View style={[styles.wrap, theme.cardShadow]}>
+    <View style={[styles.wrap, compact && styles.wrapCompact, theme.cardShadow]}>
       <View style={styles.titleBlock}>
         <Text style={styles.title}>{t('dashboard.calendarTitle')}</Text>
-        <Text style={styles.sub}>{t('dashboard.calendarSub')}</Text>
+        <Text style={styles.dueSummary}>{dueSummary}</Text>
       </View>
 
       <View style={styles.monthNav}>
@@ -221,6 +197,7 @@ export function DashboardCalendar({
               onPress={() => onSelectDate(key)}
               style={[
                 styles.cell,
+                compact && styles.cellCompact,
                 !inMonth && styles.cellDim,
                 isFuture && inMonth && styles.cellFuture,
                 !selectable && !isFuture && styles.cellDisabled,
@@ -258,59 +235,6 @@ export function DashboardCalendar({
           );
         })}
       </View>
-
-      <View style={styles.dayPanel}>
-        <View style={styles.dayNav}>
-          <Pressable
-            onPress={() => shiftDay(-1)}
-            disabled={!canGoPrevDay}
-            hitSlop={10}
-            accessibilityLabel={t('dashboard.calendarPrevDay')}
-            style={[styles.navBtn, !canGoPrevDay && styles.navDisabled]}>
-            <SymbolView
-              name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
-              size={20}
-              tintColor={canGoPrevDay ? theme.orange : theme.grayLight}
-            />
-          </Pressable>
-          <View style={styles.dayMeta}>
-            <Text style={styles.dayTitle}>{formatSelectedDayTitle(selectedDate, language)}</Text>
-            <View style={styles.dayStatusRow}>
-              <View
-                style={[
-                  styles.statusPill,
-                  { backgroundColor: statusColor(selectedMark?.status) },
-                ]}
-              />
-              <Text style={styles.dayStatus}>{statusLabel(selectedMark?.status)}</Text>
-              <Text style={styles.dayCount}>
-                {selectedMark && selectedMark.bundleCount > 0
-                  ? t('dashboard.calendarDueCount', { count: selectedMark.bundleCount })
-                  : t('dashboard.calendarNoDue')}
-              </Text>
-            </View>
-          </View>
-          <Pressable
-            onPress={() => shiftDay(1)}
-            disabled={!canGoNextDay}
-            hitSlop={10}
-            accessibilityLabel={t('dashboard.calendarNextDay')}
-            style={[styles.navBtn, !canGoNextDay && styles.navDisabled]}>
-            <SymbolView
-              name={{ ios: 'chevron.right', android: 'arrow_forward', web: 'arrow_forward' }}
-              size={20}
-              tintColor={canGoNextDay ? theme.orange : theme.grayLight}
-            />
-          </Pressable>
-        </View>
-        {!isTodaySelected ? (
-          <Button
-            label={t('dashboard.calendarJumpToday')}
-            variant="ghost"
-            onPress={() => onSelectDate(localToday)}
-          />
-        ) : null}
-      </View>
     </View>
   );
 }
@@ -323,10 +247,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.grayLight,
     marginBottom: 12,
+    width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'stretch',
   },
-  titleBlock: { gap: 4, marginBottom: 12 },
+  wrapCompact: {
+    paddingHorizontal: 10,
+    paddingVertical: 12,
+  },
+  titleBlock: { gap: 4, marginBottom: 10 },
   title: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
-  sub: { fontSize: theme.font.caption, fontWeight: '600', color: theme.grayMuted, lineHeight: 18 },
+  dueSummary: { fontSize: theme.font.caption, fontWeight: '700', color: theme.graySecondary },
   monthNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -361,6 +292,7 @@ const styles = StyleSheet.create({
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: '14.28%', aspectRatio: 1, padding: 2 },
+  cellCompact: { padding: 1 },
   cellDim: { opacity: 0.35 },
   cellFuture: { opacity: 0.72 },
   cellDisabled: { opacity: 0.25 },
@@ -377,18 +309,4 @@ const styles = StyleSheet.create({
   dayDue: { fontWeight: '800' },
   dot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
   dotPlaceholder: { width: 5, height: 5, marginTop: 2 },
-  dayPanel: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
-    gap: 8,
-  },
-  dayNav: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  dayMeta: { flex: 1, alignItems: 'center', gap: 6 },
-  dayTitle: { fontSize: theme.font.body, fontWeight: '800', color: theme.black, textAlign: 'center' },
-  dayStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'center' },
-  statusPill: { width: 8, height: 8, borderRadius: 4 },
-  dayStatus: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray },
-  dayCount: { fontSize: theme.font.caption, fontWeight: '600', color: theme.graySecondary },
 });

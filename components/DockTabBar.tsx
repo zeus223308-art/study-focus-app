@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
 import { useCaptureLeaveGuard } from '@/components/capture/CaptureLeaveGuard';
+import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export const DOCK_EDGE_GAP = 28;
 export const DOCK_HEIGHT = 48;
@@ -28,7 +29,9 @@ const DOCK_LABELS: Record<(typeof DOCK_ORDER)[number], 'tabs.vault' | 'tabs.dash
 export function DockTabBar({ state, navigation }: BottomTabBarProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const viewport = useViewportLayout();
   const { requestLeave, editorFullscreen } = useCaptureLeaveGuard();
+  const edgeGap = viewport.isPhone ? 16 : DOCK_EDGE_GAP;
 
   const currentRoute = state.routes[state.index]?.name;
   if (currentRoute === 'capture' && editorFullscreen) {
@@ -44,7 +47,7 @@ export function DockTabBar({ state, navigation }: BottomTabBarProps) {
     <View
       style={[
         styles.wrapper,
-        { paddingTop: insets.top + DOCK_EDGE_GAP, paddingHorizontal: DOCK_EDGE_GAP },
+        { paddingTop: insets.top + edgeGap, paddingHorizontal: edgeGap },
       ]}
       pointerEvents="box-none">
       <View style={styles.dock}>

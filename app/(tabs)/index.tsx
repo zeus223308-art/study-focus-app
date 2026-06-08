@@ -175,7 +175,7 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  calendarSection: { marginTop: 8, marginBottom: 8 },
+  calendarSection: { marginTop: 8, marginBottom: 8, width: '100%', maxWidth: '100%', alignSelf: 'stretch' },
   emptyBlock: {
     marginVertical: 24,
     gap: 12,

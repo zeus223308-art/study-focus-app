@@ -25,13 +25,7 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
 ) {
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
-  const pad = padded
-    ? viewport.isLandscape
-      ? viewport.horizontalPadding
-      : viewport.isPhone
-        ? 20
-        : viewport.horizontalPadding
-    : 0;
+  const pad = padded ? viewport.horizontalPadding : 0;
 
   const innerBody = (
     <View
