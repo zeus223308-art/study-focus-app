@@ -145,6 +145,8 @@ export function SubjectFolderTile({
                 ) : null}
                 <SubjectFolderPreview
                   variant="vault"
+                  subjectColor={subjectColor}
+                  subjectSortOrder={subjectSortOrder}
                   items={previewItems}
                   totalLabel={totalLabel}
                   emptyHint={t('vault.previewEmpty')}
@@ -158,8 +160,6 @@ export function SubjectFolderTile({
             <SubjectFolderName
               subjectId={subjectId}
               name={name}
-              color={subjectColor}
-              colorSortOrder={subjectSortOrder}
               lifted={isActive}
               disabled={
                 selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)
@@ -173,8 +173,6 @@ export function SubjectFolderTile({
             <SubjectFolderName
               subjectId={subjectId}
               name={name}
-              color={subjectColor}
-              colorSortOrder={subjectSortOrder}
               lifted={isActive}
               disabled={
                 selectionMode || Boolean(movingBundleId) || Boolean(reorderingSubjectId)
@@ -217,6 +215,8 @@ export function SubjectFolderTile({
                 ) : null}
                 <SubjectFolderPreview
                   variant="vault"
+                  subjectColor={subjectColor}
+                  subjectSortOrder={subjectSortOrder}
                   items={previewItems}
                   totalLabel={totalLabel}
                   emptyHint={t('vault.previewEmpty')}

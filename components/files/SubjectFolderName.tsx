@@ -10,15 +10,12 @@ import {
 
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { resolveSubjectColor } from '@/lib/domain/subject-colors';
 
 const DOUBLE_TAP_MS = 320;
 
 type Props = {
   subjectId: string;
   name: string;
-  color?: string;
-  colorSortOrder?: number;
   lifted?: boolean;
   disabled?: boolean;
   onEditingChange?: (editing: boolean) => void;
@@ -28,8 +25,6 @@ type Props = {
 export function SubjectFolderName({
   subjectId,
   name,
-  color,
-  colorSortOrder = 0,
   lifted,
   disabled,
   onEditingChange,
@@ -74,8 +69,6 @@ export function SubjectFolderName({
     lastTapRef.current = now;
   }, [disabled, editing]);
 
-  const nameColor = resolveSubjectColor(color, colorSortOrder);
-
   if (editing) {
     return (
       <View style={[styles.nameRow, belowPreview && styles.nameRowBelow]}>
@@ -110,9 +103,7 @@ export function SubjectFolderName({
       accessibilityRole="button"
       accessibilityLabel={name}
       accessibilityHint="Double tap to rename">
-      <Text
-        style={[styles.name, { color: lifted ? theme.orange : nameColor }]}
-        numberOfLines={1}>
+      <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
         {name}
       </Text>
     </Pressable>
@@ -135,6 +126,10 @@ const styles = StyleSheet.create({
   name: {
     fontSize: theme.font.body,
     fontWeight: '800',
+    color: theme.black,
+  },
+  nameLifted: {
+    color: theme.orange,
   },
   input: {
     fontSize: theme.font.body,

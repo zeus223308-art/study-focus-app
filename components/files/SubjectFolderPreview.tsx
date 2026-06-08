@@ -33,7 +33,7 @@ type Props = {
   variant?: PreviewVariant;
   /** Shown as small tag on top-left inside the card (dashboard). */
   subjectTag?: string;
-  /** Subject color for the dashboard name label (top-left). */
+  /** Accent for card border + top-left chip (dashboard). */
   subjectColor?: string;
   subjectSortOrder?: number;
   onInteraction?: () => void;
@@ -45,8 +45,15 @@ type Props = {
 const VAULT_HEIGHT = 112;
 const DASHBOARD_HEIGHT = 120;
 
-function subjectNameTextStyle(color?: string, sortOrder = 0) {
-  return [styles.subjectTagText, { color: resolveSubjectColor(color, sortOrder) }];
+function subjectAccentColor(color?: string, sortOrder = 0): string | undefined {
+  if (color === undefined) return undefined;
+  return resolveSubjectColor(color, sortOrder);
+}
+
+function subjectTagChipStyle(accent: string | undefined) {
+  return accent
+    ? [styles.subjectTagChip, { borderColor: accent }]
+    : [styles.subjectTagChipPlain];
 }
 
 export function SubjectFolderPreview({
@@ -79,20 +86,20 @@ export function SubjectFolderPreview({
       : internalIndex;
   const showCounter = !isDashboard && items.length > 1;
   const counterLabel = `${index + 1} / ${items.length}`;
-  const subjectNameStyle = subjectNameTextStyle(subjectColor, subjectSortOrder);
+  const subjectAccent = subjectAccentColor(subjectColor, subjectSortOrder);
 
   const subjectNameLabel =
     subjectTag ? (
-      <Text
+      <View
         style={[
-          styles.subjectTag,
+          ...subjectTagChipStyle(subjectAccent),
           isDashboard && styles.subjectTagOnPhoto,
-          subjectNameStyle,
         ]}
-        numberOfLines={1}
         pointerEvents="none">
-        {subjectTag}
-      </Text>
+        <Text style={styles.subjectTagText} numberOfLines={1}>
+          {subjectTag}
+        </Text>
+      </View>
     ) : null;
 
   const lock = useCallback(() => onGestureLock(true), [onGestureLock]);
@@ -129,9 +136,14 @@ export function SubjectFolderPreview({
     }, 120);
   };
 
+  const cardBorderStyle = subjectAccent
+    ? { borderColor: subjectAccent, borderWidth: isDashboard ? 2 : 2 }
+    : null;
+
   const cardStyle = [
     styles.cardBase,
     variant === 'vault' ? styles.cardVault : styles.cardDashboard,
+    cardBorderStyle,
     viewport.isLandscape
       ? styles.cardLandscape
       : { minHeight: portraitHeight, height: portraitHeight },
@@ -139,6 +151,7 @@ export function SubjectFolderPreview({
   const emptyStyle = [
     styles.emptyCardBase,
     variant === 'vault' ? styles.cardVault : styles.cardDashboard,
+    cardBorderStyle,
     viewport.isLandscape
       ? styles.cardLandscape
       : { minHeight: portraitHeight },
@@ -321,23 +334,39 @@ const styles = StyleSheet.create({
     backgroundColor: theme.grayLight,
   },
   image: { width: '100%', height: '100%' },
-  subjectTag: {
+  subjectTagChip: {
     position: 'absolute',
     top: 8,
     left: 8,
     zIndex: 4,
     maxWidth: '72%',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    borderWidth: 2,
+    backgroundColor: theme.surface,
+  },
+  subjectTagChipPlain: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    zIndex: 4,
+    maxWidth: '72%',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1.5,
+    borderColor: theme.grayLight,
+    backgroundColor: theme.surface,
   },
   subjectTagOnPhoto: {
     zIndex: 12,
     elevation: 12,
-    textShadowColor: 'rgba(255,255,255,0.92)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 5,
   },
   subjectTagText: {
     fontSize: theme.font.bodySmall,
     fontWeight: '800',
+    color: theme.black,
   },
   overlayUnderSubject: {
     zIndex: 3,

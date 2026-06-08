@@ -39,14 +39,19 @@ export function SettingsSubjectColorsSection() {
                 { paddingHorizontal: rowPad },
                 i < subjects.length - 1 && styles.rowBorder,
               ]}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: resolveSubjectColor(subject.color, subject.sortOrder) },
-                ]}
-                numberOfLines={1}>
-                {subject.name}
-              </Text>
+              <View style={styles.rowMain}>
+                <Text style={styles.label} numberOfLines={1}>
+                  {subject.name}
+                </Text>
+                <View
+                  style={[
+                    styles.chipSwatch,
+                    {
+                      borderColor: resolveSubjectColor(subject.color, subject.sortOrder),
+                    },
+                  ]}
+                />
+              </View>
               <Text style={styles.chevron}>›</Text>
             </Pressable>
           ))
@@ -97,6 +102,22 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: theme.font.body,
     fontWeight: '600',
+    color: theme.black,
+  },
+  rowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 0,
+  },
+  chipSwatch: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2.5,
+    backgroundColor: theme.surface,
+    flexShrink: 0,
   },
   chevron: {
     fontSize: 22,
