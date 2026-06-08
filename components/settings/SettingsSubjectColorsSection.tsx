@@ -32,14 +32,14 @@ export function SettingsSubjectColorsSection() {
               key={subject.id}
               onPress={() => setColorSubjectId(subject.id)}
               style={[styles.row, i < subjects.length - 1 && styles.rowBorder]}>
-              <View style={styles.rowLeft}>
-                <View
-                  style={[styles.dot, { backgroundColor: normalizeSubjectColor(subject.color) }]}
-                />
-                <Text style={styles.label} numberOfLines={1}>
-                  {subject.name}
-                </Text>
-              </View>
+              <Text
+                style={[
+                  styles.label,
+                  { color: normalizeSubjectColor(subject.color) },
+                ]}
+                numberOfLines={1}>
+                {subject.name}
+              </Text>
               <Text style={styles.chevron}>›</Text>
             </Pressable>
           ))
@@ -84,25 +84,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.grayLight,
   },
-  rowLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    minWidth: 0,
-  },
-  dot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.12)',
-  },
   label: {
     flex: 1,
     fontSize: theme.font.body,
     fontWeight: '600',
-    color: theme.black,
   },
   chevron: {
     fontSize: 22,

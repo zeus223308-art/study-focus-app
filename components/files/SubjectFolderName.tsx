@@ -72,12 +72,11 @@ export function SubjectFolderName({
     lastTapRef.current = now;
   }, [disabled, editing]);
 
-  const dotColor = normalizeSubjectColor(color ?? theme.orange);
+  const nameColor = color ? normalizeSubjectColor(color) : theme.black;
 
   if (editing) {
     return (
       <View style={[styles.nameRow, belowPreview && styles.nameRowBelow]}>
-        <View style={[styles.dot, { backgroundColor: dotColor }]} />
         <TextInput
           value={draft}
           onChangeText={setDraft}
@@ -109,8 +108,9 @@ export function SubjectFolderName({
       accessibilityRole="button"
       accessibilityLabel={name}
       accessibilityHint="Double tap to rename">
-      <View style={[styles.dot, { backgroundColor: dotColor }]} />
-      <Text style={[styles.name, lifted && styles.nameLifted]} numberOfLines={1}>
+      <Text
+        style={[styles.name, { color: lifted ? theme.orange : nameColor }]}
+        numberOfLines={1}>
         {name}
       </Text>
     </Pressable>
@@ -119,21 +119,11 @@ export function SubjectFolderName({
 
 const styles = StyleSheet.create({
   nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
     marginBottom: 8,
     marginLeft: 2,
     marginRight: 2,
     minHeight: 24,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-    flexShrink: 0,
+    justifyContent: 'center',
   },
   nameRowBelow: {
     marginTop: 6,
@@ -141,18 +131,10 @@ const styles = StyleSheet.create({
     minHeight: 20,
   },
   name: {
-    flex: 1,
-    minWidth: 0,
     fontSize: theme.font.body,
     fontWeight: '800',
-    color: theme.black,
-  },
-  nameLifted: {
-    color: theme.orange,
   },
   input: {
-    flex: 1,
-    minWidth: 0,
     fontSize: theme.font.body,
     fontWeight: '800',
     color: theme.black,

@@ -16,7 +16,6 @@ import {
 import { theme } from '@/constants/theme';
 import { normalizeSubjectColor } from '@/lib/domain/subject-colors';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
-import { tagLabelTextColor } from '@/lib/ui/tag-colors';
 import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -45,12 +44,8 @@ type Props = {
 const VAULT_HEIGHT = 112;
 const DASHBOARD_HEIGHT = 120;
 
-function subjectTagStyles(color?: string) {
-  const bg = normalizeSubjectColor(color ?? theme.orange);
-  return {
-    tag: [styles.subjectTag, { backgroundColor: bg }],
-    text: [styles.subjectTagText, { color: tagLabelTextColor(bg) }],
-  };
+function subjectNameTextStyle(color?: string) {
+  return [styles.subjectTagText, { color: normalizeSubjectColor(color ?? theme.black) }];
 }
 
 export function SubjectFolderPreview({
@@ -82,7 +77,7 @@ export function SubjectFolderPreview({
       : internalIndex;
   const showCounter = !isDashboard && items.length > 1;
   const counterLabel = `${index + 1} / ${items.length}`;
-  const tagStyles = subjectTagStyles(subjectColor);
+  const subjectNameStyle = subjectNameTextStyle(subjectColor);
 
   const lock = useCallback(() => onGestureLock(true), [onGestureLock]);
   const unlock = useCallback(() => onGestureLock(false), [onGestureLock]);
@@ -167,9 +162,7 @@ export function SubjectFolderPreview({
           onLongPress={onLongPress}
           delayLongPress={500}>
           {subjectTag ? (
-            <View style={tagStyles.tag}>
-              <Text style={tagStyles.text}>{subjectTag}</Text>
-            </View>
+            <Text style={[styles.subjectTag, subjectNameStyle]}>{subjectTag}</Text>
           ) : null}
           <Text style={styles.emptyHint}>{emptyHint}</Text>
           <Text style={styles.total}>{totalLabel}</Text>
@@ -183,9 +176,7 @@ export function SubjectFolderPreview({
         onLongPress={onLongPress}
         delayLongPress={450}>
         {subjectTag ? (
-          <View style={tagStyles.tag}>
-            <Text style={tagStyles.text}>{subjectTag}</Text>
-          </View>
+          <Text style={[styles.subjectTag, subjectNameStyle]}>{subjectTag}</Text>
         ) : null}
         <Text style={styles.emptyHint}>{emptyHint}</Text>
         <Text style={styles.total}>{totalLabel}</Text>
@@ -204,11 +195,9 @@ export function SubjectFolderPreview({
           if (w > 0 && w !== cardWidth) setCardWidth(w);
         }}>
         {subjectTag ? (
-          <View style={tagStyles.tag}>
-            <Text style={tagStyles.text} numberOfLines={1}>
-              {subjectTag}
-            </Text>
-          </View>
+          <Text style={[styles.subjectTag, subjectNameStyle]} numberOfLines={1}>
+            {subjectTag}
+          </Text>
         ) : null}
         <View style={[styles.slide, { height: slideHeight }]}>
           <ResolvedImage uri={first.thumbnailUri} style={styles.image} resizeMode="cover" />
@@ -252,11 +241,9 @@ export function SubjectFolderPreview({
         if (w > 0 && w !== cardWidth) setCardWidth(w);
       }}>
       {subjectTag ? (
-        <View style={tagStyles.tag} pointerEvents="none">
-          <Text style={tagStyles.text} numberOfLines={1}>
-            {subjectTag}
-          </Text>
-        </View>
+        <Text style={[styles.subjectTag, subjectNameStyle]} numberOfLines={1} pointerEvents="none">
+          {subjectTag}
+        </Text>
       ) : null}
       {cardWidth > 0 && (
         <FlatList
@@ -335,13 +322,10 @@ const styles = StyleSheet.create({
     top: 8,
     left: 8,
     zIndex: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: theme.radius.pill,
     maxWidth: '72%',
   },
   subjectTagText: {
-    fontSize: 11,
+    fontSize: theme.font.bodySmall,
     fontWeight: '800',
   },
   overlay: {
