@@ -39,27 +39,28 @@ type EditorMode = 'crop' | 'draw';
 
 type Props = {
   uri: string;
-  /** When re-cropping a saved photo, the pre-crop original to restore. */
-  restoreUri?: string | null;
   sideLabel: string;
   onConfirm: (result: { uri: string }) => void | Promise<void>;
   onRetake: () => void;
+  /** Reset target — defaults to `uri` (original before rotate/crop in this session). */
+  restoreUri?: string;
   lockImagePosition?: boolean;
 };
 
 export function CapturePhotoEditor({
   uri,
-  restoreUri = null,
   sideLabel,
   onConfirm,
   onRetake,
+  restoreUri,
   lockImagePosition = false,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const layout = useFullscreenViewerLayout();
+  const originalUri = restoreUri ?? uri;
   const [workingUri, setWorkingUri] = useState(uri);
-  const [surfaceEpoch, setSurfaceEpoch] = useState(0);
+  const [surfaceKey, setSurfaceKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [imageReady, setImageReady] = useState(false);
   const [mode, setMode] = useState<EditorMode>('crop');
@@ -74,32 +75,6 @@ export function CapturePhotoEditor({
   const [bakeJob, setBakeJob] = useState<InkBakeJob | null>(null);
   const bakeResolveRef = useRef<((uri: string) => void) | null>(null);
   const bakeRejectRef = useRef<(() => void) | null>(null);
-
-  const applyCropSelection = useCallback((next: CropSelection | null) => {
-    cropSelectionRef.current = next;
-    setCropSelection(next);
-  }, []);
-
-  const restoreTargetUri = restoreUri ?? uri;
-
-  useEffect(() => {
-    setWorkingUri(uri);
-    setSurfaceEpoch(0);
-    setStrokes([]);
-    setSeedSelection(null);
-    applyCropSelection(null);
-    setMode('crop');
-  }, [uri, restoreTargetUri, applyCropSelection]);
-
-  const restoreOriginal = useCallback(() => {
-    if (busy) return;
-    setStrokes([]);
-    setSeedSelection(null);
-    applyCropSelection(null);
-    setWorkingUri(restoreTargetUri);
-    setSurfaceEpoch((n) => n + 1);
-    setMode('crop');
-  }, [applyCropSelection, busy, restoreTargetUri]);
 
   const flowApi = useFullscreenInkFlow({
     visible: mode === 'draw',
@@ -124,6 +99,11 @@ export function CapturePhotoEditor({
     layout,
     flowApi,
   };
+
+  const applyCropSelection = useCallback((next: CropSelection | null) => {
+    cropSelectionRef.current = next;
+    setCropSelection(next);
+  }, []);
 
   const canConfirm = imageReady && !busy;
 
@@ -170,6 +150,15 @@ export function CapturePhotoEditor({
 
   const undoStroke = () => {
     setStrokes((prev) => prev.slice(0, -1));
+  };
+
+  const restoreOriginal = () => {
+    if (busy) return;
+    setWorkingUri(originalUri);
+    setStrokes([]);
+    setSeedSelection(null);
+    applyCropSelection(null);
+    setSurfaceKey((k) => k + 1);
   };
 
   const bakeNative = useCallback(
@@ -335,7 +324,9 @@ export function CapturePhotoEditor({
             style={styles.toolChip}
             onPress={busy ? undefined : restoreOriginal}
             disabled={busy}>
-            <Text style={styles.toolChipText}>{t('capture.restoreOriginal')}</Text>
+            <Text style={[styles.toolChipText, styles.toolChipTextRestore]}>
+              {t('capture.editorRestoreOriginal')}
+            </Text>
           </Pressable>
         ) : null}
       </View>
@@ -353,7 +344,7 @@ export function CapturePhotoEditor({
 
       <View style={styles.cropWrap}>
         <CaptureEditSurface
-          key={`${workingUri}:${surfaceEpoch}`}
+          key={`${workingUri}-${surfaceKey}`}
           uri={workingUri}
           mode={mode}
           selection={cropSelection}
@@ -437,6 +428,7 @@ const styles = StyleSheet.create({
   toolChipOn: { backgroundColor: theme.orange },
   toolChipText: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '700' },
   toolChipTextOn: { color: theme.onAccent },
+  toolChipTextRestore: { color: theme.white },
   hint: {
     position: 'absolute',
     left: 0,

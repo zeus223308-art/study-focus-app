@@ -10,10 +10,11 @@ export function getFullImageUri(asset: CloudAsset | null | undefined): string | 
   return getFullUriCandidates(asset)[0] ?? null;
 }
 
-/** Pre-crop original when the user re-edits a cropped photo. */
+/** Uncropped source for crop editor / restore — before any saved crop. */
 export function getUncroppedImageUri(asset: CloudAsset | null | undefined): string | null {
-  if (!asset?.uncroppedLocalUri) return null;
-  return asset.uncroppedLocalUri;
+  if (!asset) return null;
+  if (asset.uncroppedLocalUri) return asset.uncroppedLocalUri;
+  return asset.originalLocalUri ?? asset.localMiniUri ?? asset.thumbnailUri ?? null;
 }
 
 /** Lighter URI for grids — ResolvedImage tries all candidates when this one fails. */

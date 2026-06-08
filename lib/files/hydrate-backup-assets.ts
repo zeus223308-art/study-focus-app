@@ -28,12 +28,15 @@ export function parseAssetStorageKey(
   const parts = key.split('/');
   if (parts.length !== 3) return null;
   const role = parts[2] as WebAssetRole;
-  if (role !== 'master' && role !== 'thumb' && role !== 'mini' && role !== 'back') return null;
+  if (role !== 'master' && role !== 'thumb' && role !== 'mini' && role !== 'back' && role !== 'source') {
+    return null;
+  }
   return { bundleId: parts[0], pageId: parts[1], role };
 }
 
 function nativeAssetFilename(pageId: string, role: WebAssetRole): string {
   if (role === 'master') return `${pageId}_master.jpg`;
+  if (role === 'source') return `${pageId}_source.jpg`;
   if (role === 'mini') return `${pageId}_preview.jpg`;
   return `${pageId}_thumb.jpg`;
 }
@@ -98,9 +101,6 @@ function remapCloudAsset(asset: CloudAsset, resolved: Map<string, string>): Clou
     localMiniUri: remapUri(asset.localMiniUri, resolved),
     originalLocalUri: asset.originalLocalUri
       ? remapUri(asset.originalLocalUri, resolved)
-      : null,
-    uncroppedLocalUri: asset.uncroppedLocalUri
-      ? remapUri(asset.uncroppedLocalUri, resolved)
       : null,
   };
 }

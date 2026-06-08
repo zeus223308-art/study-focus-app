@@ -77,7 +77,6 @@ export default function BundleScreen() {
   const [modalInitialSide, setModalInitialSide] = useState<'front' | 'back'>('front');
   const [cropOpen, setCropOpen] = useState(false);
   const [cropUri, setCropUri] = useState('');
-  const [cropRestoreUri, setCropRestoreUri] = useState<string | null>(null);
   const [cropSide, setCropSide] = useState<'front' | 'back'>('front');
   const [archivePickerOpen, setArchivePickerOpen] = useState(false);
   const [memoOpen, setMemoOpen] = useState(false);
@@ -161,12 +160,10 @@ export default function BundleScreen() {
 
   const openCrop = (side: 'front' | 'back') => {
     const asset = side === 'front' ? page.asset : page.answerAsset;
-    const uri = getFullImageUri(asset);
+    const uri = getUncroppedImageUri(asset) ?? getFullImageUri(asset);
     if (!uri) return;
-    const uncropped = getUncroppedImageUri(asset);
     setCropSide(side);
     setCropUri(uri);
-    setCropRestoreUri(uncropped && uncropped !== uri ? uncropped : null);
     setCropOpen(true);
   };
 
@@ -475,7 +472,6 @@ export default function BundleScreen() {
       <PhotoCropModal
         visible={cropOpen}
         uri={cropUri}
-        restoreUri={cropRestoreUri}
         sideLabel={cropSide === 'front' ? '' : t('item.answerSection')}
         onConfirm={onCropDone}
         onClose={() => setCropOpen(false)}
