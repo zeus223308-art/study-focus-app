@@ -114,14 +114,17 @@ export default function SettingsScreen() {
             }
             last={false}
           />
-          <View style={[styles.row, styles.rowBorder]}>
-            <Text style={styles.label}>{t('settings.notifications')}</Text>
-            <Switch
-              value={settings.notificationsEnabled}
-              onValueChange={(v) => updateSettings({ notificationsEnabled: v })}
-              trackColor={{ true: theme.orange }}
-            />
-          </View>
+          <SettingsRow
+            label={t('settings.notifications')}
+            right={
+              <Switch
+                value={settings.notificationsEnabled}
+                onValueChange={(v) => updateSettings({ notificationsEnabled: v })}
+                trackColor={{ true: theme.orange }}
+              />
+            }
+            last={false}
+          />
           <SettingsRow
             label={t('settings.limitPhotos')}
             value={t('settings.limitPhotosValue', {
@@ -197,16 +200,6 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    minHeight: 42,
-  },
-  rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
-  label: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
   langRow: { flexDirection: 'row', gap: 6 },
   langChip: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: theme.grayLight },
   langChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
