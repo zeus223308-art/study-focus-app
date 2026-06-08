@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="app-build" content="aa4454f8af1852de6dbfbea32c3976b81e655037"><script>(function(){try{var c="aa4454f8af1852de6dbfbea32c3976b81e655037";fetch("/study-focus-app/version.json?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r&&r.ok?r.json():null;}).then(function(j){if(!j||!j.build||j.build===c)return;var k="app-build-reloaded";if(sessionStorage.getItem(k)===j.build)return;sessionStorage.setItem(k,j.build);var u=new URL(location.href);u.searchParams.set("u",j.build);location.replace(u.toString());}).catch(function(){});}catch(e){}})();</script><script data-legacy-safari-polyfill="1">/** Inline in index.html before app bundle — iPhone 7 / iOS 12–15 Safari. Keep in sync with +html.tsx. */
+  <head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="app-build" content="c932c06b916035f3e53db60640a6de72e0cb3427"><script>(function(){try{var c="c932c06b916035f3e53db60640a6de72e0cb3427";fetch("/study-focus-app/version.json?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r&&r.ok?r.json():null;}).then(function(j){if(!j||!j.build||j.build===c)return;var k="app-build-reloaded";if(sessionStorage.getItem(k)===j.build)return;sessionStorage.setItem(k,j.build);var u=new URL(location.href);u.searchParams.set("u",j.build);location.replace(u.toString());}).catch(function(){});}catch(e){}})();</script><script data-legacy-safari-polyfill="1">/** Inline in index.html before app bundle — iPhone 7 / iOS 12–15 Safari. Keep in sync with +html.tsx. */
 (function () {
   var g =
     typeof globalThis !== 'undefined'
@@ -98,15 +98,81 @@
 <meta name="description" content="암기·복습 플래시카드 앱 — 웹에서 미리보기">
 <link rel="icon" href="/study-focus-app/favicon.ico" /></head>
 
-  <body><div id="ms-boot" style="position:fixed;inset:0;z-index:2147483647;background:#F9F8F6;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,system-ui,sans-serif;color:#1a1a1a;text-align:center;padding:24px"><div style="font-size:18px;font-weight:700;margin-bottom:8px">MemorySherpa</div><div id="ms-boot-msg" style="font-size:14px;color:#666;line-height:1.5">Loading…</div></div><script data-ms-boot="1">(function(){window.addEventListener("error",function(e){var m=document.getElementById("ms-boot-msg");if(m){var msg=(e&&e.message)||"Unknown error";m.textContent="Unable to start: "+String(msg).slice(0,120);}});window.addEventListener("unhandledrejection",function(e){var m=document.getElementById("ms-boot-msg");if(m){var msg=(e&&e.reason&&e.reason.message)||String(e.reason||"");m.textContent="Unable to start: "+String(msg).slice(0,120);}});setTimeout(function(){var r=document.getElementById("root");if(!document.getElementById("ms-boot"))return;if(r&&r.childNodes.length===0){var m=document.getElementById("ms-boot-msg");if(m)m.textContent="Still loading… first open on iPhone 7 may take up to a minute.";}},15000);})();</script>
+  <body><div id="ms-boot" style="position:fixed;inset:0;z-index:2147483647;background:#F9F8F6;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:-apple-system,system-ui,sans-serif;color:#1a1a1a;text-align:center;padding:24px"><div style="font-size:18px;font-weight:700;margin-bottom:8px">MemorySherpa</div><div id="ms-boot-msg" style="font-size:14px;color:#666;line-height:1.5;max-width:280px">Loading app…</div><button id="ms-boot-retry" type="button" style="display:none;margin-top:20px;padding:12px 20px;font-size:15px;font-weight:600;border:none;border-radius:10px;background:#FF6B00;color:#fff" onclick="location.reload()">Refresh</button></div><script data-ms-boot="1">(function(){
+  var msgEl=null;
+  function msg(t){if(!msgEl)msgEl=document.getElementById("ms-boot-msg");if(msgEl)msgEl.textContent=t;}
+  function dismiss(){var el=document.getElementById("ms-boot");if(el)el.remove();}
+  function rootHasContent(){var r=document.getElementById("root");return !!(r&&r.childNodes&&r.childNodes.length);}
+  window.__MS_DISMISS_BOOT=dismiss;
+  window.addEventListener("error",function(e){
+    var m=(e&&e.message)||"Unknown error";
+    msg("Unable to start: "+String(m).slice(0,120));
+  });
+  window.addEventListener("unhandledrejection",function(e){
+    var r=e&&e.reason;
+    var m=(r&&r.message)||String(r||"");
+    msg("Unable to start: "+String(m).slice(0,120));
+  });
+  var t0=Date.now();
+  var timers=[3000,8000,15000,30000,60000,120000];
+  var hints=[
+    "Loading app…",
+    "Downloading… (first open can be slow)",
+    "Still loading… iPhone 7 may need up to 2 minutes",
+    "Processing… please wait",
+    "Almost there… do not close Safari",
+    "Still working… tap below if nothing happens"
+  ];
+  timers.forEach(function(ms,i){
+    setTimeout(function(){
+      if(!document.getElementById("ms-boot"))return;
+      if(rootHasContent()||window.__MS_ROOT_LAYOUT)return;
+      msg(hints[i]||hints[hints.length-1]);
+    },ms);
+  });
+  setTimeout(function(){
+    if(!document.getElementById("ms-boot"))return;
+    if(rootHasContent()||window.__MS_ROOT_LAYOUT)return;
+    var btn=document.getElementById("ms-boot-retry");
+    if(btn)btn.style.display="inline-block";
+  },120000);
+  var poll=setInterval(function(){
+    if(rootHasContent()||window.__MS_ROOT_LAYOUT){clearInterval(poll);dismiss();}
+  },400);
+  setTimeout(function(){clearInterval(poll);},180000);
+  window.__MS_BOOT_T0=t0;
+})();</script>
     <!-- Use static rendering with Expo Router to support running without JavaScript. -->
     <noscript>
       You need to enable JavaScript to run this app.
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
-  <script src="/study-focus-app/_expo/static/js/web/entry-5d17af4106b4580b5facabb4f0346469.js" defer></script>
-</body>
+  <script src="/study-focus-app/_expo/static/js/web/entry-a396639a0337c15ead979f48a433a462.js" defer></script>
+<script data-ms-script-loader="1">(function(){
+  var scripts=document.querySelectorAll("script[src][defer]");
+  if(!scripts.length)return;
+  var el=scripts[scripts.length-1];
+  var src=el.getAttribute("src");
+  if(!src||el.getAttribute("data-ms-wrapped"))return;
+  el.parentNode.removeChild(el);
+  var s=document.createElement("script");
+  s.src=src;
+  s.defer=true;
+  s.setAttribute("data-ms-wrapped","1");
+  s.onerror=function(){
+    var m=document.getElementById("ms-boot-msg");
+    if(m)m.textContent="Failed to download app. Check connection and refresh.";
+  };
+  s.onload=function(){
+    window.__MS_SCRIPT_LOADED=Date.now();
+    var m=document.getElementById("ms-boot-msg");
+    if(m&&!window.__MS_ROOT_LAYOUT&&!document.getElementById("root").childNodes.length){
+      m.textContent="Starting… (iPhone 7: up to 2 min)";
+    }
+  };
+  document.body.appendChild(s);
+})();</script></body>
 </html>
 
-<!-- deploy 2026-06-08T09:21:52.532Z aa4454f8af1852de6dbfbea32c3976b81e655037 -->
+<!-- deploy 2026-06-08T09:29:31.584Z c932c06b916035f3e53db60640a6de72e0cb3427 -->
