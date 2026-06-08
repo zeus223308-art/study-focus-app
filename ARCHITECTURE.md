@@ -5,7 +5,7 @@
 | Layer | Path | Responsibility |
 |-------|------|----------------|
 | **Domain** | `lib/domain/` | `NoteBundle`, `NotePage`, `NoteLayer`, `TrashLifecycle`, schedules, ribbon marks |
-| **Spacing brain** | `lib/spacing/` | Interval math (every N days, custom 1-3-5-7-14), due checks, advance/reset cycle |
+| **Spacing brain** | `lib/spacing/` | Interval math (every N days, standard 1-3-5-14-30), due checks, advance/reset cycle |
 | **Trash lifecycle** | `lib/trash/` | 24h UI expiry, 3-day cloud backup window |
 | **Storage API** | `services/storage/` | Local persistence, thumbnails (`expo-image-manipulator`), cloud stub (GCS/Firebase JIT) |
 | **Review UX** | `lib/review/` | Blackout countdown, OCR score placeholder |
