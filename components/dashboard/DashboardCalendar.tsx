@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
+import { CalendarTagDots } from '@/components/dashboard/CalendarTagDots';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
@@ -93,11 +94,18 @@ export function DashboardCalendar({
     for (const day of days) {
       const key = format(day, 'yyyy-MM-dd');
       if (key > localToday || !map[key]) {
-        map[key] = buildReviewMarkForDate(day, bundles, getSchedule, localToday);
+        map[key] = buildReviewMarkForDate(
+          day,
+          bundles,
+          getSchedule,
+          localToday,
+          data.settings.tagColors,
+          data.settings.tagColor
+        );
       }
     }
     return map;
-  }, [monthKey, marks, days, bundles, getSchedule, localToday]);
+  }, [monthKey, marks, days, bundles, getSchedule, localToday, data.settings.tagColors, data.settings.tagColor]);
 
   const todayDate = startOfDay(parseISO(`${localToday}T12:00:00`));
   const minDate = startOfDay(parseISO(`${bounds.min}T12:00:00`));
@@ -204,7 +212,7 @@ export function DashboardCalendar({
           const selected = key === selectedDate;
           const isToday = isSameDay(day, todayDate);
           const mark = markMap[key];
-          const dotColor = statusColor(mark?.status);
+          const tagDots = mark?.tagDots ?? [];
 
           return (
             <Pressable
@@ -232,7 +240,7 @@ export function DashboardCalendar({
                   {format(day, 'd')}
                 </Text>
                 {mark && mark.bundleCount > 0 ? (
-                  <View style={[styles.dot, { backgroundColor: dotColor }]} />
+                  <CalendarTagDots colors={tagDots} size={5} gap={2} max={4} />
                 ) : (
                   <View style={styles.dotPlaceholder} />
                 )}

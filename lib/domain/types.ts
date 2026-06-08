@@ -158,6 +158,8 @@ export type DateRibbonMark = {
   date: string;
   status: 'overdue' | 'complete' | 'upcoming' | 'none';
   bundleCount: number;
+  /** One dot color per due photo (first tag color, or default if untagged). */
+  tagDots: string[];
 };
 
 export type AppSettings = {

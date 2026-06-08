@@ -13,6 +13,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { CalendarTagDots } from '@/components/dashboard/CalendarTagDots';
 import { SpringPressable } from '@/components/ui/SpringPressable';
 import { theme } from '@/constants/theme';
 import { buildRibbonDays } from '@/lib/domain/dates';
@@ -331,6 +332,8 @@ export function DateRibbon({ marks, selectedDate, firstLaunchDate, localToday, o
     const mark = marks.find((m) => m.date === item.key);
     const selected = item.key === selectedDate;
     const isToday = item.key === todayStr;
+    const hasDue = (mark?.bundleCount ?? 0) > 0;
+    const tagDots = mark?.tagDots ?? [];
     const dotColor =
       mark?.status === 'overdue'
         ? theme.ribbon.overdue
@@ -346,7 +349,11 @@ export function DateRibbon({ marks, selectedDate, firstLaunchDate, localToday, o
         style={[styles.chip, selected && styles.chipSelected, isToday && !selected && styles.chipToday]}>
         <Text style={[styles.weekday, selected && styles.textSelected]}>{format(item.date, 'EEE')}</Text>
         <Text style={[styles.dayLabel, selected && styles.textSelected]}>{format(item.date, 'M/d')}</Text>
-        <View style={[styles.dot, { backgroundColor: dotColor }]} />
+        {hasDue && tagDots.length > 0 ? (
+          <CalendarTagDots colors={tagDots} size={4} gap={2} max={3} />
+        ) : (
+          <View style={[styles.dot, { backgroundColor: dotColor }]} />
+        )}
       </SpringPressable>
     );
   };

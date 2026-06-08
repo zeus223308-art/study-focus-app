@@ -109,6 +109,7 @@ export function buildSubjectStudyDateMarks(
       date: key,
       status: count > 0 ? 'upcoming' : 'none',
       bundleCount: count,
+      tagDots: [],
     };
   });
 }

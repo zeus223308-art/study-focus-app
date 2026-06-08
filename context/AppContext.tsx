@@ -501,7 +501,9 @@ export function AppProvider({
       data.bundles,
       getSchedule,
       data.settings.firstLaunchDate,
-      localToday
+      localToday,
+      data.settings.tagColors,
+      data.settings.tagColor
     );
   }, [data, getSchedule, localToday]);
 
