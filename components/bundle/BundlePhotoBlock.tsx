@@ -1,9 +1,8 @@
-import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Pressable, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
-import { WidthFitPreviewImage } from '@/components/ui/WidthFitPreviewImage';
+import { WidthFitPreviewBox } from '@/components/ui/WidthFitPreviewImage';
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 import type { CloudAsset, InkToolId, NoteLayer } from '@/lib/domain/types';
@@ -13,7 +12,7 @@ type Props = {
   label?: string;
   maxWidth: number;
   maxHeight?: number;
-  /** Fill parent column (landscape side-by-side). */
+  /** @deprecated Always stretches to parent width; kept for call-site compat. */
   fillWidth?: boolean;
   asset: CloudAsset | null;
   onPress: () => void;
@@ -32,9 +31,7 @@ type Props = {
 
 export function BundlePhotoBlock({
   label,
-  maxWidth,
   maxHeight = 220,
-  fillWidth = false,
   asset,
   onPress,
   showInkPreview = false,
@@ -51,44 +48,23 @@ export function BundlePhotoBlock({
 }: Props) {
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
-  const [measuredW, setMeasuredW] = useState(0);
-
-  const width = fillWidth && measuredW > 0 ? measuredW : maxWidth;
-
-  const onWrapLayout = useCallback(
-    (w: number) => {
-      if (fillWidth && w > 0 && w !== measuredW) setMeasuredW(w);
-    },
-    [fillWidth, measuredW]
-  );
 
   const showInk =
     Boolean(layer && (showInkPreview || (inkEnabled && onStrokesChange)));
 
   return (
-    <View
-      style={[styles.wrap, fillWidth ? styles.wrapFill : { width: maxWidth }]}
-      onLayout={
-        fillWidth
-          ? (e) => onWrapLayout(Math.round(e.nativeEvent.layout.width))
-          : undefined
-      }>
+    <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <Pressable
         onPress={hasImage ? onPress : onAddPress}
-        style={[
-          styles.frame,
-          fillWidth ? { width: '100%' } : { width, alignSelf: 'center' },
-          { height: maxHeight },
-        ]}
+        style={[styles.frame, { height: maxHeight }]}
         accessibilityRole="button">
         {hasImage ? (
           <>
-            <WidthFitPreviewImage
+            <WidthFitPreviewBox
               uri={uri}
               asset={asset}
-              containerW={width}
-              containerH={maxHeight}
+              style={{ width: '100%', height: maxHeight }}
               preferPreview
               overlay={
                 showInk && layer
@@ -118,7 +94,7 @@ export function BundlePhotoBlock({
             ) : null}
           </>
         ) : (
-          <View style={[styles.empty, { width, height: maxHeight }]}>
+          <View style={[styles.empty, { height: maxHeight }]}>
             <Text style={styles.emptyText}>{placeholder ?? '+'}</Text>
           </View>
         )}
@@ -142,8 +118,7 @@ export function BundlePhotoBlock({
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 16, alignSelf: 'center' },
-  wrapFill: { width: '100%', marginBottom: 16, alignSelf: 'stretch' },
+  wrap: { width: '100%', marginBottom: 16, alignSelf: 'stretch' },
   label: {
     fontSize: theme.font.body,
     fontWeight: '800',
@@ -151,7 +126,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   frame: {
-    alignSelf: 'stretch',
+    width: '100%',
     borderRadius: theme.radius.md,
     overflow: 'hidden',
     backgroundColor: theme.surface,
@@ -165,6 +140,7 @@ const styles = StyleSheet.create({
     top: 0,
   },
   empty: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     borderStyle: 'dashed',
