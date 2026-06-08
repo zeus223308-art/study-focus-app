@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { PhotoInkOverlay } from '@/components/bundle/PhotoInkOverlay';
@@ -56,19 +56,7 @@ export function BundlePhotoBlock({
 }: Props) {
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
-  const [aspect, setAspect] = useState(4 / 3);
   const [measuredW, setMeasuredW] = useState(0);
-
-  useEffect(() => {
-    if (!uri) return;
-    Image.getSize(
-      uri,
-      (w, h) => {
-        if (w > 0) setAspect(h / w);
-      },
-      () => setAspect(4 / 3)
-    );
-  }, [uri]);
 
   const width = measuredW > 0 ? measuredW : maxWidth;
   const inkVisible =
@@ -76,7 +64,7 @@ export function BundlePhotoBlock({
   const landscapeH = Math.round(width / LANDSCAPE_CARD_RATIO);
   const height = fillWidth
     ? Math.min(maxHeight, Math.max(72, landscapeH))
-    : Math.min(maxHeight, Math.max(72, Math.round(width * aspect)));
+    : maxHeight;
 
   const onWrapLayout = useCallback((w: number) => {
     if (w > 0 && w !== measuredW) setMeasuredW(w);
@@ -97,7 +85,7 @@ export function BundlePhotoBlock({
               uri={uri}
               asset={asset}
               style={{ width: '100%', height }}
-              resizeMode="contain"
+              resizeMode="stretch"
             />
             {inkVisible || (inkEnabled && onStrokesChange) ? (
               <PhotoInkOverlay

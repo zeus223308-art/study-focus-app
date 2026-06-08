@@ -207,7 +207,7 @@ export function PhotoMemoEditorModal({
                 asset={asset}
                 preferPreview={false}
                 style={styles.image}
-                resizeMode="contain"
+                resizeMode="stretch"
               />
               <AnnotationCanvas
                 layer={layer}
