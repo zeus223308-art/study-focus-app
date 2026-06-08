@@ -15,8 +15,14 @@ import { InkStrokePath } from '@/components/annotation/InkStrokePath';
 import { WebInkCanvasOverlay } from '@/components/annotation/WebInkCanvasOverlay';
 import { theme } from '@/constants/theme';
 import { INK_STROKE_STYLES, strokeStyleForTool } from '@/lib/domain/ink-stroke-style';
+import { appendInkPoint, finalizeInkStrokePoints } from '@/lib/domain/ink-stroke-points';
 import { scaleStrokesToViewport } from '@/lib/files/bake-capture-ink';
 import type { InkPoint, InkStroke, InkToolId, NoteLayer } from '@/lib/domain/types';
+
+const inkCanvasWebWrap: StyleProp<ViewStyle> | undefined =
+  Platform.OS === 'web'
+    ? ({ touchAction: 'none', userSelect: 'none' } as unknown as StyleProp<ViewStyle>)
+    : undefined;
 
 function pointsToPath(points: InkPoint[]): string {
   if (points.length === 0) return '';
@@ -79,6 +85,8 @@ export function AnnotationCanvas({
   style,
 }: Props) {
   const [size, setSize] = useState({ w: 320, h: height });
+  const sizeRef = useRef(size);
+  sizeRef.current = size;
   const strokesRef = useRef<InkStroke[]>(layer.strokes);
   const toolRef = useRef(tool);
   const widthRef = useRef(strokeWidth);
@@ -107,35 +115,50 @@ export function AnnotationCanvas({
     setSize({ w: width, h });
   };
 
+  const appendPoint = useCallback((x: number, y: number) => {
+    const cur = currentRef.current;
+    if (!cur) return;
+    cur.points = appendInkPoint(cur.points, x, y);
+    bump((n) => n + 1);
+  }, []);
+
   const commitStroke = useCallback(() => {
     const cur = currentRef.current;
-    if (!cur || cur.points.length < 2) {
+    if (!cur) return;
+    const points = finalizeInkStrokePoints(cur.points);
+    if (points.length < 2) {
       currentRef.current = null;
       return;
     }
+    const committed = { ...cur, points };
     const activeTool = toolRef.current;
     const next =
       activeTool === 'eraser'
         ? (() => {
             const scaled = scaleStrokesToViewport(
               strokesRef.current,
-              size.w,
-              size.h,
+              sizeRef.current.w,
+              sizeRef.current.h,
               layer.strokeSpace
             );
             const eraseIds = new Set<string>();
             for (const s of scaled) {
               if (s.tool === 'eraser') continue;
-              if (strokeIntersects(cur, s)) eraseIds.add(s.id);
+              if (strokeIntersects(committed, s)) eraseIds.add(s.id);
             }
             return strokesRef.current.filter((s) => !eraseIds.has(s.id));
           })()
-        : [...strokesRef.current, cur];
+        : [...strokesRef.current, committed];
     strokesRef.current = next;
     currentRef.current = null;
     onStrokesChange(next);
     bump((n) => n + 1);
-  }, [layer.strokeSpace, onStrokesChange, size.h, size.w]);
+  }, [layer.strokeSpace, onStrokesChange]);
+
+  const appendPointRef = useRef(appendPoint);
+  appendPointRef.current = appendPoint;
+  const commitStrokeRef = useRef(commitStroke);
+  commitStrokeRef.current = commitStroke;
 
   const lockedRef = useRef(layer.locked);
   lockedRef.current = layer.locked;
@@ -164,14 +187,19 @@ export function AnnotationCanvas({
         bump((n) => n + 1);
       },
       onPanResponderMove: (evt) => {
-        const cur = currentRef.current;
-        if (!cur) return;
         const { locationX: x, locationY: y } = evt.nativeEvent;
-        cur.points.push({ x, y });
-        bump((n) => n + 1);
+        appendPointRef.current(x, y);
       },
-      onPanResponderRelease: commitStroke,
-      onPanResponderTerminate: commitStroke,
+      onPanResponderRelease: (evt) => {
+        const { locationX: x, locationY: y } = evt.nativeEvent;
+        appendPointRef.current(x, y);
+        commitStrokeRef.current();
+      },
+      onPanResponderTerminate: (evt) => {
+        const { locationX: x, locationY: y } = evt.nativeEvent;
+        appendPointRef.current(x, y);
+        commitStrokeRef.current();
+      },
       onPanResponderTerminationRequest: () => false,
       onShouldBlockNativeResponder: () => true,
     })
@@ -200,7 +228,7 @@ export function AnnotationCanvas({
 
   return (
     <View
-      style={[styles.wrap, { height }, style]}
+      style={[styles.wrap, { height }, inkCanvasWebWrap, style]}
       onLayout={onLayout}
       {...pan.panHandlers}
       {...(Platform.OS === 'web' ? { dataSet: { inkCanvas: '1' } } : {})}>

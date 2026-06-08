@@ -23,13 +23,8 @@ export default function Root({ children }: { children: ReactNode }) {
         <meta name="apple-mobile-web-app-title" content="MemorySherpa" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="format-detection" content="telephone=no" />
-        <meta name="color-scheme" content="light" />
+        <meta name="color-scheme" content="only light" />
         <ScrollViewStyleReset />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: legacySafariPolyfillScript,
-          }}
-        />
         <script
           dangerouslySetInnerHTML={{
             __html: oauthPopupCloseScript,
@@ -41,56 +36,6 @@ export default function Root({ children }: { children: ReactNode }) {
     </html>
   );
 }
-
-const legacySafariPolyfillScript = `
-(function () {
-  var g = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : this;
-  if (typeof g.globalThis === 'undefined') g.globalThis = g;
-
-  if (typeof Object.hasOwn !== 'function') {
-    Object.hasOwn = function (obj, prop) {
-      return Object.prototype.hasOwnProperty.call(obj, prop);
-    };
-  }
-
-  if (typeof g.structuredClone !== 'function') {
-    g.structuredClone = function (val) {
-      if (val === undefined) return val;
-      if (typeof val === 'function') return val;
-      return JSON.parse(JSON.stringify(val));
-    };
-  }
-
-  if (!Array.prototype.at) {
-    Array.prototype.at = function (n) {
-      var len = this.length;
-      var i = Math.trunc(Number(n)) || 0;
-      if (i < 0) i += len;
-      return i < 0 || i >= len ? undefined : this[i];
-    };
-  }
-
-  if (!String.prototype.at) {
-    String.prototype.at = function (n) {
-      var len = this.length;
-      var i = Math.trunc(Number(n)) || 0;
-      if (i < 0) i += len;
-      return i < 0 || i >= len ? undefined : this[i];
-    };
-  }
-
-  if (typeof Promise.withResolvers !== 'function') {
-    Promise.withResolvers = function () {
-      var resolve, reject;
-      var promise = new Promise(function (res, rej) {
-        resolve = res;
-        reject = rej;
-      });
-      return { promise: promise, resolve: resolve, reject: reject };
-    };
-  }
-})();
-`;
 
 const oauthPopupCloseScript = `
 (function () {
@@ -128,17 +73,17 @@ html, body, #root {
   padding: 0;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   box-sizing: border-box;
 }
 html {
-  color-scheme: light;
+  color-scheme: only light;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 body {
-  background-color: #F9F8F6;
-  overflow-x: hidden;
+  background-color: #0A0A0A;
+  overflow-x: clip;
   box-sizing: border-box;
   touch-action: manipulation;
   -webkit-touch-callout: none;
@@ -155,11 +100,11 @@ body {
   min-height: 100%;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 @media (prefers-color-scheme: dark) {
   html {
-    color-scheme: light;
+    color-scheme: only light;
   }
 }
 @media (orientation: landscape) {
@@ -198,6 +143,11 @@ body {
 [data-ink-swatch="pen-white"] {
   border-color: #666666 !important;
   forced-color-adjust: none !important;
+}
+[data-ink-canvas="1"] {
+  touch-action: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
 }
 [data-ink-canvas="1"] canvas {
   forced-color-adjust: none !important;
