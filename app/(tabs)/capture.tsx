@@ -472,7 +472,7 @@ export default function CaptureTabScreen() {
             {...sheetPressableProps}>
             <Text style={styles.sheetTitle}>{t('capture.pairTitle')}</Text>
             {frontUri ? (
-              <CapturePreviewImage uri={frontUri} style={styles.preview} resizeMode="cover" />
+              <CapturePreviewImage uri={frontUri} style={styles.preview} resizeMode="contain" />
             ) : null}
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>

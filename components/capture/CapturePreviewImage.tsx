@@ -85,7 +85,7 @@ function useCapturePreviewUri(uri: string | null | undefined): {
 }
 
 /** Capture sheet previews — resolves URI then shows image (spinner while loading). */
-export function CapturePreviewImage({ uri, style, resizeMode = 'cover', ...rest }: Props) {
+export function CapturePreviewImage({ uri, style, resizeMode = 'contain', ...rest }: Props) {
   const { displayUri, loading, failed } = useCapturePreviewUri(uri);
 
   if (!uri || failed) {

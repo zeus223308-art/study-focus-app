@@ -81,8 +81,7 @@ export function BundlePhotoBlock({
     [fillWidth, measuredW]
   );
 
-  const resolvedResizeMode =
-    imageResizeMode ?? (layer && (showInkPreview || inkEnabled) ? 'contain' : 'cover');
+  const resolvedResizeMode = imageResizeMode ?? 'contain';
 
   return (
     <View

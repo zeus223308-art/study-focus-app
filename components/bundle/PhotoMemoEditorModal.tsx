@@ -64,8 +64,8 @@ export function PhotoMemoEditorModal({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const layout = useFullscreenViewerLayout();
-  const { isLandscape } = layout;
-  const [viewerW, setViewerW] = useState(0);
+  const [viewerSize, setViewerSize] = useState({ w: 0, h: 0 });
+  const [inkSurfaceH, setInkSurfaceH] = useState(0);
   const [inkKind, setInkKind] = useState<PhotoMemoToolKind | null>(null);
   const [tool, setTool] = useState<InkToolId>('pen-black');
   const [penWidth, setPenWidth] = useState<number>(PEN_WIDTHS[1]);
@@ -101,14 +101,14 @@ export function PhotoMemoEditorModal({
   }, [tool, penWidth, highlighterWidth, eraserWidth]);
 
   const onLayout = (e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
-    if (w > 0) setViewerW(w);
+    const { width, height } = e.nativeEvent.layout;
+    if (width > 0 && height > 0) {
+      setViewerSize({ w: width, h: height });
+    }
   };
 
-  const viewerH = isLandscape
-    ? Math.round(Math.min(layout.shortEdge * 0.9, layout.height - 140))
-    : Math.min(layout.height * 0.58, viewerW * 1.25);
-  const imageH = Math.max(120, viewerH - (isLandscape ? 4 : 8));
+  const { w: viewerW, h: viewerH } = viewerSize;
+  const imageH = inkSurfaceH || viewerH;
   const displayUri = getPreviewImageUri(asset) ?? getFullImageUri(asset);
 
   const patchMemo = (patch: Partial<PhotoMemo>) => {
@@ -208,13 +208,18 @@ export function PhotoMemoEditorModal({
         ) : null}
 
         <View style={styles.viewer} onLayout={onLayout}>
-          {viewerW > 0 && displayUri ? (
-            <View style={[styles.imageBox, { width: viewerW, height: imageH }]}>
+          {viewerW > 0 && viewerH > 0 && displayUri ? (
+            <View
+              style={[styles.imageBox, { width: viewerW, height: viewerH }]}
+              onLayout={(e) => {
+                const h = Math.round(e.nativeEvent.layout.height);
+                if (h > 0) setInkSurfaceH(h);
+              }}>
               <ResolvedImage
                 uri={displayUri}
                 asset={asset}
                 preferPreview={false}
-                style={{ width: viewerW, height: imageH }}
+                style={styles.image}
                 resizeMode="contain"
               />
               <AnnotationCanvas
@@ -279,8 +284,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.orangeSoft,
   },
   addTextLabel: { color: theme.orange, fontWeight: '800', fontSize: theme.font.caption },
-  viewer: { flex: 1 },
-  imageBox: { position: 'relative', overflow: 'hidden', alignSelf: 'center' },
+  viewer: { flex: 1, minHeight: 0 },
+  imageBox: { position: 'relative', alignSelf: 'stretch' },
+  image: { width: '100%', height: '100%' },
   ink: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   inkPassthrough: { pointerEvents: 'none' as const },
   dismissBackdrop: {
