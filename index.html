@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="app-build" content="8e10907a219b8813f2f301da71c45c857cbd4885"><script>(function(){try{var c="8e10907a219b8813f2f301da71c45c857cbd4885";fetch("/study-focus-app/version.json?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r&&r.ok?r.json():null;}).then(function(j){if(!j||!j.build||j.build===c)return;var k="app-build-reloaded";if(sessionStorage.getItem(k)===j.build)return;sessionStorage.setItem(k,j.build);var u=new URL(location.href);u.searchParams.set("u",j.build);location.replace(u.toString());}).catch(function(){});}catch(e){}})();</script><script data-legacy-safari-polyfill="1">/** Inline in index.html before app bundle — iPhone 7 / iOS 12–15 Safari. Keep in sync with +html.tsx. */
+  <head><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><meta name="app-build" content="bf8e5a76075064aadbb43a075eb1d59aea73b76f"><script>(function(){try{var c="bf8e5a76075064aadbb43a075eb1d59aea73b76f";fetch("/study-focus-app/version.json?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r&&r.ok?r.json():null;}).then(function(j){if(!j||!j.build||j.build===c)return;var k="app-build-reloaded";if(sessionStorage.getItem(k)===j.build)return;sessionStorage.setItem(k,j.build);var u=new URL(location.href);u.searchParams.set("u",j.build);location.replace(u.toString());}).catch(function(){});}catch(e){}})();</script><script data-legacy-safari-polyfill="1">/** Inline in index.html before app bundle — iPhone 7 / iOS 12–15 Safari. Keep in sync with +html.tsx. */
 (function () {
   var g =
     typeof globalThis !== 'undefined'
@@ -148,7 +148,7 @@
     msg("Taking longer than usual. Tap Refresh — the second load is usually instant.");
   },90000));
   var poll=setInterval(function(){
-    if(rootHasContent()||window.__MS_ROOT_LAYOUT){
+    if(window.__MS_SPLASH_MOUNTED||window.__MS_BOOT_DISMISS){
       phase="done";
       clearTimers();
       clearInterval(poll);
@@ -163,7 +163,7 @@
     </noscript>
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
-  <script src="/study-focus-app/_expo/static/js/web/entry-c7f170b8c607cb0700a061a3e21be4ce.js" defer></script>
+  <script src="/study-focus-app/_expo/static/js/web/entry-644cf8a06ad3bfc60c8db8d47af30afd.js" defer></script>
 <script data-ms-script-loader="1">(function(){
   var scripts=document.querySelectorAll("script[src][defer]");
   if(!scripts.length)return;
@@ -192,4 +192,4 @@
 })();</script></body>
 </html>
 
-<!-- deploy 2026-06-08T09:55:49.306Z 8e10907a219b8813f2f301da71c45c857cbd4885 -->
+<!-- deploy 2026-06-08T09:58:35.946Z bf8e5a76075064aadbb43a075eb1d59aea73b76f -->
