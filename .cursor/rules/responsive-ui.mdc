@@ -15,7 +15,7 @@ When adding or changing screens, modals, toolbars, lists, or carousels:
 
 2. **Do not** hardcode single sizes (e.g. 360×360 pager) without deriving from `viewport.pagerSize` or layout measurement.
 
-3. **Safe area** — `useSafeAreaInsets()` for top/bottom chrome; sheets and full-screen modals included.
+3. **Safe area** — `useSafeAreaInsets()` for top/bottom chrome; sheets and full-screen modals included. On **mobile web phone**, layout insets come from `MobileWebSafeAreaOverride` (zero — Android baseline); do not add extra iOS-only horizontal padding.
 
 4. **Partial rows** — carousels/grids must use fixed slot width (see vault `foldersPerPage` + `computeVaultFolderTileWidth`), not `flex: 1` on fewer items.
 
@@ -23,4 +23,9 @@ When adding or changing screens, modals, toolbars, lists, or carousels:
 
 6. **Mobile web (iOS Safari, Android Chrome)** — primary user path via GitHub Pages. Modals/overlays at tab root, not inside `ScrollView`. Touch targets ≥ 44px where practical.
 
-7. **Verify** mentally for portrait phone, landscape phone, iPad portrait/landscape, and narrow/wide web frame.
+7. **Mobile web parity — Android first** — **Android Chrome phone is the layout baseline.** After any UI change, iOS Safari must match Android for the same phone viewport (same GitHub Pages bundle).
+   - Size/layout: `useLayoutViewportSize()` + `useViewportLayout()` in `lib/ui/mobile-web-viewport.ts` / `viewport-layout.ts` — not raw `innerWidth` or Safari-only margins.
+   - Shared fixes only: `MobileWebSafeAreaOverride`, `MobileWebFrame`, `app/+html.tsx`, `Screen.web.tsx` — avoid iOS-only hacks that Android does not get.
+   - Check: horizontal padding, clipping, dock/tab bar, modals, carousels on **both** browsers (portrait phone).
+
+8. **Verify** mentally for portrait phone, landscape phone, iPad portrait/landscape, and narrow/wide web frame.

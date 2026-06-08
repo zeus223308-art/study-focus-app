@@ -48,6 +48,7 @@ Legacy `lib/defaults.ts`, `lib/storage.ts` removed — use `lib/domain/` + `serv
 ## Web preview
 
 - `components/MobileWebFrame.tsx`, `app/+html.tsx` — phone-width frame on web.
+- **Mobile web parity:** Android Chrome phone = layout baseline; iOS Safari must match (see `lib/ui/mobile-web-viewport.ts`, `MobileWebSafeAreaOverride`).
 - `lib/notifications.ts` — native only; guarded on web (fixes dashboard crash).
 
 ## Session history (May 2026)

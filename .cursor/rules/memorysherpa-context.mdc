@@ -38,7 +38,8 @@ Live URL: https://zeus223308-art.github.io/study-focus-app/
 
 Every UI change must work on **phone (Android/iOS browser), tablet, and desktop web**.
 
-- `lib/ui/viewport-layout.ts`, `useSafeAreaInsets`, flex + `onLayout`
+- **Android Chrome phone = layout baseline**; iOS Safari must match the same phone viewport
+- `lib/ui/viewport-layout.ts`, `useLayoutViewportSize`, `useSafeAreaInsets`, flex + `onLayout`
 - Modals at **root/tab provider**, not inside scroll content (native mobile web breaks otherwise)
 - Web drag: `Platform.OS === 'web'`; native: `PanResponder`
 - See `.cursor/rules/responsive-ui.mdc`
