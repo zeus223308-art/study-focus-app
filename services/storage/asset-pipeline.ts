@@ -129,30 +129,10 @@ export function buildLocalCloudAsset(
     thumbnailUri: thumb.thumbnailUri,
     localMiniUri: thumb.localMiniUri,
     originalLocalUri: sourceUri,
-    uncroppedLocalUri: null,
     syncStatus,
     uploadedAt: null,
     lastFetchedAt: null,
   };
-}
-
-export async function persistSourceCopy(
-  sourceUri: string,
-  bundleId: string,
-  pageId: string
-): Promise<string> {
-  const master = await processMasterImage(sourceUri);
-
-  if (isWeb) {
-    return persistUriToWebStore(master.uri, bundleId, pageId, 'source');
-  }
-
-  const dir = bundleAssetDir(bundleId);
-  await ensureDir(dir);
-  const FileSystem = await import('expo-file-system/legacy');
-  const dest = `${dir}${pageId}_source.jpg`;
-  await FileSystem.copyAsync({ from: master.uri, to: dest });
-  return dest;
 }
 
 export async function persistOriginalCopy(

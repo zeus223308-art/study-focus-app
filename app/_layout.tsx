@@ -1,4 +1,3 @@
-import '@/lib/polyfills/web-legacy';
 import '@/lib/auth/complete-oauth-popup';
 import 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
@@ -21,13 +20,11 @@ import { AppProvider, useApp } from '@/context/AppContext';
 import { useUnlockDeviceOrientation } from '@/hooks/useUnlockDeviceOrientation';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/constants/theme';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SPLASH_BLACK } from '@/components/MountainMLogo';
-import { dismissWebBootOverlay } from '@/lib/ui/dismiss-web-boot';
-import { isLegacyMobileSafari } from '@/lib/ui/legacy-mobile-safari';
 
 const mountainLogo = require('../assets/images/mountain-m-logo.png');
 
@@ -50,17 +47,10 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
   } = useApp();
   useEffect(() => {
     if (!ready || !splashDone) return;
-    dismissWebBootOverlay();
     void SplashScreen.hideAsync();
   }, [ready, splashDone]);
 
-  if (!splashDone || !ready) {
-    return (
-      <View style={styles.bootLoading}>
-        <Text style={styles.bootLoadingText}>MemorySherpa</Text>
-      </View>
-    );
-  }
+  if (!splashDone || !ready) return null;
 
   return (
     <View style={styles.appShell}>
@@ -120,17 +110,6 @@ function AppRoot({ splashDone }: { splashDone: boolean }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   appShell: { flex: 1 },
-  bootLoading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.beige,
-  },
-  bootLoadingText: {
-    fontSize: theme.font.body,
-    fontWeight: '700',
-    color: theme.gray,
-  },
   fontSplash: {
     flex: 1,
     backgroundColor: SPLASH_BLACK,
@@ -158,17 +137,7 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
-  useEffect(() => {
-    dismissWebBootOverlay();
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || !isLegacyMobileSafari()) return;
-    const t = setTimeout(() => setAnimDone(true), 4000);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (!loaded && Platform.OS !== 'web') {
+  if (!loaded) {
     return (
       <View style={styles.fontSplash}>
         <Image source={mountainLogo} style={styles.fontSplashLogo} resizeMode="contain" accessibilityLabel="MemorySherpa logo" />
