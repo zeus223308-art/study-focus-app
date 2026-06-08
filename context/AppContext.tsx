@@ -416,13 +416,23 @@ export function AppProvider({
     skipPersistRef.current = true;
     storageEpochRef.current += 1;
     try {
+      clearGuestSession();
+      await ensureGoogleDriveSession();
+      const token = await getValidAccessToken();
+      if (token) {
+        const fromCloud = await storage.restoreFromCloudBackup();
+        if (fromCloud && hasRecoverableContent(fromCloud)) {
+          applyLoadedData(fromCloud, null);
+          return;
+        }
+      }
       const { next, recoveryNotice } = await hydrateFromStorage({ clearGuestFirst: true });
       applyLoadedData(next, recoveryNotice);
     } finally {
       storageEpochRef.current += 1;
       skipPersistRef.current = false;
     }
-  }, [hydrateFromStorage, applyLoadedData]);
+  }, [hydrateFromStorage, applyLoadedData, storage]);
 
   const dismissAutoRecoveryNotice = useCallback(() => {
     setAutoRecoveryNotice(null);

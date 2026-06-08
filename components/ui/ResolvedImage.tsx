@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Image, StyleSheet, View, type ImageProps, type ImageStyle, type StyleProp } from 'react-native';
+import {
+  Image,
+  Platform,
+  StyleSheet,
+  View,
+  type ImageProps,
+  type ImageStyle,
+  type StyleProp,
+} from 'react-native';
 
 import { theme } from '@/constants/theme';
 import type { CloudAsset } from '@/lib/domain/types';
@@ -9,6 +17,7 @@ import {
 } from '@/lib/files/asset-uri-utils';
 import { isDirectImageUri } from '@/lib/files/direct-image-uri';
 import { resolveFirstReadableUri } from '@/lib/files/resolve-image-uri';
+import { needsWebNativeImage, WebNativeImage } from '@/lib/ui/web-native-image';
 
 type Props = Omit<ImageProps, 'source'> & {
   uri?: string | null | undefined;
@@ -18,6 +27,7 @@ type Props = Omit<ImageProps, 'source'> & {
 };
 
 export function ResolvedImage({ uri, asset, preferPreview = true, style, ...rest }: Props) {
+  const resizeMode = rest.resizeMode ?? 'cover';
   const candidates = useMemo(() => {
     if (asset) {
       return preferPreview ? getPreviewUriCandidates(asset) : getFullUriCandidates(asset);
@@ -54,6 +64,10 @@ export function ResolvedImage({ uri, asset, preferPreview = true, style, ...rest
 
   if (!resolved) {
     return <View style={[styles.placeholder, style]} />;
+  }
+
+  if (Platform.OS === 'web' && needsWebNativeImage(resolved)) {
+    return <WebNativeImage uri={resolved} style={style} resizeMode={resizeMode} />;
   }
 
   return <Image {...rest} source={{ uri: resolved }} style={style} />;
