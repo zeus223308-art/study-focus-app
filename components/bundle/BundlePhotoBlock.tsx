@@ -1,10 +1,8 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
 import {
-  useWidthFitImageLayout,
   WidthFitPreviewBox,
 } from '@/components/ui/WidthFitPreviewImage';
 import { theme } from '@/constants/theme';
@@ -51,39 +49,24 @@ export function BundlePhotoBlock({
   memoButtonLabel,
 }: Props) {
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
-  const dimUri = asset ? getFullImageUri(asset) ?? uri : uri;
   const hasImage = Boolean(uri && asset);
-  const [boxW, setBoxW] = useState(0);
-
-  const fit = useWidthFitImageLayout(dimUri, boxW, maxHeight);
-  const frameHeight =
-    fit.ready && boxW > 0
-      ? fit.scrolls
-        ? maxHeight
-        : Math.min(maxHeight, Math.max(72, fit.imgH))
-      : maxHeight;
 
   const showInk =
     Boolean(layer && (showInkPreview || (inkEnabled && onStrokesChange)));
 
   return (
-    <View
-      style={styles.wrap}
-      onLayout={(e) => {
-        const w = Math.round(e.nativeEvent.layout.width);
-        if (w > 0 && w !== boxW) setBoxW(w);
-      }}>
+    <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <Pressable
         onPress={hasImage ? onPress : onAddPress}
-        style={[styles.frame, { height: frameHeight }]}
+        style={[styles.frame, { height: maxHeight }]}
         accessibilityRole="button">
         {hasImage ? (
           <>
             <WidthFitPreviewBox
               uri={uri}
               asset={asset}
-              style={{ width: '100%', height: frameHeight }}
+              style={{ width: '100%', height: maxHeight }}
               preferPreview
               overlay={
                 showInk && layer
@@ -113,7 +96,7 @@ export function BundlePhotoBlock({
             ) : null}
           </>
         ) : (
-          <View style={[styles.empty, { height: frameHeight }]}>
+          <View style={[styles.empty, { height: maxHeight }]}>
             <Text style={styles.emptyText}>{placeholder ?? '+'}</Text>
           </View>
         )}
