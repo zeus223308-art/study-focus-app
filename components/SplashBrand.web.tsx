@@ -7,6 +7,7 @@ import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
 import { theme } from '@/constants/theme';
 import { dismissWebBootOverlay } from '@/lib/ui/dismiss-web-boot';
 import { isLegacyMobileSafari } from '@/lib/ui/legacy-mobile-safari';
+import { webOpacityFade } from '@/lib/ui/web-opacity-fade';
 
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
 const legacyWeb = isLegacyMobileSafari();
@@ -14,8 +15,6 @@ const legacyWeb = isLegacyMobileSafari();
 type Props = {
   onFinish: () => void;
 };
-
-type SplashPhase = 'logo' | 'tagline' | 'out';
 
 const T = {
   mountainIn: 750,
@@ -32,10 +31,13 @@ function markSplashMounted() {
   dismissWebBootOverlay();
 }
 
-/** Web splash — match native sequence; skip Reanimated on iOS 15 Safari. */
+/** Web splash — native timing with CSS opacity fades (no Reanimated on iOS 15). */
 export function SplashBrand({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
-  const [phase, setPhase] = useState<SplashPhase>(legacyWeb ? 'out' : 'logo');
+  const [mountainOpacity, setMountainOpacity] = useState(legacyWeb ? 0 : 1);
+  const [taglineOpacity, setTaglineOpacity] = useState(0);
+  const [footerOpacity, setFooterOpacity] = useState(0);
+  const [screenOpacity, setScreenOpacity] = useState(1);
 
   useEffect(() => {
     markSplashMounted();
@@ -46,16 +48,29 @@ export function SplashBrand({ onFinish }: Props) {
       return () => clearTimeout(t);
     }
 
-    const tTagline = T.mountainIn + T.mountainHold + T.mountainOut;
-    const tOut = tTagline + T.taglineIn + T.taglineHold;
+    const tMountainOut = T.mountainIn + T.mountainHold;
+    const tTaglineIn = tMountainOut + T.mountainOut;
+    const tAllOut = tTaglineIn + T.taglineIn + T.taglineHold;
 
-    const timers = [
-      setTimeout(() => setPhase('tagline'), tTagline),
-      setTimeout(() => setPhase('out'), tOut),
-      setTimeout(onFinish, tOut + T.allOut),
-    ];
+    let timers: ReturnType<typeof setTimeout>[] = [];
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        timers = [
+          setTimeout(() => setMountainOpacity(0), tMountainOut),
+          setTimeout(() => {
+            setTaglineOpacity(1);
+            setFooterOpacity(1);
+          }, tTaglineIn),
+          setTimeout(() => setScreenOpacity(0), tAllOut),
+          setTimeout(onFinish, tAllOut + T.allOut),
+        ];
+      });
+    });
 
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      cancelAnimationFrame(raf);
+      timers.forEach(clearTimeout);
+    };
   }, [onFinish]);
 
   if (legacyWeb) {
@@ -68,27 +83,30 @@ export function SplashBrand({ onFinish }: Props) {
   }
 
   return (
-    <View style={[styles.root, phase === 'out' && styles.rootOut]} pointerEvents="none">
+    <View style={[styles.root, webOpacityFade(screenOpacity, T.allOut)]} pointerEvents="none">
       <View style={styles.center}>
-        {phase === 'logo' ? (
+        <View style={[styles.mountainWrap, webOpacityFade(mountainOpacity, T.mountainOut)]}>
           <Image
             source={mountainLogo}
             style={styles.mountainLogo}
             resizeMode="contain"
             accessibilityLabel="MemorySherpa logo"
           />
-        ) : null}
+        </View>
 
-        {phase === 'tagline' ? (
+        <View style={[styles.taglineWrap, webOpacityFade(taglineOpacity, T.taglineIn)]}>
           <Text style={styles.tagline}>Conquer your memory</Text>
-        ) : null}
+        </View>
       </View>
 
-      {phase === 'tagline' ? (
-        <View style={[styles.footer, { bottom: Math.max(insets.bottom, 24) + 32 }]}>
-          <Text style={styles.copy}>© MemorySherpa</Text>
-        </View>
-      ) : null}
+      <View
+        style={[
+          styles.footer,
+          { bottom: Math.max(insets.bottom, 24) + 32 },
+          webOpacityFade(footerOpacity, T.taglineIn),
+        ]}>
+        <Text style={styles.copy}>© MemorySherpa</Text>
+      </View>
     </View>
   );
 }
@@ -99,12 +117,7 @@ const styles = StyleSheet.create({
     backgroundColor: SPLASH_BLACK,
     zIndex: 9999,
     elevation: 9999,
-    opacity: 1,
   },
-  rootOut: {
-    opacity: 0,
-    transition: 'opacity 600ms ease',
-  } as object,
   legacyRoot: {
     backgroundColor: theme.beige,
     alignItems: 'center',
@@ -129,11 +142,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+  },
+  mountainWrap: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mountainLogo: {
     width: 240,
     height: 168,
+  },
+  taglineWrap: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
   },
   tagline: {
     fontSize: 22,
