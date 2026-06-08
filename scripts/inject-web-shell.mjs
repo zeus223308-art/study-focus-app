@@ -23,7 +23,7 @@ body{background-color:#F9F8F6;overflow-x:hidden;touch-action:manipulation;-webki
 const headInject =
   '<script data-legacy-safari-polyfill="1">' +
   polyfill +
-  '</script><style data-web-mobile-shell="1">' +
+  '</script><script data-ms-base-path="1">(function(){try{var p=location.pathname||"";if(p.indexOf("/study-focus-app")!==0){location.replace("/study-focus-app/"+(location.search||"")+(location.hash||""));}}catch(e){}})();</script><style data-web-mobile-shell="1">' +
   shellCss +
   '</style>';
 

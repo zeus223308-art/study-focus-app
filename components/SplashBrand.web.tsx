@@ -3,9 +3,11 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 
 import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
+import { theme } from '@/constants/theme';
 import { isLegacyMobileSafari } from '@/lib/ui/legacy-mobile-safari';
 
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
+const legacyWeb = isLegacyMobileSafari();
 
 type Props = {
   onFinish: () => void;
@@ -15,19 +17,22 @@ type Props = {
 export function SplashBrand({ onFinish }: Props) {
   useEffect(() => {
     void SplashScreen.hideAsync();
-    const ms = isLegacyMobileSafari() ? 900 : 1400;
+    const ms = legacyWeb ? 400 : 1400;
     const t = setTimeout(onFinish, ms);
     return () => clearTimeout(t);
   }, [onFinish]);
 
   return (
     <View style={styles.root} pointerEvents="none">
-      <Image
-        source={mountainLogo}
-        style={styles.mountainLogo}
-        resizeMode="contain"
-        accessibilityLabel="MemorySherpa logo"
-      />
+      <Text style={styles.title}>MemorySherpa</Text>
+      {!legacyWeb ? (
+        <Image
+          source={mountainLogo}
+          style={styles.mountainLogo}
+          resizeMode="contain"
+          accessibilityLabel="MemorySherpa logo"
+        />
+      ) : null}
       <Text style={styles.tagline}>Conquer your memory</Text>
     </View>
   );
@@ -36,23 +41,29 @@ export function SplashBrand({ onFinish }: Props) {
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: SPLASH_BLACK,
+    backgroundColor: legacyWeb ? theme.beige : SPLASH_BLACK,
     zIndex: 9999,
     elevation: 9999,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
-    gap: 16,
   },
   mountainLogo: {
     width: 200,
     height: 140,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: legacyWeb ? theme.black : LOGO_WHITE,
+    marginBottom: 12,
   },
   tagline: {
     fontSize: 20,
     fontStyle: 'italic',
     fontWeight: '400',
-    color: LOGO_WHITE,
+    color: legacyWeb ? theme.gray : LOGO_WHITE,
     letterSpacing: 0.4,
     textAlign: 'center',
   },

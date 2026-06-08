@@ -1,12 +1,14 @@
+/**
+ * Web root layout — skip custom font gate and Reanimated side-effect import
+ * (iPhone 7 / iOS 15 Safari hangs on font load + black splash).
+ */
 import '@/lib/polyfills/web-legacy';
 import '@/lib/auth/complete-oauth-popup';
 import 'react-native-gesture-handler';
-import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
 
 import { CloudAutoSync } from '@/components/CloudAutoSync';
 import { GoogleAuthBootstrap } from '@/components/GoogleAuthBootstrap';
@@ -21,15 +23,12 @@ import { AppProvider, useApp } from '@/context/AppContext';
 import { useUnlockDeviceOrientation } from '@/hooks/useUnlockDeviceOrientation';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/constants/theme';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { SPLASH_BLACK } from '@/components/MountainMLogo';
 import { dismissWebBootOverlay } from '@/lib/ui/dismiss-web-boot';
 import { isLegacyMobileSafari } from '@/lib/ui/legacy-mobile-safari';
-
-const mountainLogo = require('../assets/images/mountain-m-logo.png');
 
 export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary';
 
@@ -57,7 +56,8 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
   if (!splashDone || !ready) {
     return (
       <View style={styles.bootLoading}>
-        <Text style={styles.bootLoadingText}>MemorySherpa</Text>
+        <Text style={styles.bootLoadingTitle}>MemorySherpa</Text>
+        <Text style={styles.bootLoadingText}>Loading…</Text>
       </View>
     );
   }
@@ -109,7 +109,7 @@ function AppRoot({ splashDone }: { splashDone: boolean }) {
 
   return (
     <MobileWebFrame>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <MobileWebSafeAreaOverride>
         <RootNavigator splashDone={splashDone} />
       </MobileWebSafeAreaOverride>
@@ -118,36 +118,31 @@ function AppRoot({ splashDone }: { splashDone: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: { flex: 1, backgroundColor: theme.beige },
   appShell: { flex: 1 },
   bootLoading: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.beige,
+    paddingHorizontal: 24,
+  },
+  bootLoadingTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: theme.black,
+    marginBottom: 8,
   },
   bootLoadingText: {
     fontSize: theme.font.body,
-    fontWeight: '700',
+    fontWeight: '600',
     color: theme.gray,
-  },
-  fontSplash: {
-    flex: 1,
-    backgroundColor: SPLASH_BLACK,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fontSplashLogo: {
-    width: 240,
-    height: 168,
   },
 });
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-  const [animDone, setAnimDone] = useState(false);
+  const legacyWeb = isLegacyMobileSafari();
+  const [animDone, setAnimDone] = useState(legacyWeb);
   const [appReady, setAppReady] = useState(false);
   const splashDone = animDone && appReady;
 
@@ -155,26 +150,9 @@ export default function RootLayout() {
   const onAppReady = useCallback(() => setAppReady(true), []);
 
   useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-
-  useEffect(() => {
     dismissWebBootOverlay();
+    void SplashScreen.hideAsync();
   }, []);
-
-  useEffect(() => {
-    if (Platform.OS !== 'web' || !isLegacyMobileSafari()) return;
-    const t = setTimeout(() => setAnimDone(true), 4000);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (!loaded && Platform.OS !== 'web') {
-    return (
-      <View style={styles.fontSplash}>
-        <Image source={mountainLogo} style={styles.fontSplashLogo} resizeMode="contain" accessibilityLabel="MemorySherpa logo" />
-      </View>
-    );
-  }
 
   return (
     <GestureHandlerRootView style={styles.root}>
@@ -183,7 +161,7 @@ export default function RootLayout() {
           <AppRoot splashDone={splashDone} />
         </AppProvider>
       </SafeAreaProvider>
-      {!splashDone ? <SplashBrand onFinish={onBrandFinish} /> : null}
+      {!splashDone && !legacyWeb ? <SplashBrand onFinish={onBrandFinish} /> : null}
     </GestureHandlerRootView>
   );
 }
