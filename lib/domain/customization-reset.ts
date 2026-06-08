@@ -1,5 +1,7 @@
+import { collectAllCaptureTags } from '@/lib/domain/capture-tags';
 import { SCHEDULE_EVERY_TWO_DAYS_ID } from '@/lib/domain/folder-schedule';
 import type { AppData } from '@/lib/domain/types';
+import { ensureTagColorMap } from '@/lib/ui/tag-colors';
 
 /** yyyy-MM from a local calendar date key. */
 export function customizationMonthKey(dateKey: string): string {
@@ -19,6 +21,7 @@ export function applyMonthlyCustomizationReset(
   const month = customizationMonthKey(localToday);
   if (data.settings.customizationResetMonth === month) return null;
 
+  const activeTags = collectAllCaptureTags(data.settings.captureTagPresets, data.bundles);
   return {
     ...data,
     subjects: data.subjects.map((s) => ({
@@ -27,7 +30,7 @@ export function applyMonthlyCustomizationReset(
     })),
     settings: {
       ...data.settings,
-      tagColors: {},
+      tagColors: ensureTagColorMap(activeTags, {}),
       customizationResetMonth: month,
     },
   };

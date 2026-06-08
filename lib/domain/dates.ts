@@ -1,7 +1,8 @@
 import { addDays, format, parseISO, startOfDay } from 'date-fns';
 
 import { theme } from '@/constants/theme';
-import { normalizeCaptureTagPresets } from '@/lib/domain/capture-tags';
+import { collectAllCaptureTags, normalizeCaptureTagPresets } from '@/lib/domain/capture-tags';
+import { ensureTagColorMap } from '@/lib/ui/tag-colors';
 
 import type { AppData, AppSettings } from './types';
 
@@ -47,6 +48,12 @@ export function normalizeAppSettings(settings: AppSettings, data: AppData): AppS
     tier === 'pro'
       ? (merged.memoLimit ?? theme.limits.freeMemos)
       : Math.max(merged.memoLimit ?? 0, theme.limits.freeMemos);
+  const captureTagPresets = normalizeCaptureTagPresets(
+    merged.captureTagPresets,
+    merged.language ?? 'ko'
+  );
+  const activeTags = collectAllCaptureTags(captureTagPresets, data.bundles);
+  const tagColors = ensureTagColorMap(activeTags, merged.tagColors);
   return {
     ...merged,
     firstLaunchDate,
@@ -62,10 +69,8 @@ export function normalizeAppSettings(settings: AppSettings, data: AppData): AppS
     lastDerivativeRegenFailed: merged.lastDerivativeRegenFailed ?? 0,
     lastDerivativeRegenAt: merged.lastDerivativeRegenAt ?? null,
     captureFrameAspect: merged.captureFrameAspect ?? '4:3',
-    captureTagPresets: normalizeCaptureTagPresets(
-      merged.captureTagPresets,
-      merged.language ?? 'ko'
-    ),
+    captureTagPresets,
+    tagColors,
   };
 }
 

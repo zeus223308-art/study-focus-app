@@ -15,6 +15,8 @@ import { useLocalCalendarDay } from '@/hooks/useLocalCalendarDay';
 import { initI18n } from '@/i18n';
 import { appendCaptureToData } from '@/lib/domain/bundle-factory';
 import {
+  captureTagKey,
+  collectAllCaptureTags,
   mergeCaptureTagPresets,
   normalizeCaptureTagLabel,
   removeCaptureTagPreset,
@@ -22,7 +24,7 @@ import {
 } from '@/lib/domain/capture-tags';
 import { applyMonthlyCustomizationReset } from '@/lib/domain/customization-reset';
 import { todayKey } from '@/lib/domain/dates';
-import { normalizeTagColorHex } from '@/lib/ui/tag-colors';
+import { ensureTagColorMap, normalizeTagColorHex } from '@/lib/ui/tag-colors';
 import { moveBundleToSubject as moveBundleToSubjectData } from '@/lib/domain/move-bundle';
 import { movePageToSubject } from '@/lib/domain/move-page-to-subject';
 import { movePagesToSubject, type PageRef } from '@/lib/domain/move-pages-batch';
@@ -948,7 +950,7 @@ export function AppProvider({
   }, []);
 
   const setTagColorFor = useCallback((tag: string, color: string) => {
-    const key = tag.trim().toLowerCase();
+    const key = captureTagKey(tag);
     if (!key || !color.trim()) return;
     const normalized = normalizeTagColorHex(color);
     setData((prev) => {
@@ -1015,7 +1017,9 @@ export function AppProvider({
         prev.settings.language,
         normalized
       );
-      return { ...prev, settings: { ...prev.settings, captureTagPresets } };
+      const activeTags = collectAllCaptureTags(captureTagPresets, prev.bundles);
+      const tagColors = ensureTagColorMap(activeTags, prev.settings.tagColors);
+      return { ...prev, settings: { ...prev.settings, captureTagPresets, tagColors } };
     });
   }, []);
 

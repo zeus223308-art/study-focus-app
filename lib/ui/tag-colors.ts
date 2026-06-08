@@ -1,7 +1,12 @@
+import { captureTagKey } from '@/lib/domain/capture-tags';
+
 /** Color-coded tag chips for album photo tiles. */
 
 /** Single default color for tags with no explicit choice (monochrome white). */
 export const DEFAULT_TAG_COLOR = '#FFFFFF';
+
+/** Old app-wide accent before per-tag colors. */
+const LEGACY_PRODUCT_ORANGE = '#ff6b00';
 
 /** Free tier: rainbow (빨주노초파남보) to pick the one tag color from. */
 export const FREE_TAG_COLORS = [
@@ -42,24 +47,64 @@ export function resolveTagColor(color?: string): string {
   return color && color.trim() ? color : DEFAULT_TAG_COLOR;
 }
 
-/** Normalized lookup key for per-tag color maps. */
+/** Normalized lookup key for per-tag color maps (matches stored photo tags). */
 export function tagColorKey(tag: string): string {
-  return tag.trim().toLowerCase();
+  return captureTagKey(tag);
+}
+
+/** Map legacy / mistaken stored hues to the free rainbow palette. */
+export function canonicalizeTagColor(hex: string): string {
+  const key = normalizeHex(hex);
+  if (!key) return DEFAULT_TAG_COLOR;
+  if (key === LEGACY_PRODUCT_ORANGE) return '#f39211';
+  return key;
 }
 
 /**
- * Color for a specific tag: its own color if set, else the legacy global
- * `tagColor`, else the default. Keeps existing tags stable when a new tag's
- * color is changed.
+ * Assign each active tag a stable free-palette color when missing.
+ * Drops colors for tags that no longer exist on any photo or preset.
+ */
+export function ensureTagColorMap(
+  tags: string[],
+  existing?: Record<string, string>
+): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const [rawKey, rawColor] of Object.entries(existing ?? {})) {
+    const key = rawKey.trim().toLowerCase();
+    if (!key || !rawColor?.trim()) continue;
+    map[key] = canonicalizeTagColor(normalizeTagColorHex(rawColor));
+  }
+
+  const sorted = [...tags].sort((a, b) => a.localeCompare(b));
+  const activeKeys = new Set<string>();
+  let assignIdx = 0;
+  for (const tag of sorted) {
+    const key = captureTagKey(tag);
+    if (!key) continue;
+    activeKeys.add(key);
+    if (map[key]?.trim()) continue;
+    map[key] = FREE_TAG_COLORS[assignIdx % FREE_TAG_COLORS.length]!;
+    assignIdx += 1;
+  }
+
+  for (const key of Object.keys(map)) {
+    if (!activeKeys.has(key)) delete map[key];
+  }
+  return map;
+}
+
+/**
+ * Color for a specific tag: its own saved color, else white.
+ * Legacy global `tagColor` is ignored so stale browns/oranges do not leak.
  */
 export function resolveTagColorFor(
   tag: string,
   tagColors?: Record<string, string>,
-  fallback?: string
+  _fallback?: string
 ): string {
   const own = tagColors?.[tagColorKey(tag)];
-  if (own && own.trim()) return normalizeTagColorHex(own);
-  return normalizeTagColorHex(resolveTagColor(fallback));
+  if (own && own.trim()) return canonicalizeTagColor(normalizeTagColorHex(own));
+  return DEFAULT_TAG_COLOR;
 }
 
 const TAG_TEXT_DARK = '#141414';
