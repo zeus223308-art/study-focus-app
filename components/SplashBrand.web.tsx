@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
 import { theme } from '@/constants/theme';
+import { dismissWebBootOverlay } from '@/lib/ui/dismiss-web-boot';
 import { isLegacyMobileSafari } from '@/lib/ui/legacy-mobile-safari';
 
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
@@ -13,6 +14,8 @@ const legacyWeb = isLegacyMobileSafari();
 type Props = {
   onFinish: () => void;
 };
+
+type SplashPhase = 'logo' | 'tagline' | 'out';
 
 const T = {
   mountainIn: 750,
@@ -23,15 +26,19 @@ const T = {
   allOut: 600,
 };
 
+function markSplashMounted() {
+  if (typeof window === 'undefined') return;
+  (window as unknown as { __MS_SPLASH_MOUNTED?: boolean }).__MS_SPLASH_MOUNTED = true;
+  dismissWebBootOverlay();
+}
+
 /** Web splash — match native sequence; skip Reanimated on iOS 15 Safari. */
 export function SplashBrand({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
-  const [mountainOpacity, setMountainOpacity] = useState(legacyWeb ? 0 : 1);
-  const [taglineOpacity, setTaglineOpacity] = useState(0);
-  const [footerOpacity, setFooterOpacity] = useState(0);
-  const [screenOpacity, setScreenOpacity] = useState(1);
+  const [phase, setPhase] = useState<SplashPhase>(legacyWeb ? 'out' : 'logo');
 
   useEffect(() => {
+    markSplashMounted();
     void SplashScreen.hideAsync();
 
     if (legacyWeb) {
@@ -39,18 +46,13 @@ export function SplashBrand({ onFinish }: Props) {
       return () => clearTimeout(t);
     }
 
-    const tMountainOut = T.mountainIn + T.mountainHold;
-    const tTaglineIn = tMountainOut + T.mountainOut;
-    const tAllOut = tTaglineIn + T.taglineIn + T.taglineHold;
+    const tTagline = T.mountainIn + T.mountainHold + T.mountainOut;
+    const tOut = tTagline + T.taglineIn + T.taglineHold;
 
     const timers = [
-      setTimeout(() => setMountainOpacity(0), tMountainOut),
-      setTimeout(() => {
-        setTaglineOpacity(1);
-        setFooterOpacity(1);
-      }, tTaglineIn),
-      setTimeout(() => setScreenOpacity(0), tAllOut),
-      setTimeout(onFinish, tAllOut + T.allOut),
+      setTimeout(() => setPhase('tagline'), tTagline),
+      setTimeout(() => setPhase('out'), tOut),
+      setTimeout(onFinish, tOut + T.allOut),
     ];
 
     return () => timers.forEach(clearTimeout);
@@ -65,32 +67,28 @@ export function SplashBrand({ onFinish }: Props) {
     );
   }
 
-  const fadeMs = Platform.OS === 'web' ? T.mountainOut : 0;
-
   return (
-    <View style={[styles.root, { opacity: screenOpacity }]} pointerEvents="none">
+    <View style={[styles.root, phase === 'out' && styles.rootOut]} pointerEvents="none">
       <View style={styles.center}>
-        <View style={[styles.mountainWrap, { opacity: mountainOpacity, transition: `opacity ${fadeMs}ms ease` } as object]}>
+        {phase === 'logo' ? (
           <Image
             source={mountainLogo}
             style={styles.mountainLogo}
             resizeMode="contain"
             accessibilityLabel="MemorySherpa logo"
           />
-        </View>
+        ) : null}
 
-        <View style={[styles.taglineWrap, { opacity: taglineOpacity, transition: `opacity ${T.taglineIn}ms ease` } as object]}>
+        {phase === 'tagline' ? (
           <Text style={styles.tagline}>Conquer your memory</Text>
-        </View>
+        ) : null}
       </View>
 
-      <View
-        style={[
-          styles.footer,
-          { bottom: Math.max(insets.bottom, 24) + 32, opacity: footerOpacity, transition: `opacity ${T.taglineIn}ms ease` } as object,
-        ]}>
-        <Text style={styles.copy}>© MemorySherpa</Text>
-      </View>
+      {phase === 'tagline' ? (
+        <View style={[styles.footer, { bottom: Math.max(insets.bottom, 24) + 32 }]}>
+          <Text style={styles.copy}>© MemorySherpa</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -101,7 +99,12 @@ const styles = StyleSheet.create({
     backgroundColor: SPLASH_BLACK,
     zIndex: 9999,
     elevation: 9999,
+    opacity: 1,
   },
+  rootOut: {
+    opacity: 0,
+    transition: 'opacity 600ms ease',
+  } as object,
   legacyRoot: {
     backgroundColor: theme.beige,
     alignItems: 'center',
@@ -126,19 +129,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  mountainWrap: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   mountainLogo: {
     width: 240,
     height: 168,
-  },
-  taglineWrap: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
   },
   tagline: {
     fontSize: 22,

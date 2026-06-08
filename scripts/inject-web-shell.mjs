@@ -77,7 +77,7 @@ const bootScript = `(function(){
     msg("Taking longer than usual. Tap Refresh — the second load is usually instant.");
   },90000));
   var poll=setInterval(function(){
-    if(rootHasContent()||window.__MS_ROOT_LAYOUT){
+    if(window.__MS_SPLASH_MOUNTED||window.__MS_BOOT_DISMISS){
       phase="done";
       clearTimers();
       clearInterval(poll);

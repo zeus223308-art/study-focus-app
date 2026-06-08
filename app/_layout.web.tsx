@@ -22,11 +22,12 @@ import { AppProvider, useApp } from '@/context/AppContext';
 import { useUnlockDeviceOrientation } from '@/hooks/useUnlockDeviceOrientation';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/constants/theme';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { dismissWebBootOverlay } from '@/lib/ui/dismiss-web-boot';
 import { isLegacyMobileSafari } from '@/lib/ui/legacy-mobile-safari';
+import { SPLASH_BLACK } from '@/components/MountainMLogo';
 
 export { AppErrorBoundary as ErrorBoundary } from '@/components/AppErrorBoundary';
 
@@ -52,6 +53,9 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
   }, [ready, splashDone]);
 
   if (!splashDone || !ready) {
+    if (Platform.OS === 'web' && !isLegacyMobileSafari()) {
+      return <View style={styles.bootSplashMask} />;
+    }
     return (
       <View style={styles.bootLoading}>
         <Text style={styles.bootLoadingTitle}>MemorySherpa</Text>
@@ -118,6 +122,10 @@ function AppRoot({ splashDone }: { splashDone: boolean }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.beige },
   appShell: { flex: 1 },
+  bootSplashMask: {
+    flex: 1,
+    backgroundColor: SPLASH_BLACK,
+  },
   bootLoading: {
     flex: 1,
     alignItems: 'center',
@@ -139,11 +147,6 @@ const styles = StyleSheet.create({
 });
 
 export default function RootLayout() {
-  if (typeof window !== 'undefined') {
-    (window as unknown as { __MS_ROOT_LAYOUT?: boolean }).__MS_ROOT_LAYOUT = true;
-    dismissWebBootOverlay();
-  }
-
   const legacyWeb = isLegacyMobileSafari();
   const [animDone, setAnimDone] = useState(legacyWeb);
   const [appReady, setAppReady] = useState(legacyWeb);
@@ -153,15 +156,21 @@ export default function RootLayout() {
   const onAppReady = useCallback(() => setAppReady(true), []);
 
   useEffect(() => {
-    dismissWebBootOverlay();
-    void SplashScreen.hideAsync();
-  }, []);
+    if (legacyWeb) {
+      dismissWebBootOverlay();
+      void SplashScreen.hideAsync();
+    }
+  }, [legacyWeb]);
 
   return (
     <View style={styles.root}>
       <SafeAreaProvider>
         <AppProvider onReady={onAppReady}>
-          <AppRoot splashDone={splashDone} />
+          {splashDone || legacyWeb ? (
+            <AppRoot splashDone={splashDone} />
+          ) : (
+            <View style={styles.bootSplashMask} />
+          )}
         </AppProvider>
       </SafeAreaProvider>
       {!splashDone && !legacyWeb ? <SplashBrand onFinish={onBrandFinish} /> : null}
