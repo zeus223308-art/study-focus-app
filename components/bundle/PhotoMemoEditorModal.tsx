@@ -1,6 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Keyboard,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
@@ -8,10 +16,7 @@ import { MemoTextBoxView } from '@/components/annotation/MemoTextBox';
 import { FullscreenInkControls } from '@/components/annotation/FullscreenInkControls';
 import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink-flow';
 import { PhotoMemoToolbar, type PhotoMemoToolKind } from '@/components/bundle/PhotoMemoToolbar';
-import {
-  PhotoAspectPreview,
-  type PhotoPreviewLayout,
-} from '@/components/ui/PhotoAspectPreview';
+import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import {
   ERASER_WIDTHS,
@@ -19,50 +24,35 @@ import {
   PEN_WIDTHS,
   isHighlighterTool,
 } from '@/lib/domain/ink-sizes';
-import { normalizePhotoMemo } from '@/lib/domain/photo-memo';
+import { mergedPhotoInkLayer, normalizePhotoMemo } from '@/lib/domain/photo-memo';
 import type { CloudAsset, InkToolId, MemoTextBox, NoteLayer, PhotoMemo } from '@/lib/domain/types';
 import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
-import { computeBundlePhotoLayout, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 type Props = {
   visible: boolean;
   sideLabel: string;
   asset: CloudAsset;
   memo: PhotoMemo;
+  legacyLayer?: NoteLayer | null;
   onMemoChange: (memo: PhotoMemo) => void;
   onClose: () => void;
 };
-
-function memoToLayer(memo: PhotoMemo): NoteLayer {
-  const now = memo.updatedAt;
-  return {
-    id: 'photo_memo_layer',
-    studyDate: '',
-    visible: true,
-    strokes: memo.strokes,
-    scratchpadOffsetY: 0,
-    scratchpadHeight: 0,
-    note: '',
-    createdAt: now,
-    updatedAt: now,
-  };
-}
 
 export function PhotoMemoEditorModal({
   visible,
   sideLabel,
   asset,
   memo: memoProp,
+  legacyLayer,
   onMemoChange,
   onClose,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const layout = useFullscreenViewerLayout();
-  const viewport = useViewportLayout();
-  const photoLayout = computeBundlePhotoLayout(viewport);
-  const [previewLayout, setPreviewLayout] = useState<PhotoPreviewLayout | null>(null);
+  const [viewerSize, setViewerSize] = useState({ w: 0, h: 0 });
+  const [inkSurfaceH, setInkSurfaceH] = useState(0);
   const [inkKind, setInkKind] = useState<PhotoMemoToolKind | null>(null);
   const [tool, setTool] = useState<InkToolId>('pen-black');
   const [penWidth, setPenWidth] = useState<number>(PEN_WIDTHS[1]);
@@ -72,7 +62,7 @@ export function PhotoMemoEditorModal({
   const [editingText, setEditingText] = useState(false);
 
   const memo = normalizePhotoMemo(memoProp);
-  const layer = useMemo(() => memoToLayer(memo), [memo]);
+  const layer = useMemo(() => mergedPhotoInkLayer(memo, legacyLayer), [memo, legacyLayer]);
 
   const flowApi = useFullscreenInkFlow({
     visible,
@@ -97,12 +87,15 @@ export function PhotoMemoEditorModal({
     return penWidth;
   }, [tool, penWidth, highlighterWidth, eraserWidth]);
 
-  const onPreviewLayout = useCallback((next: PhotoPreviewLayout) => {
-    setPreviewLayout(next);
-  }, []);
+  const onLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (width > 0 && height > 0) {
+      setViewerSize({ w: width, h: height });
+    }
+  };
 
-  const viewerW = previewLayout?.width ?? 0;
-  const imageH = previewLayout?.height ?? 0;
+  const { w: viewerW, h: viewerH } = viewerSize;
+  const imageH = inkSurfaceH || viewerH;
   const displayUri = getPreviewImageUri(asset) ?? getFullImageUri(asset);
 
   const patchMemo = (patch: Partial<PhotoMemo>) => {
@@ -201,54 +194,56 @@ export function PhotoMemoEditorModal({
           </View>
         ) : null}
 
-        <View style={styles.viewer}>
-          {displayUri ? (
-            <PhotoAspectPreview
-              uri={displayUri}
-              asset={asset}
-              maxWidth={photoLayout.maxWidth}
-              maxHeight={photoLayout.maxHeight}
-              fillWidth={photoLayout.sideBySide}
-              onLayoutReady={onPreviewLayout}
-              overlay={(layout) => (
-                <>
-                  <AnnotationCanvas
-                    layer={layer}
-                    tool={tool}
-                    strokeWidth={strokeWidth}
-                    visible
-                    interactive={inkInteractive}
-                    onStrokesChange={(strokes) => patchMemo({ strokes })}
-                    height={layout.height}
-                    style={[styles.ink, !inkInteractive && styles.inkPassthrough]}
-                  />
-                  {editingText ? (
-                    <Pressable style={styles.dismissBackdrop} onPress={dismissTextEditing} />
-                  ) : null}
-                  {memo.textBoxes.map((box) => (
-                    <MemoTextBoxView
-                      key={box.id}
-                      box={box}
-                      active={activeBoxId === box.id}
-                      editing={editingText && activeBoxId === box.id}
-                      interactive={textInteractive}
-                      surfaceWidth={layout.width}
-                      surfaceHeight={layout.height}
-                      placeholder={t('review.textBoxPlaceholder')}
-                      onChange={(patch) => updateBox(box.id, patch)}
-                      onActivate={() => {
-                        setActiveBoxId(box.id);
-                        setEditingText(true);
-                      }}
-                      onRemove={() => {
-                        patchMemo({ textBoxes: memo.textBoxes.filter((b) => b.id !== box.id) });
-                        dismissTextEditing();
-                      }}
-                    />
-                  ))}
-                </>
-              )}
-            />
+        <View style={styles.viewer} onLayout={onLayout}>
+          {viewerW > 0 && viewerH > 0 && displayUri ? (
+            <View
+              style={[styles.imageBox, { width: viewerW, height: viewerH }]}
+              onLayout={(e) => {
+                const h = Math.round(e.nativeEvent.layout.height);
+                if (h > 0) setInkSurfaceH(h);
+              }}>
+              <ResolvedImage
+                uri={displayUri}
+                asset={asset}
+                preferPreview={false}
+                style={styles.image}
+                resizeMode="contain"
+              />
+              <AnnotationCanvas
+                layer={layer}
+                tool={tool}
+                strokeWidth={strokeWidth}
+                visible
+                interactive={inkInteractive}
+                onStrokesChange={(strokes) => patchMemo({ strokes })}
+                height={imageH}
+                style={[styles.ink, !inkInteractive && styles.inkPassthrough]}
+              />
+              {editingText ? (
+                <Pressable style={styles.dismissBackdrop} onPress={dismissTextEditing} />
+              ) : null}
+              {memo.textBoxes.map((box) => (
+                <MemoTextBoxView
+                  key={box.id}
+                  box={box}
+                  active={activeBoxId === box.id}
+                  editing={editingText && activeBoxId === box.id}
+                  interactive={textInteractive}
+                  surfaceWidth={viewerW}
+                  surfaceHeight={imageH}
+                  placeholder={t('review.textBoxPlaceholder')}
+                  onChange={(patch) => updateBox(box.id, patch)}
+                  onActivate={() => {
+                    setActiveBoxId(box.id);
+                    setEditingText(true);
+                  }}
+                  onRemove={() => {
+                    patchMemo({ textBoxes: memo.textBoxes.filter((b) => b.id !== box.id) });
+                    dismissTextEditing();
+                  }}
+                />
+              ))}
+            </View>
           ) : null}
         </View>
       </View>
@@ -276,7 +271,9 @@ const styles = StyleSheet.create({
     backgroundColor: theme.orangeSoft,
   },
   addTextLabel: { color: theme.orange, fontWeight: '800', fontSize: theme.font.caption },
-  viewer: { flex: 1, minHeight: 0, justifyContent: 'flex-start' },
+  viewer: { flex: 1, minHeight: 0 },
+  imageBox: { position: 'relative', alignSelf: 'stretch' },
+  image: { width: '100%', height: '100%' },
   ink: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   inkPassthrough: { pointerEvents: 'none' as const },
   dismissBackdrop: {

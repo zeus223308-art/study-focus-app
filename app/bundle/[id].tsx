@@ -21,7 +21,11 @@ import { replacePageAnswerPhoto, replacePageFrontPhoto } from '@/lib/files/repla
 import { getFullImageUri, getUncroppedImageUri } from '@/lib/files/display-image-uri';
 import { IMAGE_CAPTURE_QUALITY } from '@/lib/files/image-quality';
 import { ERASER_WIDTHS, HIGHLIGHTER_WIDTHS, PEN_WIDTHS, isHighlighterTool } from '@/lib/domain/ink-sizes';
-import { hasPhotoMemoContent, normalizePhotoMemo } from '@/lib/domain/photo-memo';
+import {
+  hasPhotoMemoContent,
+  hasPhotoSideInk,
+  normalizePhotoMemo,
+} from '@/lib/domain/photo-memo';
 import type { InkToolId, NoteLayer, PhotoMemo } from '@/lib/domain/types';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
@@ -302,11 +306,33 @@ export default function BundleScreen() {
 
   const updatePageMemo = (side: 'front' | 'back', memo: PhotoMemo) => {
     const key = side === 'front' ? 'frontMemo' : 'answerMemo';
+    const prevMemo = normalizePhotoMemo(side === 'front' ? page.frontMemo : page.answerMemo);
+    const strokesChanged =
+      memo.strokes !== prevMemo.strokes || memo.strokes.length !== prevMemo.strokes.length;
+    const clearLegacyLayer = side === 'front' && strokesChanged && Boolean(activeLayer?.strokes.length);
+
     updateBundle(bundle.id, {
-      pages: bundle.pages.map((p) =>
-        p.id === page.id ? { ...p, [key]: memo, updatedAt: new Date().toISOString() } : p
-      ),
+      pages: bundle.pages.map((p) => {
+        if (p.id !== page.id) return p;
+        let next = { ...p, [key]: memo, updatedAt: new Date().toISOString() };
+        if (clearLegacyLayer && activeLayer) {
+          next = {
+            ...next,
+            layers: p.layers.map((l) =>
+              l.id === activeLayer.id
+                ? { ...l, strokes: [], updatedAt: new Date().toISOString() }
+                : l
+            ),
+          };
+        }
+        return next;
+      }),
     });
+  };
+
+  const updatePhotoInkStrokes = (side: 'front' | 'back', strokes: NoteLayer['strokes']) => {
+    const memo = side === 'front' ? frontMemo : answerMemo;
+    updatePageMemo(side, { ...memo, strokes, updatedAt: new Date().toISOString() });
   };
 
   const openMemoEditor = (side: 'front' | 'back') => {
@@ -354,9 +380,10 @@ export default function BundleScreen() {
           maxHeight={photoLayout.maxHeight}
           fillWidth={photoLayout.sideBySide}
           asset={page.asset}
-          showInkPreview={Boolean(activeLayer?.strokes.length)}
+          showInkPreview={hasPhotoSideInk(page.frontMemo, activeLayer)}
           showMemoBadge={hasPhotoMemoContent(page.frontMemo)}
-          layer={activeLayer ?? undefined}
+          memo={frontMemo}
+          legacyLayer={activeLayer}
           memoButtonLabel={t('item.addMemo')}
           onMemoPress={() => openMemoEditor('front')}
           onPress={() => {
@@ -373,7 +400,9 @@ export default function BundleScreen() {
           maxHeight={photoLayout.maxHeight}
           fillWidth={photoLayout.sideBySide}
           asset={page.answerAsset}
+          showInkPreview={hasPhotoSideInk(page.answerMemo)}
           showMemoBadge={hasPhotoMemoContent(page.answerMemo)}
+          memo={answerMemo}
           memoButtonLabel={t('item.addMemo')}
           onMemoPress={page.answerAsset ? () => openMemoEditor('back') : undefined}
           onPress={() => {
@@ -443,6 +472,7 @@ export default function BundleScreen() {
         sideLabel={memoSide === 'front' ? '' : t('item.answerSection')}
         asset={memoSide === 'front' ? page.asset : page.answerAsset!}
         memo={memoSide === 'front' ? frontMemo : answerMemo}
+        legacyLayer={memoSide === 'front' ? activeLayer : undefined}
         onMemoChange={(m) => updatePageMemo(memoSide, m)}
         onClose={() => setMemoOpen(false)}
       />
@@ -452,7 +482,9 @@ export default function BundleScreen() {
         frontAsset={page.asset}
         backAsset={page.answerAsset}
         initialSide={modalInitialSide}
-        layer={activeLayer ?? null}
+        frontMemo={frontMemo}
+        answerMemo={answerMemo}
+        legacyLayer={activeLayer}
         tool={tool}
         penWidth={penWidth}
         highlighterWidth={highlighterWidth}
@@ -461,8 +493,7 @@ export default function BundleScreen() {
         onPenWidthChange={setPenWidth}
         onHighlighterWidthChange={setHighlighterWidth}
         onEraserWidthChange={setEraserWidth}
-        onStrokesChange={updateLayerStrokes}
-        onBeforeInkUse={ensureLayer}
+        onStrokesChange={updatePhotoInkStrokes}
         onClose={() => setProblemModalOpen(false)}
         onCropRequest={(side) => openCrop(side)}
       />

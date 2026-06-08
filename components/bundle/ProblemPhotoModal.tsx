@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
+import { PhotoInkOverlay } from '@/components/bundle/PhotoInkOverlay';
 import { FullscreenInkControls } from '@/components/annotation/FullscreenInkControls';
 import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink-flow';
 import { PhotoInkToolbar, type PhotoInkToolKind } from '@/components/bundle/PhotoInkToolbar';
@@ -21,7 +21,7 @@ import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 import { inkToolKind } from '@/lib/domain/ink-tool-labels';
-import type { CloudAsset, InkToolId, NoteLayer, PenToolId } from '@/lib/domain/types';
+import type { CloudAsset, InkToolId, NoteLayer, PenToolId, PhotoMemo } from '@/lib/domain/types';
 import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
 
@@ -32,7 +32,9 @@ type Props = {
   frontAsset: CloudAsset;
   backAsset: CloudAsset | null;
   initialSide?: Side;
-  layer: NoteLayer | null;
+  frontMemo: PhotoMemo;
+  answerMemo?: PhotoMemo | null;
+  legacyLayer?: NoteLayer | null;
   tool: InkToolId;
   penWidth: number;
   highlighterWidth: number;
@@ -41,8 +43,7 @@ type Props = {
   onPenWidthChange: (w: number) => void;
   onHighlighterWidthChange: (w: number) => void;
   onEraserWidthChange: (w: number) => void;
-  onStrokesChange: (strokes: NoteLayer['strokes']) => void;
-  onBeforeInkUse?: () => void;
+  onStrokesChange: (side: Side, strokes: NoteLayer['strokes']) => void;
   onClose: () => void;
   onCropRequest: (side: Side) => void;
 };
@@ -52,7 +53,9 @@ export function ProblemPhotoModal({
   frontAsset,
   backAsset,
   initialSide = 'front',
-  layer,
+  frontMemo,
+  answerMemo,
+  legacyLayer,
   tool,
   penWidth,
   highlighterWidth,
@@ -62,7 +65,6 @@ export function ProblemPhotoModal({
   onHighlighterWidthChange,
   onEraserWidthChange,
   onStrokesChange,
-  onBeforeInkUse,
   onClose,
   onCropRequest,
 }: Props) {
@@ -71,7 +73,7 @@ export function ProblemPhotoModal({
   const layout = useFullscreenViewerLayout();
   const [pageIndex, setPageIndex] = useState(0);
   const [viewerSize, setViewerSize] = useState({ w: 0, h: 0 });
-  const [inkSurfaceH, setInkSurfaceH] = useState(0);
+  const [inkSurfaceH, setInkSurfaceH] = useState<Record<Side, number>>({ front: 0, back: 0 });
   const [inkKind, setInkKind] = useState<PhotoInkToolKind | null>(null);
 
   const flowApi = useFullscreenInkFlow({
@@ -81,7 +83,6 @@ export function ProblemPhotoModal({
     onPenWidthChange,
     onHighlighterWidthChange,
     onEraserWidthChange,
-    onBeforeInkUse,
   });
 
   useEffect(() => {
@@ -190,14 +191,14 @@ export function ProblemPhotoModal({
                     {item.label ? <Text style={styles.sideLabel}>{item.label}</Text> : null}
                     <View
                       style={styles.imageBox}
-                      onLayout={
-                        item.side === 'front'
-                          ? (e) => {
-                              const h = Math.round(e.nativeEvent.layout.height);
-                              if (h > 0) setInkSurfaceH(h);
-                            }
-                          : undefined
-                      }>
+                      onLayout={(e) => {
+                        const h = Math.round(e.nativeEvent.layout.height);
+                        if (h > 0) {
+                          setInkSurfaceH((prev) =>
+                            prev[item.side] === h ? prev : { ...prev, [item.side]: h }
+                          );
+                        }
+                      }}>
                       <ResolvedImage
                         uri={displayUri}
                         asset={item.asset}
@@ -205,21 +206,17 @@ export function ProblemPhotoModal({
                         style={styles.image}
                         resizeMode="contain"
                       />
-                      {item.side === 'front' && layer ? (
-                        <AnnotationCanvas
-                          layer={layer}
-                          tool={tool}
-                          strokeWidth={strokeWidth}
-                          visible
-                          interactive={inkKind !== null}
-                          onStrokesChange={onStrokesChange}
-                          height={inkSurfaceH || viewerH}
-                          style={[
-                            styles.ink,
-                            inkKind === null && styles.inkPassthrough,
-                          ]}
-                        />
-                      ) : null}
+                      <PhotoInkOverlay
+                        memo={item.side === 'front' ? frontMemo : answerMemo}
+                        legacyLayer={item.side === 'front' ? legacyLayer : undefined}
+                        surfaceWidth={viewerW}
+                        surfaceHeight={inkSurfaceH[item.side] || viewerH}
+                        inkInteractive={inkKind !== null}
+                        tool={tool}
+                        strokeWidth={strokeWidth}
+                        onStrokesChange={(strokes) => onStrokesChange(item.side, strokes)}
+                        style={inkKind === null ? styles.inkPassthrough : undefined}
+                      />
                     </View>
                   </View>
                 );
@@ -258,7 +255,6 @@ const styles = StyleSheet.create({
   },
   imageBox: { flex: 1, minHeight: 0, position: 'relative' },
   image: { width: '100%', height: '100%' },
-  ink: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   inkPassthrough: { pointerEvents: 'none' as const },
   pager: { textAlign: 'center', color: theme.gray, marginTop: 8, fontWeight: '700' },
 });

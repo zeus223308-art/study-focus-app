@@ -1,12 +1,16 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
-import { AnnotationCanvas } from '@/components/annotation/AnnotationCanvas';
-import { PhotoAspectPreview } from '@/components/ui/PhotoAspectPreview';
+import { PhotoInkOverlay } from '@/components/bundle/PhotoInkOverlay';
+import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
-import type { CloudAsset, InkToolId, NoteLayer } from '@/lib/domain/types';
+import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
+import { hasPhotoSideInk } from '@/lib/domain/photo-memo';
+import type { CloudAsset, InkToolId, NoteLayer, PhotoMemo } from '@/lib/domain/types';
 import { getFullImageUri, getPreviewImageUri } from '@/lib/files/display-image-uri';
+
 type Props = {
   label?: string;
   maxWidth: number;
@@ -16,6 +20,8 @@ type Props = {
   onPress: () => void;
   showInkPreview?: boolean;
   inkEnabled?: boolean;
+  memo?: PhotoMemo | null;
+  legacyLayer?: NoteLayer | null;
   layer?: NoteLayer | null;
   tool?: InkToolId;
   strokeWidth?: number;
@@ -36,6 +42,8 @@ export function BundlePhotoBlock({
   onPress,
   showInkPreview = false,
   inkEnabled,
+  memo,
+  legacyLayer,
   layer,
   tool = 'pen-black',
   strokeWidth = 3,
@@ -48,38 +56,78 @@ export function BundlePhotoBlock({
 }: Props) {
   const uri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(uri && asset);
+  const [aspect, setAspect] = useState(4 / 3);
+  const [measuredW, setMeasuredW] = useState(0);
+
+  useEffect(() => {
+    if (!uri) return;
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (w > 0) setAspect(h / w);
+      },
+      () => setAspect(4 / 3)
+    );
+  }, [uri]);
+
+  const width = measuredW > 0 ? measuredW : maxWidth;
+  const inkVisible =
+    showInkPreview || hasPhotoSideInk(memo, legacyLayer ?? layer);
+  const landscapeH = Math.round(width / LANDSCAPE_CARD_RATIO);
+  const height = fillWidth
+    ? Math.min(maxHeight, Math.max(72, landscapeH))
+    : Math.min(maxHeight, Math.max(72, Math.round(width * aspect)));
+
+  const onWrapLayout = useCallback((w: number) => {
+    if (w > 0 && w !== measuredW) setMeasuredW(w);
+  }, [measuredW]);
 
   return (
-    <View style={styles.wrap}>
+    <View
+      style={styles.wrap}
+      onLayout={(e) => onWrapLayout(Math.round(e.nativeEvent.layout.width))}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <PhotoAspectPreview
-        uri={uri}
-        asset={asset}
-        maxWidth={maxWidth}
-        maxHeight={maxHeight}
-        fillWidth={fillWidth}
+      <Pressable
         onPress={hasImage ? onPress : onAddPress}
-        showMemoBadge={showMemoBadge}
-        empty={
-          <View style={styles.empty}>
+        style={[styles.frame, { height }]}
+        accessibilityRole="button">
+        {hasImage ? (
+          <>
+            <ResolvedImage
+              uri={uri}
+              asset={asset}
+              style={{ width: '100%', height }}
+              resizeMode="contain"
+            />
+            {inkVisible || (inkEnabled && onStrokesChange) ? (
+              <PhotoInkOverlay
+                memo={memo}
+                legacyLayer={legacyLayer ?? layer}
+                surfaceWidth={width}
+                surfaceHeight={height}
+                inkInteractive={Boolean(inkEnabled && onStrokesChange)}
+                tool={tool}
+                strokeWidth={strokeWidth}
+                onStrokesChange={onStrokesChange}
+                style={styles.ink}
+              />
+            ) : null}
+            {showMemoBadge ? (
+              <View style={styles.memoBadge} pointerEvents="none">
+                <SymbolView
+                  name={{ ios: 'note.text', android: 'description', web: 'description' }}
+                  size={14}
+                  tintColor={theme.orange}
+                />
+              </View>
+            ) : null}
+          </>
+        ) : (
+          <View style={[styles.empty, { height }]}>
             <Text style={styles.emptyText}>{placeholder ?? '+'}</Text>
           </View>
-        }
-        overlay={(layout) =>
-          layer && (showInkPreview || (inkEnabled && onStrokesChange)) ? (
-            <AnnotationCanvas
-              layer={layer}
-              tool={tool}
-              strokeWidth={strokeWidth}
-              visible
-              interactive={Boolean(inkEnabled && onStrokesChange)}
-              onStrokesChange={onStrokesChange ?? (() => {})}
-              height={layout.height}
-              style={styles.ink}
-            />
-          ) : null
-        }
-      />
+        )}
+      </Pressable>
       {hasImage && onMemoPress ? (
         <Pressable
           onPress={onMemoPress}
@@ -106,6 +154,15 @@ const styles = StyleSheet.create({
     color: theme.black,
     marginBottom: 8,
   },
+  frame: {
+    width: '100%',
+    borderRadius: theme.radius.md,
+    overflow: 'hidden',
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    position: 'relative',
+  },
   ink: {
     position: 'absolute',
     left: 0,
@@ -114,13 +171,29 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   empty: {
-    flex: 1,
     width: '100%',
-    minHeight: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: theme.orange,
+    backgroundColor: theme.orangeSoft,
+  },
+  emptyText: { color: theme.orange, fontWeight: '800', fontSize: theme.font.caption },
+  memoBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    zIndex: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: theme.orange,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyText: { color: theme.orange, fontWeight: '800', fontSize: theme.font.caption },
   memoBtn: {
     flexDirection: 'row',
     alignItems: 'center',

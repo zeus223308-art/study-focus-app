@@ -1,4 +1,4 @@
-import type { NotePage, PhotoMemo } from './types';
+import type { InkStroke, NoteLayer, NotePage, PhotoMemo } from './types';
 
 export function emptyPhotoMemo(): PhotoMemo {
   return { strokes: [], textBoxes: [], updatedAt: new Date().toISOString() };
@@ -13,10 +13,56 @@ export function normalizePhotoMemo(raw?: PhotoMemo | null): PhotoMemo {
   };
 }
 
+function hasVisibleInkStrokes(strokes: InkStroke[]): boolean {
+  return strokes.some((s) => s.tool !== 'eraser' && s.points.length >= 2);
+}
+
 export function hasPhotoMemoContent(raw?: PhotoMemo | null): boolean {
   const memo = normalizePhotoMemo(raw);
-  if (memo.strokes.some((s) => s.tool !== 'eraser' && s.points.length >= 2)) return true;
+  if (hasVisibleInkStrokes(memo.strokes)) return true;
   return memo.textBoxes.some((b) => b.text.trim().length > 0);
+}
+
+/** Ink saved on the photo layer before memo unification (front side only). */
+export function mergedPhotoInkStrokes(
+  memo?: PhotoMemo | null,
+  legacyLayer?: NoteLayer | null
+): InkStroke[] {
+  const memoStrokes = normalizePhotoMemo(memo).strokes;
+  const legacyStrokes = legacyLayer?.strokes ?? [];
+  return [...legacyStrokes, ...memoStrokes];
+}
+
+export function photoMemoToInkLayer(memo: PhotoMemo, id = 'photo_memo_layer'): NoteLayer {
+  const normalized = normalizePhotoMemo(memo);
+  const now = normalized.updatedAt;
+  return {
+    id,
+    studyDate: '',
+    visible: true,
+    strokes: normalized.strokes,
+    scratchpadOffsetY: 0,
+    scratchpadHeight: 0,
+    note: '',
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export function mergedPhotoInkLayer(
+  memo?: PhotoMemo | null,
+  legacyLayer?: NoteLayer | null
+): NoteLayer {
+  const base = photoMemoToInkLayer(normalizePhotoMemo(memo));
+  return { ...base, strokes: mergedPhotoInkStrokes(memo, legacyLayer) };
+}
+
+export function hasPhotoSideInk(
+  memo?: PhotoMemo | null,
+  legacyLayer?: NoteLayer | null
+): boolean {
+  if (hasPhotoMemoContent(memo)) return true;
+  return hasVisibleInkStrokes(legacyLayer?.strokes ?? []);
 }
 
 export function pageHasPhotoMemo(page: Pick<NotePage, 'frontMemo' | 'answerMemo'>): boolean {
