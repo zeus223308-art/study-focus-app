@@ -4,7 +4,6 @@
  */
 import '@/lib/polyfills/web-legacy';
 import '@/lib/auth/complete-oauth-popup';
-import 'react-native-gesture-handler';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState } from 'react';
@@ -24,7 +23,6 @@ import { useUnlockDeviceOrientation } from '@/hooks/useUnlockDeviceOrientation';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/constants/theme';
 import { StyleSheet, Text, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { dismissWebBootOverlay } from '@/lib/ui/dismiss-web-boot';
@@ -141,9 +139,14 @@ const styles = StyleSheet.create({
 });
 
 export default function RootLayout() {
+  if (typeof window !== 'undefined') {
+    (window as unknown as { __MS_ROOT_LAYOUT?: boolean }).__MS_ROOT_LAYOUT = true;
+    dismissWebBootOverlay();
+  }
+
   const legacyWeb = isLegacyMobileSafari();
   const [animDone, setAnimDone] = useState(legacyWeb);
-  const [appReady, setAppReady] = useState(false);
+  const [appReady, setAppReady] = useState(legacyWeb);
   const splashDone = animDone && appReady;
 
   const onBrandFinish = useCallback(() => setAnimDone(true), []);
@@ -155,13 +158,13 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <View style={styles.root}>
       <SafeAreaProvider>
         <AppProvider onReady={onAppReady}>
           <AppRoot splashDone={splashDone} />
         </AppProvider>
       </SafeAreaProvider>
       {!splashDone && !legacyWeb ? <SplashBrand onFinish={onBrandFinish} /> : null}
-    </GestureHandlerRootView>
+    </View>
   );
 }

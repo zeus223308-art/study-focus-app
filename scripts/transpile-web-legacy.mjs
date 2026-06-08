@@ -14,7 +14,7 @@ if (!fs.existsSync(webDir)) {
   process.exit(0);
 }
 
-const targets = { ios: '12', safari: '12' };
+const targets = { ios: '15', safari: '15' };
 const files = fs.readdirSync(webDir).filter((f) => f.endsWith('.js'));
 
 for (const file of files) {
@@ -39,7 +39,11 @@ for (const file of files) {
   if (!code || code.length < 1000) {
     throw new Error(`transpile-web-legacy: empty output for ${file}`);
   }
-  fs.writeFileSync(abs, code);
+  const isEntry = file.startsWith('entry-');
+  const wrapped = isEntry
+    ? `window.__MS_EVAL_START=Date.now();try{${code}\nwindow.__MS_EVAL_DONE=Date.now();}catch(e){window.__MS_BOOT_ERR=e;throw e;}`
+    : code;
+  fs.writeFileSync(abs, wrapped);
   console.log(`transpile-web-legacy: ${file} ${src.length} → ${code.length}`);
 }
 

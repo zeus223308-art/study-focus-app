@@ -394,15 +394,12 @@ export function AppProvider({
     };
 
     if (Platform.OS === 'web' && isLegacyMobileSafari()) {
-      let timer: ReturnType<typeof setTimeout> | undefined;
+      finish(structuredClone(DEFAULT_DATA), null);
       try {
-        timer = setTimeout(() => finish(structuredClone(DEFAULT_DATA), null), 9000);
         const { next, recoveryNotice } = await hydrateFromStorage();
-        clearTimeout(timer);
-        finish(next, recoveryNotice);
+        applyLoadedData(next, recoveryNotice);
       } catch {
-        clearTimeout(timer);
-        finish(structuredClone(DEFAULT_DATA), null);
+        /* keep defaults — UI already visible */
       }
       return;
     }
