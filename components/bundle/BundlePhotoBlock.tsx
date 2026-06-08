@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { PhotoInkOverlay } from '@/components/bundle/PhotoInkOverlay';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
-import { fitImageInBox } from '@/lib/ui/image-fit';
 import { LANDSCAPE_CARD_RATIO } from '@/lib/ui/landscape-card-layout';
 import { hasPhotoSideInk } from '@/lib/domain/photo-memo';
 import type { CloudAsset, InkToolId, NoteLayer, PhotoMemo } from '@/lib/domain/types';
@@ -56,7 +55,7 @@ export function BundlePhotoBlock({
   onMemoPress,
   memoButtonLabel,
 }: Props) {
-  const displayUri = asset ? getFullImageUri(asset) ?? getPreviewImageUri(asset) : null;
+  const displayUri = asset ? getPreviewImageUri(asset) ?? getFullImageUri(asset) : null;
   const hasImage = Boolean(displayUri && asset);
   const [measuredW, setMeasuredW] = useState(0);
   const [aspect, setAspect] = useState(4 / 3);
@@ -80,10 +79,14 @@ export function BundlePhotoBlock({
   const inkVisible =
     showInkPreview || hasPhotoSideInk(memo, legacyLayer ?? layer);
   const landscapeH = Math.round(width / LANDSCAPE_CARD_RATIO);
-  const height = fillWidth
+  const frameHeight = fillWidth
     ? Math.min(maxHeight, Math.max(72, landscapeH))
     : maxHeight;
-  const fit = useMemo(() => fitImageInBox(width, height, aspect), [width, height, aspect]);
+  const imageHeight = useMemo(
+    () => Math.max(1, Math.round(width * aspect)),
+    [width, aspect]
+  );
+  const scrollable = imageHeight > frameHeight;
 
   const onWrapLayout = useCallback((w: number) => {
     if (w > 0 && w !== measuredW) setMeasuredW(w);
@@ -94,34 +97,46 @@ export function BundlePhotoBlock({
       style={styles.wrap}
       onLayout={(e) => onWrapLayout(Math.round(e.nativeEvent.layout.width))}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
-      <Pressable
-        onPress={hasImage ? onPress : onAddPress}
-        style={[styles.frame, { height }]}
-        accessibilityRole="button">
+      <View style={[styles.frame, { height: frameHeight }]}>
         {hasImage ? (
           <>
-            <View style={[styles.fitStage, { width: fit.width, height: fit.height }]}>
-              <ResolvedImage
-                uri={displayUri}
-                asset={asset}
-                preferPreview={false}
-                style={styles.photo}
-                resizeMode="stretch"
-              />
-              {inkVisible || (inkEnabled && onStrokesChange) ? (
-                <PhotoInkOverlay
-                  memo={memo}
-                  legacyLayer={legacyLayer ?? layer}
-                  surfaceWidth={fit.width}
-                  surfaceHeight={fit.height}
-                  inkInteractive={Boolean(inkEnabled && onStrokesChange)}
-                  tool={tool}
-                  strokeWidth={strokeWidth}
-                  onStrokesChange={onStrokesChange}
-                  style={styles.ink}
+            <ScrollView
+              style={styles.scroll}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { minHeight: frameHeight },
+                !scrollable && styles.scrollContentCentered,
+              ]}
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={scrollable}
+              bounces={scrollable}
+              scrollEnabled={scrollable}
+              directionalLockEnabled>
+              <Pressable
+                onPress={onPress}
+                style={[styles.photoStage, { width, height: imageHeight }]}
+                accessibilityRole="button">
+                <ResolvedImage
+                  uri={displayUri}
+                  asset={asset}
+                  style={styles.photo}
+                  resizeMode="stretch"
                 />
-              ) : null}
-            </View>
+                {inkVisible || (inkEnabled && onStrokesChange) ? (
+                  <PhotoInkOverlay
+                    memo={memo}
+                    legacyLayer={legacyLayer ?? layer}
+                    surfaceWidth={width}
+                    surfaceHeight={imageHeight}
+                    inkInteractive={Boolean(inkEnabled && onStrokesChange)}
+                    tool={tool}
+                    strokeWidth={strokeWidth}
+                    onStrokesChange={onStrokesChange}
+                    style={styles.ink}
+                  />
+                ) : null}
+              </Pressable>
+            </ScrollView>
             {showMemoBadge ? (
               <View style={styles.memoBadge} pointerEvents="none">
                 <SymbolView
@@ -131,13 +146,25 @@ export function BundlePhotoBlock({
                 />
               </View>
             ) : null}
+            {scrollable ? (
+              <View style={styles.scrollHint} pointerEvents="none">
+                <SymbolView
+                  name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }}
+                  size={12}
+                  tintColor={theme.gray}
+                />
+              </View>
+            ) : null}
           </>
         ) : (
-          <View style={[styles.empty, { height }]}>
+          <Pressable
+            onPress={onAddPress}
+            style={[styles.empty, { height: frameHeight }]}
+            accessibilityRole="button">
             <Text style={styles.emptyText}>{placeholder ?? '+'}</Text>
-          </View>
+          </Pressable>
         )}
-      </Pressable>
+      </View>
       {hasImage && onMemoPress ? (
         <Pressable
           onPress={onMemoPress}
@@ -172,10 +199,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.grayLight,
     position: 'relative',
-    alignItems: 'center',
+  },
+  scroll: {
+    width: '100%',
+    height: '100%',
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  scrollContentCentered: {
     justifyContent: 'center',
   },
-  fitStage: {
+  photoStage: {
     position: 'relative',
     overflow: 'hidden',
   },
@@ -189,6 +224,15 @@ const styles = StyleSheet.create({
     top: 0,
     right: 0,
     bottom: 0,
+  },
+  scrollHint: {
+    position: 'absolute',
+    bottom: 4,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 5,
+    opacity: 0.75,
   },
   empty: {
     width: '100%',
