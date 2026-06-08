@@ -31,12 +31,16 @@ export function RestoreDateChoiceSheet({
           <View style={styles.handle} />
           <Text style={styles.title}>{t('folder.restoreDateTitle')}</Text>
           <Text style={styles.message}>{t('folder.restoreDateMessage')}</Text>
-          <Button label={t('folder.restoreDateToday')} onPress={onRestoreToday} />
+          <Button
+            label={t('folder.restoreDateToday')}
+            variant="secondary"
+            onPress={onRestoreToday}
+          />
           <Button
             label={t('folder.restoreDateKeep')}
             variant="secondary"
             onPress={onRestoreKeepDate}
-            style={styles.secondaryBtn}
+            style={styles.choiceBtn}
           />
           <Pressable onPress={onClose} style={styles.cancelRow} accessibilityRole="button">
             <Text style={styles.cancelText}>{t('common.cancel')}</Text>
@@ -89,7 +93,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 22,
   },
-  secondaryBtn: { marginTop: 8 },
+  choiceBtn: { marginTop: 8 },
   cancelRow: {
     marginTop: 12,
     paddingVertical: 10,
