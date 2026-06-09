@@ -76,7 +76,13 @@ export function useTrashContents() {
 }
 
 /** Remaining-time chip + restore-by deadline shown next to each entry. */
-function CountdownBlock({ backupExpiresAt }: { backupExpiresAt: string }) {
+function CountdownBlock({
+  backupExpiresAt,
+  centered = false,
+}: {
+  backupExpiresAt: string;
+  centered?: boolean;
+}) {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const rem = trashRemaining(backupExpiresAt);
@@ -90,11 +96,11 @@ function CountdownBlock({ backupExpiresAt }: { backupExpiresAt: string }) {
         : t('trash.remainMinutes', { minutes: rem.minutes });
 
   return (
-    <View style={styles.countdown}>
+    <View style={[styles.countdown, centered && styles.countdownCentered]}>
       <View style={[styles.remainChip, urgent && styles.remainChipUrgent]}>
         <Text style={[styles.remainText, urgent && styles.remainTextUrgent]}>{remainingText}</Text>
       </View>
-      <Text style={styles.deadline}>
+      <Text style={[styles.deadline, centered && styles.textCentered]}>
         {t('trash.restoreBy', { date: formatTrashDeadline(rem.expiresAt, language) })}
       </Text>
     </View>
@@ -110,6 +116,7 @@ type TrashRowProps = {
   restoreLabel: string;
   onRestore: () => void;
   rowPad: number;
+  centerText?: boolean;
   last?: boolean;
 };
 
@@ -123,29 +130,27 @@ function TrashRow({
   onRestore,
   rowPad,
   last,
+  centerText,
 }: TrashRowProps) {
   return (
-    <View
-      style={[
-        styles.row,
-        { paddingHorizontal: rowPad },
-        !last && settingsGroupStyles.rowBorder,
-      ]}>
-      {coverUri ? (
-        <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
-      ) : (
-        <View style={[styles.cover, styles.thumbEmpty]} />
-      )}
-      <View style={styles.info}>
-        <Text style={styles.itemName} numberOfLines={1}>
-          {name}
-        </Text>
-        <Text style={styles.meta}>{meta}</Text>
-        <CountdownBlock backupExpiresAt={backupExpiresAt} />
+    <View style={[styles.rowWrap, !last && settingsGroupStyles.rowBorder]}>
+      <View style={[styles.row, { paddingHorizontal: rowPad }]}>
+        {coverUri ? (
+          <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
+        ) : (
+          <View style={[styles.cover, styles.thumbEmpty]} />
+        )}
+        <View style={[styles.info, centerText && styles.infoCentered]}>
+          <Text style={[styles.itemName, centerText && styles.textCentered]} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text style={[styles.meta, centerText && styles.textCentered]}>{meta}</Text>
+          <CountdownBlock backupExpiresAt={backupExpiresAt} centered={centerText} />
+        </View>
+        <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
+          <Text style={styles.restore}>{restoreLabel}</Text>
+        </Pressable>
       </View>
-      <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
-        <Text style={styles.restore}>{restoreLabel}</Text>
-      </Pressable>
     </View>
   );
 }
@@ -170,6 +175,7 @@ export function TrashContents({ showNotice = true }: Props) {
       <TrashRow
         key={group.subjectId}
         rowPad={rowPad}
+        centerText
         coverUri={cover}
         coverAsset={group.pages[0]?.asset}
         name={group.name}
@@ -262,6 +268,8 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 2,
     marginBottom: 0,
+    textAlign: 'left',
+    alignSelf: 'stretch',
   },
   sectionHeaderSpaced: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -269,20 +277,26 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingTop: 12,
   },
+  rowWrap: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
     width: '100%',
     maxWidth: '100%',
-    paddingVertical: 12,
   },
   info: { flex: 1, minWidth: 0, gap: 4 },
-  itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
-  meta: { fontSize: theme.font.caption, color: theme.gray },
-  countdown: { marginTop: 2, gap: 3 },
+  infoCentered: { alignItems: 'center' },
+  textCentered: { textAlign: 'center' },
+  itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black, alignSelf: 'stretch' },
+  meta: { fontSize: theme.font.caption, color: theme.gray, alignSelf: 'stretch' },
+  countdown: { marginTop: 2, gap: 3, alignSelf: 'stretch' },
+  countdownCentered: { alignItems: 'center' },
   remainChip: {
-    alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: theme.radius.pill,
