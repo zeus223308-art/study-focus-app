@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Text,
   View,
+  type ImageStyle,
   type ListRenderItemInfo,
 } from 'react-native';
 
@@ -40,6 +41,9 @@ type Props = {
   /** Controlled carousel index (dashboard problem picker). */
   previewIndex?: number;
   onPreviewIndexChange?: (index: number) => void;
+  /** Dim preview photos (dashboard review complete). */
+  dimmed?: boolean;
+  imageStyleExtra?: ImageStyle | ImageStyle[];
 };
 
 const VAULT_HEIGHT = 112;
@@ -71,6 +75,8 @@ export function SubjectFolderPreview({
   onInteraction,
   previewIndex: previewIndexProp,
   onPreviewIndexChange,
+  dimmed,
+  imageStyleExtra,
 }: Props) {
   const { t } = useTranslation();
   const viewport = useViewportLayout();
@@ -161,10 +167,12 @@ export function SubjectFolderPreview({
       ? Math.round(cardWidth / LANDSCAPE_CARD_RATIO)
       : portraitHeight;
 
+  const imageStyle = [styles.image, dimmed && styles.imageDimmed, imageStyleExtra];
+
   const renderItem = ({ item }: ListRenderItemInfo<SubjectPreviewItem>) => {
     const slide = (
       <View style={[styles.slide, { width: cardWidth, height: slideHeight }]}>
-        <ResolvedImage uri={item.thumbnailUri} style={styles.image} resizeMode="cover" />
+        <ResolvedImage uri={item.thumbnailUri} style={imageStyle} resizeMode="cover" />
       </View>
     );
     if (passthroughGestures || isDashboard) return slide;
@@ -177,7 +185,7 @@ export function SubjectFolderPreview({
             onOpen();
           }
         }}>
-        <ResolvedImage uri={item.thumbnailUri} style={styles.image} resizeMode="cover" />
+        <ResolvedImage uri={item.thumbnailUri} style={imageStyle} resizeMode="cover" />
       </Pressable>
     );
   };
@@ -267,7 +275,7 @@ export function SubjectFolderPreview({
           data={items}
           horizontal
           pagingEnabled
-          scrollEnabled={!passthroughGestures && items.length > 1}
+          scrollEnabled={!passthroughGestures && !dimmed && items.length > 1}
           nestedScrollEnabled={!passthroughGestures}
           directionalLockEnabled
           showsHorizontalScrollIndicator={false}
@@ -334,6 +342,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.grayLight,
   },
   image: { width: '100%', height: '100%' },
+  imageDimmed: { opacity: 0.35 },
   subjectTagChip: {
     position: 'absolute',
     top: 8,

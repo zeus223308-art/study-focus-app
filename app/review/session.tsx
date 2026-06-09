@@ -97,6 +97,7 @@ export default function ReviewSessionScreen() {
     completeReview,
     getSchedule,
     storage,
+    markSubjectReviewCompleted,
   } = useApp();
 
   const reviewDate = routeParamString(params.reviewDate);
@@ -385,6 +386,15 @@ export default function ReviewSessionScreen() {
   }, [params.bundleId, router]);
 
   const finishAfterComplete = useCallback(() => {
+    const completedSubjectId = slides[index]?.bundle.subjectId;
+    if (completedSubjectId && reviewDate) {
+      const hasMoreForSubject = slides
+        .slice(index + 1)
+        .some((s) => s.bundle.subjectId === completedSubjectId);
+      if (!hasMoreForSubject) {
+        markSubjectReviewCompleted(reviewDate, completedSubjectId);
+      }
+    }
     passAnim.setValue(0);
     passScale.setValue(0.7);
     setRecallStrokes([]);
@@ -400,7 +410,7 @@ export default function ReviewSessionScreen() {
       setSessionCompleteVisible(true);
       runRevealAnim(passAnim, passScale);
     }
-  }, [index, passAnim, passScale, slides.length]);
+  }, [index, markSubjectReviewCompleted, passAnim, passScale, reviewDate, slides]);
 
   const showProblemComplete = useCallback(() => {
     setProblemCompleteVisible(true);

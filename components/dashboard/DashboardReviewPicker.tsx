@@ -19,6 +19,7 @@ export type DashboardSubjectEntry = {
 type Props = {
   entries: DashboardSubjectEntry[];
   selectedIds: Set<string>;
+  completedIds: Set<string>;
   previewIndexBySubject: Record<string, number>;
   onToggle: (subjectId: string) => void;
   onPreviewIndexChange: (subjectId: string, index: number) => void;
@@ -29,6 +30,7 @@ type Props = {
 export function DashboardReviewPicker({
   entries,
   selectedIds,
+  completedIds,
   previewIndexBySubject,
   onToggle,
   onPreviewIndexChange,
@@ -62,6 +64,7 @@ export function DashboardReviewPicker({
           style={viewport.dashboardCardsPerRow > 1 ? styles.cardRow : styles.cardRowSingle}>
           {row.map((entry) => {
             const checked = selectedIds.has(entry.subject.id);
+            const completed = completedIds.has(entry.subject.id);
             return (
               <View
                 key={entry.subject.id}
@@ -90,6 +93,7 @@ export function DashboardReviewPicker({
                   totalLabel={t('dashboard.totalPages', { count: entry.totalPages })}
                   emptyHint={t('dashboard.previewEmpty')}
                   selected={checked}
+                  completed={completed}
                   previewIndex={previewIndexBySubject[entry.subject.id] ?? 0}
                   onPreviewIndexChange={(index) =>
                     onPreviewIndexChange(entry.subject.id, index)

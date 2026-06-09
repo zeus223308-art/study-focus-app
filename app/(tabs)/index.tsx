@@ -27,6 +27,8 @@ export default function DashboardScreen() {
     localToday,
     selectedDate,
     setSelectedDate,
+    getReviewCompletedSubjectIds,
+    clearSubjectReviewCompleted,
   } = useApp();
 
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<string>>(new Set());
@@ -103,9 +105,15 @@ export default function DashboardScreen() {
   );
   const canStart = selectedTotalPageCount > 0;
 
+  const completedSubjectIds = useMemo(
+    () => new Set(getReviewCompletedSubjectIds(selectedDate)),
+    [getReviewCompletedSubjectIds, selectedDate]
+  );
+
   const openReview = () => {
     if (!canStart) return;
     const ids = Array.from(selectedSubjectIds);
+    clearSubjectReviewCompleted(selectedDate, ids);
     const pageCount = subjectEntries
       .filter((e) => ids.includes(e.subject.id))
       .reduce((n, e) => n + e.totalPages, 0);
@@ -153,6 +161,7 @@ export default function DashboardScreen() {
         <DashboardReviewPicker
           entries={subjectEntries}
           selectedIds={selectedSubjectIds}
+          completedIds={completedSubjectIds}
           previewIndexBySubject={previewIndexBySubject}
           onToggle={toggleSubject}
           onPreviewIndexChange={setPreviewIndex}

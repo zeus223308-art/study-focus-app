@@ -220,6 +220,10 @@ type AppContextValue = {
   dropSubjectReorderOn: (overId: string) => boolean;
   /** Tap target photo while reordering (works without drag). */
   dropItemReorderOn: (overKey: string) => boolean;
+  /** Subject ids marked complete on dashboard for a review date (in-memory). */
+  getReviewCompletedSubjectIds: (dateKey: string) => string[];
+  markSubjectReviewCompleted: (dateKey: string, subjectId: string) => void;
+  clearSubjectReviewCompleted: (dateKey: string, subjectIds: string[]) => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -242,6 +246,38 @@ export function AppProvider({
   } | null>(null);
   const [paywallVisible, setPaywallVisibleState] = useState(false);
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null);
+  const [reviewCompletedByDate, setReviewCompletedByDate] = useState<Record<string, string[]>>(
+    {}
+  );
+
+  const getReviewCompletedSubjectIds = useCallback(
+    (dateKey: string) => reviewCompletedByDate[dateKey] ?? [],
+    [reviewCompletedByDate]
+  );
+
+  const markSubjectReviewCompleted = useCallback((dateKey: string, subjectId: string) => {
+    setReviewCompletedByDate((prev) => {
+      const list = prev[dateKey] ?? [];
+      if (list.includes(subjectId)) return prev;
+      return { ...prev, [dateKey]: [...list, subjectId] };
+    });
+  }, []);
+
+  const clearSubjectReviewCompleted = useCallback((dateKey: string, subjectIds: string[]) => {
+    if (subjectIds.length === 0) return;
+    setReviewCompletedByDate((prev) => {
+      const list = prev[dateKey];
+      if (!list?.length) return prev;
+      const drop = new Set(subjectIds);
+      const next = list.filter((id) => !drop.has(id));
+      if (next.length === list.length) return prev;
+      if (next.length === 0) {
+        const { [dateKey]: _removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [dateKey]: next };
+    });
+  }, []);
 
   const setPaywallVisible = useCallback((visible: boolean, reason?: PaywallReason) => {
     if (visible) {
@@ -1675,6 +1711,9 @@ export function AppProvider({
       reorderSubjects,
       dropSubjectReorderOn,
       dropItemReorderOn,
+      getReviewCompletedSubjectIds,
+      markSubjectReviewCompleted,
+      clearSubjectReviewCompleted,
     };
   }, [
     ready,
@@ -1691,6 +1730,9 @@ export function AppProvider({
     paywallVisible,
     paywallReason,
     setPaywallVisible,
+    getReviewCompletedSubjectIds,
+    markSubjectReviewCompleted,
+    clearSubjectReviewCompleted,
     load,
     reloadAccountData,
     capturePhoto,
