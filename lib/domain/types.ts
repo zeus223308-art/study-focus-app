@@ -23,6 +23,8 @@ export type SubjectFolder = {
   id: string;
   name: string;
   reviewScheduleId: string;
+  /** yyyy-MM-dd — last time this folder's review pattern was changed (new saves only). */
+  reviewScheduleChangedAt?: string | null;
   color: string;
   sortOrder: number;
   createdAt: string;

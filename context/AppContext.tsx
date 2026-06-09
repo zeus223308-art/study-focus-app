@@ -24,6 +24,7 @@ import {
 import { changeBundleStudyDateInData } from '@/lib/domain/change-bundle-date';
 import { applyMonthlyCustomizationReset } from '@/lib/domain/customization-reset';
 import { todayKey } from '@/lib/domain/dates';
+import { normalizeFolderScheduleId } from '@/lib/domain/folder-schedule';
 import {
   defaultMergedSubjectName,
   mergeSubjectFoldersInData,
@@ -767,16 +768,23 @@ export function AppProvider({
   );
 
   const setSubjectSchedule = useCallback((subjectId: string, scheduleId: string) => {
-    setData((prev) =>
-      prev
-        ? {
-          ...prev,
-          subjects: prev.subjects.map((s) =>
-            s.id === subjectId ? { ...s, reviewScheduleId: scheduleId } : s
-          ),
-        }
-        : prev
-    );
+    setData((prev) => {
+      if (!prev) return prev;
+      const normalizedNext = normalizeFolderScheduleId(scheduleId);
+      return {
+        ...prev,
+        subjects: prev.subjects.map((s) => {
+          if (s.id !== subjectId) return s;
+          const normalizedCur = normalizeFolderScheduleId(s.reviewScheduleId || '');
+          if (normalizedCur === normalizedNext) return s;
+          return {
+            ...s,
+            reviewScheduleId: scheduleId,
+            reviewScheduleChangedAt: todayKey(),
+          };
+        }),
+      };
+    });
   }, []);
 
   const toggleActiveSchedule = useCallback((scheduleId: string) => {

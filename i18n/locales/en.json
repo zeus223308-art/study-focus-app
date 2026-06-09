@@ -407,7 +407,8 @@
       "It builds on Hermann Ebbinghaus's forgetting curve—the idea that recall is strengthened most when you review at the point something feels vaguely familiar.",
       "Forgetting speed varies by person and subject, so spacing should stay flexible.",
       "If reviews feel too easy, lengthen the interval; if you barely remember, shorten it until you find a rhythm that fits you.",
-      "To skip the review pattern or stop reviews for a photo, move it to Archive. Archived photos are not scheduled for review."
+      "To skip the review pattern or stop reviews for a photo, move it to Archive. Archived photos are not scheduled for review.",
+      "Changing a subject's review pattern does not affect photos saved before the change—they keep the pattern from when they were saved. Only new photos saved after the change use the new pattern."
     ],
     "premium": "Premium",
     "addPattern": "+ Add",
