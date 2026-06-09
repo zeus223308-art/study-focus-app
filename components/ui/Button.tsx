@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { WEB_LINE } from '@/lib/ui/web-divider';
 
 type Props = {
   label: string;
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
   },
   primary: { backgroundColor: theme.orange },
   primaryPressed: { backgroundColor: theme.gray },
-  secondary: { backgroundColor: theme.surface, borderWidth: 1, borderColor: theme.grayLight },
+  secondary: { backgroundColor: theme.surface, borderWidth: WEB_LINE, borderColor: theme.grayLight },
   ghost: { backgroundColor: 'transparent' },
   text: { fontSize: theme.font.button, fontWeight: '700', lineHeight: 20 },
   textCompact: { fontSize: theme.font.buttonCompact, fontWeight: '700', lineHeight: 16 },

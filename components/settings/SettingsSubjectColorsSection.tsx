@@ -8,6 +8,7 @@ import { TagColorModal } from '@/components/tags/TagColorModal';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { normalizeSubjectColor, resolveSubjectColor } from '@/lib/domain/subject-colors';
+import { webHairlineBottom } from '@/lib/ui/web-divider';
 import { settingsRowPad, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export function SettingsSubjectColorsSection() {
@@ -94,10 +95,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 46,
   },
-  rowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.grayLight,
-  },
+  rowBorder: webHairlineBottom,
   label: {
     flex: 1,
     fontSize: theme.font.body,

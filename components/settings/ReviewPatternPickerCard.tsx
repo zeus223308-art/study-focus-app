@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { theme } from '@/constants/theme';
+import { webHairlineBottom } from '@/lib/ui/web-divider';
 import { SCHEDULE_ADD_ID } from '@/lib/domain/folder-schedule';
 import type { Language, ReviewSchedule } from '@/lib/domain/types';
 
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
+  rowBorder: webHairlineBottom,
   left: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   num: { fontSize: 15, fontWeight: '700', color: theme.orange, width: 20 },
   name: { fontSize: theme.font.body, fontWeight: '700', color: theme.black },

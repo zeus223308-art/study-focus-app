@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { settingsGroupStyles } from '@/components/SettingsGroup';
+import { WEB_LINE } from '@/lib/ui/web-divider';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
@@ -255,10 +256,10 @@ const styles = StyleSheet.create({
     color: theme.black,
   },
   sectionHeaderSpaced: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
     marginTop: 4,
     paddingTop: 12,
+    borderTopWidth: WEB_LINE,
+    borderTopColor: theme.grayLight,
   },
   rowTall: {
     alignItems: 'flex-start',

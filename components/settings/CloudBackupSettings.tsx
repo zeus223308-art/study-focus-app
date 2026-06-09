@@ -14,6 +14,7 @@ import { GoogleSignInButton } from '@/components/settings/GoogleSignInButton';
 import { SettingsRow } from '@/components/SettingsGroup';
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_DEFAULT } from '@/lib/ui/button-label';
+import { webHairlineBottom, webHairlineTop } from '@/lib/ui/web-divider';
 import { useApp } from '@/context/AppContext';
 import { useGoogleDriveAuth } from '@/hooks/useGoogleDriveAuth';
 import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
@@ -278,8 +279,7 @@ export function CloudBackupSettings() {
 const styles = StyleSheet.create({
   block: { marginBottom: 0 },
   headerBlock: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.grayLight,
+    ...webHairlineBottom,
     paddingBottom: 8,
   },
   headerRow: {
@@ -351,10 +351,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     minHeight: 42,
   },
-  rowBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
-  },
+  rowBorder: webHairlineTop,
   actionText: { ...BUTTON_LABEL_DEFAULT, color: theme.orange },
   signOutText: { ...BUTTON_LABEL_DEFAULT, fontWeight: '600', color: theme.graySecondary },
 });

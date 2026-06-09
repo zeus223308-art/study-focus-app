@@ -25,6 +25,7 @@ import {
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
 import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { showMessage } from '@/lib/ui/confirm';
+import { webHairlineBottom, webHairlineTop } from '@/lib/ui/web-divider';
 
 type EditMode = { kind: 'edit'; original: string } | { kind: 'add' };
 
@@ -239,14 +240,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     minHeight: 46,
   },
-  rowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.grayLight,
-  },
-  rowBorderTop: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
-  },
+  rowBorder: webHairlineBottom,
+  rowBorderTop: webHairlineTop,
   rowLeft: {
     flex: 1,
     flexDirection: 'row',

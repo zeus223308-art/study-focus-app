@@ -22,6 +22,7 @@ import { CalendarTagDots } from '@/components/dashboard/CalendarTagDots';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
 import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
+import { WEB_LINE } from '@/lib/ui/web-divider';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { buildReviewMarkForDate } from '@/lib/domain/ribbon';
 import type { DateRibbonMark } from '@/lib/domain/types';
@@ -400,7 +401,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   cellSelected: { backgroundColor: theme.orange },
-  cellToday: { borderWidth: StyleSheet.hairlineWidth, borderColor: theme.orange },
+  cellToday: { borderWidth: WEB_LINE, borderColor: theme.orange },
   dayNum: { fontSize: theme.font.caption, fontWeight: '600', color: theme.black },
   dayNumSelected: { color: theme.onAccent, fontWeight: '800' },
   dayDue: { fontWeight: '800' },
