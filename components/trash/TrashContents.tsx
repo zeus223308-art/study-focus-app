@@ -133,8 +133,13 @@ function TrashRow({
   centerText,
 }: TrashRowProps) {
   return (
-    <View style={[styles.rowWrap, !last && settingsGroupStyles.rowBorder]}>
-      <View style={[styles.row, { paddingHorizontal: rowPad }]}>
+    <View
+      style={[
+        styles.rowWrap,
+        { paddingHorizontal: rowPad },
+        !last && settingsGroupStyles.rowBorder,
+      ]}>
+      <View style={styles.row}>
         {coverUri ? (
           <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
         ) : (
@@ -148,7 +153,9 @@ function TrashRow({
           <CountdownBlock backupExpiresAt={backupExpiresAt} centered={centerText} />
         </View>
         <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
-          <Text style={styles.restore}>{restoreLabel}</Text>
+          <Text style={styles.restore} numberOfLines={1}>
+            {restoreLabel}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -165,7 +172,7 @@ export function TrashContents({ showNotice = true }: Props) {
   const { t } = useTranslation();
   const { restoreTrash, restoreSubjectTrash } = useApp();
   const viewport = useViewportLayout();
-  const rowPad = settingsRowPad(viewport.isPhone);
+  const rowPad = settingsRowPad(viewport.isPhone) + (viewport.isPhone ? 4 : 0);
   const { deletedSubjects, photoEntries, isEmpty } = useTrashContents();
 
   const subjectRows = deletedSubjects.map((group, index) => {
@@ -279,13 +286,14 @@ const styles = StyleSheet.create({
   },
   rowWrap: {
     width: '100%',
-    alignItems: 'center',
+    maxWidth: '100%',
     paddingVertical: 12,
+    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 10,
     width: '100%',
     maxWidth: '100%',
   },
@@ -311,12 +319,18 @@ const styles = StyleSheet.create({
   restoreBtn: {
     flexShrink: 0,
     alignSelf: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    maxWidth: 84,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.grayLight,
     backgroundColor: theme.beige,
   },
-  restore: { color: theme.black, fontWeight: '700', fontSize: theme.font.caption },
+  restore: {
+    color: theme.black,
+    fontWeight: '700',
+    fontSize: theme.font.caption,
+    textAlign: 'center',
+  },
 });
