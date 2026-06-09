@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  PanResponder,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type GestureResponderEvent,
+  type ViewStyle,
+} from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { memoTextBoxSurface } from '@/lib/domain/memo-text-box-style';
@@ -20,6 +30,11 @@ type Props = {
   onRemove: () => void;
 };
 
+const DRAG_ZONE_WEB: ViewStyle =
+  Platform.OS === 'web'
+    ? ({ touchAction: 'none', cursor: 'grab', userSelect: 'none' } as object)
+    : {};
+
 export function MemoTextBoxView({
   box,
   active,
@@ -38,19 +53,22 @@ export function MemoTextBoxView({
 
   const boxRef = useRef(box);
   const surfaceRef = useRef({ width: surfaceWidth, height: surfaceHeight });
-  const flagsRef = useRef({ interactive, active });
+  const flagsRef = useRef({ interactive, active, editing });
   const dragOrigin = useRef({ x: 0, y: 0 });
   const resizeOrigin = useRef({ w: 0, h: 0 });
   const livePosRef = useRef<{ x: number; y: number } | null>(null);
   const liveSizeRef = useRef<{ width: number; height: number } | null>(null);
+  const draggingRef = useRef(false);
+  const touchStartRef = useRef({ pageX: 0, pageY: 0 });
 
   boxRef.current = box;
   surfaceRef.current = { width: surfaceWidth, height: surfaceHeight };
-  flagsRef.current = { interactive, active };
+  flagsRef.current = { interactive, active, editing };
 
   useEffect(() => {
     livePosRef.current = null;
     liveSizeRef.current = null;
+    draggingRef.current = false;
     setLivePos(null);
     setLiveSize(null);
   }, [box.id]);
@@ -59,6 +77,11 @@ export function MemoTextBoxView({
   const posY = livePos?.y ?? box.y;
   const boxW = liveSize?.width ?? box.width;
   const boxH = liveSize?.height ?? box.height;
+
+  const canDrag = () => {
+    const f = flagsRef.current;
+    return f.interactive && f.active && f.editing;
+  };
 
   const clampPos = (x: number, y: number, w: number, h: number) => {
     const sw = surfaceRef.current.width;
@@ -69,31 +92,66 @@ export function MemoTextBoxView({
     };
   };
 
+  const applyDragDelta = (dx: number, dy: number) => {
+    const b = boxRef.current;
+    const size = liveSizeRef.current;
+    const w = size?.width ?? b.width;
+    const h = size?.height ?? b.height;
+    const next = clampPos(dragOrigin.current.x + dx, dragOrigin.current.y + dy, w, h);
+    livePosRef.current = next;
+    setLivePos(next);
+  };
+
+  const commitDrag = () => {
+    const cur = livePosRef.current;
+    if (cur) onChange({ x: cur.x, y: cur.y });
+    livePosRef.current = null;
+    draggingRef.current = false;
+    setLivePos(null);
+  };
+
+  const onDragTouchStart = (e: GestureResponderEvent) => {
+    if (!canDrag()) return;
+    const t = e.nativeEvent.touches[0];
+    if (!t) return;
+    const b = boxRef.current;
+    dragOrigin.current = { x: b.x, y: b.y };
+    touchStartRef.current = { pageX: t.pageX, pageY: t.pageY };
+    draggingRef.current = true;
+    onActivate();
+  };
+
+  const onDragTouchMove = (e: GestureResponderEvent) => {
+    if (!draggingRef.current) return;
+    const t = e.nativeEvent.touches[0];
+    if (!t) return;
+    applyDragDelta(t.pageX - touchStartRef.current.pageX, t.pageY - touchStartRef.current.pageY);
+  };
+
+  const onDragTouchEnd = () => {
+    if (!draggingRef.current) return;
+    commitDrag();
+  };
+
   const dragPan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => flagsRef.current.interactive && flagsRef.current.active,
-      onMoveShouldSetPanResponder: () => flagsRef.current.interactive && flagsRef.current.active,
+      onStartShouldSetPanResponder: () => canDrag(),
+      onStartShouldSetPanResponderCapture: () => canDrag(),
+      onMoveShouldSetPanResponder: () => draggingRef.current || canDrag(),
+      onMoveShouldSetPanResponderCapture: () => draggingRef.current,
       onPanResponderGrant: () => {
         const b = boxRef.current;
         dragOrigin.current = { x: b.x, y: b.y };
+        draggingRef.current = true;
         onActivate();
       },
       onPanResponderMove: (_, g) => {
-        const b = boxRef.current;
-        const size = liveSizeRef.current;
-        const w = size?.width ?? b.width;
-        const h = size?.height ?? b.height;
-        const next = clampPos(dragOrigin.current.x + g.dx, dragOrigin.current.y + g.dy, w, h);
-        livePosRef.current = next;
-        setLivePos(next);
+        if (!draggingRef.current) return;
+        applyDragDelta(g.dx, g.dy);
       },
-      onPanResponderRelease: () => {
-        const cur = livePosRef.current;
-        if (cur) onChange({ x: cur.x, y: cur.y });
-        livePosRef.current = null;
-        setLivePos(null);
-      },
+      onPanResponderRelease: () => commitDrag(),
       onPanResponderTerminate: () => {
+        draggingRef.current = false;
         livePosRef.current = null;
         setLivePos(null);
       },
@@ -104,8 +162,9 @@ export function MemoTextBoxView({
 
   const resizePan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => flagsRef.current.interactive && flagsRef.current.active,
-      onMoveShouldSetPanResponder: () => flagsRef.current.interactive && flagsRef.current.active,
+      onStartShouldSetPanResponder: () => canDrag(),
+      onStartShouldSetPanResponderCapture: () => canDrag(),
+      onMoveShouldSetPanResponder: () => canDrag(),
       onPanResponderGrant: () => {
         const b = boxRef.current;
         resizeOrigin.current = { w: b.width, h: b.height };
@@ -148,13 +207,26 @@ export function MemoTextBoxView({
           width: boxW,
           height: boxH,
           backgroundColor: surface.backgroundColor,
+          zIndex: showChrome ? 8 : 4,
         },
         showChrome ? styles.textBoxEditing : styles.textBoxIdle,
         active && !editing && styles.textBoxSelected,
       ]}
       pointerEvents={interactive ? 'auto' : 'none'}>
-      <View style={styles.textBoxHeader} {...(showChrome ? dragPan.panHandlers : {})}>
-        {showChrome ? <Text style={[styles.dragHint, { color: surface.hintColor }]}>⋯</Text> : null}
+      <View style={styles.textBoxHeader}>
+        {showChrome ? (
+          <View
+            style={[styles.dragZone, DRAG_ZONE_WEB]}
+            onTouchStart={onDragTouchStart}
+            onTouchMove={onDragTouchMove}
+            onTouchEnd={onDragTouchEnd}
+            onTouchCancel={onDragTouchEnd}
+            {...dragPan.panHandlers}
+            accessibilityRole="adjustable"
+            accessibilityLabel="Move text box">
+            <Text style={[styles.dragHint, { color: surface.hintColor }]}>⋯</Text>
+          </View>
+        ) : null}
         {showChrome ? (
           <Pressable onPress={onRemove} hitSlop={8} style={styles.deleteChip}>
             <Text style={styles.deleteChipText}>×</Text>
@@ -185,7 +257,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 6,
     padding: 4,
-    zIndex: 4,
   },
   textBoxEditing: {
     borderWidth: 2,
@@ -204,8 +275,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 2,
-    minHeight: 22,
+    minHeight: 28,
     gap: 4,
+  },
+  dragZone: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 28,
+    paddingRight: 8,
   },
   dragHint: { fontWeight: '800', fontSize: 16, lineHeight: 18, paddingHorizontal: 2 },
   deleteChip: {
