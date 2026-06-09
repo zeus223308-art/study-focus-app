@@ -406,7 +406,8 @@
       "The 1-3-7-14-30 pattern reviews material again 3, 7, 14, and 30 days after day 1 to help shift it into long-term memory.",
       "It builds on Hermann Ebbinghaus's forgetting curve—the idea that recall is strengthened most when you review at the point something feels vaguely familiar.",
       "Forgetting speed varies by person and subject, so spacing should stay flexible.",
-      "If reviews feel too easy, lengthen the interval; if you barely remember, shorten it until you find a rhythm that fits you."
+      "If reviews feel too easy, lengthen the interval; if you barely remember, shorten it until you find a rhythm that fits you.",
+      "To skip the review pattern or stop reviews for a photo, move it to Archive. Archived photos are not scheduled for review."
     ],
     "premium": "Premium",
     "addPattern": "+ Add",

@@ -22,6 +22,9 @@ export function getNextReviewDate(
   schedule: ReviewSchedule,
   from = new Date()
 ): Date {
+  if (bundle.archived) {
+    return addDays(dayStart(from), 36500);
+  }
   const anchor = dayStart(bundle.review.reviewAnchorDate);
   const today = dayStart(from);
   const intervals = getScheduleIntervals(schedule);
@@ -120,6 +123,7 @@ export function getUpcomingReviewDates(
   count = 8,
   from = new Date()
 ): string[] {
+  if (bundle.archived) return [];
   const dates: string[] = [];
   let mock: NoteBundle = { ...bundle };
   const today = dayStart(from);
@@ -140,6 +144,7 @@ export function listDueBundles(
   date = new Date()
 ): NoteBundle[] {
   return bundles.filter((b) => {
+    if (b.archived) return false;
     const s = getSchedule(b.review.reviewScheduleId);
     return s ? isDueOnDate(b, s, date) : false;
   });

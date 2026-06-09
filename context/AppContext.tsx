@@ -514,6 +514,7 @@ export function AppProvider({
   const dueToday = useMemo(() => {
     if (!data) return [];
     return data.bundles.filter((b) => {
+      if (b.archived) return false;
       const s = getSchedule(b.review.reviewScheduleId);
       return s ? isDueToday(b, s) : false;
     });
@@ -813,6 +814,8 @@ export function AppProvider({
     (bundleId: string) => {
       setData((prev) => {
         if (!prev) return prev;
+        const target = prev.bundles.find((b) => b.id === bundleId);
+        if (!target || target.archived) return prev;
         return {
           ...prev,
           bundles: prev.bundles.map((b) =>
@@ -825,7 +828,14 @@ export function AppProvider({
   );
 
   const archiveBundle = useCallback((id: string) => {
-    updateBundle(id, { archived: true, archivedAt: new Date().toISOString() });
+    const prev = dataRef.current;
+    const bundle = prev?.bundles.find((b) => b.id === id);
+    if (!bundle) return;
+    updateBundle(id, {
+      archived: true,
+      archivedAt: new Date().toISOString(),
+      review: { ...bundle.review, nextReviewAt: null },
+    });
   }, [updateBundle]);
 
   const unarchiveBundle = useCallback(
