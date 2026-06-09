@@ -1,8 +1,4 @@
-import {
-  MEMO_TEXT_BOX_DEFAULT_FILL,
-  normalizeMemoTextBoxFill,
-  normalizeMemoTextBoxTone,
-} from '@/lib/domain/memo-text-box-style';
+import { normalizeMemoTextBoxTone } from '@/lib/domain/memo-text-box-style';
 import type { InkStroke, NoteLayer, NotePage, PhotoMemo } from './types';
 
 export function emptyPhotoMemo(): PhotoMemo {
@@ -16,7 +12,6 @@ export function normalizePhotoMemo(raw?: PhotoMemo | null): PhotoMemo {
     textBoxes: Array.isArray(raw.textBoxes)
       ? raw.textBoxes.map((b) => ({
           ...b,
-          fillLevel: normalizeMemoTextBoxFill(b.fillLevel ?? MEMO_TEXT_BOX_DEFAULT_FILL),
           tone: normalizeMemoTextBoxTone(b.tone),
         }))
       : [],

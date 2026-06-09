@@ -67,6 +67,7 @@ export type NoteLayer = {
   updatedAt: string;
 };
 
+/** light = semi-transparent white box + black text; dark = semi-transparent black + white text */
 export type MemoTextBoxTone = 'light' | 'dark';
 
 export type MemoTextBox = {
@@ -76,8 +77,6 @@ export type MemoTextBox = {
   width: number;
   height: number;
   text: string;
-  /** 0 = transparent … 1 = solid (white or black per tone). */
-  fillLevel?: number;
   tone?: MemoTextBoxTone;
 };
 
