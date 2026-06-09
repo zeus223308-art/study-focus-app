@@ -13,6 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
+import { isMobileWebPhone, useLayoutViewportSize } from '@/lib/ui/mobile-web-viewport';
 
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
 
@@ -33,7 +34,11 @@ const T = {
 };
 
 export function SplashBrand({ onFinish }: Props) {
-  const insets = useSafeAreaInsets();
+  const rawInsets = useSafeAreaInsets();
+  const { width, height } = useLayoutViewportSize();
+  const insets = isMobileWebPhone(width, height)
+    ? { top: 0, right: 0, bottom: 0, left: 0 }
+    : rawInsets;
   useEffect(() => {
     if (Platform.OS === 'ios') {
       SplashScreen.setOptions({ duration: 280, fade: true });
