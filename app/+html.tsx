@@ -189,7 +189,13 @@ body {
   padding-right: 10px !important;
   box-sizing: border-box !important;
 }
-/* Files trash — keep each entry on one horizontal row on mobile web */
+/* Files trash — symmetric inset; row must not overflow padded wrap on mobile web */
+[data-trash-row-wrap="1"] {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
 [data-trash-row="1"] {
   display: flex !important;
   flex-direction: row !important;
@@ -197,11 +203,20 @@ body {
   align-items: flex-start !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+[data-trash-row-info="1"] {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
   box-sizing: border-box !important;
 }
 [data-trash-row="1"] [data-trash-restore-btn="1"] {
   flex-shrink: 0 !important;
-  max-width: 80px !important;
+  flex-grow: 0 !important;
+  max-width: 76px !important;
   box-sizing: border-box !important;
 }
 `;

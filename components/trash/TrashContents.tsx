@@ -18,7 +18,9 @@ import {
 } from '@/lib/trash/lifecycle';
 
 const COVER = 48;
+const TRASH_ROW_WRAP_DATA_SET = { trashRowWrap: '1' } as const;
 const TRASH_ROW_DATA_SET = { trashRow: '1' } as const;
+const TRASH_ROW_INFO_DATA_SET = { trashRowInfo: '1' } as const;
 
 type DeletedSubject = {
   subjectId: string;
@@ -94,7 +96,7 @@ function CountdownBlock({ backupExpiresAt }: { backupExpiresAt: string }) {
       <View style={[styles.remainChip, urgent && styles.remainChipUrgent]}>
         <Text style={[styles.remainText, urgent && styles.remainTextUrgent]}>{remainingText}</Text>
       </View>
-      <Text style={styles.deadline}>
+      <Text style={styles.deadline} numberOfLines={2}>
         {t('trash.restoreBy', { date: formatTrashDeadline(rem.expiresAt, language) })}
       </Text>
     </View>
@@ -130,14 +132,15 @@ function TrashRow({
         styles.rowWrap,
         { paddingHorizontal: rowPad },
         !last && settingsGroupStyles.rowBorder,
-      ]}>
+      ]}
+      {...({ dataSet: TRASH_ROW_WRAP_DATA_SET } as object)}>
       <View style={styles.row} {...({ dataSet: TRASH_ROW_DATA_SET } as object)}>
         {coverUri ? (
           <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
         ) : (
           <View style={[styles.cover, styles.thumbEmpty]} />
         )}
-        <View style={styles.info}>
+        <View style={styles.info} {...({ dataSet: TRASH_ROW_INFO_DATA_SET } as object)}>
           <Text style={styles.itemName} numberOfLines={1}>
             {name}
           </Text>
@@ -281,20 +284,24 @@ const styles = StyleSheet.create({
   },
   rowWrap: {
     width: '100%',
+    maxWidth: '100%',
+    overflow: 'hidden',
     paddingVertical: 12,
   },
   row: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
     alignItems: 'flex-start',
-    width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'stretch',
   },
   info: {
     flex: 1,
     flexShrink: 1,
     minWidth: 0,
-    marginLeft: 10,
-    marginRight: 10,
+    marginLeft: 8,
+    marginRight: 8,
+    overflow: 'hidden',
   },
   itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
   meta: { fontSize: theme.font.caption, color: theme.gray, marginTop: 2 },
