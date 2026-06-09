@@ -16,6 +16,7 @@ import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink
 import { CaptureEditSurface } from '@/components/capture/CaptureEditSurface';
 import { CaptureInkBakeHost, type InkBakeJob } from '@/components/capture/CaptureInkBakeHost';
 import { theme } from '@/constants/theme';
+import { WEB_LINE } from '@/lib/ui/web-divider';
 import { defaultWidthForTool } from '@/lib/domain/ink-sizes';
 import type { InkStroke, InkToolId } from '@/lib/domain/types';
 import {
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: WEB_LINE,
     borderBottomColor: 'rgba(255,255,255,0.12)',
   },
   topAction: { minWidth: 56, paddingVertical: 6 },
@@ -396,7 +397,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 8,
     paddingBottom: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: WEB_LINE,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   undoBtn: { marginTop: 6, paddingVertical: 4, paddingHorizontal: 12 },
@@ -416,7 +417,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: WEB_LINE,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   toolChip: {

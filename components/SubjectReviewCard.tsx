@@ -1,14 +1,10 @@
-import { Platform, StyleSheet, View, type ImageStyle } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { SubjectFolderPreview } from '@/components/files/SubjectFolderPreview';
 import { SubjectReviewCompleteOverlay } from '@/components/dashboard/SubjectReviewCompleteOverlay';
 import { theme } from '@/constants/theme';
 import type { SubjectPreviewItem } from '@/lib/files/subject-previews';
-
-const previewBlurWeb: ImageStyle =
-  Platform.OS === 'web'
-    ? ({ filter: 'blur(6px)', WebkitFilter: 'blur(6px)' } as ImageStyle)
-    : {};
+import { webPreviewBlurStyle } from '@/lib/ui/web-blur';
 
 type Props = {
   subjectTag: string;
@@ -51,7 +47,7 @@ export function SubjectReviewCard({
         previewIndex={previewIndex}
         onPreviewIndexChange={completed ? undefined : onPreviewIndexChange}
         dimmed={completed}
-        imageStyleExtra={completed ? previewBlurWeb : undefined}
+        imageStyleExtra={completed ? webPreviewBlurStyle : undefined}
       />
       {completed ? <SubjectReviewCompleteOverlay /> : null}
     </View>

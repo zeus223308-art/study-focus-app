@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { parseStudyDateInput } from '@/lib/domain/dates';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type Props = {
   visible: boolean;
@@ -168,10 +169,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   sheet: {
     backgroundColor: theme.beige,

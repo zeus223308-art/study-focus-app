@@ -11,7 +11,6 @@ import {
   StyleSheet,
   Text,
   View,
-  type ImageStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,6 +21,7 @@ import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { webPreviewBlurStyle } from '@/lib/ui/web-blur';
 import { computeReviewCardSizes } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { useApp } from '@/context/AppContext';
@@ -48,11 +48,6 @@ import {
 } from '@/lib/review/parse-review-pages';
 
 const HINT_PEEK_MS = 8000;
-
-const problemImageBlurWeb: ImageStyle =
-  Platform.OS === 'web'
-    ? ({ filter: 'blur(6px)', WebkitFilter: 'blur(6px)' } as ImageStyle)
-    : {};
 
 /** Mobile Safari (RN Web): opacity with useNativeDriver often never runs — overlay stays invisible. */
 function runRevealAnim(passAnim: Animated.Value, passScale: Animated.Value) {
@@ -634,7 +629,7 @@ export default function ReviewSessionScreen() {
                 style={[
                   { width: workCardW, height: problemCardH },
                   problemCompleteVisible && styles.problemImageDim,
-                  problemCompleteVisible && problemImageBlurWeb,
+                  problemCompleteVisible && webPreviewBlurStyle,
                 ]}
                 resizeMode="contain"
               />

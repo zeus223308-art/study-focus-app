@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Modal, Platform, StyleSheet, Text, View } from 'react-native';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { theme } from '@/constants/theme';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 export const REVIEW_PATTERN_CHANGE_COOLDOWN_SEC = 3;
 
@@ -64,10 +65,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 28,
     zIndex: 99999,
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   card: {
     backgroundColor: theme.beige,

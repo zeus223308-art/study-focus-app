@@ -5,3 +5,9 @@ export const webFixedBackdropStyle: ViewStyle =
   Platform.OS === 'web'
     ? ({ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 } as ViewStyle)
     : {};
+
+/** Modal / sheet backdrop: flex fill + fixed viewport on mobile web. */
+export const webModalBackdropStyle: ViewStyle = {
+  flex: 1,
+  ...webFixedBackdropStyle,
+};

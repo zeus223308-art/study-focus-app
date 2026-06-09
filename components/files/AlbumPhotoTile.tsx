@@ -17,6 +17,7 @@ import { useApp } from '@/context/AppContext';
 import { albumMemoBadgeMetrics } from '@/lib/domain/photo-memo';
 import type { CloudAsset } from '@/lib/domain/types';
 import { heightForLandscapeCardWidth } from '@/lib/ui/landscape-card-layout';
+import { WEB_LINE } from '@/lib/ui/web-divider';
 import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     overflow: 'hidden',
     backgroundColor: theme.grayLight,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: WEB_LINE,
     borderColor: theme.grayLight,
     ...(IS_WEB ? ({ cursor: 'grab', touchAction: 'manipulation', userSelect: 'none' } as object) : null),
   },
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 5,
     backgroundColor: 'rgba(255,255,255,0.92)',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: WEB_LINE,
     borderColor: theme.orange,
     alignItems: 'center',
     justifyContent: 'center',

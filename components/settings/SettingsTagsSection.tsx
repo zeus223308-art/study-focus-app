@@ -26,6 +26,7 @@ import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-lab
 import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { showMessage } from '@/lib/ui/confirm';
 import { webHairlineBottom, webHairlineTop } from '@/lib/ui/web-divider';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type EditMode = { kind: 'edit'; original: string } | { kind: 'add' };
 
@@ -292,10 +293,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   card: {
     width: '100%',

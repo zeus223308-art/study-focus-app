@@ -1,7 +1,8 @@
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type Props = {
   visible: boolean;
@@ -65,10 +66,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 28,
     zIndex: 99999,
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   card: {
     width: '100%',

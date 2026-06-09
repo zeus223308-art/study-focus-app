@@ -185,4 +185,9 @@ body {
   padding-right: 10px !important;
   box-sizing: border-box !important;
 }
+/* Mobile web parity — iOS Safari matches Android Chrome for blur/filters on images */
+img {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
 `;

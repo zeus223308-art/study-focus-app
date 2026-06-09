@@ -6,6 +6,7 @@ import { SubjectDropTarget } from '@/components/files/SubjectDropTarget';
 import { useApp } from '@/context/AppContext';
 import { theme } from '@/constants/theme';
 import type { SubjectFolder } from '@/lib/domain/types';
+import { webHairlineTop } from '@/lib/ui/web-divider';
 
 type Props = {
   currentSubjectId: string;
@@ -38,8 +39,7 @@ export function SubjectDropDock({ currentSubjectId, subjects }: Props) {
 
 const styles = StyleSheet.create({
   dock: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
+    ...webHairlineTop,
     backgroundColor: theme.beige,
     paddingTop: 12,
     paddingHorizontal: 16,

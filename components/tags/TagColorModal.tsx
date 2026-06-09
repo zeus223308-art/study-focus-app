@@ -13,6 +13,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import { FREE_TAG_COLORS } from '@/lib/ui/tag-colors';
 
 /** Accepts `#abc`, `abc`, `#aabbcc`, `aabbcc` → normalized `#aabbcc`, else null. */
@@ -153,10 +154,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   card: {
     width: '100%',

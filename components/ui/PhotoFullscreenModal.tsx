@@ -19,6 +19,7 @@ import { theme } from '@/constants/theme';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 import type { InkToolId, NoteLayer } from '@/lib/domain/types';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type Side = 'front' | 'back';
 
@@ -229,6 +230,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#000',
+    ...webFixedBackdropStyle,
   },
   topBar: {
     flexDirection: 'row',

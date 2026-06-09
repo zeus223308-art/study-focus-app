@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,6 +14,8 @@ import {
   isTrashEntryWithPhotos,
 } from '@/lib/trash/lifecycle';
 import { trashEntriesForSubject } from '@/lib/trash/subject-trash';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { webHairlineBottom } from '@/lib/ui/web-divider';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const THUMB = 64;
@@ -130,10 +132,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   card: {
     backgroundColor: theme.beige,
@@ -171,8 +170,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
     paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: theme.grayLight,
+    ...webHairlineBottom,
   },
   thumbWrap: {
     flex: 1,

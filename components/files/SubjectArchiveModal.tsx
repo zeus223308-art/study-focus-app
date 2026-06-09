@@ -19,6 +19,8 @@ import {
 } from '@/lib/grouping/bundles';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
+import { WEB_LINE } from '@/lib/ui/web-divider';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import { ALBUM_TILE_GAP, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 type Props = {
@@ -416,10 +418,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   card: {
     backgroundColor: theme.beige,
@@ -497,7 +496,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
     backgroundColor: theme.surface,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: WEB_LINE,
     borderColor: 'rgba(255, 255, 255, 0.22)',
     ...Platform.select({
       web: { cursor: 'pointer' as const, touchAction: 'manipulation' as const },
@@ -537,13 +536,10 @@ const styles = StyleSheet.create({
   },
   previewPanel: {
     ...StyleSheet.absoluteFill,
+    ...webFixedBackdropStyle,
     zIndex: 2,
     backgroundColor: 'rgba(0,0,0,0.92)',
     paddingTop: 44,
-    ...Platform.select({
-      web: { position: 'fixed' as const },
-      default: {},
-    }),
   },
   previewClose: {
     position: 'absolute',

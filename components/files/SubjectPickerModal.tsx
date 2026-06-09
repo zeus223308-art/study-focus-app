@@ -1,9 +1,10 @@
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import type { SubjectFolder } from '@/lib/domain/types';
 
 type Props = {
@@ -88,10 +89,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   sheet: {
     maxHeight: '72%',

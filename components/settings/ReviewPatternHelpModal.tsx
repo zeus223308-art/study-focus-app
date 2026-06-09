@@ -1,10 +1,11 @@
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { ReviewPatternPickerCard } from '@/components/settings/ReviewPatternPickerCard';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import type { Language, ReviewSchedule } from '@/lib/domain/types';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 type Props = {
@@ -78,10 +79,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   sheet: {
     zIndex: 1,

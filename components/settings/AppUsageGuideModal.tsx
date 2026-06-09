@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { guideFontMetrics, splitGuideSentences } from '@/lib/ui/format-guide-text';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const STEPS = ['step1', 'step2', 'step3', 'step4'] as const;
@@ -116,10 +117,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 28,
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   card: {
     backgroundColor: theme.beige,

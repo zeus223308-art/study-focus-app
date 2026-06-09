@@ -23,6 +23,8 @@ import type { Language } from '@/lib/domain/types';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
 import { resolveTagColorFor, tagLabelTextColor } from '@/lib/ui/tag-colors';
 import { showMessage } from '@/lib/ui/confirm';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { webHairlineTop } from '@/lib/ui/web-divider';
 
 type Props = {
   presets: string[];
@@ -471,10 +473,7 @@ const sheetStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   sheet: {
     backgroundColor: theme.beige,
@@ -505,10 +504,7 @@ const sheetStyles = StyleSheet.create({
     paddingVertical: 11,
     alignItems: 'center',
   },
-  rowBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
-  },
+  rowBorder: webHairlineTop,
   rowText: {
     ...BUTTON_LABEL_DEFAULT,
     color: theme.black,
@@ -520,8 +516,7 @@ const sheetStyles = StyleSheet.create({
     marginTop: 6,
     paddingVertical: 10,
     alignItems: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
+    ...webHairlineTop,
   },
   cancelText: {
     ...BUTTON_LABEL_DEFAULT,
@@ -536,10 +531,7 @@ const modalStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    ...Platform.select({
-      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
-      default: {},
-    }),
+    ...webFixedBackdropStyle,
   },
   card: {
     width: '100%',

@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
+import { WEB_LINE } from '@/lib/ui/web-divider';
+
 type Props = {
   colors: string[];
   size?: number;
@@ -63,7 +65,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   dot: {
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: WEB_LINE,
     borderColor: 'rgba(0,0,0,0.22)',
   },
 });
