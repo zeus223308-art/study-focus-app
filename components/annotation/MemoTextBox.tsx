@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
@@ -41,61 +41,133 @@ export function MemoTextBoxView({
 }: Props) {
   const tone = normalizeMemoTextBoxTone(box.tone);
   const surface = memoTextBoxSurface(tone);
-  const dragOrigin = useRef({ x: box.x, y: box.y });
-  const resizeOrigin = useRef({ w: box.width, h: box.height });
+  const [toneMenuOpen, setToneMenuOpen] = useState(false);
+  const [livePos, setLivePos] = useState<{ x: number; y: number } | null>(null);
+  const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
+
+  const boxRef = useRef(box);
+  const surfaceRef = useRef({ width: surfaceWidth, height: surfaceHeight });
+  const flagsRef = useRef({ interactive, active });
+  const dragOrigin = useRef({ x: 0, y: 0 });
+  const resizeOrigin = useRef({ w: 0, h: 0 });
+  const livePosRef = useRef<{ x: number; y: number } | null>(null);
+  const liveSizeRef = useRef<{ width: number; height: number } | null>(null);
+
+  boxRef.current = box;
+  surfaceRef.current = { width: surfaceWidth, height: surfaceHeight };
+  flagsRef.current = { interactive, active };
+
+  useEffect(() => {
+    livePosRef.current = null;
+    liveSizeRef.current = null;
+    setLivePos(null);
+    setLiveSize(null);
+    setToneMenuOpen(false);
+  }, [box.id]);
+
+  useEffect(() => {
+    if (!editing) setToneMenuOpen(false);
+  }, [editing]);
+
+  const posX = livePos?.x ?? box.x;
+  const posY = livePos?.y ?? box.y;
+  const boxW = liveSize?.width ?? box.width;
+  const boxH = liveSize?.height ?? box.height;
+
+  const clampPos = (x: number, y: number, w: number, h: number) => {
+    const sw = surfaceRef.current.width;
+    const sh = surfaceRef.current.height;
+    return {
+      x: Math.max(0, Math.min(sw - w, x)),
+      y: Math.max(0, Math.min(sh - h, y)),
+    };
+  };
 
   const dragPan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => interactive && active,
-      onStartShouldSetPanResponderCapture: () => interactive && active,
-      onMoveShouldSetPanResponder: () => interactive && active,
-      onMoveShouldSetPanResponderCapture: () => interactive && active,
+      onStartShouldSetPanResponder: () => flagsRef.current.interactive && flagsRef.current.active,
+      onMoveShouldSetPanResponder: () => flagsRef.current.interactive && flagsRef.current.active,
       onPanResponderGrant: () => {
-        dragOrigin.current = { x: box.x, y: box.y };
+        const b = boxRef.current;
+        dragOrigin.current = { x: b.x, y: b.y };
+        setToneMenuOpen(false);
         onActivate();
       },
       onPanResponderMove: (_, g) => {
-        const nx = Math.max(0, Math.min(surfaceWidth - box.width, dragOrigin.current.x + g.dx));
-        const ny = Math.max(0, Math.min(surfaceHeight - box.height, dragOrigin.current.y + g.dy));
-        onChange({ x: nx, y: ny });
+        const b = boxRef.current;
+        const size = liveSizeRef.current;
+        const w = size?.width ?? b.width;
+        const h = size?.height ?? b.height;
+        const next = clampPos(dragOrigin.current.x + g.dx, dragOrigin.current.y + g.dy, w, h);
+        livePosRef.current = next;
+        setLivePos(next);
+      },
+      onPanResponderRelease: () => {
+        const cur = livePosRef.current;
+        if (cur) onChange({ x: cur.x, y: cur.y });
+        livePosRef.current = null;
+        setLivePos(null);
+      },
+      onPanResponderTerminate: () => {
+        livePosRef.current = null;
+        setLivePos(null);
       },
       onPanResponderTerminationRequest: () => false,
-      onShouldBlockNativeResponder: () => interactive && active,
+      onShouldBlockNativeResponder: () => true,
     })
   ).current;
 
   const resizePan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => interactive && active,
-      onStartShouldSetPanResponderCapture: () => interactive && active,
-      onMoveShouldSetPanResponder: () => interactive && active,
-      onMoveShouldSetPanResponderCapture: () => interactive && active,
+      onStartShouldSetPanResponder: () => flagsRef.current.interactive && flagsRef.current.active,
+      onMoveShouldSetPanResponder: () => flagsRef.current.interactive && flagsRef.current.active,
       onPanResponderGrant: () => {
-        resizeOrigin.current = { w: box.width, h: box.height };
+        const b = boxRef.current;
+        resizeOrigin.current = { w: b.width, h: b.height };
+        setToneMenuOpen(false);
         onActivate();
       },
       onPanResponderMove: (_, g) => {
-        const w = Math.max(72, Math.min(surfaceWidth - box.x, resizeOrigin.current.w + g.dx));
-        const h = Math.max(32, Math.min(surfaceHeight - box.y, resizeOrigin.current.h + g.dy));
-        onChange({ width: w, height: h });
+        const b = boxRef.current;
+        const sw = surfaceRef.current.width;
+        const sh = surfaceRef.current.height;
+        const w = Math.max(72, Math.min(sw - b.x, resizeOrigin.current.w + g.dx));
+        const h = Math.max(32, Math.min(sh - b.y, resizeOrigin.current.h + g.dy));
+        const next = { width: w, height: h };
+        liveSizeRef.current = next;
+        setLiveSize(next);
+      },
+      onPanResponderRelease: () => {
+        const cur = liveSizeRef.current;
+        if (cur) onChange({ width: cur.width, height: cur.height });
+        liveSizeRef.current = null;
+        setLiveSize(null);
+      },
+      onPanResponderTerminate: () => {
+        liveSizeRef.current = null;
+        setLiveSize(null);
       },
       onPanResponderTerminationRequest: () => false,
-      onShouldBlockNativeResponder: () => interactive && active,
+      onShouldBlockNativeResponder: () => true,
     })
   ).current;
 
   const showChrome = active && editing;
 
-  const toneChip = (next: MemoTextBoxTone, swatchColor: string, label: string) => {
+  const pickTone = (next: MemoTextBoxTone) => {
+    onChange({ tone: next });
+    setToneMenuOpen(false);
+  };
+
+  const toneMenuItem = (next: MemoTextBoxTone, swatchColor: string, label: string) => {
     const on = tone === next;
     return (
       <Pressable
+        key={next}
+        onPress={() => pickTone(next)}
+        style={[styles.toneMenuItem, on && styles.toneMenuItemOn]}
         accessibilityRole="button"
-        accessibilityLabel={label}
-        accessibilityState={{ selected: on }}
-        onPress={() => onChange({ tone: next })}
-        style={[styles.toneChip, on && styles.toneChipOn]}
-        hitSlop={4}>
+        accessibilityState={{ selected: on }}>
         <View
           style={[
             styles.toneSwatch,
@@ -103,6 +175,9 @@ export function MemoTextBoxView({
             swatchColor === theme.white && styles.toneSwatchLight,
           ]}
         />
+        <Text style={[styles.toneMenuLabel, on && styles.toneMenuLabelOn]} numberOfLines={1}>
+          {label}
+        </Text>
       </Pressable>
     );
   };
@@ -111,18 +186,41 @@ export function MemoTextBoxView({
     <View
       style={[
         styles.textBox,
-        { left: box.x, top: box.y, width: box.width, height: box.height, backgroundColor: surface.backgroundColor },
+        {
+          left: posX,
+          top: posY,
+          width: boxW,
+          height: boxH,
+          backgroundColor: surface.backgroundColor,
+        },
         showChrome ? styles.textBoxEditing : styles.textBoxIdle,
         active && !editing && styles.textBoxSelected,
       ]}
       pointerEvents={interactive ? 'auto' : 'none'}>
-      <View style={styles.textBoxHeader} {...(showChrome ? dragPan.panHandlers : {})}>
-        {showChrome ? <Text style={[styles.dragHint, { color: surface.hintColor }]}>⋯</Text> : null}
+      {toneMenuOpen ? (
+        <Pressable style={styles.toneMenuDismiss} onPress={() => setToneMenuOpen(false)} />
+      ) : null}
+      <View style={styles.textBoxHeader}>
         {showChrome ? (
-          <View style={styles.toneRow}>
-            {toneChip('light', theme.white, toneLightLabel)}
-            {toneChip('dark', theme.black, toneDarkLabel)}
+          <View style={styles.menuAnchor}>
+            <Pressable
+              onPress={() => setToneMenuOpen((open) => !open)}
+              hitSlop={8}
+              style={styles.dotsBtn}
+              accessibilityRole="button"
+              accessibilityLabel={toneLightLabel}>
+              <Text style={[styles.dragHint, { color: surface.hintColor }]}>⋯</Text>
+            </Pressable>
+            {toneMenuOpen ? (
+              <View style={styles.toneMenu}>
+                {toneMenuItem('light', theme.white, toneLightLabel)}
+                {toneMenuItem('dark', theme.black, toneDarkLabel)}
+              </View>
+            ) : null}
           </View>
+        ) : null}
+        {showChrome ? (
+          <View style={styles.dragStrip} {...dragPan.panHandlers} accessibilityLabel="Move text box" />
         ) : null}
         {showChrome ? (
           <Pressable onPress={onRemove} hitSlop={8} style={styles.deleteChip}>
@@ -136,7 +234,10 @@ export function MemoTextBoxView({
         value={box.text}
         editable={showChrome}
         onChangeText={(text) => onChange({ text })}
-        onFocus={onActivate}
+        onFocus={() => {
+          setToneMenuOpen(false);
+          onActivate();
+        }}
         placeholder={placeholder}
         placeholderTextColor={surface.placeholderColor}
       />
@@ -171,23 +272,71 @@ const styles = StyleSheet.create({
   textBoxHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 2,
-    minHeight: 18,
+    minHeight: 22,
     gap: 4,
   },
-  dragHint: { fontWeight: '800', fontSize: 14, paddingHorizontal: 2 },
-  toneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' },
-  toneChip: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  menuAnchor: {
+    position: 'relative',
+    zIndex: 6,
+  },
+  dotsBtn: {
+    minWidth: 28,
+    minHeight: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
+    paddingHorizontal: 2,
   },
-  toneChipOn: { borderColor: theme.orange, backgroundColor: theme.orangeSoft },
+  dragHint: { fontWeight: '800', fontSize: 16, lineHeight: 18 },
+  dragStrip: {
+    flex: 1,
+    minHeight: 28,
+    alignSelf: 'stretch',
+  },
+  toneMenuDismiss: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 5,
+  },
+  toneMenu: {
+    position: 'absolute',
+    top: 30,
+    left: 0,
+    minWidth: 148,
+    backgroundColor: theme.white,
+    borderRadius: theme.radius.sm,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    paddingVertical: 4,
+    zIndex: 7,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  toneMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  toneMenuItemOn: {
+    backgroundColor: theme.orangeSoft,
+  },
+  toneMenuLabel: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.black,
+  },
+  toneMenuLabelOn: {
+    color: theme.orange,
+  },
   toneSwatch: {
     width: 16,
     height: 16,
