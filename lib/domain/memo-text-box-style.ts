@@ -1,8 +1,8 @@
 import { theme } from '@/constants/theme';
 import type { MemoTextBoxTone } from '@/lib/domain/types';
 
-/** 75% transparent — 25% opaque fill over the photo */
-export const MEMO_TEXT_BOX_BG_OPACITY = 0.25;
+/** 85% transparent — 15% opaque fill over the photo */
+export const MEMO_TEXT_BOX_BG_OPACITY = 0.15;
 
 export function normalizeMemoTextBoxTone(tone?: string | null): MemoTextBoxTone {
   return tone === 'dark' ? 'dark' : 'light';
