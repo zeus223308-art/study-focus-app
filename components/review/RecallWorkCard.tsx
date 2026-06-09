@@ -125,7 +125,8 @@ export function RecallWorkCard({
               surfaceHeight={surfaceH}
               placeholder={t('review.textBoxPlaceholder')}
               onChange={(patch) => updateBox(box.id, patch)}
-              onActivate={() => {
+              onSelect={() => setActiveBoxId(box.id)}
+              onEdit={() => {
                 setActiveBoxId(box.id);
                 setEditingText(true);
               }}

@@ -76,7 +76,8 @@ export function PhotoInkOverlay({
           surfaceHeight={surfaceHeight}
           placeholder={textPlaceholder}
           onChange={() => {}}
-          onActivate={() => {}}
+          onSelect={() => {}}
+          onEdit={() => {}}
           onRemove={() => {}}
         />
       ))}

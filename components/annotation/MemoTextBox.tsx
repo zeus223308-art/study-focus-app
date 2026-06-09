@@ -1,5 +1,13 @@
-import { useRef, useState } from 'react';
-import { PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type GestureResponderEvent,
+} from 'react-native';
 
 import { theme } from '@/constants/theme';
 import {
@@ -19,9 +27,40 @@ type Props = {
   surfaceHeight: number;
   placeholder: string;
   onChange: (patch: Partial<MemoTextBox>) => void;
-  onActivate: () => void;
+  onSelect: () => void;
+  onEdit: () => void;
   onRemove: () => void;
 };
+
+type DragKind = 'move' | 'resize';
+
+type DragSession = {
+  kind: DragKind;
+  startPageX: number;
+  startPageY: number;
+};
+
+function touchPoint(e: GestureResponderEvent): { pageX: number; pageY: number } | null {
+  const ne = e.nativeEvent as {
+    pageX?: number;
+    pageY?: number;
+    touches?: { pageX?: number; pageY?: number; clientX?: number; clientY?: number }[];
+    changedTouches?: { pageX?: number; pageY?: number; clientX?: number; clientY?: number }[];
+  };
+  const t = ne.touches?.[0] ?? ne.changedTouches?.[0];
+  if (t) {
+    return {
+      pageX: t.pageX ?? t.clientX ?? 0,
+      pageY: t.pageY ?? t.clientY ?? 0,
+    };
+  }
+  if (ne.pageX != null && ne.pageY != null) {
+    return { pageX: ne.pageX, pageY: ne.pageY };
+  }
+  return null;
+}
+
+const DRAG_WEB_STYLE = Platform.OS === 'web' ? ({ touchAction: 'none', cursor: 'grab' } as object) : null;
 
 export function MemoTextBoxView({
   box,
@@ -32,7 +71,8 @@ export function MemoTextBoxView({
   surfaceHeight,
   placeholder,
   onChange,
-  onActivate,
+  onSelect,
+  onEdit,
   onRemove,
 }: Props) {
   const tone = normalizeMemoTextBoxTone(box.tone);
@@ -45,78 +85,136 @@ export function MemoTextBoxView({
   interactiveRef.current = interactive;
   activeRef.current = active;
 
+  const onSelectRef = useRef(onSelect);
+  const onChangeRef = useRef(onChange);
+  onSelectRef.current = onSelect;
+  onChangeRef.current = onChange;
+
   const [dragDelta, setDragDelta] = useState({ dx: 0, dy: 0 });
   const [resizeLive, setResizeLive] = useState<{ w: number; h: number } | null>(null);
 
   const dragOrigin = useRef({ x: 0, y: 0 });
   const resizeOrigin = useRef({ w: 0, h: 0 });
+  const sessionRef = useRef<DragSession | null>(null);
 
-  const clampPos = (x: number, y: number, w: number, h: number) => ({
+  const clampPos = useCallback((x: number, y: number, w: number, h: number) => ({
     x: Math.max(0, Math.min(surfaceWidth - w, x)),
     y: Math.max(0, Math.min(surfaceHeight - h, y)),
-  });
+  }), [surfaceHeight, surfaceWidth]);
 
-  const commitDrag = (dx: number, dy: number) => {
-    const b = boxRef.current;
-    const next = clampPos(dragOrigin.current.x + dx, dragOrigin.current.y + dy, b.width, b.height);
-    onChange({ x: next.x, y: next.y });
-    setDragDelta({ dx: 0, dy: 0 });
-  };
+  const ensureSelected = useCallback(() => {
+    if (!activeRef.current) onSelectRef.current();
+  }, []);
 
-  const commitResize = (dw: number, dh: number) => {
+  const applyMove = useCallback((dx: number, dy: number) => {
+    setDragDelta({ dx, dy });
+  }, []);
+
+  const applyResize = useCallback((dw: number, dh: number) => {
     const b = boxRef.current;
     const w = Math.max(72, Math.min(surfaceWidth - b.x, resizeOrigin.current.w + dw));
     const h = Math.max(32, Math.min(surfaceHeight - b.y, resizeOrigin.current.h + dh));
-    onChange({ width: w, height: h });
+    setResizeLive({ w, h });
+  }, [surfaceHeight, surfaceWidth]);
+
+  const commitMove = useCallback((dx: number, dy: number) => {
+    const b = boxRef.current;
+    const next = clampPos(dragOrigin.current.x + dx, dragOrigin.current.y + dy, b.width, b.height);
+    onChangeRef.current({ x: next.x, y: next.y });
+    setDragDelta({ dx: 0, dy: 0 });
+  }, [clampPos]);
+
+  const commitResize = useCallback((dw: number, dh: number) => {
+    const b = boxRef.current;
+    const w = Math.max(72, Math.min(surfaceWidth - b.x, resizeOrigin.current.w + dw));
+    const h = Math.max(32, Math.min(surfaceHeight - b.y, resizeOrigin.current.h + dh));
+    onChangeRef.current({ width: w, height: h });
     setResizeLive(null);
-  };
+  }, [surfaceHeight, surfaceWidth]);
 
-  const canManipulate = () => interactiveRef.current && activeRef.current;
+  const pointerMove = useCallback((pageX: number, pageY: number) => {
+    const s = sessionRef.current;
+    if (!s) return;
+    const dx = pageX - s.startPageX;
+    const dy = pageY - s.startPageY;
+    if (s.kind === 'move') applyMove(dx, dy);
+    else applyResize(dx, dy);
+  }, [applyMove, applyResize]);
 
-  const dragPan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => canManipulate(),
-      onStartShouldSetPanResponderCapture: () => canManipulate(),
-      onMoveShouldSetPanResponder: () => canManipulate(),
-      onMoveShouldSetPanResponderCapture: () => canManipulate(),
-      onPanResponderGrant: () => {
-        const b = boxRef.current;
-        dragOrigin.current = { x: b.x, y: b.y };
-        onActivate();
-      },
-      onPanResponderMove: (_, g) => {
-        setDragDelta({ dx: g.dx, dy: g.dy });
-      },
-      onPanResponderRelease: (_, g) => commitDrag(g.dx, g.dy),
-      onPanResponderTerminate: (_, g) => commitDrag(g.dx, g.dy),
-      onPanResponderTerminationRequest: () => false,
-      onShouldBlockNativeResponder: () => canManipulate(),
-    })
-  ).current;
+  const pointerEnd = useCallback((pageX: number, pageY: number) => {
+    const s = sessionRef.current;
+    if (!s) return;
+    const dx = pageX - s.startPageX;
+    const dy = pageY - s.startPageY;
+    if (s.kind === 'move') commitMove(dx, dy);
+    else commitResize(dx, dy);
+    sessionRef.current = null;
+  }, [commitMove, commitResize]);
 
-  const resizePan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => canManipulate(),
-      onStartShouldSetPanResponderCapture: () => canManipulate(),
-      onMoveShouldSetPanResponder: () => canManipulate(),
-      onMoveShouldSetPanResponderCapture: () => canManipulate(),
-      onPanResponderGrant: () => {
-        const b = boxRef.current;
-        resizeOrigin.current = { w: b.width, h: b.height };
-        onActivate();
-      },
-      onPanResponderMove: (_, g) => {
-        const b = boxRef.current;
-        const w = Math.max(72, Math.min(surfaceWidth - b.x, resizeOrigin.current.w + g.dx));
-        const h = Math.max(32, Math.min(surfaceHeight - b.y, resizeOrigin.current.h + g.dy));
-        setResizeLive({ w, h });
-      },
-      onPanResponderRelease: (_, g) => commitResize(g.dx, g.dy),
-      onPanResponderTerminate: (_, g) => commitResize(g.dx, g.dy),
-      onPanResponderTerminationRequest: () => false,
-      onShouldBlockNativeResponder: () => canManipulate(),
-    })
-  ).current;
+  const startDrag = useCallback((kind: DragKind, pageX: number, pageY: number) => {
+    if (!interactiveRef.current) return;
+    ensureSelected();
+    const b = boxRef.current;
+    if (kind === 'move') {
+      dragOrigin.current = { x: b.x, y: b.y };
+    } else {
+      resizeOrigin.current = { w: b.width, h: b.height };
+    }
+    sessionRef.current = { kind, startPageX: pageX, startPageY: pageY };
+  }, [ensureSelected]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onMouseMove = (e: MouseEvent) => {
+      if (!sessionRef.current) return;
+      pointerMove(e.pageX, e.pageY);
+    };
+    const onMouseUp = (e: MouseEvent) => {
+      if (!sessionRef.current) return;
+      pointerEnd(e.pageX, e.pageY);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [pointerEnd, pointerMove]);
+
+  const bindDrag = (kind: DragKind) => ({
+    onStartShouldSetResponder: () => interactiveRef.current,
+    onMoveShouldSetResponder: () => Boolean(sessionRef.current),
+    onResponderTerminationRequest: () => false,
+    onResponderGrant: (e: GestureResponderEvent) => {
+      const p = touchPoint(e);
+      if (!p) return;
+      startDrag(kind, p.pageX, p.pageY);
+    },
+    onResponderMove: (e: GestureResponderEvent) => {
+      const p = touchPoint(e);
+      if (!p) return;
+      pointerMove(p.pageX, p.pageY);
+    },
+    onResponderRelease: (e: GestureResponderEvent) => {
+      const p = touchPoint(e);
+      if (!p) return;
+      pointerEnd(p.pageX, p.pageY);
+    },
+    onResponderTerminate: (e: GestureResponderEvent) => {
+      const p = touchPoint(e);
+      if (!p) return;
+      pointerEnd(p.pageX, p.pageY);
+    },
+    ...(Platform.OS === 'web'
+      ? {
+          onMouseDown: (e: { pageX?: number; pageY?: number; preventDefault?: () => void }) => {
+            if (!interactiveRef.current) return;
+            e.preventDefault?.();
+            startDrag(kind, e.pageX ?? 0, e.pageY ?? 0);
+          },
+        }
+      : null),
+  });
 
   const showControls = active && interactive;
   const isEditing = active && editing;
@@ -134,6 +232,7 @@ export function MemoTextBoxView({
           height,
           backgroundColor: surface.backgroundColor,
           transform: [{ translateX: dragDelta.dx }, { translateY: dragDelta.dy }],
+          zIndex: active ? 6 : 4,
         },
         isEditing ? styles.textBoxEditing : styles.textBoxIdle,
         active && !isEditing && styles.textBoxSelected,
@@ -141,7 +240,10 @@ export function MemoTextBoxView({
       pointerEvents={interactive ? 'auto' : 'none'}>
       {showControls ? (
         <View style={styles.textBoxHeader}>
-          <View style={styles.dragHandle} {...dragPan.panHandlers}>
+          <View
+            style={[styles.dragHandle, DRAG_WEB_STYLE]}
+            accessibilityRole="adjustable"
+            {...bindDrag('move')}>
             <View style={[styles.dragGrip, { backgroundColor: surface.hintColor }]} />
           </View>
           <Pressable onPress={onRemove} hitSlop={8} style={styles.deleteChip}>
@@ -156,14 +258,17 @@ export function MemoTextBoxView({
           value={box.text}
           editable
           onChangeText={(text) => onChange({ text })}
-          onFocus={onActivate}
+          onFocus={onEdit}
           placeholder={placeholder}
           placeholderTextColor={surface.placeholderColor}
         />
       ) : (
         <Pressable
           style={styles.textBodyTap}
-          onPress={onActivate}
+          onPress={() => {
+            if (!active) onSelect();
+            else onEdit();
+          }}
           disabled={!interactive}>
           <Text
             style={[
@@ -175,7 +280,10 @@ export function MemoTextBoxView({
         </Pressable>
       )}
       {showControls ? (
-        <View style={styles.resizeHandle} {...resizePan.panHandlers}>
+        <View
+          style={[styles.resizeHandle, DRAG_WEB_STYLE]}
+          accessibilityRole="adjustable"
+          {...bindDrag('resize')}>
           <View style={styles.resizeCorner} />
         </View>
       ) : null}
@@ -188,7 +296,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderRadius: 6,
     padding: 4,
-    zIndex: 4,
   },
   textBoxEditing: {
     borderWidth: 2,
@@ -206,20 +313,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 2,
-    minHeight: 24,
+    minHeight: 28,
     gap: 4,
   },
   dragHandle: {
     flex: 1,
-    minHeight: 28,
+    minHeight: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dragGrip: {
-    width: 28,
-    height: 3,
+    width: 36,
+    height: 4,
     borderRadius: 2,
-    opacity: 0.45,
+    opacity: 0.55,
   },
   deleteChip: {
     width: 22,
@@ -250,8 +357,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     bottom: 0,
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
   },
