@@ -2,11 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import {
-  memoTextBoxSurface,
-  normalizeMemoTextBoxTone,
-} from '@/lib/domain/memo-text-box-style';
-import type { MemoTextBox, MemoTextBoxTone } from '@/lib/domain/types';
+import { memoTextBoxSurface } from '@/lib/domain/memo-text-box-style';
+import type { MemoTextBox } from '@/lib/domain/types';
 
 export type { MemoTextBox };
 
@@ -18,8 +15,6 @@ type Props = {
   surfaceWidth: number;
   surfaceHeight: number;
   placeholder: string;
-  toneLightLabel: string;
-  toneDarkLabel: string;
   onChange: (patch: Partial<MemoTextBox>) => void;
   onActivate: () => void;
   onRemove: () => void;
@@ -33,15 +28,11 @@ export function MemoTextBoxView({
   surfaceWidth,
   surfaceHeight,
   placeholder,
-  toneLightLabel,
-  toneDarkLabel,
   onChange,
   onActivate,
   onRemove,
 }: Props) {
-  const tone = normalizeMemoTextBoxTone(box.tone);
-  const surface = memoTextBoxSurface(tone);
-  const [toneMenuOpen, setToneMenuOpen] = useState(false);
+  const surface = memoTextBoxSurface();
   const [livePos, setLivePos] = useState<{ x: number; y: number } | null>(null);
   const [liveSize, setLiveSize] = useState<{ width: number; height: number } | null>(null);
 
@@ -62,12 +53,7 @@ export function MemoTextBoxView({
     liveSizeRef.current = null;
     setLivePos(null);
     setLiveSize(null);
-    setToneMenuOpen(false);
   }, [box.id]);
-
-  useEffect(() => {
-    if (!editing) setToneMenuOpen(false);
-  }, [editing]);
 
   const posX = livePos?.x ?? box.x;
   const posY = livePos?.y ?? box.y;
@@ -90,7 +76,6 @@ export function MemoTextBoxView({
       onPanResponderGrant: () => {
         const b = boxRef.current;
         dragOrigin.current = { x: b.x, y: b.y };
-        setToneMenuOpen(false);
         onActivate();
       },
       onPanResponderMove: (_, g) => {
@@ -124,7 +109,6 @@ export function MemoTextBoxView({
       onPanResponderGrant: () => {
         const b = boxRef.current;
         resizeOrigin.current = { w: b.width, h: b.height };
-        setToneMenuOpen(false);
         onActivate();
       },
       onPanResponderMove: (_, g) => {
@@ -154,34 +138,6 @@ export function MemoTextBoxView({
 
   const showChrome = active && editing;
 
-  const pickTone = (next: MemoTextBoxTone) => {
-    onChange({ tone: next });
-    setToneMenuOpen(false);
-  };
-
-  const toneMenuItem = (next: MemoTextBoxTone, swatchColor: string, label: string) => {
-    const on = tone === next;
-    return (
-      <Pressable
-        key={next}
-        onPress={() => pickTone(next)}
-        style={[styles.toneMenuItem, on && styles.toneMenuItemOn]}
-        accessibilityRole="button"
-        accessibilityState={{ selected: on }}>
-        <View
-          style={[
-            styles.toneSwatch,
-            { backgroundColor: swatchColor },
-            swatchColor === theme.white && styles.toneSwatchLight,
-          ]}
-        />
-        <Text style={[styles.toneMenuLabel, on && styles.toneMenuLabelOn]} numberOfLines={1}>
-          {label}
-        </Text>
-      </Pressable>
-    );
-  };
-
   return (
     <View
       style={[
@@ -197,31 +153,8 @@ export function MemoTextBoxView({
         active && !editing && styles.textBoxSelected,
       ]}
       pointerEvents={interactive ? 'auto' : 'none'}>
-      {toneMenuOpen ? (
-        <Pressable style={styles.toneMenuDismiss} onPress={() => setToneMenuOpen(false)} />
-      ) : null}
-      <View style={styles.textBoxHeader}>
-        {showChrome ? (
-          <View style={styles.menuAnchor}>
-            <Pressable
-              onPress={() => setToneMenuOpen((open) => !open)}
-              hitSlop={8}
-              style={styles.dotsBtn}
-              accessibilityRole="button"
-              accessibilityLabel={toneLightLabel}>
-              <Text style={[styles.dragHint, { color: surface.hintColor }]}>⋯</Text>
-            </Pressable>
-            {toneMenuOpen ? (
-              <View style={styles.toneMenu}>
-                {toneMenuItem('light', theme.white, toneLightLabel)}
-                {toneMenuItem('dark', theme.black, toneDarkLabel)}
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-        {showChrome ? (
-          <View style={styles.dragStrip} {...dragPan.panHandlers} accessibilityLabel="Move text box" />
-        ) : null}
+      <View style={styles.textBoxHeader} {...(showChrome ? dragPan.panHandlers : {})}>
+        {showChrome ? <Text style={[styles.dragHint, { color: surface.hintColor }]}>⋯</Text> : null}
         {showChrome ? (
           <Pressable onPress={onRemove} hitSlop={8} style={styles.deleteChip}>
             <Text style={styles.deleteChipText}>×</Text>
@@ -234,10 +167,7 @@ export function MemoTextBoxView({
         value={box.text}
         editable={showChrome}
         onChangeText={(text) => onChange({ text })}
-        onFocus={() => {
-          setToneMenuOpen(false);
-          onActivate();
-        }}
+        onFocus={onActivate}
         placeholder={placeholder}
         placeholderTextColor={surface.placeholderColor}
       />
@@ -272,80 +202,12 @@ const styles = StyleSheet.create({
   textBoxHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 2,
     minHeight: 22,
     gap: 4,
   },
-  menuAnchor: {
-    position: 'relative',
-    zIndex: 6,
-  },
-  dotsBtn: {
-    minWidth: 28,
-    minHeight: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  dragHint: { fontWeight: '800', fontSize: 16, lineHeight: 18 },
-  dragStrip: {
-    flex: 1,
-    minHeight: 28,
-    alignSelf: 'stretch',
-  },
-  toneMenuDismiss: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    zIndex: 5,
-  },
-  toneMenu: {
-    position: 'absolute',
-    top: 30,
-    left: 0,
-    minWidth: 148,
-    backgroundColor: theme.white,
-    borderRadius: theme.radius.sm,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    paddingVertical: 4,
-    zIndex: 7,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  toneMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  toneMenuItemOn: {
-    backgroundColor: theme.orangeSoft,
-  },
-  toneMenuLabel: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '700',
-    color: theme.black,
-  },
-  toneMenuLabelOn: {
-    color: theme.orange,
-  },
-  toneSwatch: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-  toneSwatchLight: {
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-  },
+  dragHint: { fontWeight: '800', fontSize: 16, lineHeight: 18, paddingHorizontal: 2 },
   deleteChip: {
     width: 22,
     height: 22,
