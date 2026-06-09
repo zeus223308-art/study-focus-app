@@ -137,20 +137,18 @@ function TrashRow({
         ) : (
           <View style={[styles.cover, styles.thumbEmpty]} />
         )}
-        <View style={styles.info}>
-          <Text style={styles.itemName} numberOfLines={1}>
-            {name}
-          </Text>
-          <Text style={styles.meta}>{meta}</Text>
-          <CountdownBlock backupExpiresAt={backupExpiresAt} />
-          <Pressable
-            onPress={onRestore}
-            hitSlop={8}
-            style={styles.restoreBtn}
-            accessibilityRole="button">
-            <Text style={styles.restore}>{restoreLabel}</Text>
-          </Pressable>
-        </View>
+        <Text style={styles.itemName} numberOfLines={2}>
+          {name}
+        </Text>
+        <Text style={styles.meta}>{meta}</Text>
+        <CountdownBlock backupExpiresAt={backupExpiresAt} />
+        <Pressable
+          onPress={onRestore}
+          hitSlop={8}
+          style={styles.restoreBtn}
+          accessibilityRole="button">
+          <Text style={styles.restore}>{restoreLabel}</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -256,11 +254,11 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     paddingTop: 12,
     paddingBottom: 8,
-    textAlign: 'left',
+    textAlign: 'center',
   },
   empty: {
     color: theme.gray,
-    textAlign: 'left',
+    textAlign: 'center',
     paddingVertical: 24,
   },
   sectionHeader: {
@@ -270,7 +268,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 2,
     marginBottom: 0,
-    textAlign: 'left',
+    textAlign: 'center',
     alignSelf: 'stretch',
   },
   sectionHeaderSpaced: {
@@ -281,22 +279,24 @@ const styles = StyleSheet.create({
   },
   row: {
     width: '100%',
-    alignSelf: 'stretch',
+    alignItems: 'center',
     paddingVertical: 12,
   },
   rowMain: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
     width: '100%',
-    maxWidth: '100%',
+    maxWidth: 280,
+    alignItems: 'center',
+    gap: 8,
   },
-  info: { flex: 1, minWidth: 0, gap: 4, alignItems: 'flex-start' },
-  itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black, textAlign: 'left' },
-  meta: { fontSize: theme.font.caption, color: theme.gray, textAlign: 'left' },
-  countdown: { marginTop: 2, gap: 3, alignSelf: 'stretch' },
+  itemName: {
+    fontSize: theme.font.body,
+    fontWeight: '600',
+    color: theme.black,
+    textAlign: 'center',
+  },
+  meta: { fontSize: theme.font.caption, color: theme.gray, textAlign: 'center' },
+  countdown: { marginTop: 2, gap: 3, alignItems: 'center', width: '100%' },
   remainChip: {
-    alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: theme.radius.pill,
@@ -305,18 +305,17 @@ const styles = StyleSheet.create({
   remainChipUrgent: { backgroundColor: 'rgba(248, 113, 113, 0.18)' },
   remainText: { fontSize: 12, fontWeight: '800', color: theme.gray },
   remainTextUrgent: { color: theme.danger },
-  deadline: { fontSize: 11, color: theme.grayMuted, fontWeight: '600', textAlign: 'left' },
-  cover: { width: COVER, height: COVER, borderRadius: 8, flexShrink: 0 },
+  deadline: { fontSize: 11, color: theme.grayMuted, fontWeight: '600', textAlign: 'center' },
+  cover: { width: COVER, height: COVER, borderRadius: 8 },
   thumbEmpty: { backgroundColor: theme.grayLight },
   restoreBtn: {
-    alignSelf: 'flex-start',
-    marginTop: 6,
-    paddingHorizontal: 12,
+    marginTop: 4,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.grayLight,
     backgroundColor: theme.beige,
   },
-  restore: { color: theme.black, fontWeight: '700', fontSize: theme.font.caption },
+  restore: { color: theme.black, fontWeight: '700', fontSize: theme.font.caption, textAlign: 'center' },
 });
