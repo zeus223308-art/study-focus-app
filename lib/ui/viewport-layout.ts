@@ -73,13 +73,13 @@ export function vaultPanelPad(isPhone: boolean): number {
 
 /** Settings rows / in-panel lists on phone. */
 export function settingsRowPad(isPhone: boolean): number {
-  return isPhone ? 6 : 16;
+  return isPhone ? 4 : 16;
 }
 
 /** Tab screens (dashboard, files, settings) — minimal side inset on phone. */
 export function tabHorizontalPadding(isPhone: boolean, isLandscape: boolean): number {
   if (!isPhone) return isLandscape ? 16 : 24;
-  return 6;
+  return 4;
 }
 
 /** @deprecated Use vaultPanelPad(isPhone) — default for non-viewport call sites. */
@@ -219,7 +219,7 @@ export function useViewportLayout(): ViewportLayout {
         : deviceClass === 'tablet'
           ? 24
           : 32;
-    const dockEdgeGap = isPhone ? 4 : 28;
+    const dockEdgeGap = isPhone ? 2 : 28;
     const dockContentGap = isPhone ? 8 : 12;
     const contentMaxWidth = computeContentMaxWidth(width, height, deviceClass);
     const pagerSize = computePagerSize(width, height, deviceClass);
