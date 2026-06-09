@@ -452,7 +452,7 @@ export default function BundleScreen() {
           label={t('common.save')}
           variant="secondary"
           onPress={() => showMessage('', t('capture.saved'))}
-          style={[styles.actionBtn, styles.actionBtnBorder]}
+          style={styles.actionBtnDivider}
         />
         <Button
           label={bundle.archived ? t('folder.restoreFromArchive') : t('item.archive')}
@@ -464,13 +464,13 @@ export default function BundleScreen() {
             }
             setArchivePickerOpen(true);
           }}
-          style={[styles.actionBtn, styles.actionBtnBorder]}
+          style={styles.actionBtnDivider}
         />
         <Button
           label={t('item.deletePhoto')}
           variant="secondary"
           onPress={confirmDeleteCurrentPage}
-          style={[styles.actionBtn, styles.actionBtnBorder]}
+          style={styles.actionBtnDivider}
         />
         <Button
           label={t('item.deleteAll')}
@@ -487,7 +487,7 @@ export default function BundleScreen() {
               },
             });
           }}
-          style={[styles.actionBtn, styles.actionBtnBorder]}
+          style={styles.actionBtnDivider}
         />
       </View>
 
@@ -682,7 +682,10 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 0,
   },
-  actionBtnBorder: {
+  actionBtnDivider: {
+    marginTop: 0,
+    borderRadius: 0,
+    borderWidth: 0,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.grayLight,
   },
