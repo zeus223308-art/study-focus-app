@@ -58,7 +58,6 @@ export function RecallWorkCard({
       width: Math.min(160, width * 0.55),
       height: 56,
       text: '',
-      fillLevel: 0.25,
       tone: 'light',
     };
     onTextBoxesChange([...textBoxes, box]);
@@ -126,8 +125,6 @@ export function RecallWorkCard({
               surfaceWidth={width}
               surfaceHeight={surfaceH}
               placeholder={t('review.textBoxPlaceholder')}
-              toneLightLabel={t('review.textBoxToneLight')}
-              toneDarkLabel={t('review.textBoxToneDark')}
               onChange={(patch) => updateBox(box.id, patch)}
               onActivate={() => {
                 setActiveBoxId(box.id);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
@@ -6,7 +6,7 @@ import {
   memoTextBoxSurface,
   normalizeMemoTextBoxTone,
 } from '@/lib/domain/memo-text-box-style';
-import type { MemoTextBox, MemoTextBoxTone } from '@/lib/domain/types';
+import type { MemoTextBox } from '@/lib/domain/types';
 
 export type { MemoTextBox };
 
@@ -18,8 +18,6 @@ type Props = {
   surfaceWidth: number;
   surfaceHeight: number;
   placeholder: string;
-  toneLightLabel: string;
-  toneDarkLabel: string;
   onChange: (patch: Partial<MemoTextBox>) => void;
   onActivate: () => void;
   onRemove: () => void;
@@ -33,8 +31,6 @@ export function MemoTextBoxView({
   surfaceWidth,
   surfaceHeight,
   placeholder,
-  toneLightLabel,
-  toneDarkLabel,
   onChange,
   onActivate,
   onRemove,
@@ -44,7 +40,6 @@ export function MemoTextBoxView({
   const boxRef = useRef(box);
   boxRef.current = box;
 
-  const [toneMenuOpen, setToneMenuOpen] = useState(false);
   const [dragDelta, setDragDelta] = useState({ dx: 0, dy: 0 });
   const [resizeLive, setResizeLive] = useState<{ w: number; h: number } | null>(null);
 
@@ -80,7 +75,6 @@ export function MemoTextBoxView({
       onPanResponderGrant: () => {
         const b = boxRef.current;
         dragOrigin.current = { x: b.x, y: b.y };
-        setToneMenuOpen(false);
         onActivate();
       },
       onPanResponderMove: (_, g) => {
@@ -102,7 +96,6 @@ export function MemoTextBoxView({
       onPanResponderGrant: () => {
         const b = boxRef.current;
         resizeOrigin.current = { w: b.width, h: b.height };
-        setToneMenuOpen(false);
         onActivate();
       },
       onPanResponderMove: (_, g) => {
@@ -119,41 +112,8 @@ export function MemoTextBoxView({
   ).current;
 
   const showChrome = active && editing;
-
-  useEffect(() => {
-    if (!showChrome) setToneMenuOpen(false);
-  }, [showChrome]);
-
   const width = resizeLive?.w ?? box.width;
   const height = resizeLive?.h ?? box.height;
-
-  const pickTone = (next: MemoTextBoxTone) => {
-    onChange({ tone: next });
-    setToneMenuOpen(false);
-  };
-
-  const toneMenuItem = (next: MemoTextBoxTone, swatchColor: string, label: string) => {
-    const on = tone === next;
-    return (
-      <Pressable
-        key={next}
-        accessibilityRole="button"
-        accessibilityState={{ selected: on }}
-        onPress={() => pickTone(next)}
-        style={[styles.toneMenuItem, on && styles.toneMenuItemOn]}>
-        <View
-          style={[
-            styles.toneMenuSwatch,
-            { backgroundColor: swatchColor },
-            swatchColor === theme.white && styles.toneMenuSwatchLight,
-          ]}
-        />
-        <Text style={styles.toneMenuLabel} numberOfLines={1}>
-          {label}
-        </Text>
-      </Pressable>
-    );
-  };
 
   return (
     <View
@@ -171,46 +131,23 @@ export function MemoTextBoxView({
         active && !editing && styles.textBoxSelected,
       ]}
       pointerEvents={interactive ? 'auto' : 'none'}>
-      <View style={styles.textBoxHeader}>
-        {showChrome ? (
-          <View style={styles.menuWrap}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={toneLightLabel}
-              onPress={() => setToneMenuOpen((open) => !open)}
-              hitSlop={6}
-              style={styles.menuBtn}>
-              <Text style={[styles.menuDots, { color: surface.hintColor }]}>⋯</Text>
-            </Pressable>
-            {toneMenuOpen ? (
-              <View style={styles.toneMenu}>
-                {toneMenuItem('light', theme.white, toneLightLabel)}
-                {toneMenuItem('dark', theme.black, toneDarkLabel)}
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-        {showChrome ? (
+      {showChrome ? (
+        <View style={styles.textBoxHeader}>
           <View style={styles.dragHandle} {...dragPan.panHandlers}>
             <View style={[styles.dragGrip, { backgroundColor: surface.hintColor }]} />
           </View>
-        ) : null}
-        {showChrome ? (
           <Pressable onPress={onRemove} hitSlop={8} style={styles.deleteChip}>
             <Text style={styles.deleteChipText}>×</Text>
           </Pressable>
-        ) : null}
-      </View>
+        </View>
+      ) : null}
       <TextInput
         style={[styles.textInput, { color: surface.textColor }]}
         multiline
         value={box.text}
         editable={showChrome}
         onChangeText={(text) => onChange({ text })}
-        onFocus={() => {
-          setToneMenuOpen(false);
-          onActivate();
-        }}
+        onFocus={onActivate}
         placeholder={placeholder}
         placeholderTextColor={surface.placeholderColor}
       />
@@ -248,58 +185,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     minHeight: 24,
     gap: 4,
-  },
-  menuWrap: {
-    position: 'relative',
-    zIndex: 6,
-  },
-  menuBtn: {
-    minWidth: 28,
-    minHeight: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  menuDots: { fontWeight: '800', fontSize: 16, lineHeight: 18 },
-  toneMenu: {
-    position: 'absolute',
-    left: 0,
-    top: 28,
-    minWidth: 168,
-    backgroundColor: theme.white,
-    borderRadius: theme.radius.sm,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    paddingVertical: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-    zIndex: 8,
-  },
-  toneMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  toneMenuItemOn: { backgroundColor: theme.orangeSoft },
-  toneMenuSwatch: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-  },
-  toneMenuSwatchLight: {
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-  },
-  toneMenuLabel: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '700',
-    color: theme.black,
   },
   dragHandle: {
     flex: 1,
