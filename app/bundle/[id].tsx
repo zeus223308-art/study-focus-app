@@ -432,59 +432,64 @@ export default function BundleScreen() {
       </View>
       </View>
 
-      <Button
-        label={t('item.studyPractice')}
-        onPress={() =>
-          router.push({
-            pathname: '/review/session',
-            params: {
-              bundleId: bundle.id,
-              blackout: '1',
-              reviewPages: `${bundle.id}:${page.id}`,
-            },
-          })
-        }
-        style={{ marginTop: 8 }}
-      />
-      <Button
-        label={t('common.save')}
-        onPress={() => showMessage('', t('capture.saved'))}
-        style={{ marginTop: 8 }}
-      />
-      <Button
-        label={bundle.archived ? t('folder.restoreFromArchive') : t('item.archive')}
-        variant="secondary"
-        onPress={() => {
-          if (bundle.archived) {
-            setRestoreDateOpen(true);
-            return;
+      <View style={styles.actionStack}>
+        <Button
+          label={t('item.studyPractice')}
+          variant="secondary"
+          onPress={() =>
+            router.push({
+              pathname: '/review/session',
+              params: {
+                bundleId: bundle.id,
+                blackout: '1',
+                reviewPages: `${bundle.id}:${page.id}`,
+              },
+            })
           }
-          setArchivePickerOpen(true);
-        }}
-        style={{ marginTop: 8 }}
-      />
-      <Button
-        label={t('item.deletePhoto')}
-        variant="secondary"
-        onPress={confirmDeleteCurrentPage}
-        style={{ marginTop: 8 }}
-      />
-      <Button
-        label={t('item.deleteAll')}
-        variant="ghost"
-        onPress={() => {
-          confirmDestructive({
-            title: t('item.deletePhotoTitle'),
-            message: t('item.deleteAllMessage'),
-            cancelLabel: t('common.cancel'),
-            confirmLabel: t('item.deleteAll'),
-            onConfirm: () => {
-              moveBundleToTrash(bundle.id);
-              safeRouterBack(router, folderBack);
-            },
-          });
-        }}
-      />
+          style={styles.actionBtn}
+        />
+        <Button
+          label={t('common.save')}
+          variant="secondary"
+          onPress={() => showMessage('', t('capture.saved'))}
+          style={[styles.actionBtn, styles.actionBtnBorder]}
+        />
+        <Button
+          label={bundle.archived ? t('folder.restoreFromArchive') : t('item.archive')}
+          variant="secondary"
+          onPress={() => {
+            if (bundle.archived) {
+              setRestoreDateOpen(true);
+              return;
+            }
+            setArchivePickerOpen(true);
+          }}
+          style={[styles.actionBtn, styles.actionBtnBorder]}
+        />
+        <Button
+          label={t('item.deletePhoto')}
+          variant="secondary"
+          onPress={confirmDeleteCurrentPage}
+          style={[styles.actionBtn, styles.actionBtnBorder]}
+        />
+        <Button
+          label={t('item.deleteAll')}
+          variant="ghost"
+          onPress={() => {
+            confirmDestructive({
+              title: t('item.deletePhotoTitle'),
+              message: t('item.deleteAllMessage'),
+              cancelLabel: t('common.cancel'),
+              confirmLabel: t('item.deleteAll'),
+              onConfirm: () => {
+                moveBundleToTrash(bundle.id);
+                safeRouterBack(router, folderBack);
+              },
+            });
+          }}
+          style={[styles.actionBtn, styles.actionBtnBorder]}
+        />
+      </View>
 
       <PhotoMemoEditorModal
         visible={memoOpen}
@@ -664,6 +669,23 @@ const styles = StyleSheet.create({
   ocrBlock: { marginTop: 8, gap: 8 },
   ocrRerun: { alignSelf: 'flex-start' },
   timingBlock: { marginTop: 8, marginBottom: 4 },
+  actionStack: {
+    marginTop: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    overflow: 'hidden',
+    backgroundColor: theme.surface,
+  },
+  actionBtn: {
+    marginTop: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+  },
+  actionBtnBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.grayLight,
+  },
   labelSpaced: { marginTop: 14 },
   secRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   secScroll: { marginTop: 0 },
