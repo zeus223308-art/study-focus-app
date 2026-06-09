@@ -149,17 +149,6 @@ export default function DashboardScreen() {
         </View>
       ) : null}
 
-      <View style={styles.calendarSection}>
-        <DashboardCalendar
-          marks={ribbonMarks}
-          selectedDate={selectedDate}
-          localToday={localToday}
-          ribbonHorizon={ribbonHorizon}
-          firstLaunchDate={data.settings.firstLaunchDate}
-          onSelectDate={setSelectedDate}
-        />
-      </View>
-
       {subjectEntries.length > 0 ? (
         <DashboardReviewPicker
           entries={subjectEntries}
@@ -172,12 +161,23 @@ export default function DashboardScreen() {
         />
       ) : null}
 
+      <View style={styles.calendarSection}>
+        <DashboardCalendar
+          marks={ribbonMarks}
+          selectedDate={selectedDate}
+          localToday={localToday}
+          ribbonHorizon={ribbonHorizon}
+          firstLaunchDate={data.settings.firstLaunchDate}
+          onSelectDate={setSelectedDate}
+        />
+      </View>
+
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  calendarSection: { marginTop: 8, marginBottom: 8, width: '100%', maxWidth: '100%', alignSelf: 'stretch' },
+  calendarSection: { marginTop: 12, marginBottom: 8, width: '100%', maxWidth: '100%', alignSelf: 'stretch' },
   emptyBlock: {
     marginVertical: 24,
     gap: 12,
