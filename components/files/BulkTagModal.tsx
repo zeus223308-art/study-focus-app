@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CaptureTagPicker } from '@/components/capture/CaptureTagPicker';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import type { Language } from '@/lib/domain/types';
 
 type Props = {
@@ -90,6 +91,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'flex-end',
+    ...webFixedBackdropStyle,
   },
   sheet: {
     backgroundColor: theme.beige,

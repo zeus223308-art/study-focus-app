@@ -14,6 +14,7 @@ import Animated, {
 
 import { LOGO_WHITE, SPLASH_BLACK } from '@/components/MountainMLogo';
 import { isMobileWebPhone, useLayoutViewportSize } from '@/lib/ui/mobile-web-viewport';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 const mountainLogo = require('@/assets/images/mountain-m-logo.png');
 
@@ -120,6 +121,7 @@ export function SplashBrand({ onFinish }: Props) {
 const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
+    ...webFixedBackdropStyle,
     backgroundColor: SPLASH_BLACK,
     zIndex: 9999,
     elevation: 9999,

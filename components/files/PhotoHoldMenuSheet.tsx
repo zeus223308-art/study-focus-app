@@ -2,6 +2,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_LINK } from '@/lib/ui/button-label';
 
 type Props = {
@@ -53,6 +54,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
+    ...webFixedBackdropStyle,
   },
   sheet: {
     backgroundColor: theme.beige,

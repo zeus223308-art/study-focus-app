@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import { computeReviewCardSizes } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { useApp } from '@/context/AppContext';
@@ -600,26 +601,6 @@ export default function ReviewSessionScreen() {
                 <Text style={styles.countdownOnImageText}>{countdown}</Text>
               </View>
             ) : null}
-            {problemCompleteVisible ? (
-              <Animated.View
-                style={[styles.problemCompleteOverlay, { opacity: passAnim }]}
-                pointerEvents="box-none">
-                <View style={styles.problemCompleteScrim} />
-                <Animated.View
-                  style={[
-                    styles.problemCompleteContent,
-                    { transform: [{ scale: passScale }] },
-                  ]}>
-                  <Text style={styles.problemCompleteCheck}>✓</Text>
-                  <Text style={styles.problemCompleteTitle}>{t('review.reviewComplete')}</Text>
-                  <Button
-                    label={t('common.confirm')}
-                    onPress={confirmProblemComplete}
-                    style={styles.problemCompleteBtn}
-                  />
-                </Animated.View>
-              </Animated.View>
-            ) : null}
           </Animated.View>
 
           {phase === 'recall-work' && !problemCompleteVisible ? (
@@ -721,13 +702,34 @@ export default function ReviewSessionScreen() {
         </>
       )}
 
+      {problemCompleteVisible ? (
+        <View style={[styles.completionOverlay, webFixedBackdropStyle]} pointerEvents="box-none">
+          <View style={[styles.problemCompleteScrim, webFixedBackdropStyle]} />
+          <Animated.View
+            style={[
+              styles.problemCompleteContent,
+              { opacity: passAnim },
+              Platform.OS !== 'web' ? { transform: [{ scale: passScale }] } : null,
+            ]}>
+            <Text style={styles.problemCompleteCheck}>✓</Text>
+            <Text style={styles.problemCompleteTitle}>{t('review.reviewComplete')}</Text>
+            <Button
+              label={t('common.confirm')}
+              onPress={confirmProblemComplete}
+              style={styles.problemCompleteBtn}
+            />
+          </Animated.View>
+        </View>
+      ) : null}
+
       {sessionCompleteVisible ? (
-        <View style={styles.completionOverlay}>
-          <View style={styles.completionBackdrop} />
+        <View style={[styles.completionOverlay, webFixedBackdropStyle]}>
+          <View style={[styles.completionBackdrop, webFixedBackdropStyle]} />
           <Animated.View
             style={[
               styles.completionCard,
-              { opacity: passAnim, transform: [{ scale: passScale }] },
+              { opacity: passAnim },
+              Platform.OS !== 'web' ? { transform: [{ scale: passScale }] } : null,
             ]}>
             <Text style={styles.passEmoji}>✓</Text>
             <Text style={styles.passTitle}>{t('review.todayReviewComplete')}</Text>
@@ -817,12 +819,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   problemImageDim: { opacity: 0.35 },
-  problemCompleteOverlay: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 4,
-  },
   problemCompleteScrim: {
     ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.55)',

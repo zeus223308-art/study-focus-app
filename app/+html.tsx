@@ -157,6 +157,11 @@ body {
   -webkit-user-select: none !important;
   user-select: none !important;
 }
+[data-memo-text-box="1"] {
+  touch-action: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
 /* Folder photo long-press actions + drag subject dock — compact pills on mobile web */
 [data-folder-action-bar="1"] {
   width: auto !important;

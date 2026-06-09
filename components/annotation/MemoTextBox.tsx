@@ -259,6 +259,7 @@ export function MemoTextBoxView({
       ]}
       pointerEvents={interactive ? 'auto' : 'none'}
       accessibilityRole="adjustable"
+      {...(Platform.OS === 'web' && canMove ? { dataSet: { memoTextBox: '1' } } : {})}
       {...(canMove ? bindDrag('move') : null)}>
       {showControls ? (
         <View

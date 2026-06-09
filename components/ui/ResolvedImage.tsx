@@ -45,13 +45,31 @@ function webImgStyle(
   resizeMode: NonNullable<ImageProps['resizeMode']>
 ): React.CSSProperties {
   const flat = StyleSheet.flatten(style) ?? {};
+  const extra = flat as ImageStyle & { filter?: string; WebkitFilter?: string };
   return {
     width: '100%',
     height: '100%',
     objectFit: webObjectFit(resizeMode),
     borderRadius: typeof flat.borderRadius === 'number' ? flat.borderRadius : undefined,
     display: 'block',
+    opacity: typeof flat.opacity === 'number' ? flat.opacity : undefined,
+    filter: extra.filter,
+    WebkitFilter: extra.WebkitFilter,
   };
+}
+
+function webWrapperStyle(style: StyleProp<ImageStyle>): StyleProp<ImageStyle> {
+  const flat = StyleSheet.flatten(style) ?? {};
+  return [
+    styles.clip,
+    {
+      width: flat.width,
+      height: flat.height,
+      flex: flat.flex,
+      alignSelf: flat.alignSelf,
+      borderRadius: flat.borderRadius,
+    },
+  ];
 }
 
 export function ResolvedImage({
@@ -102,7 +120,7 @@ export function ResolvedImage({
 
   if (Platform.OS === 'web') {
     return (
-      <View style={[styles.clip, style]}>
+      <View style={webWrapperStyle(style)}>
         {createElement('img', {
           src: resolved,
           alt: '',
