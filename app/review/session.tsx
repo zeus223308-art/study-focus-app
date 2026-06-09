@@ -386,15 +386,6 @@ export default function ReviewSessionScreen() {
   }, [params.bundleId, router]);
 
   const finishAfterComplete = useCallback(() => {
-    const completedSubjectId = slides[index]?.bundle.subjectId;
-    if (completedSubjectId && reviewDate) {
-      const hasMoreForSubject = slides
-        .slice(index + 1)
-        .some((s) => s.bundle.subjectId === completedSubjectId);
-      if (!hasMoreForSubject) {
-        markSubjectReviewCompleted(reviewDate, completedSubjectId);
-      }
-    }
     passAnim.setValue(0);
     passScale.setValue(0.7);
     setRecallStrokes([]);
@@ -410,7 +401,7 @@ export default function ReviewSessionScreen() {
       setSessionCompleteVisible(true);
       runRevealAnim(passAnim, passScale);
     }
-  }, [index, markSubjectReviewCompleted, passAnim, passScale, reviewDate, slides]);
+  }, [index, passAnim, passScale, slides.length]);
 
   const showProblemComplete = useCallback(() => {
     setProblemCompleteVisible(true);
@@ -418,11 +409,15 @@ export default function ReviewSessionScreen() {
   }, [passAnim, passScale]);
 
   const confirmProblemComplete = useCallback(() => {
+    const subjectId = slides[index]?.bundle.subjectId;
+    if (subjectId && reviewDate) {
+      markSubjectReviewCompleted(reviewDate, subjectId);
+    }
     setProblemCompleteVisible(false);
     passAnim.setValue(0);
     passScale.setValue(0.7);
     setPhase('debrief');
-  }, [passAnim, passScale]);
+  }, [index, markSubjectReviewCompleted, passAnim, passScale, reviewDate, slides]);
 
   const dismissSessionComplete = useCallback(() => {
     setSessionCompleteVisible(false);
