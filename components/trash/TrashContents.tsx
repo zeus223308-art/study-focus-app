@@ -131,25 +131,21 @@ function TrashRow({
         { paddingHorizontal: rowPad },
         !last && settingsGroupStyles.rowBorder,
       ]}>
-      <View style={styles.rowMain}>
-        {coverUri ? (
-          <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
-        ) : (
-          <View style={[styles.cover, styles.thumbEmpty]} />
-        )}
-        <Text style={styles.itemName} numberOfLines={2}>
+      {coverUri ? (
+        <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
+      ) : (
+        <View style={[styles.cover, styles.thumbEmpty]} />
+      )}
+      <View style={styles.info}>
+        <Text style={styles.itemName} numberOfLines={1}>
           {name}
         </Text>
         <Text style={styles.meta}>{meta}</Text>
         <CountdownBlock backupExpiresAt={backupExpiresAt} />
-        <Pressable
-          onPress={onRestore}
-          hitSlop={8}
-          style={styles.restoreBtn}
-          accessibilityRole="button">
-          <Text style={styles.restore}>{restoreLabel}</Text>
-        </Pressable>
       </View>
+      <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
+        <Text style={styles.restore}>{restoreLabel}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -254,11 +250,9 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     paddingTop: 12,
     paddingBottom: 8,
-    textAlign: 'center',
   },
   empty: {
     color: theme.gray,
-    textAlign: 'center',
     paddingVertical: 24,
   },
   sectionHeader: {
@@ -268,8 +262,6 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 2,
     marginBottom: 0,
-    textAlign: 'center',
-    alignSelf: 'stretch',
   },
   sectionHeaderSpaced: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -278,25 +270,19 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
     width: '100%',
-    alignItems: 'center',
+    maxWidth: '100%',
     paddingVertical: 12,
   },
-  rowMain: {
-    width: '100%',
-    maxWidth: 280,
-    alignItems: 'center',
-    gap: 8,
-  },
-  itemName: {
-    fontSize: theme.font.body,
-    fontWeight: '600',
-    color: theme.black,
-    textAlign: 'center',
-  },
-  meta: { fontSize: theme.font.caption, color: theme.gray, textAlign: 'center' },
-  countdown: { marginTop: 2, gap: 3, alignItems: 'center', width: '100%' },
+  info: { flex: 1, minWidth: 0, gap: 4 },
+  itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
+  meta: { fontSize: theme.font.caption, color: theme.gray },
+  countdown: { marginTop: 2, gap: 3 },
   remainChip: {
+    alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: theme.radius.pill,
@@ -305,17 +291,18 @@ const styles = StyleSheet.create({
   remainChipUrgent: { backgroundColor: 'rgba(248, 113, 113, 0.18)' },
   remainText: { fontSize: 12, fontWeight: '800', color: theme.gray },
   remainTextUrgent: { color: theme.danger },
-  deadline: { fontSize: 11, color: theme.grayMuted, fontWeight: '600', textAlign: 'center' },
-  cover: { width: COVER, height: COVER, borderRadius: 8 },
+  deadline: { fontSize: 11, color: theme.grayMuted, fontWeight: '600' },
+  cover: { width: COVER, height: COVER, borderRadius: 8, flexShrink: 0 },
   thumbEmpty: { backgroundColor: theme.grayLight },
   restoreBtn: {
-    marginTop: 4,
-    paddingHorizontal: 14,
+    flexShrink: 0,
+    alignSelf: 'center',
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.grayLight,
     backgroundColor: theme.beige,
   },
-  restore: { color: theme.black, fontWeight: '700', fontSize: theme.font.caption, textAlign: 'center' },
+  restore: { color: theme.black, fontWeight: '700', fontSize: theme.font.caption },
 });
