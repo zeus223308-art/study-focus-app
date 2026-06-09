@@ -18,6 +18,7 @@ import {
 } from '@/lib/trash/lifecycle';
 
 const COVER = 48;
+const TRASH_ROW_DATA_SET = { trashRow: '1' } as const;
 
 type DeletedSubject = {
   subjectId: string;
@@ -75,14 +76,7 @@ export function useTrashContents() {
   }, [data.trash, data.subjects]);
 }
 
-/** Remaining-time chip + restore-by deadline shown next to each entry. */
-function CountdownBlock({
-  backupExpiresAt,
-  centered = false,
-}: {
-  backupExpiresAt: string;
-  centered?: boolean;
-}) {
+function CountdownBlock({ backupExpiresAt }: { backupExpiresAt: string }) {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const rem = trashRemaining(backupExpiresAt);
@@ -96,11 +90,11 @@ function CountdownBlock({
         : t('trash.remainMinutes', { minutes: rem.minutes });
 
   return (
-    <View style={[styles.countdown, centered && styles.countdownCentered]}>
+    <View style={styles.countdown}>
       <View style={[styles.remainChip, urgent && styles.remainChipUrgent]}>
         <Text style={[styles.remainText, urgent && styles.remainTextUrgent]}>{remainingText}</Text>
       </View>
-      <Text style={[styles.deadline, centered && styles.textCentered]}>
+      <Text style={styles.deadline}>
         {t('trash.restoreBy', { date: formatTrashDeadline(rem.expiresAt, language) })}
       </Text>
     </View>
@@ -116,7 +110,6 @@ type TrashRowProps = {
   restoreLabel: string;
   onRestore: () => void;
   rowPad: number;
-  centerText?: boolean;
   last?: boolean;
 };
 
@@ -130,7 +123,6 @@ function TrashRow({
   onRestore,
   rowPad,
   last,
-  centerText,
 }: TrashRowProps) {
   return (
     <View
@@ -139,20 +131,27 @@ function TrashRow({
         { paddingHorizontal: rowPad },
         !last && settingsGroupStyles.rowBorder,
       ]}>
-      <View style={styles.row}>
+      <View style={styles.row} {...({ dataSet: TRASH_ROW_DATA_SET } as object)}>
         {coverUri ? (
           <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
         ) : (
           <View style={[styles.cover, styles.thumbEmpty]} />
         )}
-        <View style={[styles.info, centerText && styles.infoCentered]}>
-          <Text style={[styles.itemName, centerText && styles.textCentered]} numberOfLines={1}>
+        <View style={styles.info}>
+          <Text style={styles.itemName} numberOfLines={1}>
             {name}
           </Text>
-          <Text style={[styles.meta, centerText && styles.textCentered]}>{meta}</Text>
-          <CountdownBlock backupExpiresAt={backupExpiresAt} centered={centerText} />
+          <Text style={styles.meta} numberOfLines={1}>
+            {meta}
+          </Text>
+          <CountdownBlock backupExpiresAt={backupExpiresAt} />
         </View>
-        <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
+        <Pressable
+          onPress={onRestore}
+          hitSlop={8}
+          style={styles.restoreBtn}
+          accessibilityRole="button"
+          {...({ dataSet: { trashRestoreBtn: '1' } } as object)}>
           <Text style={styles.restore} numberOfLines={1}>
             {restoreLabel}
           </Text>
@@ -163,7 +162,6 @@ function TrashRow({
 }
 
 type Props = {
-  /** Show the 3-day permanent-deletion notice above the list. */
   showNotice?: boolean;
 };
 
@@ -182,7 +180,6 @@ export function TrashContents({ showNotice = true }: Props) {
       <TrashRow
         key={group.subjectId}
         rowPad={rowPad}
-        centerText
         coverUri={cover}
         coverAsset={group.pages[0]?.asset}
         name={group.name}
@@ -274,9 +271,7 @@ const styles = StyleSheet.create({
     color: theme.black,
     paddingTop: 4,
     paddingBottom: 2,
-    marginBottom: 0,
     textAlign: 'left',
-    alignSelf: 'stretch',
   },
   sectionHeaderSpaced: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -286,25 +281,26 @@ const styles = StyleSheet.create({
   },
   rowWrap: {
     width: '100%',
-    maxWidth: '100%',
     paddingVertical: 12,
-    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
+    flexWrap: 'nowrap',
     alignItems: 'flex-start',
-    gap: 10,
     width: '100%',
-    maxWidth: '100%',
   },
-  info: { flex: 1, minWidth: 0, gap: 4 },
-  infoCentered: { alignItems: 'center' },
-  textCentered: { textAlign: 'center' },
-  itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black, alignSelf: 'stretch' },
-  meta: { fontSize: theme.font.caption, color: theme.gray, alignSelf: 'stretch' },
-  countdown: { marginTop: 2, gap: 3, alignSelf: 'stretch' },
-  countdownCentered: { alignItems: 'center' },
+  info: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    marginLeft: 10,
+    marginRight: 8,
+  },
+  itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
+  meta: { fontSize: theme.font.caption, color: theme.gray, marginTop: 2 },
+  countdown: { marginTop: 4, gap: 3 },
   remainChip: {
+    alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: theme.radius.pill,
@@ -319,7 +315,6 @@ const styles = StyleSheet.create({
   restoreBtn: {
     flexShrink: 0,
     alignSelf: 'center',
-    maxWidth: 84,
     paddingHorizontal: 8,
     paddingVertical: 7,
     borderRadius: theme.radius.pill,
@@ -331,6 +326,5 @@ const styles = StyleSheet.create({
     color: theme.black,
     fontWeight: '700',
     fontSize: theme.font.caption,
-    textAlign: 'center',
   },
 });

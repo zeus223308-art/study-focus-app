@@ -189,4 +189,19 @@ body {
   padding-right: 10px !important;
   box-sizing: border-box !important;
 }
+/* Files trash — keep each entry on one horizontal row on mobile web */
+[data-trash-row="1"] {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+[data-trash-row="1"] [data-trash-restore-btn="1"] {
+  flex-shrink: 0 !important;
+  max-width: 92px !important;
+  box-sizing: border-box !important;
+}
 `;
