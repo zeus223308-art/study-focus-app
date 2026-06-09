@@ -166,6 +166,14 @@ export default function ReviewSessionScreen() {
     data.bundles,
   ]);
 
+  const isDashboardReview = useMemo(() => {
+    const pickedSubjectIds = routeParamString(params.subjectIds)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return pickedSubjectIds.length > 0 && !params.bundleId;
+  }, [params.subjectIds, params.bundleId]);
+
   const initialSlideIndex = useMemo(() => {
     const n = Number.parseInt(routeParamString(params.startPage), 10);
     if (!Number.isFinite(n) || n < 0) return 0;
@@ -403,6 +411,14 @@ export default function ReviewSessionScreen() {
     }
   }, [index, passAnim, passScale, slides.length]);
 
+  const finishDebrief = useCallback(() => {
+    if (isDashboardReview) {
+      finishSession();
+      return;
+    }
+    finishAfterComplete();
+  }, [finishAfterComplete, finishSession, isDashboardReview]);
+
   const showProblemComplete = useCallback(() => {
     setProblemCompleteVisible(true);
     runRevealAnim(passAnim, passScale);
@@ -537,8 +553,14 @@ export default function ReviewSessionScreen() {
           strokes={submittedRecall.strokes}
           textBoxes={submittedRecall.textBoxes}
           bottomInset={insets.bottom}
-          onNext={finishAfterComplete}
-          nextLabel={index < slides.length - 1 ? t('review.next') : t('common.done')}
+          onNext={finishDebrief}
+          nextLabel={
+            isDashboardReview
+              ? t('common.done')
+              : index < slides.length - 1
+                ? t('review.next')
+                : t('common.done')
+          }
         />
       ) : recallMode ? (
         <ScrollView
