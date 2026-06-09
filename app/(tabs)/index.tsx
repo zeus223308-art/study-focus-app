@@ -126,6 +126,7 @@ export default function DashboardScreen() {
       params: {
         reviewDate: selectedDate,
         subjectIds: ids.join(','),
+        memorize: '1',
         startPage: String(
           ids.length === 1
             ? Math.min(

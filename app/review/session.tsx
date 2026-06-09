@@ -90,6 +90,7 @@ export default function ReviewSessionScreen() {
     slideshow?: string;
     blackout?: string;
     reviewDate?: string;
+    memorize?: string;
   }>();
   const {
     dueToday,
@@ -103,6 +104,17 @@ export default function ReviewSessionScreen() {
 
   const reviewDate = routeParamString(params.reviewDate);
   const isBlackout = params.blackout === '1';
+
+  const isDashboardReview = useMemo(() => {
+    const pickedSubjectIds = routeParamString(params.subjectIds)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return pickedSubjectIds.length > 0 && !params.bundleId;
+  }, [params.subjectIds, params.bundleId]);
+
+  const isMemorizeMode =
+    routeParamString(params.memorize) === '1' || isDashboardReview;
 
   const slides = useMemo<Slide[]>(() => {
     const pickedSubjectIds = routeParamString(params.subjectIds)
@@ -140,7 +152,8 @@ export default function ReviewSessionScreen() {
       // If nothing is due on that day, allow manual/extra review (fallback to all in scope).
       bundles = filtered.length > 0 ? filtered : before;
     }
-    const isSlideshow = params.slideshow === '1';
+    const includeBackSlides =
+      params.slideshow === '1' || isMemorizeMode;
     const list: Slide[] = [];
     for (const bundle of bundles) {
       for (const page of bundle.pages) {
@@ -148,7 +161,7 @@ export default function ReviewSessionScreen() {
           continue;
         }
         list.push({ bundle, page, side: 'front' });
-        if (isSlideshow && getAnswerImageUri(page)) {
+        if (includeBackSlides && getAnswerImageUri(page)) {
           list.push({ bundle, page, side: 'back' });
         }
       }
@@ -160,20 +173,13 @@ export default function ReviewSessionScreen() {
     params.subjectIds,
     params.reviewPages,
     params.slideshow,
+    isMemorizeMode,
     reviewDate,
     getSchedule,
     dueSelected,
     dueToday,
     data.bundles,
   ]);
-
-  const isDashboardReview = useMemo(() => {
-    const pickedSubjectIds = routeParamString(params.subjectIds)
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    return pickedSubjectIds.length > 0 && !params.bundleId;
-  }, [params.subjectIds, params.bundleId]);
 
   const initialSlideIndex = useMemo(() => {
     const n = Number.parseInt(routeParamString(params.startPage), 10);
@@ -200,6 +206,9 @@ export default function ReviewSessionScreen() {
   const [textBoxes, setTextBoxes] = useState<ScratchTextBox[]>([]);
   const [problemCompleteVisible, setProblemCompleteVisible] = useState(false);
   const [sessionCompleteVisible, setSessionCompleteVisible] = useState(false);
+  const [memorizeAuto, setMemorizeAuto] = useState(
+    () => routeParamString(params.slideshow) === '1'
+  );
   const [recallScrollLocked, setRecallScrollLocked] = useState(false);
   const [submittedRecall, setSubmittedRecall] = useState<SubmittedRecall | null>(null);
   const [passAnim] = useState(() => new Animated.Value(0));
@@ -303,7 +312,7 @@ export default function ReviewSessionScreen() {
       cancelled = true;
     };
   }, [answerUri, current?.page.answerAsset, current?.page.id]);
-  const auto = params.slideshow === '1';
+  const auto = isMemorizeMode ? memorizeAuto : params.slideshow === '1';
   const isPro = data.settings.tier === 'pro';
 
   const resetSlide = useCallback(() => {
@@ -377,11 +386,44 @@ export default function ReviewSessionScreen() {
   };
 
   useEffect(() => {
-    if (!isBlackout || auto || phase !== 'front' || !current) return;
+    if (!isBlackout || auto || isMemorizeMode || phase !== 'front' || !current) return;
     if (blackoutStartedRef.current) return;
     blackoutStartedRef.current = true;
     startCountdown();
-  }, [index, isBlackout, auto, phase, current]);
+  }, [index, isBlackout, auto, isMemorizeMode, phase, current]);
+
+  const finishMemorizeSession = useCallback(() => {
+    if (isDashboardReview && reviewDate) {
+      const subjectIds = [...new Set(slides.map((s) => s.bundle.subjectId))];
+      for (const sid of subjectIds) {
+        markSubjectReviewCompleted(reviewDate, sid);
+      }
+    }
+    const bundleIds = [...new Set(slides.map((s) => s.bundle.id))];
+    for (const bid of bundleIds) {
+      completeReview(bid);
+    }
+    passAnim.setValue(0);
+    passScale.setValue(0.7);
+    setSessionCompleteVisible(true);
+    runRevealAnim(passAnim, passScale);
+  }, [
+    completeReview,
+    isDashboardReview,
+    markSubjectReviewCompleted,
+    passAnim,
+    passScale,
+    reviewDate,
+    slides,
+  ]);
+
+  const advanceMemorize = useCallback(() => {
+    if (index < slides.length - 1) {
+      setIndex((i) => i + 1);
+      return;
+    }
+    finishMemorizeSession();
+  }, [finishMemorizeSession, index, slides.length]);
 
   const finishSession = useCallback(() => {
     if (params.bundleId) {
@@ -467,13 +509,15 @@ export default function ReviewSessionScreen() {
     const timer = setTimeout(() => {
       if (index < slides.length - 1) {
         setIndex((i) => i + 1);
+      } else if (isMemorizeMode) {
+        finishMemorizeSession();
       }
     }, ms);
     return () => {
       clearTimeout(timer);
       clearInterval(tick);
     };
-  }, [index, auto, current, phase, effectiveSlideMs, slides.length]);
+  }, [index, auto, current, phase, effectiveSlideMs, slides.length, isMemorizeMode, finishMemorizeSession]);
 
   if (slides.length === 0) {
     return (
@@ -495,9 +539,10 @@ export default function ReviewSessionScreen() {
 
   const hasAnswer = Boolean(answerUri);
   const recallMode =
-    phase === 'recall-work' ||
-    phase === 'countdown' ||
-    (isBlackout && phase === 'front');
+    !isMemorizeMode &&
+    (phase === 'recall-work' ||
+      phase === 'countdown' ||
+      (isBlackout && phase === 'front'));
   const debriefMode = phase === 'debrief';
   const problemLiftY = problemShift.interpolate({
     inputRange: [0, 1],
@@ -647,20 +692,78 @@ export default function ReviewSessionScreen() {
             )}
           </View>
 
-          {phase === 'front' && !auto && !isBlackout && (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
-          <Text style={styles.progress}>
-            {index + 1} / {slides.length}
-            {!hasAnswer && ` · ${t('review.pairIncomplete')}`}
-          </Text>
-          {slides.length > 1 ? (
-            <Text style={styles.swipeHint}>{t('review.swipeProblems')}</Text>
+          {phase === 'front' && isMemorizeMode ? (
+            <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
+              <Text style={styles.progress}>
+                {index + 1} / {slides.length}
+              </Text>
+              {slides.length > 1 ? (
+                <Text style={styles.swipeHint}>{t('review.swipeProblems')}</Text>
+              ) : null}
+              <View style={styles.modeRow}>
+                <Pressable
+                  onPress={() => setMemorizeAuto(false)}
+                  style={[styles.modeChip, !auto && styles.modeChipOn]}>
+                  <Text style={[styles.modeChipText, !auto && styles.modeChipTextOn]}>
+                    {t('review.modeManual')}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setMemorizeAuto(true)}
+                  style={[styles.modeChip, auto && styles.modeChipOn]}>
+                  <Text style={[styles.modeChipText, auto && styles.modeChipTextOn]}>
+                    {t('review.modeAuto')}
+                  </Text>
+                </Pressable>
+              </View>
+              {auto ? (
+                <>
+                  <Text style={styles.durationLabel}>{t('review.slideDuration')}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.durationRow}>
+                      <Pressable
+                        onPress={() => setSessionSlideSec(null)}
+                        style={[styles.durationChip, sessionSlideSec === null && styles.durationChipOn]}>
+                        <Text
+                          style={[
+                            styles.durationChipText,
+                            sessionSlideSec === null && styles.durationChipTextOn,
+                          ]}>
+                          {t('common.default')}
+                        </Text>
+                      </Pressable>
+                      {slideSecOptions.map((sec) => (
+                        <Pressable
+                          key={sec}
+                          onPress={() => setSessionSlideSec(sec)}
+                          style={[
+                            styles.durationChip,
+                            sessionSlideSec === sec && styles.durationChipOn,
+                          ]}>
+                          <Text
+                            style={[
+                              styles.durationChipText,
+                              sessionSlideSec === sec && styles.durationChipTextOn,
+                            ]}>
+                            {current.side === 'back'
+                              ? formatAnswerSlideshowLabel(sec)
+                              : t('review.timerSec', { sec })}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </>
+              ) : (
+                <Button
+                  label={index < slides.length - 1 ? t('review.next') : t('common.done')}
+                  onPress={advanceMemorize}
+                />
+              )}
+            </View>
           ) : null}
-          <Button label={t('review.startCountdown')} onPress={startCountdown} />
-        </View>
-          )}
 
-          {phase === 'front' && auto && (
+          {phase === 'front' && !isMemorizeMode && auto ? (
             <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
               <Text style={styles.durationLabel}>{t('review.slideDuration')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -698,7 +801,7 @@ export default function ReviewSessionScreen() {
                 </View>
               </ScrollView>
             </View>
-          )}
+          ) : null}
         </>
       )}
 
@@ -883,6 +986,28 @@ const styles = StyleSheet.create({
   durationChipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
   durationChipText: { fontWeight: '700', color: theme.black, fontSize: theme.font.caption },
   durationChipTextOn: { color: theme.onAccent },
+  modeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 4,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+  },
+  modeChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+    backgroundColor: theme.surface,
+  },
+  modeChipOn: {
+    backgroundColor: theme.orange,
+    borderColor: theme.orange,
+  },
+  modeChipText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.gray },
+  modeChipTextOn: { color: theme.onAccent },
   recallActions: { gap: 8, paddingTop: 4 },
   peekOverlay: { ...StyleSheet.absoluteFill, backgroundColor: theme.beige },
   peekHint: {

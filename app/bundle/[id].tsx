@@ -433,12 +433,15 @@ export default function BundleScreen() {
       </View>
 
       <Button
-        label={t('dashboard.startReview')}
-        variant="secondary"
+        label={t('item.studyPractice')}
         onPress={() =>
           router.push({
             pathname: '/review/session',
-            params: { bundleId: bundle.id },
+            params: {
+              bundleId: bundle.id,
+              blackout: '1',
+              reviewPages: `${bundle.id}:${page.id}`,
+            },
           })
         }
         style={{ marginTop: 8 }}
