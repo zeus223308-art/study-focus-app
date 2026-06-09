@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { CloudBackupSettings } from '@/components/settings/CloudBackupSettings';
+import { ReviewPatternChangeModal } from '@/components/settings/ReviewPatternChangeModal';
 import { ReviewPatternHelpModal } from '@/components/settings/ReviewPatternHelpModal';
 import { SettingsSubjectColorsSection } from '@/components/settings/SettingsSubjectColorsSection';
 import { SettingsTagsSection } from '@/components/settings/SettingsTagsSection';
@@ -36,6 +37,13 @@ export default function SettingsScreen() {
   } = useApp();
   const [photoUpgradeBusy, setPhotoUpgradeBusy] = useState(false);
   const [patternHelpOpen, setPatternHelpOpen] = useState(false);
+  const [patternChange, setPatternChange] = useState<{
+    subjectId: string;
+    subjectName: string;
+    fromLabel: string;
+    toLabel: string;
+    nextScheduleId: string;
+  } | null>(null);
   const { openAppUsageGuide } = useAppUsageGuide();
   const { language, setLanguage } = useLanguage();
   const { settings, schedules, subjects } = data;
@@ -89,7 +97,16 @@ export default function SettingsScreen() {
               key={f.id}
               label={f.name}
               value={folderIntervalLabel(f.reviewScheduleId)}
-              onPress={() => setSubjectSchedule(f.id, toggleFolderScheduleId(f.reviewScheduleId))}
+              onPress={() => {
+                const nextId = toggleFolderScheduleId(f.reviewScheduleId);
+                setPatternChange({
+                  subjectId: f.id,
+                  subjectName: f.name,
+                  fromLabel: folderIntervalLabel(f.reviewScheduleId),
+                  toLabel: folderIntervalLabel(nextId),
+                  nextScheduleId: nextId,
+                });
+              }}
               last={i === subjects.length - 1}
             />
           ))}
@@ -185,6 +202,19 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
       </Screen>
+
+      <ReviewPatternChangeModal
+        visible={patternChange !== null}
+        subjectName={patternChange?.subjectName ?? ''}
+        fromLabel={patternChange?.fromLabel ?? ''}
+        toLabel={patternChange?.toLabel ?? ''}
+        onCancel={() => setPatternChange(null)}
+        onConfirm={() => {
+          if (!patternChange) return;
+          setSubjectSchedule(patternChange.subjectId, patternChange.nextScheduleId);
+          setPatternChange(null);
+        }}
+      />
 
       <ReviewPatternHelpModal
         visible={patternHelpOpen}

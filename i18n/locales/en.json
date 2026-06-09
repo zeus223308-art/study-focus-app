@@ -412,6 +412,10 @@
       "To skip the review pattern or stop reviews for a photo, move it to Archive. Archived photos are not scheduled for review.",
       "Changing a subject's review pattern does not affect photos saved before the change—they keep the pattern from when they were saved. Only new photos saved after the change use the new pattern."
     ],
+    "reviewPatternChangeTitle": "Change review pattern",
+    "reviewPatternChangeNote": "Wait a moment before saving so rapid toggles do not cause errors.",
+    "reviewPatternChangeWait": "You can save in {{seconds}} seconds.",
+    "reviewPatternChangeReady": "You can save now.",
     "premium": "Premium",
     "addPattern": "+ Add",
     "appUsageGuide": "How to use the app",
