@@ -45,7 +45,6 @@ export function RecallWorkCard({
 
   const dismissTextEditing = useCallback(() => {
     setEditingText(false);
-    setActiveBoxId(null);
     Keyboard.dismiss();
   }, []);
 

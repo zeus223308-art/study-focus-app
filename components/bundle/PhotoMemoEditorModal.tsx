@@ -153,7 +153,6 @@ export function PhotoMemoEditorModal({
 
   const dismissTextEditing = () => {
     setEditingText(false);
-    setActiveBoxId(null);
     Keyboard.dismiss();
   };
 

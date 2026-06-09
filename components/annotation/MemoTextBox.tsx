@@ -40,6 +40,11 @@ export function MemoTextBoxView({
   const boxRef = useRef(box);
   boxRef.current = box;
 
+  const interactiveRef = useRef(interactive);
+  const activeRef = useRef(active);
+  interactiveRef.current = interactive;
+  activeRef.current = active;
+
   const [dragDelta, setDragDelta] = useState({ dx: 0, dy: 0 });
   const [resizeLive, setResizeLive] = useState<{ w: number; h: number } | null>(null);
 
@@ -66,12 +71,14 @@ export function MemoTextBoxView({
     setResizeLive(null);
   };
 
+  const canManipulate = () => interactiveRef.current && activeRef.current;
+
   const dragPan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => interactive && active,
-      onStartShouldSetPanResponderCapture: () => interactive && active,
-      onMoveShouldSetPanResponder: () => interactive && active,
-      onMoveShouldSetPanResponderCapture: () => interactive && active,
+      onStartShouldSetPanResponder: () => canManipulate(),
+      onStartShouldSetPanResponderCapture: () => canManipulate(),
+      onMoveShouldSetPanResponder: () => canManipulate(),
+      onMoveShouldSetPanResponderCapture: () => canManipulate(),
       onPanResponderGrant: () => {
         const b = boxRef.current;
         dragOrigin.current = { x: b.x, y: b.y };
@@ -83,16 +90,16 @@ export function MemoTextBoxView({
       onPanResponderRelease: (_, g) => commitDrag(g.dx, g.dy),
       onPanResponderTerminate: (_, g) => commitDrag(g.dx, g.dy),
       onPanResponderTerminationRequest: () => false,
-      onShouldBlockNativeResponder: () => interactive && active,
+      onShouldBlockNativeResponder: () => canManipulate(),
     })
   ).current;
 
   const resizePan = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => interactive && active,
-      onStartShouldSetPanResponderCapture: () => interactive && active,
-      onMoveShouldSetPanResponder: () => interactive && active,
-      onMoveShouldSetPanResponderCapture: () => interactive && active,
+      onStartShouldSetPanResponder: () => canManipulate(),
+      onStartShouldSetPanResponderCapture: () => canManipulate(),
+      onMoveShouldSetPanResponder: () => canManipulate(),
+      onMoveShouldSetPanResponderCapture: () => canManipulate(),
       onPanResponderGrant: () => {
         const b = boxRef.current;
         resizeOrigin.current = { w: b.width, h: b.height };
@@ -107,11 +114,12 @@ export function MemoTextBoxView({
       onPanResponderRelease: (_, g) => commitResize(g.dx, g.dy),
       onPanResponderTerminate: (_, g) => commitResize(g.dx, g.dy),
       onPanResponderTerminationRequest: () => false,
-      onShouldBlockNativeResponder: () => interactive && active,
+      onShouldBlockNativeResponder: () => canManipulate(),
     })
   ).current;
 
-  const showChrome = active && editing;
+  const showControls = active && interactive;
+  const isEditing = active && editing;
   const width = resizeLive?.w ?? box.width;
   const height = resizeLive?.h ?? box.height;
 
@@ -127,11 +135,11 @@ export function MemoTextBoxView({
           backgroundColor: surface.backgroundColor,
           transform: [{ translateX: dragDelta.dx }, { translateY: dragDelta.dy }],
         },
-        showChrome ? styles.textBoxEditing : styles.textBoxIdle,
-        active && !editing && styles.textBoxSelected,
+        isEditing ? styles.textBoxEditing : styles.textBoxIdle,
+        active && !isEditing && styles.textBoxSelected,
       ]}
       pointerEvents={interactive ? 'auto' : 'none'}>
-      {showChrome ? (
+      {showControls ? (
         <View style={styles.textBoxHeader}>
           <View style={styles.dragHandle} {...dragPan.panHandlers}>
             <View style={[styles.dragGrip, { backgroundColor: surface.hintColor }]} />
@@ -141,17 +149,32 @@ export function MemoTextBoxView({
           </Pressable>
         </View>
       ) : null}
-      <TextInput
-        style={[styles.textInput, { color: surface.textColor }]}
-        multiline
-        value={box.text}
-        editable={showChrome}
-        onChangeText={(text) => onChange({ text })}
-        onFocus={onActivate}
-        placeholder={placeholder}
-        placeholderTextColor={surface.placeholderColor}
-      />
-      {showChrome ? (
+      {isEditing ? (
+        <TextInput
+          style={[styles.textInput, { color: surface.textColor }]}
+          multiline
+          value={box.text}
+          editable
+          onChangeText={(text) => onChange({ text })}
+          onFocus={onActivate}
+          placeholder={placeholder}
+          placeholderTextColor={surface.placeholderColor}
+        />
+      ) : (
+        <Pressable
+          style={styles.textBodyTap}
+          onPress={onActivate}
+          disabled={!interactive}>
+          <Text
+            style={[
+              styles.textPreview,
+              { color: box.text.trim() ? surface.textColor : surface.placeholderColor },
+            ]}>
+            {box.text.trim() ? box.text : placeholder}
+          </Text>
+        </Pressable>
+      )}
+      {showControls ? (
         <View style={styles.resizeHandle} {...resizePan.panHandlers}>
           <View style={styles.resizeCorner} />
         </View>
@@ -213,6 +236,15 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     padding: 0,
     backgroundColor: 'transparent',
+  },
+  textBodyTap: {
+    flex: 1,
+    minHeight: 24,
+  },
+  textPreview: {
+    fontSize: 14,
+    textAlignVertical: 'top',
+    opacity: 0.92,
   },
   resizeHandle: {
     position: 'absolute',
