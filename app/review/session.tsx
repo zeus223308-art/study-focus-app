@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { webFixedBackdropStyle, modeChipWebStyle } from '@/lib/ui/web-fixed-overlay';
 import { computeReviewCardSizes } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { useApp } from '@/context/AppContext';
@@ -556,25 +556,30 @@ export default function ReviewSessionScreen() {
     current.side === 'back' ? ANSWER_SLIDESHOW_SECONDS : FRONT_SLIDESHOW_SECONDS;
 
   return (
-    <View style={[styles.root, (recallMode || debriefMode) && styles.rootRecall]}>
+    <View style={[styles.root, (recallMode || debriefMode || isMemorizeMode) && styles.rootRecall]}>
       <View
         style={[
           styles.topBar,
           { paddingTop: insets.top + 8 },
           recallMode && styles.topBarRecall,
           debriefMode && styles.topBarRecall,
+          isMemorizeMode && styles.topBarRecall,
         ]}>
         <View style={styles.topBarLeft}>
-          {auto ? (
-            <Text style={[styles.slideshowProgress, (recallMode || debriefMode) && styles.topBarDarkText]}>
+          {auto || isMemorizeMode ? (
+            <Text
+              style={[
+                styles.slideshowProgress,
+                (recallMode || debriefMode || isMemorizeMode) && styles.topBarDarkText,
+              ]}>
               {index + 1} / {slides.length}
             </Text>
           ) : null}
         </View>
         <View style={styles.topBarRight}>
           {timerDisplaySec !== null && timerDisplaySec > 0 ? (
-            <View style={[styles.timerBadge, recallMode && styles.timerBadgeRecall]}>
-              <Text style={[styles.timerBadgeText, recallMode && styles.topBarDarkText]}>
+            <View style={[styles.timerBadge, (recallMode || isMemorizeMode) && styles.timerBadgeRecall]}>
+              <Text style={[styles.timerBadgeText, (recallMode || isMemorizeMode) && styles.topBarDarkText]}>
                 {timerDisplaySec}
               </Text>
             </View>
@@ -583,7 +588,13 @@ export default function ReviewSessionScreen() {
             style={styles.close}
             onPress={finishSession}
             hitSlop={12}>
-            <Text style={[styles.closeText, (recallMode || debriefMode) && styles.topBarDarkText]}>{t('common.close')}</Text>
+            <Text
+              style={[
+                styles.closeText,
+                (recallMode || debriefMode || isMemorizeMode) && styles.topBarDarkText,
+              ]}>
+              {t('common.close')}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -703,14 +714,14 @@ export default function ReviewSessionScreen() {
               <View style={styles.modeRow}>
                 <Pressable
                   onPress={() => setMemorizeAuto(false)}
-                  style={[styles.modeChip, !auto && styles.modeChipOn]}>
+                  style={[styles.modeChip, modeChipWebStyle, !auto && styles.modeChipOn]}>
                   <Text style={[styles.modeChipText, !auto && styles.modeChipTextOn]}>
                     {t('review.modeManual')}
                   </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setMemorizeAuto(true)}
-                  style={[styles.modeChip, auto && styles.modeChipOn]}>
+                  style={[styles.modeChip, modeChipWebStyle, auto && styles.modeChipOn]}>
                   <Text style={[styles.modeChipText, auto && styles.modeChipTextOn]}>
                     {t('review.modeAuto')}
                   </Text>
@@ -719,7 +730,10 @@ export default function ReviewSessionScreen() {
               {auto ? (
                 <>
                   <Text style={styles.durationLabel}>{t('review.slideDuration')}</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    {...(Platform.OS === 'web' ? { dataSet: { reviewDurationScroll: '1' } } : {})}>
                     <View style={styles.durationRow}>
                       <Pressable
                         onPress={() => setSessionSlideSec(null)}

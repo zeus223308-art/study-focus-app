@@ -16,6 +16,7 @@ import { NotFoundView } from '@/components/ui/NotFoundView';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
+import { webDividerWidth } from '@/lib/ui/web-fixed-overlay';
 import { useApp } from '@/context/AppContext';
 import { attachAnswerToPage } from '@/lib/domain/attach-answer';
 import { mergeCaptureTagPresets } from '@/lib/domain/capture-tags';
@@ -686,7 +687,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
     borderRadius: 0,
     borderWidth: 0,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: webDividerWidth,
     borderTopColor: theme.grayLight,
   },
   labelSpaced: { marginTop: 14 },

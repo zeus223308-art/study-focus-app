@@ -162,6 +162,10 @@ body {
   -webkit-user-select: none !important;
   user-select: none !important;
 }
+[data-review-duration-scroll="1"] {
+  touch-action: pan-x !important;
+  -webkit-overflow-scrolling: touch;
+}
 /* Folder photo long-press actions + drag subject dock — compact pills on mobile web */
 [data-folder-action-bar="1"] {
   width: auto !important;
