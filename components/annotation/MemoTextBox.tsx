@@ -38,7 +38,10 @@ type DragSession = {
   kind: DragKind;
   startPageX: number;
   startPageY: number;
+  wasActive: boolean;
 };
+
+const TAP_SLOP_PX = 8;
 
 function touchPoint(e: GestureResponderEvent): { pageX: number; pageY: number } | null {
   const ne = e.nativeEvent as {
@@ -60,7 +63,8 @@ function touchPoint(e: GestureResponderEvent): { pageX: number; pageY: number } 
   return null;
 }
 
-const DRAG_WEB_STYLE = Platform.OS === 'web' ? ({ touchAction: 'none', cursor: 'grab' } as object) : null;
+const MOVE_WEB_STYLE =
+  Platform.OS === 'web' ? ({ touchAction: 'none', cursor: 'grab' } as object) : null;
 
 export function MemoTextBoxView({
   box,
@@ -82,12 +86,16 @@ export function MemoTextBoxView({
 
   const interactiveRef = useRef(interactive);
   const activeRef = useRef(active);
+  const editingRef = useRef(editing);
   interactiveRef.current = interactive;
   activeRef.current = active;
+  editingRef.current = editing;
 
   const onSelectRef = useRef(onSelect);
+  const onEditRef = useRef(onEdit);
   const onChangeRef = useRef(onChange);
   onSelectRef.current = onSelect;
+  onEditRef.current = onEdit;
   onChangeRef.current = onChange;
 
   const [dragDelta, setDragDelta] = useState({ dx: 0, dy: 0 });
@@ -101,10 +109,6 @@ export function MemoTextBoxView({
     x: Math.max(0, Math.min(surfaceWidth - w, x)),
     y: Math.max(0, Math.min(surfaceHeight - h, y)),
   }), [surfaceHeight, surfaceWidth]);
-
-  const ensureSelected = useCallback(() => {
-    if (!activeRef.current) onSelectRef.current();
-  }, []);
 
   const applyMove = useCallback((dx: number, dy: number) => {
     setDragDelta({ dx, dy });
@@ -146,22 +150,36 @@ export function MemoTextBoxView({
     if (!s) return;
     const dx = pageX - s.startPageX;
     const dy = pageY - s.startPageY;
-    if (s.kind === 'move') commitMove(dx, dy);
-    else commitResize(dx, dy);
+    if (s.kind === 'move') {
+      if (Math.abs(dx) < TAP_SLOP_PX && Math.abs(dy) < TAP_SLOP_PX) {
+        setDragDelta({ dx: 0, dy: 0 });
+        if (!s.wasActive) onSelectRef.current();
+        else if (!editingRef.current) onEditRef.current();
+      } else {
+        if (!s.wasActive) onSelectRef.current();
+        commitMove(dx, dy);
+      }
+    } else {
+      commitResize(dx, dy);
+    }
     sessionRef.current = null;
   }, [commitMove, commitResize]);
 
   const startDrag = useCallback((kind: DragKind, pageX: number, pageY: number) => {
     if (!interactiveRef.current) return;
-    ensureSelected();
     const b = boxRef.current;
     if (kind === 'move') {
       dragOrigin.current = { x: b.x, y: b.y };
     } else {
       resizeOrigin.current = { w: b.width, h: b.height };
     }
-    sessionRef.current = { kind, startPageX: pageX, startPageY: pageY };
-  }, [ensureSelected]);
+    sessionRef.current = {
+      kind,
+      startPageX: pageX,
+      startPageY: pageY,
+      wasActive: activeRef.current,
+    };
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
@@ -218,6 +236,7 @@ export function MemoTextBoxView({
 
   const showControls = active && interactive;
   const isEditing = active && editing;
+  const canMove = interactive && !isEditing;
   const width = resizeLive?.w ?? box.width;
   const height = resizeLive?.h ?? box.height;
 
@@ -236,24 +255,29 @@ export function MemoTextBoxView({
         },
         isEditing ? styles.textBoxEditing : styles.textBoxIdle,
         active && !isEditing && styles.textBoxSelected,
+        canMove && MOVE_WEB_STYLE,
       ]}
-      pointerEvents={interactive ? 'auto' : 'none'}>
+      pointerEvents={interactive ? 'auto' : 'none'}
+      accessibilityRole="adjustable"
+      {...(canMove ? bindDrag('move') : null)}>
       {showControls ? (
-        <View style={styles.textBoxHeader}>
-          <View
-            style={[styles.dragHandle, DRAG_WEB_STYLE]}
-            accessibilityRole="adjustable"
-            {...bindDrag('move')}>
-            <View style={[styles.dragGrip, { backgroundColor: surface.hintColor }]} />
-          </View>
-          <Pressable onPress={onRemove} hitSlop={8} style={styles.deleteChip}>
+        <View
+          onStartShouldSetResponder={() => true}
+          onResponderTerminationRequest={() => false}
+          style={styles.deleteWrap}>
+          <Pressable
+            onPress={onRemove}
+            hitSlop={8}
+            style={styles.deleteChip}
+            accessibilityRole="button"
+            accessibilityLabel="Remove text box">
             <Text style={styles.deleteChipText}>×</Text>
           </Pressable>
         </View>
       ) : null}
       {isEditing ? (
         <TextInput
-          style={[styles.textInput, { color: surface.textColor }]}
+          style={[styles.textInput, showControls && styles.textInputWithDelete, { color: surface.textColor }]}
           multiline
           value={box.text}
           editable
@@ -263,13 +287,7 @@ export function MemoTextBoxView({
           placeholderTextColor={surface.placeholderColor}
         />
       ) : (
-        <Pressable
-          style={styles.textBodyTap}
-          onPress={() => {
-            if (!active) onSelect();
-            else onEdit();
-          }}
-          disabled={!interactive}>
+        <View style={[styles.textBody, showControls && styles.textBodyWithDelete]} pointerEvents="none">
           <Text
             style={[
               styles.textPreview,
@@ -277,11 +295,11 @@ export function MemoTextBoxView({
             ]}>
             {box.text.trim() ? box.text : placeholder}
           </Text>
-        </Pressable>
+        </View>
       )}
       {showControls ? (
         <View
-          style={[styles.resizeHandle, DRAG_WEB_STYLE]}
+          style={[styles.resizeHandle, MOVE_WEB_STYLE]}
           accessibilityRole="adjustable"
           {...bindDrag('resize')}>
           <View style={styles.resizeCorner} />
@@ -295,7 +313,7 @@ const styles = StyleSheet.create({
   textBox: {
     position: 'absolute',
     borderRadius: 6,
-    padding: 4,
+    padding: 6,
   },
   textBoxEditing: {
     borderWidth: 2,
@@ -309,24 +327,11 @@ const styles = StyleSheet.create({
     borderColor: theme.orange,
     borderStyle: 'dashed',
   },
-  textBoxHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-    minHeight: 28,
-    gap: 4,
-  },
-  dragHandle: {
-    flex: 1,
-    minHeight: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dragGrip: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    opacity: 0.55,
+  deleteWrap: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 3,
   },
   deleteChip: {
     width: 22,
@@ -344,9 +349,16 @@ const styles = StyleSheet.create({
     padding: 0,
     backgroundColor: 'transparent',
   },
-  textBodyTap: {
+  textInputWithDelete: {
+    paddingTop: 2,
+    paddingRight: 24,
+  },
+  textBody: {
     flex: 1,
     minHeight: 24,
+  },
+  textBodyWithDelete: {
+    paddingRight: 22,
   },
   textPreview: {
     fontSize: 14,
@@ -357,18 +369,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     bottom: 0,
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
   },
   resizeCorner: {
-    width: 14,
-    height: 14,
+    width: 12,
+    height: 12,
     borderRightWidth: 2,
     borderBottomWidth: 2,
     borderColor: theme.orange,
-    marginRight: 2,
-    marginBottom: 2,
+    marginRight: 1,
+    marginBottom: 1,
+    opacity: 0.7,
   },
 });
