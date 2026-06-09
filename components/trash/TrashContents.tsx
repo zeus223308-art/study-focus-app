@@ -118,12 +118,14 @@ function TrashRow({
 }: TrashRowProps) {
   return (
     <View style={styles.rowOuter}>
-      <View style={[styles.rowBlock, !last && settingsGroupStyles.rowBorder]}>
-        <Text style={styles.itemName} numberOfLines={1}>
-          {name}
-        </Text>
-        <Text style={styles.meta}>{meta}</Text>
-        <CountdownBlock backupExpiresAt={backupExpiresAt} />
+      <View style={[styles.rowInner, !last && settingsGroupStyles.rowBorder]}>
+        <View style={styles.info}>
+          <Text style={styles.itemName} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text style={styles.meta}>{meta}</Text>
+          <CountdownBlock backupExpiresAt={backupExpiresAt} />
+        </View>
         <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
           <Text style={styles.restore}>{restoreLabel}</Text>
         </Pressable>
@@ -248,12 +250,15 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: TRASH_INNER_PAD,
   },
-  rowBlock: {
-    width: '100%',
-    alignItems: 'flex-start',
+  rowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
-    gap: 4,
+    gap: 12,
+    width: '100%',
+    minWidth: 0,
   },
+  info: { flex: 1, minWidth: 0, gap: 4, alignItems: 'flex-start' },
   itemName: {
     width: '100%',
     fontSize: theme.font.body,
@@ -286,8 +291,8 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   restoreBtn: {
-    alignSelf: 'flex-start',
-    marginTop: 6,
+    flexShrink: 0,
+    alignSelf: 'center',
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: theme.radius.pill,
