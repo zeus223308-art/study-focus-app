@@ -62,6 +62,7 @@ export default function BundleScreen() {
     updateSettings,
     setTagColorFor,
     removeCaptureTag,
+    renameCaptureTag,
     setPaywallVisible,
     archiveBundle,
     unarchiveBundle,
@@ -374,6 +375,7 @@ export default function BundleScreen() {
           onChangeSelected={setPageTags}
           onAddPreset={addTagPreset}
           onRemovePreset={removeCaptureTag}
+          onRenamePreset={renameCaptureTag}
           tagColors={data.settings.tagColors}
           tagColorFallback={data.settings.tagColor}
           onSetTagColor={setTagColorFor}

@@ -72,6 +72,7 @@ export default function CaptureTabScreen() {
     updateSettings,
     setTagColorFor,
     removeCaptureTag,
+    renameCaptureTag,
     setPaywallVisible,
   } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
@@ -591,6 +592,7 @@ export default function CaptureTabScreen() {
                   onChangeSelected={setSelectedTags}
                   onAddPreset={addTagPreset}
                   onRemovePreset={removeCaptureTag}
+                  onRenamePreset={renameCaptureTag}
                   tagColors={data.settings.tagColors}
                   tagColorFallback={data.settings.tagColor}
                   onSetTagColor={setTagColorFor}

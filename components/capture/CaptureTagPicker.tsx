@@ -21,7 +21,8 @@ import {
 } from '@/lib/domain/capture-tags';
 import type { Language } from '@/lib/domain/types';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
-import { resolveTagColorFor } from '@/lib/ui/tag-colors';
+import { resolveTagColorFor, tagLabelTextColor } from '@/lib/ui/tag-colors';
+import { showMessage } from '@/lib/ui/confirm';
 
 type Props = {
   presets: string[];
@@ -30,6 +31,7 @@ type Props = {
   onChangeSelected: (tags: string[]) => void;
   onAddPreset: (label: string) => void;
   onRemovePreset: (label: string) => void;
+  onRenamePreset?: (fromLabel: string, toLabel: string) => void;
   /** Per-tag colors keyed by normalized label. */
   tagColors?: Record<string, string>;
   /** Fallback color for tags without an explicit color. */
@@ -45,6 +47,7 @@ type Props = {
 function CaptureTagDeleteModal({
   visible,
   tag,
+  tagColor,
   title,
   hint,
   deleteLabel,
@@ -54,6 +57,7 @@ function CaptureTagDeleteModal({
 }: {
   visible: boolean;
   tag: string;
+  tagColor: string;
   title: string;
   hint: string;
   deleteLabel: string;
@@ -62,6 +66,7 @@ function CaptureTagDeleteModal({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const labelColor = tagLabelTextColor(tagColor);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -71,8 +76,8 @@ function CaptureTagDeleteModal({
           onPress={() => {}}>
           <Text style={modalStyles.title}>{title}</Text>
           <Text style={modalStyles.hint}>{hint}</Text>
-          <View style={modalStyles.tagPill}>
-            <Text style={modalStyles.tagPillText}>{tag}</Text>
+          <View style={[modalStyles.tagPill, { backgroundColor: tagColor }]}>
+            <Text style={[modalStyles.tagPillText, { color: labelColor }]}>{tag}</Text>
           </View>
           <View style={modalStyles.actions}>
             <Pressable style={[modalStyles.btn, modalStyles.btnCancel]} onPress={onClose}>
@@ -88,6 +93,78 @@ function CaptureTagDeleteModal({
   );
 }
 
+function TagChipActionSheet({
+  visible,
+  tag,
+  renameLabel,
+  colorLabel,
+  deleteLabel,
+  cancelLabel,
+  showDelete,
+  showColor,
+  showRename,
+  onRename,
+  onColor,
+  onDelete,
+  onClose,
+}: {
+  visible: boolean;
+  tag: string;
+  renameLabel: string;
+  colorLabel: string;
+  deleteLabel: string;
+  cancelLabel: string;
+  showDelete: boolean;
+  showColor: boolean;
+  showRename: boolean;
+  onRename: () => void;
+  onColor: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable style={sheetStyles.backdrop} onPress={onClose}>
+        <Pressable
+          style={[sheetStyles.sheet, { paddingBottom: Math.max(28, insets.bottom + 12) }]}
+          onPress={() => {}}>
+          <View style={sheetStyles.handle} />
+          <Text style={sheetStyles.tagTitle} numberOfLines={1}>
+            {tag}
+          </Text>
+          {showRename ? (
+            <Pressable style={sheetStyles.row} onPress={onRename}>
+              <Text style={sheetStyles.rowText}>{renameLabel}</Text>
+            </Pressable>
+          ) : null}
+          {showColor ? (
+            <Pressable
+              style={[sheetStyles.row, showRename && sheetStyles.rowBorder]}
+              onPress={onColor}>
+              <Text style={sheetStyles.rowText}>{colorLabel}</Text>
+            </Pressable>
+          ) : null}
+          {showDelete ? (
+            <Pressable
+              style={[
+                sheetStyles.row,
+                (showRename || showColor) && sheetStyles.rowBorder,
+              ]}
+              onPress={onDelete}>
+              <Text style={[sheetStyles.rowText, sheetStyles.deleteText]}>{deleteLabel}</Text>
+            </Pressable>
+          ) : null}
+          <Pressable style={sheetStyles.cancelRow} onPress={onClose}>
+            <Text style={sheetStyles.cancelText}>{cancelLabel}</Text>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 export function CaptureTagPicker({
   presets,
   selectedTags,
@@ -95,6 +172,7 @@ export function CaptureTagPicker({
   onChangeSelected,
   onAddPreset,
   onRemovePreset,
+  onRenamePreset,
   tagColors,
   tagColorFallback,
   onSetTagColor,
@@ -105,6 +183,9 @@ export function CaptureTagPicker({
   const { t } = useTranslation();
   const [addVisible, setAddVisible] = useState(false);
   const [draftLabel, setDraftLabel] = useState('');
+  const [actionTag, setActionTag] = useState<string | null>(null);
+  const [renameTag, setRenameTag] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
   const [colorTag, setColorTag] = useState<string | null>(null);
   const colorEnabled = Boolean(onSetTagColor);
@@ -147,16 +228,53 @@ export function CaptureTagPicker({
     setColorTag(null);
   };
 
-  const openDelete = (tag: string) => {
-    if (disabled || !canDeleteCaptureTagPreset(tag, language)) return;
-    setDeleteTag(tag);
+  const closeAction = () => setActionTag(null);
+
+  const openRename = () => {
+    if (!actionTag) return;
+    setRenameTag(actionTag);
+    setRenameDraft(actionTag);
+    closeAction();
   };
 
-  const removePresetNow = (tag: string) => {
-    if (disabled || !canDeleteCaptureTagPreset(tag, language)) return;
-    onRemovePreset(tag);
-    const key = normalizeCaptureTagLabel(tag).toLowerCase();
-    onChangeSelected(selectedTags.filter((s) => s.toLowerCase() !== key));
+  const closeRename = () => {
+    setRenameTag(null);
+    setRenameDraft('');
+  };
+
+  const confirmRename = () => {
+    if (!renameTag) return;
+    const normalized = normalizeCaptureTagLabel(renameDraft);
+    if (!normalized) return;
+    const fromKey = renameTag.toLowerCase();
+    const toKey = normalized.toLowerCase();
+    if (
+      fromKey !== toKey &&
+      displayTags.some((t) => t.toLowerCase() === toKey && t.toLowerCase() !== fromKey)
+    ) {
+      showMessage(t('settings.tagsDuplicate'));
+      return;
+    }
+    if (fromKey !== toKey) {
+      if (!onRenamePreset) return;
+      onRenamePreset(renameTag, normalized);
+      onChangeSelected(
+        selectedTags.map((s) => (s.toLowerCase() === fromKey ? normalized : s))
+      );
+    }
+    closeRename();
+  };
+
+  const openColorFromAction = () => {
+    if (!actionTag || !colorEnabled) return;
+    setColorTag(actionTag);
+    closeAction();
+  };
+
+  const openDeleteFromAction = () => {
+    if (!actionTag || !canDeleteCaptureTagPreset(actionTag, language)) return;
+    setDeleteTag(actionTag);
+    closeAction();
   };
 
   const closeDelete = () => setDeleteTag(null);
@@ -168,6 +286,11 @@ export function CaptureTagPicker({
     const key = normalizeCaptureTagLabel(label).toLowerCase();
     onChangeSelected(selectedTags.filter((s) => s.toLowerCase() !== key));
     closeDelete();
+  };
+
+  const openActions = (tag: string) => {
+    if (disabled) return;
+    setActionTag(tag);
   };
 
   return (
@@ -186,43 +309,27 @@ export function CaptureTagPicker({
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
         {displayTags.map((tag) => {
-          const deletable = canDeleteCaptureTagPreset(tag, language);
           const on = isOn(tag);
+          const bg = colorForTag(tag);
+          const textColor = tagLabelTextColor(bg);
           return (
-            <View key={tag} style={[styles.chip, on && styles.chipOn]}>
-              {colorEnabled ? (
-                <Pressable
-                  disabled={disabled}
-                  onPress={() => setColorTag(tag)}
-                  hitSlop={6}
-                  style={styles.chipColorDot}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('capture.pickTagColor')}>
-                  <View
-                    style={[styles.chipColorDotInner, { backgroundColor: colorForTag(tag) }]}
-                  />
-                </Pressable>
-              ) : null}
-              <Pressable
-                disabled={disabled}
-                onPress={() => onChangeSelected(toggleCaptureTag(selectedTags, tag))}
-                onLongPress={deletable ? () => openDelete(tag) : undefined}
-                delayLongPress={450}
-                style={styles.chipLabelHit}>
-                <Text style={[styles.chipText, on && styles.chipTextOn]}>{tag}</Text>
-              </Pressable>
-              {deletable ? (
-                <Pressable
-                  disabled={disabled}
-                  onPress={() => removePresetNow(tag)}
-                  hitSlop={8}
-                  style={styles.chipDelete}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('capture.deleteTagConfirm')}>
-                  <Text style={[styles.chipDeleteText, on && styles.chipTextOn]}>×</Text>
-                </Pressable>
-              ) : null}
-            </View>
+            <Pressable
+              key={tag}
+              disabled={disabled}
+              onPress={() => onChangeSelected(toggleCaptureTag(selectedTags, tag))}
+              onLongPress={() => openActions(tag)}
+              delayLongPress={450}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[
+                styles.chip,
+                { backgroundColor: bg },
+                on ? styles.chipOn : styles.chipOff,
+              ]}>
+              <Text style={[styles.chipText, { color: textColor }]} numberOfLines={1}>
+                {tag}
+              </Text>
+            </Pressable>
           );
         })}
         <Pressable
@@ -247,9 +354,39 @@ export function CaptureTagPicker({
         onClose={closeAdd}
       />
 
+      <SendToNewFolderModal
+        visible={renameTag !== null}
+        title={t('capture.renameTagTitle')}
+        hint={t('capture.renameTagHint')}
+        name={renameDraft}
+        placeholder={t('capture.addTagPlaceholder')}
+        sendLabel={t('common.save')}
+        cancelLabel={t('common.cancel')}
+        onChangeName={setRenameDraft}
+        onSend={confirmRename}
+        onClose={closeRename}
+      />
+
+      <TagChipActionSheet
+        visible={actionTag !== null}
+        tag={actionTag ?? ''}
+        renameLabel={t('capture.tagActionRename')}
+        colorLabel={t('capture.tagActionColor')}
+        deleteLabel={t('capture.deleteTagConfirm')}
+        cancelLabel={t('common.cancel')}
+        showDelete={actionTag ? canDeleteCaptureTagPreset(actionTag, language) : false}
+        showColor={colorEnabled}
+        showRename={Boolean(onRenamePreset)}
+        onRename={openRename}
+        onColor={openColorFromAction}
+        onDelete={openDeleteFromAction}
+        onClose={closeAction}
+      />
+
       <CaptureTagDeleteModal
         visible={deleteTag !== null}
         tag={deleteTag ?? ''}
+        tagColor={deleteTag ? colorForTag(deleteTag) : theme.surface}
         title={t('capture.deleteTagTitle')}
         hint={t('capture.deleteTagHint')}
         deleteLabel={t('capture.deleteTagConfirm')}
@@ -294,53 +431,102 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.orange,
   },
-  chips: { marginVertical: 12 },
+  chips: { marginVertical: 8 },
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 10,
-    paddingRight: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: theme.radius.pill,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    marginRight: 8,
-    backgroundColor: theme.surface,
-  },
-  chipOn: { backgroundColor: theme.orange, borderColor: theme.orange },
-  chipColorDot: {
-    paddingVertical: 12,
-    paddingRight: 6,
+    marginRight: 6,
+    minHeight: 26,
     justifyContent: 'center',
-  },
-  chipColorDotInner: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'transparent',
   },
-  chipLabelHit: { paddingVertical: 12, paddingRight: 4 },
-  chipText: { fontWeight: '700', color: theme.black },
-  chipTextOn: { color: theme.onAccent },
-  chipDelete: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 2,
+  chipOn: {
+    borderColor: 'rgba(255,255,255,0.85)',
   },
-  chipDeleteText: { fontSize: 16, fontWeight: '800', color: theme.gray, lineHeight: 18 },
+  chipOff: {
+    opacity: 0.52,
+  },
+  chipText: {
+    fontSize: theme.font.label,
+    fontWeight: '700',
+    lineHeight: 14,
+  },
   addChip: {
-    minWidth: 48,
-    paddingLeft: 0,
-    paddingRight: 0,
-    paddingVertical: 12,
+    minWidth: 34,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: theme.surface,
+    borderColor: theme.grayLight,
     borderStyle: 'dashed',
+    opacity: 1,
   },
-  addChipText: { fontSize: 22, fontWeight: '800', color: theme.orange, lineHeight: 26 },
+  addChipText: { fontSize: 18, fontWeight: '800', color: theme.orange, lineHeight: 20 },
+});
+
+const sheetStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+    ...Platform.select({
+      web: { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0 },
+      default: {},
+    }),
+  },
+  sheet: {
+    backgroundColor: theme.beige,
+    borderTopLeftRadius: theme.radius.lg,
+    borderTopRightRadius: theme.radius.lg,
+    paddingTop: 10,
+    paddingHorizontal: 24,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 320,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.grayLight,
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
+  tagTitle: {
+    fontSize: theme.font.caption,
+    fontWeight: '800',
+    color: theme.grayMuted,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  row: {
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  rowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.grayLight,
+  },
+  rowText: {
+    ...BUTTON_LABEL_DEFAULT,
+    color: theme.black,
+  },
+  deleteText: {
+    color: theme.danger,
+  },
+  cancelRow: {
+    marginTop: 6,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.grayLight,
+  },
+  cancelText: {
+    ...BUTTON_LABEL_DEFAULT,
+    color: theme.gray,
+  },
 });
 
 const modalStyles = StyleSheet.create({
@@ -377,14 +563,11 @@ const modalStyles = StyleSheet.create({
   },
   tagPill: {
     alignSelf: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: theme.radius.pill,
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
   },
-  tagPillText: { fontWeight: '800', color: theme.black, fontSize: theme.font.body },
+  tagPillText: { fontWeight: '800', fontSize: theme.font.caption },
   actions: {
     flexDirection: 'row',
     gap: 10,
