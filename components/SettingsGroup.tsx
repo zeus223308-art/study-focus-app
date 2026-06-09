@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: theme.grayLight,
+    maxWidth: '100%',
   },
   row: {
     flexDirection: 'row',

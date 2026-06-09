@@ -1,5 +1,5 @@
 import { forwardRef, ReactNode } from 'react';
-import { View, type ViewStyle } from 'react-native';
+import { Platform, View, type ViewStyle } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dockTopContentInset } from '@/components/DockTabBar';
@@ -67,7 +67,11 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
     return (
       <ScrollView
         ref={ref}
-        style={[screenLayoutStyles.root, fill && screenLayoutStyles.rootFill]}
+        style={[
+          screenLayoutStyles.root,
+          fill && screenLayoutStyles.rootFill,
+          Platform.OS === 'web' ? { overflow: 'hidden' as const } : null,
+        ]}
         scrollEnabled={scrollEnabled}
         contentContainerStyle={{
           paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD + (viewport.isLandscape ? 32 : 0),
