@@ -79,7 +79,7 @@ export function settingsRowPad(isPhone: boolean): number {
 /** Tab screens (dashboard, files, settings) — inset from edges so content is not clipped on mobile web. */
 export function tabHorizontalPadding(isPhone: boolean, isLandscape: boolean): number {
   if (!isPhone) return isLandscape ? 16 : 24;
-  return isLandscape ? 20 : 25;
+  return isLandscape ? 22 : 25;
 }
 
 /** @deprecated Use vaultPanelPad(isPhone) — default for non-viewport call sites. */
