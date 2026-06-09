@@ -68,12 +68,18 @@ export function computePagerSize(width: number, height: number, deviceClass: Dev
 
 /** Files tab white panel inset — keep tight on phone to avoid horizontal clip on mobile web. */
 export function vaultPanelPad(isPhone: boolean): number {
-  return isPhone ? 4 : 14;
+  return isPhone ? 2 : 14;
 }
 
 /** Settings rows / in-panel lists on phone. */
 export function settingsRowPad(isPhone: boolean): number {
-  return isPhone ? 10 : 16;
+  return isPhone ? 8 : 16;
+}
+
+/** Tab screens (dashboard, files, settings) — inset from edges so content is not clipped on mobile web. */
+export function tabHorizontalPadding(isPhone: boolean, isLandscape: boolean): number {
+  if (!isPhone) return isLandscape ? 16 : 24;
+  return isLandscape ? 8 : 10;
 }
 
 /** @deprecated Use vaultPanelPad(isPhone) — default for non-viewport call sites. */
@@ -204,12 +210,12 @@ export function useViewportLayout(): ViewportLayout {
 
     const horizontalPadding = isLandscape
       ? isPhone
-        ? 4
+        ? tabHorizontalPadding(isPhone, true)
         : deviceClass === 'tablet'
           ? 16
           : 20
       : isPhone
-        ? 4
+        ? tabHorizontalPadding(isPhone, false)
         : deviceClass === 'tablet'
           ? 24
           : 32;
