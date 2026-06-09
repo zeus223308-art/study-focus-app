@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CapturePhotoEditor } from '@/components/capture/CapturePhotoEditor';
 import { theme } from '@/constants/theme';
-import { webFixedModalRootStyle } from '@/lib/ui/web-fixed-overlay';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type Props = {
   visible: boolean;
@@ -18,7 +18,7 @@ export function PhotoCropModal({ visible, uri, sideLabel, onConfirm, onClose }: 
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={[styles.root, webFixedModalRootStyle, { paddingTop: insets.top }]}>
+      <View style={[styles.root, { paddingTop: insets.top }]}>
         <CapturePhotoEditor
           uri={uri}
           sideLabel={sideLabel}
@@ -34,5 +34,5 @@ export function PhotoCropModal({ visible, uri, sideLabel, onConfirm, onClose }: 
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.blackPure },
+  root: { flex: 1, backgroundColor: theme.blackPure, ...webFixedBackdropStyle },
 });

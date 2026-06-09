@@ -4,6 +4,7 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { RecallWorkCard, type ScratchTextBox } from '@/components/review/RecallWorkCard';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
+import { webHairlineTop } from '@/lib/ui/web-divider';
 import type { InkStroke } from '@/lib/domain/types';
 
 type Props = {
@@ -133,7 +134,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     backgroundColor: theme.beige,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
+    ...webHairlineTop,
   },
 });

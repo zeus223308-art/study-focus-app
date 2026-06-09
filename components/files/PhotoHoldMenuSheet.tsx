@@ -2,6 +2,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
+import { webHairlineTop } from '@/lib/ui/web-divider';
 import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_LINK } from '@/lib/ui/button-label';
 
@@ -75,10 +76,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  rowBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
-  },
+  rowBorder: webHairlineTop,
   rowText: {
     ...BUTTON_LABEL_DEFAULT,
     color: theme.black,
@@ -87,8 +85,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 14,
     alignItems: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.grayLight,
+    ...webHairlineTop,
   },
   cancelText: {
     ...BUTTON_LABEL_LINK,

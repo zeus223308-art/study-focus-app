@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import { SettingsGroup } from '@/components/SettingsGroup';
 import { DragMoveGhost } from '@/components/files/DragMoveGhost';
 import { SendToNewFolderModal } from '@/components/files/SendToNewFolderModal';
@@ -40,6 +40,7 @@ export default function FilesScreen() {
     cancelSubjectMerge,
     setPaywallVisible,
   } = useApp();
+  const { width: windowWidth } = useWindowDimensions();
   const viewport = useViewportLayout();
   const panelPad = vaultPanelPad(viewport.isPhone);
   const trash = useTrashContents();
@@ -114,10 +115,7 @@ export default function FilesScreen() {
     t,
   ]);
 
-  const pageWidth =
-    panelWidth > 0
-      ? panelWidth
-      : Math.max(280, viewport.width - viewport.horizontalPadding * 2);
+  const pageWidth = panelWidth > 0 ? panelWidth : Math.max(280, windowWidth - 40);
 
   const foldersPerPage = useMemo(() => {
     const basis = panelWidth > 0 ? panelWidth : viewport.width;

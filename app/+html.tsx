@@ -162,10 +162,6 @@ body {
   -webkit-user-select: none !important;
   user-select: none !important;
 }
-[data-review-duration-scroll="1"] {
-  touch-action: pan-x !important;
-  -webkit-overflow-scrolling: touch;
-}
 /* Folder photo long-press actions + drag subject dock — compact pills on mobile web */
 [data-folder-action-bar="1"] {
   width: auto !important;
@@ -187,36 +183,6 @@ body {
   max-width: 148px !important;
   padding-left: 10px !important;
   padding-right: 10px !important;
-  box-sizing: border-box !important;
-}
-/* Files trash — symmetric inset; row must not overflow padded wrap on mobile web */
-[data-trash-row-wrap="1"] {
-  box-sizing: border-box !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-}
-[data-trash-row="1"] {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  align-items: flex-start !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-}
-[data-trash-row-info="1"] {
-  flex: 1 1 0% !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-}
-[data-trash-row="1"] [data-trash-restore-btn="1"] {
-  flex-shrink: 0 !important;
-  flex-grow: 0 !important;
-  max-width: 76px !important;
   box-sizing: border-box !important;
 }
 `;

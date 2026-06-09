@@ -16,7 +16,6 @@ import { NotFoundView } from '@/components/ui/NotFoundView';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Screen } from '@/components/ui/Screen';
 import { theme } from '@/constants/theme';
-import { webDividerWidth } from '@/lib/ui/web-fixed-overlay';
 import { useApp } from '@/context/AppContext';
 import { attachAnswerToPage } from '@/lib/domain/attach-answer';
 import { mergeCaptureTagPresets } from '@/lib/domain/capture-tags';
@@ -34,6 +33,8 @@ import { safeRouterBack } from '@/lib/navigation/safe-back';
 import { getAnswerImageUri } from '@/lib/review/answer-text';
 import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
+import { WEB_LINE } from '@/lib/ui/web-divider';
+import { WebDividerLine } from '@/lib/ui/WebDividerLine';
 import { computeBundlePhotoLayout, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 function newLayer(studyDate: string): NoteLayer {
@@ -449,12 +450,14 @@ export default function BundleScreen() {
           }
           style={styles.actionBtn}
         />
+        <WebDividerLine />
         <Button
           label={t('common.save')}
           variant="secondary"
           onPress={() => showMessage('', t('capture.saved'))}
-          style={styles.actionBtnDivider}
+          style={styles.actionBtn}
         />
+        <WebDividerLine />
         <Button
           label={bundle.archived ? t('folder.restoreFromArchive') : t('item.archive')}
           variant="secondary"
@@ -465,14 +468,16 @@ export default function BundleScreen() {
             }
             setArchivePickerOpen(true);
           }}
-          style={styles.actionBtnDivider}
+          style={styles.actionBtn}
         />
+        <WebDividerLine />
         <Button
           label={t('item.deletePhoto')}
           variant="secondary"
           onPress={confirmDeleteCurrentPage}
-          style={styles.actionBtnDivider}
+          style={styles.actionBtn}
         />
+        <WebDividerLine />
         <Button
           label={t('item.deleteAll')}
           variant="ghost"
@@ -488,7 +493,7 @@ export default function BundleScreen() {
               },
             });
           }}
-          style={styles.actionBtnDivider}
+          style={styles.actionBtn}
         />
       </View>
 
@@ -673,7 +678,7 @@ const styles = StyleSheet.create({
   actionStack: {
     marginTop: 8,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: WEB_LINE,
     borderColor: theme.grayLight,
     overflow: 'hidden',
     backgroundColor: theme.surface,
@@ -682,13 +687,6 @@ const styles = StyleSheet.create({
     marginTop: 0,
     borderRadius: 0,
     borderWidth: 0,
-  },
-  actionBtnDivider: {
-    marginTop: 0,
-    borderRadius: 0,
-    borderWidth: 0,
-    borderTopWidth: webDividerWidth,
-    borderTopColor: theme.grayLight,
   },
   labelSpaced: { marginTop: 14 },
   secRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },

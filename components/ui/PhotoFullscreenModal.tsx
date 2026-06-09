@@ -16,7 +16,6 @@ import { FullscreenInkControls } from '@/components/annotation/FullscreenInkCont
 import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink-flow';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
-import { webFixedModalRootStyle } from '@/lib/ui/web-fixed-overlay';
 import { isHighlighterTool } from '@/lib/domain/ink-sizes';
 import type { InkToolId, NoteLayer } from '@/lib/domain/types';
 import { useFullscreenViewerLayout } from '@/lib/ui/fullscreen-viewer-layout';
@@ -166,7 +165,6 @@ export function PhotoFullscreenModal({
       <View
         style={[
           styles.root,
-          webFixedModalRootStyle,
           {
             paddingTop: insets.top + (layout.isPhone ? 4 : 8),
             paddingBottom: insets.bottom + (layout.isPhone ? 4 : 8),

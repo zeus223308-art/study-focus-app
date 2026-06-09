@@ -112,7 +112,7 @@ export function DashboardReviewPicker({
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 4, overflow: 'hidden' },
+  wrap: { marginTop: 4 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

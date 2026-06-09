@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { WEB_LINE, webHairlineBottom } from '@/lib/ui/web-divider';
 import { settingsRowPad, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export function SettingsGroup({ title, children }: { title?: string; children: ReactNode }) {
@@ -68,9 +69,8 @@ const styles = StyleSheet.create({
     backgroundColor: theme.surface,
     borderRadius: 12,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: WEB_LINE,
     borderColor: theme.grayLight,
-    maxWidth: '100%',
   },
   row: {
     flexDirection: 'row',
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     minHeight: 42,
   },
-  rowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.grayLight },
+  rowBorder: webHairlineBottom,
   label: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
   value: { fontSize: theme.font.body, fontWeight: '600', color: theme.gray },
 });

@@ -9,7 +9,6 @@ import { useApp, useLanguage } from '@/context/AppContext';
 import type { NotePage, TrashLifecycle } from '@/lib/domain/types';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { formatTrashDeadline } from '@/lib/ui/format-study-date';
-import { settingsRowPad, useViewportLayout } from '@/lib/ui/viewport-layout';
 import {
   canRestoreFromBackup,
   filterActiveTrash,
@@ -18,9 +17,6 @@ import {
 } from '@/lib/trash/lifecycle';
 
 const COVER = 48;
-const TRASH_ROW_WRAP_DATA_SET = { trashRowWrap: '1' } as const;
-const TRASH_ROW_DATA_SET = { trashRow: '1' } as const;
-const TRASH_ROW_INFO_DATA_SET = { trashRowInfo: '1' } as const;
 
 type DeletedSubject = {
   subjectId: string;
@@ -78,6 +74,7 @@ export function useTrashContents() {
   }, [data.trash, data.subjects]);
 }
 
+/** Remaining-time chip + restore-by deadline shown next to each entry. */
 function CountdownBlock({ backupExpiresAt }: { backupExpiresAt: string }) {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -96,7 +93,7 @@ function CountdownBlock({ backupExpiresAt }: { backupExpiresAt: string }) {
       <View style={[styles.remainChip, urgent && styles.remainChipUrgent]}>
         <Text style={[styles.remainText, urgent && styles.remainTextUrgent]}>{remainingText}</Text>
       </View>
-      <Text style={styles.deadline} numberOfLines={2}>
+      <Text style={styles.deadline}>
         {t('trash.restoreBy', { date: formatTrashDeadline(rem.expiresAt, language) })}
       </Text>
     </View>
@@ -111,7 +108,6 @@ type TrashRowProps = {
   backupExpiresAt: string;
   restoreLabel: string;
   onRestore: () => void;
-  rowPad: number;
   last?: boolean;
 };
 
@@ -123,48 +119,31 @@ function TrashRow({
   backupExpiresAt,
   restoreLabel,
   onRestore,
-  rowPad,
   last,
 }: TrashRowProps) {
   return (
-    <View
-      style={[
-        styles.rowWrap,
-        { paddingHorizontal: rowPad },
-        !last && settingsGroupStyles.rowBorder,
-      ]}
-      {...({ dataSet: TRASH_ROW_WRAP_DATA_SET } as object)}>
-      <View style={styles.row} {...({ dataSet: TRASH_ROW_DATA_SET } as object)}>
-        {coverUri ? (
-          <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
-        ) : (
-          <View style={[styles.cover, styles.thumbEmpty]} />
-        )}
-        <View style={styles.info} {...({ dataSet: TRASH_ROW_INFO_DATA_SET } as object)}>
-          <Text style={styles.itemName} numberOfLines={1}>
-            {name}
-          </Text>
-          <Text style={styles.meta} numberOfLines={1}>
-            {meta}
-          </Text>
-          <CountdownBlock backupExpiresAt={backupExpiresAt} />
-        </View>
-        <Pressable
-          onPress={onRestore}
-          hitSlop={8}
-          style={styles.restoreBtn}
-          accessibilityRole="button"
-          {...({ dataSet: { trashRestoreBtn: '1' } } as object)}>
-          <Text style={styles.restore} numberOfLines={1}>
-            {restoreLabel}
-          </Text>
-        </Pressable>
+    <View style={[settingsGroupStyles.row, styles.rowTall, !last && settingsGroupStyles.rowBorder]}>
+      {coverUri ? (
+        <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
+      ) : (
+        <View style={[styles.cover, styles.thumbEmpty]} />
+      )}
+      <View style={styles.info}>
+        <Text style={styles.itemName} numberOfLines={1}>
+          {name}
+        </Text>
+        <Text style={styles.meta}>{meta}</Text>
+        <CountdownBlock backupExpiresAt={backupExpiresAt} />
       </View>
+      <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
+        <Text style={styles.restore}>{restoreLabel}</Text>
+      </Pressable>
     </View>
   );
 }
 
 type Props = {
+  /** Show the 3-day permanent-deletion notice above the list. */
   showNotice?: boolean;
 };
 
@@ -172,8 +151,6 @@ type Props = {
 export function TrashContents({ showNotice = true }: Props) {
   const { t } = useTranslation();
   const { restoreTrash, restoreSubjectTrash } = useApp();
-  const viewport = useViewportLayout();
-  const rowPad = settingsRowPad(viewport.isPhone) + (viewport.isPhone ? 4 : 0);
   const { deletedSubjects, photoEntries, isEmpty } = useTrashContents();
 
   const subjectRows = deletedSubjects.map((group, index) => {
@@ -182,7 +159,6 @@ export function TrashContents({ showNotice = true }: Props) {
     return (
       <TrashRow
         key={group.subjectId}
-        rowPad={rowPad}
         coverUri={cover}
         coverAsset={group.pages[0]?.asset}
         name={group.name}
@@ -205,7 +181,6 @@ export function TrashContents({ showNotice = true }: Props) {
     return (
       <TrashRow
         key={entry.id}
-        rowPad={rowPad}
         coverUri={cover}
         coverAsset={pages[0]?.asset}
         name={entry.subjectSnapshot?.name ?? t('trash.photosHeader')}
@@ -220,19 +195,15 @@ export function TrashContents({ showNotice = true }: Props) {
 
   return (
     <>
-      {showNotice ? (
-        <Text style={[styles.notice, { paddingHorizontal: rowPad }]}>{t('trash.autoDeleteHint')}</Text>
-      ) : null}
+      {showNotice ? <Text style={styles.notice}>{t('trash.autoDeleteHint')}</Text> : null}
 
       {isEmpty ? (
-        <Text style={[styles.empty, { paddingHorizontal: rowPad }]}>{t('trash.empty')}</Text>
+        <Text style={styles.empty}>{t('trash.empty')}</Text>
       ) : (
         <>
           {deletedSubjects.length > 0 ? (
             <>
-              <Text style={[styles.sectionHeader, { paddingHorizontal: rowPad }]}>
-                {t('trash.subjectsHeader')}
-              </Text>
+              <Text style={styles.sectionHeader}>{t('trash.subjectsHeader')}</Text>
               {subjectRows}
             </>
           ) : null}
@@ -242,7 +213,6 @@ export function TrashContents({ showNotice = true }: Props) {
               <Text
                 style={[
                   styles.sectionHeader,
-                  { paddingHorizontal: rowPad },
                   deletedSubjects.length > 0 && styles.sectionHeaderSpaced,
                 ]}>
                 {t('trash.photosHeader')}
@@ -261,20 +231,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.gray,
     lineHeight: 19,
+    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
   },
   empty: {
     color: theme.gray,
+    textAlign: 'center',
     paddingVertical: 24,
+    paddingHorizontal: 16,
   },
   sectionHeader: {
+    ...settingsGroupStyles.title,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 2,
+    marginBottom: 0,
+    marginLeft: 0,
+    textTransform: 'none',
+    letterSpacing: 0,
     fontSize: theme.font.bodySmall,
     fontWeight: '800',
     color: theme.black,
-    paddingTop: 4,
-    paddingBottom: 2,
-    textAlign: 'left',
   },
   sectionHeaderSpaced: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -282,30 +260,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingTop: 12,
   },
-  rowWrap: {
-    width: '100%',
-    maxWidth: '100%',
-    overflow: 'hidden',
-    paddingVertical: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    flexWrap: 'nowrap',
+  rowTall: {
     alignItems: 'flex-start',
-    maxWidth: '100%',
-    alignSelf: 'stretch',
+    paddingVertical: 12,
+    gap: 12,
   },
-  info: {
-    flex: 1,
-    flexShrink: 1,
-    minWidth: 0,
-    marginLeft: 8,
-    marginRight: 8,
-    overflow: 'hidden',
-  },
+  info: { flex: 1, minWidth: 0, gap: 4 },
   itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
-  meta: { fontSize: theme.font.caption, color: theme.gray, marginTop: 2 },
-  countdown: { marginTop: 4, gap: 3 },
+  meta: { fontSize: theme.font.caption, color: theme.gray },
+  countdown: { marginTop: 2, gap: 3 },
   remainChip: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
@@ -322,16 +285,12 @@ const styles = StyleSheet.create({
   restoreBtn: {
     flexShrink: 0,
     alignSelf: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
     borderColor: theme.grayLight,
     backgroundColor: theme.beige,
   },
-  restore: {
-    color: theme.black,
-    fontWeight: '700',
-    fontSize: theme.font.caption,
-  },
+  restore: { color: theme.black, fontWeight: '700', fontSize: theme.font.caption },
 });

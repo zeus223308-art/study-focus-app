@@ -18,7 +18,7 @@ import { useFullscreenInkFlow } from '@/components/annotation/use-fullscreen-ink
 import { PhotoMemoToolbar, type PhotoMemoToolKind } from '@/components/bundle/PhotoMemoToolbar';
 import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
-import { webFixedModalRootStyle } from '@/lib/ui/web-fixed-overlay';
+import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import {
   ERASER_WIDTHS,
   HIGHLIGHTER_WIDTHS,
@@ -162,7 +162,7 @@ export function PhotoMemoEditorModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={[styles.root, webFixedModalRootStyle, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}>
+      <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}>
         <View style={styles.header}>
           <Pressable onPress={onClose} hitSlop={12}>
             <Text style={styles.close}>{t('common.close')}</Text>
@@ -254,7 +254,7 @@ export function PhotoMemoEditorModal({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.beige, paddingHorizontal: 16 },
+  root: { flex: 1, backgroundColor: theme.beige, paddingHorizontal: 16, ...webFixedBackdropStyle },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
