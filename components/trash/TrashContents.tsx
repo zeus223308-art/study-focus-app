@@ -109,8 +109,7 @@ type TrashRowProps = {
   backupExpiresAt: string;
   restoreLabel: string;
   onRestore: () => void;
-  rowPadLeft: number;
-  rowPadRight: number;
+  rowPad: number;
   last?: boolean;
 };
 
@@ -122,15 +121,14 @@ function TrashRow({
   backupExpiresAt,
   restoreLabel,
   onRestore,
-  rowPadLeft,
-  rowPadRight,
+  rowPad,
   last,
 }: TrashRowProps) {
   return (
     <View
       style={[
         styles.rowWrap,
-        { paddingLeft: rowPadLeft, paddingRight: rowPadRight },
+        { paddingHorizontal: rowPad },
         !last && settingsGroupStyles.rowBorder,
       ]}>
       <View style={styles.row} {...({ dataSet: TRASH_ROW_DATA_SET } as object)}>
@@ -172,9 +170,7 @@ export function TrashContents({ showNotice = true }: Props) {
   const { t } = useTranslation();
   const { restoreTrash, restoreSubjectTrash } = useApp();
   const viewport = useViewportLayout();
-  const basePad = settingsRowPad(viewport.isPhone);
-  const rowPadLeft = basePad + (viewport.isPhone ? 4 : 0);
-  const rowPadRight = basePad;
+  const rowPad = settingsRowPad(viewport.isPhone) + (viewport.isPhone ? 4 : 0);
   const { deletedSubjects, photoEntries, isEmpty } = useTrashContents();
 
   const subjectRows = deletedSubjects.map((group, index) => {
@@ -183,8 +179,7 @@ export function TrashContents({ showNotice = true }: Props) {
     return (
       <TrashRow
         key={group.subjectId}
-        rowPadLeft={rowPadLeft}
-        rowPadRight={rowPadRight}
+        rowPad={rowPad}
         coverUri={cover}
         coverAsset={group.pages[0]?.asset}
         name={group.name}
@@ -207,8 +202,7 @@ export function TrashContents({ showNotice = true }: Props) {
     return (
       <TrashRow
         key={entry.id}
-        rowPadLeft={rowPadLeft}
-        rowPadRight={rowPadRight}
+        rowPad={rowPad}
         coverUri={cover}
         coverAsset={pages[0]?.asset}
         name={entry.subjectSnapshot?.name ?? t('trash.photosHeader')}
@@ -224,20 +218,16 @@ export function TrashContents({ showNotice = true }: Props) {
   return (
     <>
       {showNotice ? (
-        <Text style={[styles.notice, { paddingLeft: rowPadLeft, paddingRight: rowPadRight }]}>
-          {t('trash.autoDeleteHint')}
-        </Text>
+        <Text style={[styles.notice, { paddingHorizontal: rowPad }]}>{t('trash.autoDeleteHint')}</Text>
       ) : null}
 
       {isEmpty ? (
-        <Text style={[styles.empty, { paddingLeft: rowPadLeft, paddingRight: rowPadRight }]}>
-          {t('trash.empty')}
-        </Text>
+        <Text style={[styles.empty, { paddingHorizontal: rowPad }]}>{t('trash.empty')}</Text>
       ) : (
         <>
           {deletedSubjects.length > 0 ? (
             <>
-              <Text style={[styles.sectionHeader, { paddingLeft: rowPadLeft, paddingRight: rowPadRight }]}>
+              <Text style={[styles.sectionHeader, { paddingHorizontal: rowPad }]}>
                 {t('trash.subjectsHeader')}
               </Text>
               {subjectRows}
@@ -249,7 +239,7 @@ export function TrashContents({ showNotice = true }: Props) {
               <Text
                 style={[
                   styles.sectionHeader,
-                  { paddingLeft: rowPadLeft, paddingRight: rowPadRight },
+                  { paddingHorizontal: rowPad },
                   deletedSubjects.length > 0 && styles.sectionHeaderSpaced,
                 ]}>
                 {t('trash.photosHeader')}
@@ -304,7 +294,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
     marginLeft: 10,
-    marginRight: 6,
+    marginRight: 10,
   },
   itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
   meta: { fontSize: theme.font.caption, color: theme.gray, marginTop: 2 },
