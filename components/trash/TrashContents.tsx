@@ -9,6 +9,7 @@ import { useApp, useLanguage } from '@/context/AppContext';
 import type { NotePage, TrashLifecycle } from '@/lib/domain/types';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { formatTrashDeadline } from '@/lib/ui/format-study-date';
+import { settingsRowPad, useViewportLayout } from '@/lib/ui/viewport-layout';
 import {
   canRestoreFromBackup,
   filterActiveTrash,
@@ -108,6 +109,7 @@ type TrashRowProps = {
   backupExpiresAt: string;
   restoreLabel: string;
   onRestore: () => void;
+  rowPad: number;
   last?: boolean;
 };
 
@@ -119,25 +121,37 @@ function TrashRow({
   backupExpiresAt,
   restoreLabel,
   onRestore,
+  rowPad,
   last,
 }: TrashRowProps) {
   return (
-    <View style={[settingsGroupStyles.row, styles.rowTall, !last && settingsGroupStyles.rowBorder]}>
-      {coverUri ? (
-        <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
-      ) : (
-        <View style={[styles.cover, styles.thumbEmpty]} />
-      )}
-      <View style={styles.info}>
-        <Text style={styles.itemName} numberOfLines={1}>
-          {name}
-        </Text>
-        <Text style={styles.meta}>{meta}</Text>
-        <CountdownBlock backupExpiresAt={backupExpiresAt} />
+    <View
+      style={[
+        styles.row,
+        { paddingHorizontal: rowPad },
+        !last && settingsGroupStyles.rowBorder,
+      ]}>
+      <View style={styles.rowMain}>
+        {coverUri ? (
+          <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
+        ) : (
+          <View style={[styles.cover, styles.thumbEmpty]} />
+        )}
+        <View style={styles.info}>
+          <Text style={styles.itemName} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text style={styles.meta}>{meta}</Text>
+          <CountdownBlock backupExpiresAt={backupExpiresAt} />
+          <Pressable
+            onPress={onRestore}
+            hitSlop={8}
+            style={styles.restoreBtn}
+            accessibilityRole="button">
+            <Text style={styles.restore}>{restoreLabel}</Text>
+          </Pressable>
+        </View>
       </View>
-      <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
-        <Text style={styles.restore}>{restoreLabel}</Text>
-      </Pressable>
     </View>
   );
 }
@@ -151,6 +165,8 @@ type Props = {
 export function TrashContents({ showNotice = true }: Props) {
   const { t } = useTranslation();
   const { restoreTrash, restoreSubjectTrash } = useApp();
+  const viewport = useViewportLayout();
+  const rowPad = settingsRowPad(viewport.isPhone);
   const { deletedSubjects, photoEntries, isEmpty } = useTrashContents();
 
   const subjectRows = deletedSubjects.map((group, index) => {
@@ -159,6 +175,7 @@ export function TrashContents({ showNotice = true }: Props) {
     return (
       <TrashRow
         key={group.subjectId}
+        rowPad={rowPad}
         coverUri={cover}
         coverAsset={group.pages[0]?.asset}
         name={group.name}
@@ -181,6 +198,7 @@ export function TrashContents({ showNotice = true }: Props) {
     return (
       <TrashRow
         key={entry.id}
+        rowPad={rowPad}
         coverUri={cover}
         coverAsset={pages[0]?.asset}
         name={entry.subjectSnapshot?.name ?? t('trash.photosHeader')}
@@ -195,15 +213,19 @@ export function TrashContents({ showNotice = true }: Props) {
 
   return (
     <>
-      {showNotice ? <Text style={styles.notice}>{t('trash.autoDeleteHint')}</Text> : null}
+      {showNotice ? (
+        <Text style={[styles.notice, { paddingHorizontal: rowPad }]}>{t('trash.autoDeleteHint')}</Text>
+      ) : null}
 
       {isEmpty ? (
-        <Text style={styles.empty}>{t('trash.empty')}</Text>
+        <Text style={[styles.empty, { paddingHorizontal: rowPad }]}>{t('trash.empty')}</Text>
       ) : (
         <>
           {deletedSubjects.length > 0 ? (
             <>
-              <Text style={styles.sectionHeader}>{t('trash.subjectsHeader')}</Text>
+              <Text style={[styles.sectionHeader, { paddingHorizontal: rowPad }]}>
+                {t('trash.subjectsHeader')}
+              </Text>
               {subjectRows}
             </>
           ) : null}
@@ -213,6 +235,7 @@ export function TrashContents({ showNotice = true }: Props) {
               <Text
                 style={[
                   styles.sectionHeader,
+                  { paddingHorizontal: rowPad },
                   deletedSubjects.length > 0 && styles.sectionHeaderSpaced,
                 ]}>
                 {t('trash.photosHeader')}
@@ -231,28 +254,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.gray,
     lineHeight: 19,
-    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
+    textAlign: 'left',
   },
   empty: {
     color: theme.gray,
-    textAlign: 'center',
+    textAlign: 'left',
     paddingVertical: 24,
-    paddingHorizontal: 16,
   },
   sectionHeader: {
-    ...settingsGroupStyles.title,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 2,
-    marginBottom: 0,
-    marginLeft: 0,
-    textTransform: 'none',
-    letterSpacing: 0,
     fontSize: theme.font.bodySmall,
     fontWeight: '800',
     color: theme.black,
+    paddingTop: 4,
+    paddingBottom: 2,
+    marginBottom: 0,
+    textAlign: 'left',
+    alignSelf: 'stretch',
   },
   sectionHeaderSpaced: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -260,15 +279,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingTop: 12,
   },
-  rowTall: {
-    alignItems: 'flex-start',
+  row: {
+    width: '100%',
+    alignSelf: 'stretch',
     paddingVertical: 12,
-    gap: 12,
   },
-  info: { flex: 1, minWidth: 0, gap: 4 },
-  itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
-  meta: { fontSize: theme.font.caption, color: theme.gray },
-  countdown: { marginTop: 2, gap: 3 },
+  rowMain: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    width: '100%',
+    maxWidth: '100%',
+  },
+  info: { flex: 1, minWidth: 0, gap: 4, alignItems: 'flex-start' },
+  itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black, textAlign: 'left' },
+  meta: { fontSize: theme.font.caption, color: theme.gray, textAlign: 'left' },
+  countdown: { marginTop: 2, gap: 3, alignSelf: 'stretch' },
   remainChip: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
@@ -279,12 +305,12 @@ const styles = StyleSheet.create({
   remainChipUrgent: { backgroundColor: 'rgba(248, 113, 113, 0.18)' },
   remainText: { fontSize: 12, fontWeight: '800', color: theme.gray },
   remainTextUrgent: { color: theme.danger },
-  deadline: { fontSize: 11, color: theme.grayMuted, fontWeight: '600' },
+  deadline: { fontSize: 11, color: theme.grayMuted, fontWeight: '600', textAlign: 'left' },
   cover: { width: COVER, height: COVER, borderRadius: 8, flexShrink: 0 },
   thumbEmpty: { backgroundColor: theme.grayLight },
   restoreBtn: {
-    flexShrink: 0,
-    alignSelf: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: theme.radius.pill,
