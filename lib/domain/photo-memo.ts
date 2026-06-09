@@ -1,3 +1,4 @@
+import { normalizeMemoTextBoxTone } from '@/lib/domain/memo-text-box-style';
 import type { InkStroke, NoteLayer, NotePage, PhotoMemo } from './types';
 
 export function emptyPhotoMemo(): PhotoMemo {
@@ -8,7 +9,12 @@ export function normalizePhotoMemo(raw?: PhotoMemo | null): PhotoMemo {
   if (!raw) return emptyPhotoMemo();
   return {
     strokes: Array.isArray(raw.strokes) ? raw.strokes : [],
-    textBoxes: Array.isArray(raw.textBoxes) ? raw.textBoxes : [],
+    textBoxes: Array.isArray(raw.textBoxes)
+      ? raw.textBoxes.map((b) => ({
+          ...b,
+          tone: normalizeMemoTextBoxTone(b.tone),
+        }))
+      : [],
     updatedAt: raw.updatedAt ?? new Date().toISOString(),
   };
 }

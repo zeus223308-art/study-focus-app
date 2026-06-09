@@ -340,6 +340,8 @@
     "workText": "Text",
     "workEraser": "Eraser",
     "textBoxPlaceholder": "Type here",
+    "textBoxToneLight": "White box (black text)",
+    "textBoxToneDark": "Black box (white text)",
     "toolPen": "Pen",
     "toolEraser": "Eraser",
     "undo": "Undo",

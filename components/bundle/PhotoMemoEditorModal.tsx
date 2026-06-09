@@ -137,6 +137,7 @@ export function PhotoMemoEditorModal({
       width: Math.min(180, viewerW * 0.55),
       height: 56,
       text: '',
+      tone: 'light',
     };
     patchMemo({ textBoxes: [...memo.textBoxes, box] });
     setActiveBoxId(id);
@@ -232,6 +233,8 @@ export function PhotoMemoEditorModal({
                   surfaceWidth={viewerW}
                   surfaceHeight={imageH}
                   placeholder={t('review.textBoxPlaceholder')}
+                  toneLightLabel={t('review.textBoxToneLight')}
+                  toneDarkLabel={t('review.textBoxToneDark')}
                   onChange={(patch) => updateBox(box.id, patch)}
                   onActivate={() => {
                     setActiveBoxId(box.id);

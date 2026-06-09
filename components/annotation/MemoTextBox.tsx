@@ -2,7 +2,11 @@ import { useRef } from 'react';
 import { PanResponder, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
-import type { MemoTextBox } from '@/lib/domain/types';
+import {
+  memoTextBoxSurface,
+  normalizeMemoTextBoxTone,
+} from '@/lib/domain/memo-text-box-style';
+import type { MemoTextBox, MemoTextBoxTone } from '@/lib/domain/types';
 
 export type { MemoTextBox };
 
@@ -14,6 +18,8 @@ type Props = {
   surfaceWidth: number;
   surfaceHeight: number;
   placeholder: string;
+  toneLightLabel: string;
+  toneDarkLabel: string;
   onChange: (patch: Partial<MemoTextBox>) => void;
   onActivate: () => void;
   onRemove: () => void;
@@ -27,10 +33,14 @@ export function MemoTextBoxView({
   surfaceWidth,
   surfaceHeight,
   placeholder,
+  toneLightLabel,
+  toneDarkLabel,
   onChange,
   onActivate,
   onRemove,
 }: Props) {
+  const tone = normalizeMemoTextBoxTone(box.tone);
+  const surface = memoTextBoxSurface(tone);
   const dragOrigin = useRef({ x: box.x, y: box.y });
   const resizeOrigin = useRef({ w: box.width, h: box.height });
 
@@ -76,17 +86,44 @@ export function MemoTextBoxView({
 
   const showChrome = active && editing;
 
+  const toneChip = (next: MemoTextBoxTone, swatchColor: string, label: string) => {
+    const on = tone === next;
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ selected: on }}
+        onPress={() => onChange({ tone: next })}
+        style={[styles.toneChip, on && styles.toneChipOn]}
+        hitSlop={4}>
+        <View
+          style={[
+            styles.toneSwatch,
+            { backgroundColor: swatchColor },
+            swatchColor === theme.white && styles.toneSwatchLight,
+          ]}
+        />
+      </Pressable>
+    );
+  };
+
   return (
     <View
       style={[
         styles.textBox,
-        { left: box.x, top: box.y, width: box.width, height: box.height },
+        { left: box.x, top: box.y, width: box.width, height: box.height, backgroundColor: surface.backgroundColor },
         showChrome ? styles.textBoxEditing : styles.textBoxIdle,
         active && !editing && styles.textBoxSelected,
       ]}
       pointerEvents={interactive ? 'auto' : 'none'}>
       <View style={styles.textBoxHeader} {...(showChrome ? dragPan.panHandlers : {})}>
-        {showChrome ? <Text style={styles.dragHint}>⋯</Text> : null}
+        {showChrome ? <Text style={[styles.dragHint, { color: surface.hintColor }]}>⋯</Text> : null}
+        {showChrome ? (
+          <View style={styles.toneRow}>
+            {toneChip('light', theme.white, toneLightLabel)}
+            {toneChip('dark', theme.black, toneDarkLabel)}
+          </View>
+        ) : null}
         {showChrome ? (
           <Pressable onPress={onRemove} hitSlop={8} style={styles.deleteChip}>
             <Text style={styles.deleteChipText}>×</Text>
@@ -94,14 +131,14 @@ export function MemoTextBoxView({
         ) : null}
       </View>
       <TextInput
-        style={[styles.textInput, !showChrome && styles.textInputIdle]}
+        style={[styles.textInput, { color: surface.textColor }]}
         multiline
         value={box.text}
         editable={showChrome}
         onChangeText={(text) => onChange({ text })}
         onFocus={onActivate}
         placeholder={placeholder}
-        placeholderTextColor={theme.gray}
+        placeholderTextColor={surface.placeholderColor}
       />
       {showChrome ? (
         <View style={styles.resizeHandle} {...resizePan.panHandlers}>
@@ -122,17 +159,14 @@ const styles = StyleSheet.create({
   textBoxEditing: {
     borderWidth: 2,
     borderColor: theme.orange,
-    backgroundColor: 'rgba(255,255,255,0.96)',
   },
   textBoxIdle: {
     borderWidth: 0,
-    backgroundColor: 'transparent',
   },
   textBoxSelected: {
     borderWidth: 1,
     borderColor: theme.orange,
     borderStyle: 'dashed',
-    backgroundColor: 'transparent',
   },
   textBoxHeader: {
     flexDirection: 'row',
@@ -140,8 +174,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 2,
     minHeight: 18,
+    gap: 4,
   },
-  dragHint: { color: theme.gray, fontWeight: '800', fontSize: 14, paddingHorizontal: 4 },
+  dragHint: { fontWeight: '800', fontSize: 14, paddingHorizontal: 2 },
+  toneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' },
+  toneChip: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  toneChipOn: { borderColor: theme.orange, backgroundColor: theme.orangeSoft },
+  toneSwatch: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+  },
+  toneSwatchLight: {
+    borderWidth: 1,
+    borderColor: theme.grayLight,
+  },
   deleteChip: {
     width: 22,
     height: 22,
@@ -154,11 +209,8 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 14,
-    color: theme.black,
     textAlignVertical: 'top',
     padding: 0,
-  },
-  textInputIdle: {
     backgroundColor: 'transparent',
   },
   resizeHandle: {
