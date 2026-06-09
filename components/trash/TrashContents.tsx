@@ -4,11 +4,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { settingsGroupStyles } from '@/components/SettingsGroup';
 import { WEB_LINE } from '@/lib/ui/web-divider';
-import { ResolvedImage } from '@/components/ui/ResolvedImage';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
 import type { NotePage, TrashLifecycle } from '@/lib/domain/types';
-import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { formatTrashDeadline } from '@/lib/ui/format-study-date';
 import {
   canRestoreFromBackup,
@@ -17,7 +15,6 @@ import {
   trashRemaining,
 } from '@/lib/trash/lifecycle';
 
-const COVER = 48;
 const TRASH_INNER_PAD = 16;
 
 type DeletedSubject = {
@@ -103,8 +100,6 @@ function CountdownBlock({ backupExpiresAt }: { backupExpiresAt: string }) {
 }
 
 type TrashRowProps = {
-  coverUri: string | null;
-  coverAsset?: NotePage['asset'];
   name: string;
   meta: string;
   backupExpiresAt: string;
@@ -114,8 +109,6 @@ type TrashRowProps = {
 };
 
 function TrashRow({
-  coverUri,
-  coverAsset,
   name,
   meta,
   backupExpiresAt,
@@ -125,19 +118,12 @@ function TrashRow({
 }: TrashRowProps) {
   return (
     <View style={styles.rowOuter}>
-      <View style={[styles.rowInner, !last && settingsGroupStyles.rowBorder]}>
-        {coverUri ? (
-          <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
-        ) : (
-          <View style={[styles.cover, styles.thumbEmpty]} />
-        )}
-        <View style={styles.info}>
-          <Text style={styles.itemName} numberOfLines={1}>
-            {name}
-          </Text>
-          <Text style={styles.meta}>{meta}</Text>
-          <CountdownBlock backupExpiresAt={backupExpiresAt} />
-        </View>
+      <View style={[styles.rowBlock, !last && settingsGroupStyles.rowBorder]}>
+        <Text style={styles.itemName} numberOfLines={1}>
+          {name}
+        </Text>
+        <Text style={styles.meta}>{meta}</Text>
+        <CountdownBlock backupExpiresAt={backupExpiresAt} />
         <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
           <Text style={styles.restore}>{restoreLabel}</Text>
         </Pressable>
@@ -158,13 +144,10 @@ export function TrashContents({ showNotice = true }: Props) {
   const { deletedSubjects, photoEntries, isEmpty } = useTrashContents();
 
   const subjectRows = deletedSubjects.map((group, index) => {
-    const cover = group.pages[0] ? getPreviewImageUri(group.pages[0].asset) : null;
     const isLastInSection = index === deletedSubjects.length - 1 && photoEntries.length === 0;
     return (
       <TrashRow
         key={group.subjectId}
-        coverUri={cover}
-        coverAsset={group.pages[0]?.asset}
         name={group.name}
         meta={
           group.pages.length > 0
@@ -181,12 +164,9 @@ export function TrashContents({ showNotice = true }: Props) {
 
   const photoRows = photoEntries.map((entry, index) => {
     const pages = entry.bundleSnapshot.pages;
-    const cover = pages[0] ? getPreviewImageUri(pages[0].asset) : null;
     return (
       <TrashRow
         key={entry.id}
-        coverUri={cover}
-        coverAsset={pages[0]?.asset}
         name={entry.subjectSnapshot?.name ?? t('trash.photosHeader')}
         meta={t('trash.subjectPages', { count: pages.length })}
         backupExpiresAt={entry.backupExpiresAt}
@@ -268,18 +248,26 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: TRASH_INNER_PAD,
   },
-  rowInner: {
-    flexDirection: 'row',
+  rowBlock: {
+    width: '100%',
     alignItems: 'flex-start',
     paddingVertical: 12,
-    gap: 12,
-    width: '100%',
-    minWidth: 0,
+    gap: 4,
   },
-  info: { flex: 1, minWidth: 0, gap: 4 },
-  itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
-  meta: { fontSize: theme.font.caption, color: theme.gray },
-  countdown: { marginTop: 2, gap: 3 },
+  itemName: {
+    width: '100%',
+    fontSize: theme.font.body,
+    fontWeight: '600',
+    color: theme.black,
+    textAlign: 'left',
+  },
+  meta: {
+    width: '100%',
+    fontSize: theme.font.caption,
+    color: theme.gray,
+    textAlign: 'left',
+  },
+  countdown: { alignSelf: 'stretch', marginTop: 2, gap: 3 },
   remainChip: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
@@ -290,12 +278,16 @@ const styles = StyleSheet.create({
   remainChipUrgent: { backgroundColor: 'rgba(248, 113, 113, 0.18)' },
   remainText: { fontSize: 12, fontWeight: '800', color: theme.gray },
   remainTextUrgent: { color: theme.danger },
-  deadline: { fontSize: 11, color: theme.grayMuted, fontWeight: '600' },
-  cover: { width: COVER, height: COVER, borderRadius: 8, flexShrink: 0 },
-  thumbEmpty: { backgroundColor: theme.grayLight },
+  deadline: {
+    width: '100%',
+    fontSize: 11,
+    color: theme.grayMuted,
+    fontWeight: '600',
+    textAlign: 'left',
+  },
   restoreBtn: {
-    flexShrink: 0,
-    alignSelf: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 6,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: theme.radius.pill,
