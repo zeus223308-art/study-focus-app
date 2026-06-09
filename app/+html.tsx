@@ -201,7 +201,7 @@ body {
 }
 [data-trash-row="1"] [data-trash-restore-btn="1"] {
   flex-shrink: 0 !important;
-  max-width: 92px !important;
+  max-width: 80px !important;
   box-sizing: border-box !important;
 }
 `;
