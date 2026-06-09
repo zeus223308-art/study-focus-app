@@ -75,6 +75,8 @@ export function PhotoInkOverlay({
           surfaceWidth={surfaceWidth}
           surfaceHeight={surfaceHeight}
           placeholder={textPlaceholder}
+          toneLightLabel=""
+          toneDarkLabel=""
           onChange={() => {}}
           onActivate={() => {}}
           onRemove={() => {}}

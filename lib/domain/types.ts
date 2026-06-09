@@ -67,6 +67,8 @@ export type NoteLayer = {
   updatedAt: string;
 };
 
+export type MemoTextBoxTone = 'light' | 'dark';
+
 export type MemoTextBox = {
   id: string;
   x: number;
@@ -74,6 +76,9 @@ export type MemoTextBox = {
   width: number;
   height: number;
   text: string;
+  /** 0 = transparent … 1 = solid (white or black per tone). */
+  fillLevel?: number;
+  tone?: MemoTextBoxTone;
 };
 
 /** Pen/highlighter/eraser strokes + text boxes overlaid on a problem or answer photo. */
