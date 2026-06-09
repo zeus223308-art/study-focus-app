@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { theme } from '@/constants/theme';
@@ -8,21 +8,11 @@ export const REVIEW_PATTERN_CHANGE_COOLDOWN_SEC = 3;
 
 type Props = {
   visible: boolean;
-  subjectName: string;
-  fromLabel: string;
-  toLabel: string;
-  onCancel: () => void;
-  onConfirm: () => void;
+  onDone: () => void;
 };
 
-export function ReviewPatternChangeModal({
-  visible,
-  subjectName,
-  fromLabel,
-  toLabel,
-  onCancel,
-  onConfirm,
-}: Props) {
+/** Brief countdown overlay before applying a review pattern change. */
+export function ReviewPatternChangeModal({ visible, onDone }: Props) {
   const { t } = useTranslation();
   const [secondsLeft, setSecondsLeft] = useState(REVIEW_PATTERN_CHANGE_COOLDOWN_SEC);
 
@@ -32,50 +22,36 @@ export function ReviewPatternChangeModal({
       return;
     }
     setSecondsLeft(REVIEW_PATTERN_CHANGE_COOLDOWN_SEC);
-    const id = setInterval(() => {
+    const tick = setInterval(() => {
       setSecondsLeft((prev) => (prev <= 1 ? 0 : prev - 1));
     }, 1000);
-    return () => clearInterval(id);
-  }, [visible, subjectName, fromLabel, toLabel]);
+    return () => clearInterval(tick);
+  }, [visible]);
 
-  const canSave = secondsLeft <= 0;
+  useEffect(() => {
+    if (!visible || secondsLeft > 0) return;
+    onDone();
+  }, [visible, secondsLeft, onDone]);
+
+  if (!visible) return null;
 
   return (
     <Modal
-      visible={visible}
+      visible
       transparent
       animationType="fade"
-      onRequestClose={onCancel}
+      onRequestClose={() => {}}
       statusBarTranslucent
       presentationStyle="overFullScreen">
-      <Pressable style={styles.backdrop} onPress={onCancel}>
-        <Pressable style={styles.card} onPress={() => {}}>
-          <Text style={styles.title}>{t('settings.reviewPatternChangeTitle')}</Text>
-          <Text style={styles.subject}>{subjectName}</Text>
-          <Text style={styles.changeLine}>
-            {fromLabel} → {toLabel}
+      <View style={styles.backdrop} pointerEvents="box-none">
+        <View style={styles.card}>
+          <Text style={styles.message}>
+            {secondsLeft > 0
+              ? t('settings.reviewPatternChangeWait', { seconds: secondsLeft })
+              : t('settings.reviewPatternChangeWait', { seconds: 1 })}
           </Text>
-          <Text style={styles.note}>{t('settings.reviewPatternChangeNote')}</Text>
-          <Text style={[styles.wait, canSave && styles.waitReady]}>
-            {canSave
-              ? t('settings.reviewPatternChangeReady')
-              : t('settings.reviewPatternChangeWait', { seconds: secondsLeft })}
-          </Text>
-          <View style={styles.actions}>
-            <Pressable style={[styles.btn, styles.btnCancel]} onPress={onCancel}>
-              <Text style={styles.btnCancelText}>{t('common.cancel')}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.btn, styles.btnConfirm, !canSave && styles.btnDisabled]}
-              onPress={canSave ? onConfirm : undefined}
-              disabled={!canSave}>
-              <Text style={[styles.btnConfirmText, !canSave && styles.btnConfirmTextDisabled]}>
-                {t('common.save')}
-              </Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -83,7 +59,7 @@ export function ReviewPatternChangeModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 28,
@@ -94,77 +70,17 @@ const styles = StyleSheet.create({
     }),
   },
   card: {
-    width: '100%',
-    maxWidth: 340,
     backgroundColor: theme.beige,
     borderRadius: theme.radius.lg,
-    padding: 22,
-    gap: 10,
+    paddingVertical: 18,
+    paddingHorizontal: 22,
+    maxWidth: 320,
   },
-  title: {
-    fontSize: theme.font.body,
-    fontWeight: '800',
-    color: theme.black,
-  },
-  subject: {
+  message: {
     fontSize: theme.font.body,
     fontWeight: '700',
-    color: theme.orange,
-  },
-  changeLine: {
-    fontSize: theme.font.caption,
-    fontWeight: '700',
     color: theme.black,
-  },
-  note: {
-    fontSize: theme.font.caption,
-    lineHeight: 18,
-    color: theme.gray,
-    marginTop: 4,
-  },
-  wait: {
-    fontSize: theme.font.caption,
-    fontWeight: '800',
-    color: theme.orange,
-    marginTop: 6,
     textAlign: 'center',
-  },
-  waitReady: {
-    color: theme.black,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
-  },
-  btn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: theme.radius.md,
-    alignItems: 'center',
-  },
-  btnCancel: {
-    backgroundColor: theme.surface,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-  },
-  btnCancelText: {
-    fontSize: theme.font.caption,
-    fontWeight: '700',
-    color: theme.black,
-  },
-  btnConfirm: {
-    backgroundColor: theme.orange,
-  },
-  btnDisabled: {
-    backgroundColor: theme.grayLight,
-  },
-  btnConfirmText: {
-    fontSize: theme.font.caption,
-    fontWeight: '800',
-    color: theme.onAccent,
-  },
-  btnConfirmTextDisabled: {
-    color: theme.gray,
+    lineHeight: 22,
   },
 });

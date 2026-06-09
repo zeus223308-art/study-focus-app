@@ -39,9 +39,6 @@ export default function SettingsScreen() {
   const [patternHelpOpen, setPatternHelpOpen] = useState(false);
   const [patternChange, setPatternChange] = useState<{
     subjectId: string;
-    subjectName: string;
-    fromLabel: string;
-    toLabel: string;
     nextScheduleId: string;
   } | null>(null);
   const { openAppUsageGuide } = useAppUsageGuide();
@@ -98,13 +95,9 @@ export default function SettingsScreen() {
               label={f.name}
               value={folderIntervalLabel(f.reviewScheduleId)}
               onPress={() => {
-                const nextId = toggleFolderScheduleId(f.reviewScheduleId);
                 setPatternChange({
                   subjectId: f.id,
-                  subjectName: f.name,
-                  fromLabel: folderIntervalLabel(f.reviewScheduleId),
-                  toLabel: folderIntervalLabel(nextId),
-                  nextScheduleId: nextId,
+                  nextScheduleId: toggleFolderScheduleId(f.reviewScheduleId),
                 });
               }}
               last={i === subjects.length - 1}
@@ -205,11 +198,7 @@ export default function SettingsScreen() {
 
       <ReviewPatternChangeModal
         visible={patternChange !== null}
-        subjectName={patternChange?.subjectName ?? ''}
-        fromLabel={patternChange?.fromLabel ?? ''}
-        toLabel={patternChange?.toLabel ?? ''}
-        onCancel={() => setPatternChange(null)}
-        onConfirm={() => {
+        onDone={() => {
           if (!patternChange) return;
           setSubjectSchedule(patternChange.subjectId, patternChange.nextScheduleId);
           setPatternChange(null);

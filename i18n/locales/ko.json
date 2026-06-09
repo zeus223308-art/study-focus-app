@@ -412,10 +412,7 @@
       "복습 패턴을 적용하고 싶지 않거나, 복습을 끝낸 사진은 아카이브에 넣으세요. 아카이브에 있는 사진에는 복습 패턴이 적용되지 않습니다.",
       "과목별 복습 패턴을 바꿔도, 변경 전에 저장된 사진은 저장 당시 패턴을 유지합니다. 변경 이후 새로 저장하는 사진부터 새 패턴이 적용됩니다."
     ],
-    "reviewPatternChangeTitle": "복습 패턴 변경",
-    "reviewPatternChangeNote": "빠르게 여러 번 바꾸면 오류가 날 수 있어 잠시 기다린 뒤 저장합니다.",
     "reviewPatternChangeWait": "{{seconds}}초 후에 저장할 수 있습니다.",
-    "reviewPatternChangeReady": "지금 저장할 수 있습니다.",
     "premium": "Premium",
     "addPattern": "+추가",
     "appUsageGuide": "앱 사용법",
