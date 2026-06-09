@@ -76,6 +76,9 @@ export function settingsRowPad(isPhone: boolean): number {
   return isPhone ? 10 : 16;
 }
 
+/** Files · Dashboard · Settings tab screen horizontal inset. */
+export const TAB_SCREEN_HORIZONTAL_PAD = 25;
+
 /** @deprecated Use vaultPanelPad(isPhone) — default for non-viewport call sites. */
 export const VAULT_PANEL_PAD = 14;
 export const VAULT_TILE_GAP = 14;

@@ -13,18 +13,19 @@ type Props = {
   scrollEnabled?: boolean;
   style?: ViewStyle;
   padded?: boolean;
+  horizontalPad?: number;
   nestedScrollEnabled?: boolean;
   fill?: boolean;
 };
 
 /** Web: RN ScrollView (gesture-handler ScrollView breaks nested touch on mobile Safari). */
 export const Screen = forwardRef<ScrollView, Props>(function Screen(
-  { children, scroll, scrollEnabled = true, style, padded = true, fill },
+  { children, scroll, scrollEnabled = true, style, padded = true, horizontalPad, fill },
   ref
 ) {
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
-  const pad = padded ? viewport.horizontalPadding : 0;
+  const pad = padded ? (horizontalPad ?? viewport.horizontalPadding) : 0;
 
   const innerBody = (
     <View

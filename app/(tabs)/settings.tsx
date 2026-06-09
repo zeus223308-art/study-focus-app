@@ -23,6 +23,7 @@ import { scheduleDailyReviewReminder, cancelAllReminders } from '@/lib/notificat
 import { isOcrAvailable } from '@/lib/review/ocr-extract';
 import { showMessage } from '@/lib/ui/confirm';
 import { countAppPages } from '@/services/storage';
+import { TAB_SCREEN_HORIZONTAL_PAD } from '@/lib/ui/viewport-layout';
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
@@ -80,7 +81,7 @@ export default function SettingsScreen() {
 
   return (
     <>
-      <Screen scroll>
+      <Screen scroll horizontalPad={TAB_SCREEN_HORIZONTAL_PAD}>
         <ScreenHeader title={t('settings.title')} showSettings={false} />
 
         <SettingsSectionHeader

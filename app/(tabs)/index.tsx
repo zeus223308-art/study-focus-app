@@ -15,6 +15,7 @@ import { useApp } from '@/context/AppContext';
 import { getBundlesFrontPreviews } from '@/lib/files/subject-previews';
 import { totalPagesInBundle } from '@/lib/grouping/bundles';
 import { showMessage } from '@/lib/ui/confirm';
+import { TAB_SCREEN_HORIZONTAL_PAD } from '@/lib/ui/viewport-layout';
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
@@ -140,7 +141,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <Screen scroll nestedScrollEnabled>
+    <Screen scroll nestedScrollEnabled horizontalPad={TAB_SCREEN_HORIZONTAL_PAD}>
       {subjectEntries.length === 0 ? (
         <View style={styles.emptyBlock}>
           <Text style={styles.empty}>{t('dashboard.noSubjects')}</Text>

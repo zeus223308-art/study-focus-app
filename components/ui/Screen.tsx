@@ -14,18 +14,20 @@ type Props = {
   scrollEnabled?: boolean;
   style?: ViewStyle;
   padded?: boolean;
+  /** Override viewport horizontal padding (main tabs use TAB_SCREEN_HORIZONTAL_PAD). */
+  horizontalPad?: number;
   nestedScrollEnabled?: boolean;
   /** Non-scroll screens: flex column so a child ScrollView can fill remaining height. */
   fill?: boolean;
 };
 
 export const Screen = forwardRef<ScrollView, Props>(function Screen(
-  { children, scroll, scrollEnabled = true, style, padded = true, nestedScrollEnabled, fill },
+  { children, scroll, scrollEnabled = true, style, padded = true, horizontalPad, nestedScrollEnabled, fill },
   ref
 ) {
   const insets = useSafeAreaInsets();
   const viewport = useViewportLayout();
-  const pad = padded ? viewport.horizontalPadding : 0;
+  const pad = padded ? (horizontalPad ?? viewport.horizontalPadding) : 0;
 
   const innerBody = (
     <View
