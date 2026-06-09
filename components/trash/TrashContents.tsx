@@ -18,6 +18,7 @@ import {
 } from '@/lib/trash/lifecycle';
 
 const COVER = 48;
+const TRASH_INNER_PAD = 16;
 
 type DeletedSubject = {
   subjectId: string;
@@ -123,7 +124,13 @@ function TrashRow({
   last,
 }: TrashRowProps) {
   return (
-    <View style={[settingsGroupStyles.row, styles.rowTall, !last && settingsGroupStyles.rowBorder]}>
+    <View
+      style={[
+        settingsGroupStyles.row,
+        styles.rowTall,
+        styles.rowInset,
+        !last && settingsGroupStyles.rowBorder,
+      ]}>
       {coverUri ? (
         <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
       ) : (
@@ -232,7 +239,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.gray,
     lineHeight: 19,
-    paddingHorizontal: 16,
+    paddingHorizontal: TRASH_INNER_PAD,
     paddingTop: 12,
     paddingBottom: 8,
   },
@@ -240,11 +247,11 @@ const styles = StyleSheet.create({
     color: theme.gray,
     textAlign: 'center',
     paddingVertical: 24,
-    paddingHorizontal: 16,
+    paddingHorizontal: TRASH_INNER_PAD,
   },
   sectionHeader: {
     ...settingsGroupStyles.title,
-    paddingHorizontal: 16,
+    paddingHorizontal: TRASH_INNER_PAD,
     paddingTop: 4,
     paddingBottom: 2,
     marginBottom: 0,
@@ -265,6 +272,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingVertical: 12,
     gap: 12,
+  },
+  rowInset: {
+    marginHorizontal: TRASH_INNER_PAD,
   },
   info: { flex: 1, minWidth: 0, gap: 4 },
   itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
