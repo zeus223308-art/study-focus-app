@@ -124,28 +124,24 @@ function TrashRow({
   last,
 }: TrashRowProps) {
   return (
-    <View
-      style={[
-        settingsGroupStyles.row,
-        styles.rowTall,
-        styles.rowInset,
-        !last && settingsGroupStyles.rowBorder,
-      ]}>
-      {coverUri ? (
-        <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
-      ) : (
-        <View style={[styles.cover, styles.thumbEmpty]} />
-      )}
-      <View style={styles.info}>
-        <Text style={styles.itemName} numberOfLines={1}>
-          {name}
-        </Text>
-        <Text style={styles.meta}>{meta}</Text>
-        <CountdownBlock backupExpiresAt={backupExpiresAt} />
+    <View style={styles.rowOuter}>
+      <View style={[styles.rowInner, !last && settingsGroupStyles.rowBorder]}>
+        {coverUri ? (
+          <ResolvedImage uri={coverUri} asset={coverAsset} style={styles.cover} />
+        ) : (
+          <View style={[styles.cover, styles.thumbEmpty]} />
+        )}
+        <View style={styles.info}>
+          <Text style={styles.itemName} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text style={styles.meta}>{meta}</Text>
+          <CountdownBlock backupExpiresAt={backupExpiresAt} />
+        </View>
+        <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
+          <Text style={styles.restore}>{restoreLabel}</Text>
+        </Pressable>
       </View>
-      <Pressable onPress={onRestore} hitSlop={8} style={styles.restoreBtn} accessibilityRole="button">
-        <Text style={styles.restore}>{restoreLabel}</Text>
-      </Pressable>
     </View>
   );
 }
@@ -268,13 +264,17 @@ const styles = StyleSheet.create({
     borderTopWidth: WEB_LINE,
     borderTopColor: theme.grayLight,
   },
-  rowTall: {
+  rowOuter: {
+    width: '100%',
+    paddingHorizontal: TRASH_INNER_PAD,
+  },
+  rowInner: {
+    flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 12,
     gap: 12,
-  },
-  rowInset: {
-    marginHorizontal: TRASH_INNER_PAD,
+    width: '100%',
+    minWidth: 0,
   },
   info: { flex: 1, minWidth: 0, gap: 4 },
   itemName: { fontSize: theme.font.body, fontWeight: '600', color: theme.black },
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   restoreBtn: {
     flexShrink: 0,
     alignSelf: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: theme.radius.pill,
     borderWidth: 1,
