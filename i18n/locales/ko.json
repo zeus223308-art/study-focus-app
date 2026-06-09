@@ -403,9 +403,10 @@
     "reviewPatternHint": "최대 2개",
     "reviewPatternHelp": "복습 패턴 선택",
     "reviewPatternIntroLines": [
-      "1번의 암기법은 헤르만 에빙하우스의 망각 곡선 이론에서 출발하여 알려져 있습니다.",
-      "개인별 학습 내용별로 망각속도에 차이가 있으므로 '어렴풋이 기억나는 때'에 복습할 수 있도록 간격을 조정해야 합니다.",
-      "이 후에 바로 생각나거나 너무 잊었다면 간격 조율이 필요할 수 있습니다."
+      "1-3-7-14-30 복습법은 학습한 내용을 1일차 이후 3일, 7일, 14일, 30일 간격으로 반복 복습하여 장기기억으로의 전환을 돕는 학습 방법입니다.",
+      "이는 '어렴풑이 기억나는 시점'에 복습할 때 가장 효율적으로 기억이 강화된다는 헤르만 에빙하우스의 망각곡선 이론을 기반으로 발전했습니다.",
+      "다만 망각 속도는 개인과 학습 내용에 따라 달라질 수 있으므로, 복습 간격 또한 유동적으로 조정하는 것이 좋습니다.",
+      "복습 내용이 너무 쉽게 떠오른다면 간격을 늘리고, 반대로 거의 기억나지 않는다면 간격을 줄여 자신에게 가장 잘 맞는 복습 주기를 찾아보세요."
     ],
     "premium": "Premium",
     "addPattern": "+추가",
@@ -506,7 +507,7 @@
     "cloudRestoreDriveOk": "Drive에서 과목·사진·설정을 복원했습니다",
     "cloudRestoreLocalOk": "기기 복원됨",
     "cloudRestoreFailed": "백업 없음",
-    "cloudRestoreConfirmDrive": "이 Google 계정 Drive에 저장된 과목·사진·설정 전체를 이 기기로 불러옵니다. 지금 이 기기의 데이터는 Drive 백업으로 바뀝니다.",
+    "cloudRestoreConfirmDrive": "이 Google 계정 Drive에 저장된 과목·사진·설정을 이 기기로 불러옵니다. 이 기기는 Drive에 마지막으로 동기화된 데이터로 덮어씁니다. 기기에서 Drive로 동기화되지 않았던 데이터는 즉시 영구 삭제됩니다.",
     "cloudRestoreConfirmLocal": "기기 백업으로 덮어쓸까요?",
     "autoRecoveryDone": "백업에서 자동 복원했습니다.",
     "autoRecoveryFromDrive": "Google Drive",

@@ -403,9 +403,10 @@
     "reviewPatternHint": "Max 2",
     "reviewPatternHelp": "Review pattern picker",
     "reviewPatternIntroLines": [
-      "Pattern 1 is based on Hermann Ebbinghaus's forgetting curve.",
-      "Forgetting speed varies by person and subject, so intervals should be tuned to review when something feels vaguely familiar.",
-      "If you recall it instantly or have forgotten too much, adjust the spacing."
+      "The 1-3-7-14-30 pattern reviews material again 3, 7, 14, and 30 days after day 1 to help shift it into long-term memory.",
+      "It builds on Hermann Ebbinghaus's forgetting curve—the idea that recall is strengthened most when you review at the point something feels vaguely familiar.",
+      "Forgetting speed varies by person and subject, so spacing should stay flexible.",
+      "If reviews feel too easy, lengthen the interval; if you barely remember, shorten it until you find a rhythm that fits you."
     ],
     "premium": "Premium",
     "addPattern": "+ Add",
@@ -506,7 +507,7 @@
     "cloudRestoreDriveOk": "Restored subjects, photos, and settings from Drive",
     "cloudRestoreLocalOk": "Restored locally",
     "cloudRestoreFailed": "No backup",
-    "cloudRestoreConfirmDrive": "Load all subjects, photos, and settings from this Google account's Drive backup. Current data on this device will be replaced.",
+    "cloudRestoreConfirmDrive": "Load subjects, photos, and settings from this Google account's Drive backup. This device will be overwritten with the last data synced to Drive. Anything on this device that never synced to Drive will be permanently deleted immediately.",
     "cloudRestoreConfirmLocal": "Overwrite with local backup?",
     "autoRecoveryDone": "Restored from backup.",
     "autoRecoveryFromDrive": "Google Drive",
