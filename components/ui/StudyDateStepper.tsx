@@ -33,6 +33,9 @@ type Props = {
 const STEPPER_DATASET =
   Platform.OS === 'web' ? ({ dataSet: { studyDateStepper: '1' } } as object) : {};
 
+const ARROW_DATASET =
+  Platform.OS === 'web' ? ({ dataSet: { studyDateArrow: '1' } } as object) : {};
+
 const PressableBtn = Platform.OS === 'web' ? WebPressable : Pressable;
 
 function formatStepperLabel(
@@ -63,16 +66,28 @@ function StepperArrow({
   label: string;
   onPress: () => void;
 }) {
+  const handlePress = () => {
+    if (disabled) return;
+    onPress();
+  };
+
   return (
     <PressableBtn
-      onPress={onPress}
-      disabled={disabled}
+      onPress={handlePress}
       style={[styles.arrowBtn, disabled && styles.arrowDisabled]}
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
       accessibilityLabel={label}
       hitSlop={8}
-      pressRetentionOffset={16}>
-      <ChevronIcon direction={direction} size={22} color={tintColor} />
+      pressRetentionOffset={16}
+      {...ARROW_DATASET}>
+      {Platform.OS === 'web' ? (
+        <Text style={[styles.arrowGlyph, { color: tintColor }]}>
+          {direction === 'left' ? '‹' : '›'}
+        </Text>
+      ) : (
+        <ChevronIcon direction={direction} size={22} color={tintColor} />
+      )}
     </PressableBtn>
   );
 }
@@ -171,7 +186,7 @@ export function StudyDateStepper({
           onPress={() => step(-1)}
         />
 
-        <View style={styles.center}>
+        <View style={styles.center} pointerEvents="box-none">
           <CenterDateLabel
             label={label}
             variant={variant}
@@ -232,14 +247,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: theme.radius.sm,
     flexShrink: 0,
+    zIndex: 2,
   },
   arrowDisabled: { opacity: 0.35 },
+  arrowGlyph: {
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 30,
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
     minWidth: 0,
+    zIndex: 0,
   },
   centerPress: {
     alignItems: 'center',

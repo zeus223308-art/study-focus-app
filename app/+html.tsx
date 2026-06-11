@@ -196,6 +196,15 @@ img {
 [data-study-date-stepper="1"] {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+  z-index: 1;
+}
+[data-study-date-arrow="1"] {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
 }
 /* RN Web vertical scroll areas */
 [data-rn-scroll="1"] {

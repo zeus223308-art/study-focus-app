@@ -9,10 +9,5 @@ export const webScrollViewStyle: ViewStyle =
       } as ViewStyle)
     : {};
 
-/** ScrollView content — vertical pan only; buttons use touch-action: manipulation. */
-export const webScrollContentStyle: ViewStyle =
-  Platform.OS === 'web'
-    ? ({
-        touchAction: 'pan-y',
-      } as ViewStyle)
-    : {};
+/** ScrollView content — pan-y only on the scroll shell (`data-rn-scroll`), not here (iOS Safari child taps). */
+export const webScrollContentStyle: ViewStyle = {};
