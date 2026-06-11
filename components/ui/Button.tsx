@@ -1,7 +1,10 @@
-import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
 
+import { WebPressable } from '@/components/ui/WebPressable';
 import { theme } from '@/constants/theme';
 import { WEB_LINE } from '@/lib/ui/web-divider';
+
+const PressableBtn = Platform.OS === 'web' ? WebPressable : Pressable;
 
 type Props = {
   label: string;
@@ -25,7 +28,7 @@ export function Button({
 }: Props) {
   const compact = size === 'compact';
   return (
-    <Pressable
+    <PressableBtn
       onPress={onPress}
       disabled={disabled}
       style={({ pressed }) => [
@@ -49,7 +52,7 @@ export function Button({
         ]}>
         {label}
       </Text>
-    </Pressable>
+    </PressableBtn>
   );
 }
 

@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
 import { webHairlineTop } from '@/lib/ui/web-divider';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_LINK } from '@/lib/ui/button-label';
 
 type Props = {
@@ -33,7 +33,7 @@ export function PhotoHoldMenuSheet({
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable
           style={[styles.sheet, { paddingBottom: Math.max(28, insets.bottom + 12) }]}
-          onPress={() => {}}>
+          onPress={stopSheetPress}>
           <View style={styles.handle} />
           <Pressable style={styles.row} onPress={onSendToNewFolder}>
             <Text style={styles.rowText}>{sendToNewFolderLabel}</Text>

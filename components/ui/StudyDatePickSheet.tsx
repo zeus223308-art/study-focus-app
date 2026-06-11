@@ -5,11 +5,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
+import { WebPressable } from '@/components/ui/WebPressable';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useAdjustedHeight } from '@/hooks/useAdjustedHeight';
-import { parseStudyDateInput } from '@/lib/domain/dates';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import {
+  classifyStudyDateInput,
+  parseStudyDateInput,
+  type StudyDateInputError,
+} from '@/lib/domain/dates';
+import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type Props = {
   visible: boolean;
@@ -18,6 +23,16 @@ type Props = {
   onClose: () => void;
   onConfirm: (studyDate: string) => void;
 };
+
+const CancelBtn = Platform.OS === 'web' ? WebPressable : Pressable;
+
+function dateErrorMessage(
+  error: StudyDateInputError,
+  t: (key: string) => string
+): string {
+  if (error === 'future') return t('folder.restoreDateInvalidFuture');
+  return t('folder.restoreDateInvalid');
+}
 
 /** Bottom sheet to pick a study date (stepper + typed yyyy-MM-dd). */
 export function StudyDatePickSheet({
@@ -33,7 +48,7 @@ export function StudyDatePickSheet({
   const { keyboardOffset } = useAdjustedHeight();
   const [draftDate, setDraftDate] = useState(studyDate);
   const [draftInput, setDraftInput] = useState(studyDate);
-  const [inputError, setInputError] = useState(false);
+  const [inputError, setInputError] = useState<StudyDateInputError | null>(null);
 
   const initialDate = useMemo(
     () => parseStudyDateInput(studyDate, firstLaunchDate, localToday) ?? localToday,
@@ -44,29 +59,29 @@ export function StudyDatePickSheet({
     if (!visible) return;
     setDraftDate(initialDate);
     setDraftInput(initialDate);
-    setInputError(false);
+    setInputError(null);
   }, [visible, initialDate]);
 
   const handleStepperChange = (next: string) => {
     setDraftDate(next);
     setDraftInput(next);
-    setInputError(false);
+    setInputError(null);
   };
 
   const handleInputChange = (text: string) => {
     setDraftInput(text);
-    setInputError(false);
+    setInputError(null);
     const parsed = parseStudyDateInput(text, firstLaunchDate, localToday);
     if (parsed) setDraftDate(parsed);
   };
 
   const confirm = () => {
-    const parsed = parseStudyDateInput(draftInput, firstLaunchDate, localToday);
-    if (!parsed) {
-      setInputError(true);
+    const result = classifyStudyDateInput(draftInput, firstLaunchDate, localToday);
+    if (!result.ok) {
+      setInputError(result.error);
       return;
     }
-    onConfirm(parsed);
+    onConfirm(result.date);
   };
 
   return (
@@ -77,10 +92,9 @@ export function StudyDatePickSheet({
             styles.sheet,
             { paddingBottom: Math.max(24, insets.bottom + 12, keyboardOffset + 12) },
           ]}
-          onPress={() => {}}>
+          onPress={stopSheetPress}>
           <View style={styles.handle} />
           <Text style={styles.title}>{t('capture.pickDateTitle')}</Text>
-          <Text style={styles.message}>{t('capture.pickDateHint')}</Text>
           <StudyDateStepper
             studyDate={draftDate}
             onChange={handleStepperChange}
@@ -108,12 +122,12 @@ export function StudyDatePickSheet({
               : { maxLength: 10 })}
           />
           {inputError ? (
-            <Text style={styles.errorText}>{t('folder.restoreDateInvalid')}</Text>
+            <Text style={styles.errorText}>{dateErrorMessage(inputError, t)}</Text>
           ) : null}
           <Button label={t('common.apply')} onPress={confirm} style={styles.applyBtn} />
-          <Pressable onPress={onClose} style={styles.cancelRow} accessibilityRole="button">
+          <CancelBtn onPress={onClose} style={styles.cancelRow} accessibilityRole="button">
             <Text style={styles.cancelText}>{t('common.cancel')}</Text>
-          </Pressable>
+          </CancelBtn>
         </Pressable>
       </Pressable>
     </Modal>
@@ -150,14 +164,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: theme.black,
     textAlign: 'center',
-    marginBottom: 8,
-  },
-  message: {
-    fontSize: theme.font.bodySmall,
-    color: theme.gray,
-    textAlign: 'center',
     marginBottom: 16,
-    lineHeight: 22,
   },
   stepper: {
     marginTop: 0,

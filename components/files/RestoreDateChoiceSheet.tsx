@@ -6,8 +6,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
-import { parseStudyDateInput } from '@/lib/domain/dates';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import {
+  classifyStudyDateInput,
+  parseStudyDateInput,
+  type StudyDateInputError,
+} from '@/lib/domain/dates';
+import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+
+function dateErrorMessage(
+  error: StudyDateInputError,
+  t: (key: string) => string
+): string {
+  if (error === 'future') return t('folder.restoreDateInvalidFuture');
+  return t('folder.restoreDateInvalid');
+}
 
 type Props = {
   visible: boolean;
@@ -37,7 +49,7 @@ export function RestoreDateChoiceSheet({
   const [step, setStep] = useState<'choices' | 'custom'>('choices');
   const [customDate, setCustomDate] = useState(defaultStudyDate);
   const [draftInput, setDraftInput] = useState(defaultStudyDate);
-  const [inputError, setInputError] = useState(false);
+  const [inputError, setInputError] = useState<StudyDateInputError | null>(null);
 
   const initialCustomDate = useMemo(
     () => parseStudyDateInput(defaultStudyDate, firstLaunchDate, localToday) ?? localToday,
@@ -49,29 +61,29 @@ export function RestoreDateChoiceSheet({
     setStep('choices');
     setCustomDate(initialCustomDate);
     setDraftInput(initialCustomDate);
-    setInputError(false);
+    setInputError(null);
   }, [visible, initialCustomDate]);
 
   const handleCustomDateChange = (next: string) => {
     setCustomDate(next);
     setDraftInput(next);
-    setInputError(false);
+    setInputError(null);
   };
 
   const handleInputChange = (text: string) => {
     setDraftInput(text);
-    setInputError(false);
+    setInputError(null);
     const parsed = parseStudyDateInput(text, firstLaunchDate, localToday);
     if (parsed) setCustomDate(parsed);
   };
 
   const confirmCustom = () => {
-    const parsed = parseStudyDateInput(draftInput, firstLaunchDate, localToday);
-    if (!parsed) {
-      setInputError(true);
+    const result = classifyStudyDateInput(draftInput, firstLaunchDate, localToday);
+    if (!result.ok) {
+      setInputError(result.error);
       return;
     }
-    onRestoreCustom(parsed);
+    onRestoreCustom(result.date);
   };
 
   const closeSheet = () => {
@@ -84,7 +96,7 @@ export function RestoreDateChoiceSheet({
       <Pressable style={styles.backdrop} onPress={closeSheet}>
         <Pressable
           style={[styles.sheet, { paddingBottom: Math.max(24, insets.bottom + 12) }]}
-          onPress={() => {}}>
+          onPress={stopSheetPress}>
           <View style={styles.handle} />
           {step === 'choices' ? (
             <>
@@ -142,7 +154,7 @@ export function RestoreDateChoiceSheet({
                   : { maxLength: 10 })}
               />
               {inputError ? (
-                <Text style={styles.errorText}>{t('folder.restoreDateInvalid')}</Text>
+                <Text style={styles.errorText}>{dateErrorMessage(inputError, t)}</Text>
               ) : null}
               <Button
                 label={t('folder.restoreDateCustomConfirm')}

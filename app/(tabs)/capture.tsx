@@ -34,6 +34,7 @@ import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
 import { verifyCaptureImageReadable } from '@/lib/files/verify-capture-image';
 import { BUTTON_LABEL_COMPACT, BUTTON_LABEL_LINK } from '@/lib/ui/button-label';
 import { showMessage } from '@/lib/ui/confirm';
+import { stopSheetPress } from '@/lib/ui/web-fixed-overlay';
 import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
 import {
   clearCaptureDraft,
@@ -469,7 +470,7 @@ export default function CaptureTabScreen() {
         <Pressable style={styles.sheetBackdrop} onPress={dismissAnswerPrompt}>
           <Pressable
             style={[styles.sheet, { paddingBottom: sheetBottom }]}
-            onPress={() => {}}
+            onPress={stopSheetPress}
             {...sheetPressableProps}>
             <Text style={styles.sheetTitle}>{t('capture.pairTitle')}</Text>
             {frontUri ? (
@@ -508,7 +509,7 @@ export default function CaptureTabScreen() {
         <Pressable style={styles.sheetBackdrop} onPress={dismissSaveSheet}>
           <Pressable
             style={[styles.sheet, { paddingBottom: sheetBottom }]}
-            onPress={() => {}}
+            onPress={stopSheetPress}
             {...sheetPressableProps}>
             {saveState === 'saved' ? (
               <View style={styles.successBanner}>

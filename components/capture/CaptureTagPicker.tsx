@@ -23,7 +23,7 @@ import type { Language } from '@/lib/domain/types';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
 import { resolveTagColorFor, tagLabelTextColor } from '@/lib/ui/tag-colors';
 import { showMessage } from '@/lib/ui/confirm';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import { webHairlineTop } from '@/lib/ui/web-divider';
 
 type Props = {
@@ -75,7 +75,7 @@ function CaptureTagDeleteModal({
       <Pressable style={modalStyles.backdrop} onPress={onClose}>
         <Pressable
           style={[modalStyles.card, { marginBottom: Math.max(24, insets.bottom) }]}
-          onPress={() => {}}>
+          onPress={stopSheetPress}>
           <Text style={modalStyles.title}>{title}</Text>
           <Text style={modalStyles.hint}>{hint}</Text>
           <View style={[modalStyles.tagPill, { backgroundColor: tagColor }]}>
@@ -131,7 +131,7 @@ function TagChipActionSheet({
       <Pressable style={sheetStyles.backdrop} onPress={onClose}>
         <Pressable
           style={[sheetStyles.sheet, { paddingBottom: Math.max(28, insets.bottom + 12) }]}
-          onPress={() => {}}>
+          onPress={stopSheetPress}>
           <View style={sheetStyles.handle} />
           <Text style={sheetStyles.tagTitle} numberOfLines={1}>
             {tag}

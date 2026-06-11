@@ -26,7 +26,7 @@ import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-lab
 import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { showMessage } from '@/lib/ui/confirm';
 import { webHairlineBottom, webHairlineTop } from '@/lib/ui/web-divider';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type EditMode = { kind: 'edit'; original: string } | { kind: 'add' };
 
@@ -159,7 +159,7 @@ export function SettingsTagsSection() {
         <Pressable style={styles.backdrop} onPress={closeEdit}>
           <Pressable
             style={[styles.card, { marginBottom: Math.max(24, insets.bottom) }]}
-            onPress={() => {}}>
+            onPress={stopSheetPress}>
             <Text style={styles.modalTitle}>{editTitle}</Text>
 
             <Text style={styles.fieldLabel}>{t('settings.tagsName')}</Text>

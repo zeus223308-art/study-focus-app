@@ -107,7 +107,6 @@ function CenterDateLabel({
         <Text style={labelStyle} numberOfLines={1}>
           {label}
         </Text>
-        <Text style={styles.pickHint}>{pickLabel}</Text>
       </PressableBtn>
     );
   }
@@ -260,13 +259,6 @@ const styles = StyleSheet.create({
     fontSize: theme.font.body,
     fontWeight: '700',
     color: theme.white,
-  },
-  pickHint: {
-    marginTop: 2,
-    fontSize: theme.font.caption,
-    fontWeight: '600',
-    color: theme.orange,
-    textAlign: 'center',
   },
   todayBtn: {
     marginTop: 4,

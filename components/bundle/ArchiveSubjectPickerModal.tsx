@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import type { SubjectFolder } from '@/lib/domain/types';
 
 type Props = {
@@ -36,7 +36,7 @@ export function ArchiveSubjectPickerModal({
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable
           style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}
-          onPress={(e) => e.stopPropagation()}>
+          onPress={stopSheetPress}>
           <Text style={styles.title}>{t('item.archivePickTitle')}</Text>
           <Text style={styles.sub}>{t('item.archivePickBody')}</Text>
           <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">

@@ -1,4 +1,9 @@
-import { Platform, type ViewStyle } from 'react-native';
+import { Platform, type GestureResponderEvent, type ViewStyle } from 'react-native';
+
+/** Prevent sheet inner taps from bubbling to the backdrop dismiss handler (iOS Safari). */
+export function stopSheetPress(e: GestureResponderEvent) {
+  e.stopPropagation();
+}
 
 /** Pin full-screen overlays/backdrops on iOS Safari mobile web (same as Android Chrome). */
 export const webFixedBackdropStyle: ViewStyle =

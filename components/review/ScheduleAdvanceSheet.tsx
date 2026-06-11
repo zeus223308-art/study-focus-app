@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type Props = {
   visible: boolean;
@@ -36,7 +36,7 @@ export function ScheduleAdvanceSheet({
       <Pressable style={styles.backdrop} onPress={onNo}>
         <Pressable
           style={[styles.sheet, { paddingBottom: Math.max(36, insets.bottom + 16) }]}
-          onPress={(e) => e.stopPropagation()}>
+          onPress={stopSheetPress}>
           <View style={styles.handle} />
           <View style={styles.scorePill}>
             <Text style={styles.scoreText}>{score}%</Text>

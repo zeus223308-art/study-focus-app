@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 import type { SubjectFolder } from '@/lib/domain/types';
 
 type Props = {
@@ -40,7 +40,7 @@ export function SubjectPickerModal({
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable
           style={[styles.sheet, { paddingBottom: Math.max(20, insets.bottom) }]}
-          onPress={() => {}}>
+          onPress={stopSheetPress}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.hint}>{hint}</Text>
           <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">

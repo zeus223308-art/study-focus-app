@@ -100,22 +100,37 @@ export function studyDateBounds(firstLaunchDate: string): { min: string; max: st
 
 const STUDY_DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+export type StudyDateInputError = 'format' | 'future' | 'before_min';
+
+/** Classify typed `yyyy-MM-dd` against first-launch…`maxDate` (defaults to local today). */
+export function classifyStudyDateInput(
+  raw: string,
+  firstLaunchDate: string,
+  maxDate?: string
+): { ok: true; date: string } | { ok: false; error: StudyDateInputError } {
+  const trimmed = raw.trim();
+  if (!STUDY_DATE_KEY_RE.test(trimmed)) return { ok: false, error: 'format' };
+
+  const date = parseISO(`${trimmed}T12:00:00`);
+  if (!isValid(date) || format(date, 'yyyy-MM-dd') !== trimmed) {
+    return { ok: false, error: 'format' };
+  }
+
+  const { min, max } = studyDateBounds(firstLaunchDate);
+  const cap = maxDate ?? max;
+  if (trimmed < min) return { ok: false, error: 'before_min' };
+  if (trimmed > cap) return { ok: false, error: 'future' };
+  return { ok: true, date: trimmed };
+}
+
 /** Parse `yyyy-MM-dd` and clamp to first-launch…`maxDate` (defaults to local today). */
 export function parseStudyDateInput(
   raw: string,
   firstLaunchDate: string,
   maxDate?: string
 ): string | null {
-  const trimmed = raw.trim();
-  if (!STUDY_DATE_KEY_RE.test(trimmed)) return null;
-
-  const date = parseISO(`${trimmed}T12:00:00`);
-  if (!isValid(date) || format(date, 'yyyy-MM-dd') !== trimmed) return null;
-
-  const { min, max } = studyDateBounds(firstLaunchDate);
-  const cap = maxDate ?? max;
-  if (trimmed < min || trimmed > cap) return null;
-  return trimmed;
+  const result = classifyStudyDateInput(raw, firstLaunchDate, maxDate);
+  return result.ok ? result.date : null;
 }
 
 /** Move study date by N days, clamped to first-launch…today (no future). */

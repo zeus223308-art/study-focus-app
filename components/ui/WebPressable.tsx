@@ -48,6 +48,8 @@ export function WebPressable({
       const now = Date.now();
       if (now - lastPressRef.current < debounceMs) return;
       lastPressRef.current = now;
+      // Keep modal/sheet backdrop dismiss from stealing taps on iOS Safari.
+      if (Platform.OS === 'web') event?.stopPropagation?.();
       onPress(event);
     },
     [debounceMs, disabled, onPress]

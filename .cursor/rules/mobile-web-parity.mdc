@@ -34,6 +34,8 @@ GitHub Pages bundle must look and behave the same on **Android Chrome** and **iO
 ## Overlays & lines
 
 - Full-screen backdrops: `webFixedBackdropStyle` (`lib/ui/web-fixed-overlay.ts`).
+- Sheet/modal inner container: `onPress={stopSheetPress}` — not `onPress={() => {}}` (iOS Safari bubbles to backdrop).
+- `WebPressable` / `Button` on web call `stopPropagation` so Apply/confirm works inside sheets.
 - 1px dividers on web: `WEB_LINE` / `webHairlineTop` / `WebDividerLine` — not `StyleSheet.hairlineWidth` alone.
 
 ## Safe area

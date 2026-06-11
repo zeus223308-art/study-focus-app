@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-label';
-import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
+import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type Props = {
   visible: boolean;
@@ -38,7 +38,7 @@ export function SendToNewFolderModal({
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable
           style={[styles.card, { marginBottom: Math.max(24, insets.bottom) }]}
-          onPress={() => {}}>
+          onPress={stopSheetPress}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.hint}>{hint}</Text>
           <TextInput
