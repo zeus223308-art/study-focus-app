@@ -154,7 +154,7 @@ export function CloudBackupSettings() {
       await signOut();
       await reloadAccountData();
       updateSettings({ cloudBackupEnabled: false });
-      showToast(t('settings.cloudSignOutSuccess'), { title: t('settings.cloud') });
+      showToast(t('settings.cloudSignOutSuccess'));
     } finally {
       setBusy(false);
     }

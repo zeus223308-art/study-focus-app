@@ -26,7 +26,7 @@ export function GoogleOAuthReturnHandler() {
         finishGoogleLogin({ updateSettings, reloadAccountData, syncCloud });
         router.replace('/(tabs)/settings');
         if (result.email) {
-          showToast(t('settings.cloudWebLoginSuccess'), { title: t('settings.cloud') });
+          showToast(t('settings.cloudWebLoginSuccess'));
         }
         return;
       }
