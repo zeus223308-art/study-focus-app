@@ -17,7 +17,6 @@ import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { BUTTON_LABEL_COMPACT } from '@/lib/ui/button-label';
 import {
   computeVaultFoldersPerPage,
-  TAB_SCREEN_HORIZONTAL_PAD,
   useViewportLayout,
   vaultPanelPad,
   VAULT_TILE_HEIGHT,
@@ -179,8 +178,7 @@ export default function FilesScreen() {
     <Screen
       scroll
       scrollEnabled={screenScrollEnabled}
-      nestedScrollEnabled
-      horizontalPad={TAB_SCREEN_HORIZONTAL_PAD}>
+      nestedScrollEnabled>
       {movingBundleId ? (
         <Text style={styles.moveBanner}>{t('folder.dropHint')}</Text>
       ) : null}

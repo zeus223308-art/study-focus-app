@@ -14,7 +14,7 @@ type Props = {
   scrollEnabled?: boolean;
   style?: ViewStyle;
   padded?: boolean;
-  /** Override viewport horizontal padding (main tabs use TAB_SCREEN_HORIZONTAL_PAD). */
+  /** Override viewport horizontal padding (default {@link SCREEN_HORIZONTAL_PAD}). */
   horizontalPad?: number;
   nestedScrollEnabled?: boolean;
   /** Non-scroll screens: flex column so a child ScrollView can fill remaining height. */

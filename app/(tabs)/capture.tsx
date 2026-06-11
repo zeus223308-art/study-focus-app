@@ -35,6 +35,7 @@ import { verifyCaptureImageReadable } from '@/lib/files/verify-capture-image';
 import { BUTTON_LABEL_COMPACT, BUTTON_LABEL_LINK } from '@/lib/ui/button-label';
 import { showMessage } from '@/lib/ui/confirm';
 import { stopSheetPress } from '@/lib/ui/web-fixed-overlay';
+import { SCREEN_HORIZONTAL_PAD } from '@/lib/ui/viewport-layout';
 import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
 import {
   clearCaptureDraft,
@@ -725,7 +726,7 @@ export default function CaptureTabScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: theme.blackPure },
   tabHeader: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SCREEN_HORIZONTAL_PAD,
     paddingBottom: 8,
   },
   tabTitleWeb: { fontSize: theme.font.heading, fontWeight: '800', color: theme.black },
@@ -745,7 +746,7 @@ const styles = StyleSheet.create({
   },
   importBtn: {
     position: 'absolute',
-    left: 20,
+    left: SCREEN_HORIZONTAL_PAD,
     zIndex: 2,
     paddingHorizontal: 14,
     paddingVertical: 10,

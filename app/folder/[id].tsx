@@ -36,7 +36,7 @@ import {
 import { remainingPhotoSlots } from '@/services/storage';
 import { confirmChoice, showMessage } from '@/lib/ui/confirm';
 import { NotFoundView } from '@/components/ui/NotFoundView';
-import { ALBUM_TILE_GAP, useViewportLayout } from '@/lib/ui/viewport-layout';
+import { ALBUM_TILE_GAP, SCREEN_HORIZONTAL_PAD, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 function itemKey(item: SubjectProblemItem) {
   return `${item.bundleId}:${item.pageId}`;
@@ -602,7 +602,7 @@ export default function FolderScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, minHeight: 0 },
   shrink0: { flexShrink: 0 },
-  header: { paddingHorizontal: 20 },
+  header: { paddingHorizontal: SCREEN_HORIZONTAL_PAD },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   exportHint: {
     fontSize: theme.font.caption,
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   cancelMove: { alignSelf: 'flex-end', marginTop: -12, marginBottom: 8 },
   cancelMoveText: { fontSize: theme.font.caption, fontWeight: '700', color: theme.orange },
   albumScroll: { flex: 1, minHeight: 0 },
-  scroll: { paddingHorizontal: 16, paddingBottom: 120 },
+  scroll: { paddingHorizontal: SCREEN_HORIZONTAL_PAD, paddingBottom: 120 },
   scrollSelecting: { paddingBottom: 200 },
   scrollEmpty: { flexGrow: 1, justifyContent: 'center' },
   emptyBlock: { alignItems: 'center', gap: 20, paddingVertical: 40 },

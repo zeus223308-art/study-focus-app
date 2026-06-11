@@ -24,7 +24,7 @@ import type { NotePage } from '@/lib/domain/types';
 import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import { searchBundles } from '@/lib/grouping/bundles';
 import { resolveTagColorFor } from '@/lib/ui/tag-colors';
-import { useViewportLayout } from '@/lib/ui/viewport-layout';
+import { SCREEN_HORIZONTAL_PAD, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export default function SearchScreen() {
   const { t } = useTranslation();
@@ -183,7 +183,7 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.beige, paddingHorizontal: 20 },
+  root: { flex: 1, backgroundColor: theme.beige, paddingHorizontal: SCREEN_HORIZONTAL_PAD },
   input: {
     backgroundColor: theme.surface,
     borderRadius: 12,

@@ -76,8 +76,11 @@ export function settingsRowPad(isPhone: boolean): number {
   return isPhone ? 10 : 16;
 }
 
-/** Files · Dashboard · Settings tab screen horizontal inset. */
-export const TAB_SCREEN_HORIZONTAL_PAD = 30;
+/** All tab/stack screens: fixed horizontal inset from screen edge (each side). */
+export const SCREEN_HORIZONTAL_PAD = 25;
+
+/** @deprecated Use {@link SCREEN_HORIZONTAL_PAD}. */
+export const TAB_SCREEN_HORIZONTAL_PAD = SCREEN_HORIZONTAL_PAD;
 
 /** @deprecated Use vaultPanelPad(isPhone) — default for non-viewport call sites. */
 export const VAULT_PANEL_PAD = 14;
@@ -125,7 +128,7 @@ export function computeAlbumNumColumns(
   width: number,
   isLandscape: boolean,
   deviceClass: DeviceClass,
-  horizontalPad = 32
+  horizontalPad = SCREEN_HORIZONTAL_PAD * 2
 ): number {
   const innerW = Math.max(0, width - horizontalPad);
   if (!isLandscape) {
@@ -146,13 +149,13 @@ export function computeContentMaxWidth(
   deviceClass: DeviceClass
 ): number {
   const isLandscape = width > height;
+  const inset = SCREEN_HORIZONTAL_PAD * 2;
   if (isLandscape) {
-    const pad = deviceClass === 'phone' ? 8 : deviceClass === 'tablet' ? 16 : 24;
-    return width - pad * 2;
+    return width - inset;
   }
   if (deviceClass === 'phone') return width;
-  if (deviceClass === 'tablet') return Math.min(width - 48, 720);
-  return Math.min(width - 64, 960);
+  if (deviceClass === 'tablet') return Math.min(width - inset, 720);
+  return Math.min(width - inset, 960);
 }
 
 export type BundlePhotoLayout = {
@@ -205,24 +208,19 @@ export function useViewportLayout(): ViewportLayout {
     const isPhone = deviceClass === 'phone';
     const isTablet = !isPhone;
 
-    const horizontalPadding = isLandscape
-      ? isPhone
-        ? 4
-        : deviceClass === 'tablet'
-          ? 16
-          : 20
-      : isPhone
-        ? 4
-        : deviceClass === 'tablet'
-          ? 24
-          : 32;
+    const horizontalPadding = SCREEN_HORIZONTAL_PAD;
     const dockEdgeGap = isPhone ? 8 : 28;
     const dockContentGap = isPhone ? 8 : 12;
     const contentMaxWidth = computeContentMaxWidth(width, height, deviceClass);
     const pagerSize = computePagerSize(width, height, deviceClass);
 
     const listNumColumns = isPhone ? 1 : 2;
-    const albumNumColumns = computeAlbumNumColumns(width, isLandscape, deviceClass);
+    const albumNumColumns = computeAlbumNumColumns(
+      width,
+      isLandscape,
+      deviceClass,
+      horizontalPadding * 2
+    );
     const vaultFoldersPerPage = computeVaultFoldersPerPage(width);
     const dashboardCardsPerRow = isPhone && !isLandscape ? 1 : isLandscape ? 2 : 2;
 
