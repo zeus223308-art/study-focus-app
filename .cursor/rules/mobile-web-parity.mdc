@@ -1,0 +1,49 @@
+---
+description: iOS Safari / Android Chrome mobile web parity — WebPressable, SVG icons, keyboard viewport
+globs: "**/*.{tsx,ts}"
+alwaysApply: true
+---
+
+# Mobile web parity (Android Chrome baseline)
+
+GitHub Pages bundle must look and behave the same on **Android Chrome** and **iOS Safari** (portrait phone). Android is the layout baseline.
+
+## Touch & buttons (ScrollView-safe)
+
+- **Use `WebPressable`** (`components/ui/WebPressable.tsx`) for tappable controls on web — especially inside `ScrollView`. Do **not** use raw HTML `<button>` or `WebTapButton`.
+- `WebPressable` already applies: `touchAction: manipulation`, `WebkitTapHighlightColor: transparent`, `userSelect: none`, **180ms debounce**, `delayLongPress={0}`, `pressRetentionOffset={12}`.
+- Pattern: `const Btn = Platform.OS === 'web' ? WebPressable : Pressable`.
+
+## Icons on web
+
+- **Chevrons / arrows:** `ChevronIcon` (`components/ui/ChevronIcon.tsx`) — inline SVG on web, `SymbolView` on native only.
+- Do **not** add new `SymbolView` chevrons on web paths; extend `ChevronIcon` or add a sibling SVG component.
+
+## ScrollView
+
+- Web screens: `Screen.web.tsx` pattern — `webScrollViewStyle` + `webScrollContentStyle` from `lib/ui/web-scroll.ts`.
+- `keyboardShouldPersistTaps="always"` on mobile web scroll areas with inputs/buttons.
+- Global CSS: `app/+html.tsx` (`data-rn-scroll`, `data-study-date-stepper`).
+
+## Keyboard & viewport
+
+- **`useAdjustedHeight`** (`hooks/useAdjustedHeight.ts`) for iOS Safari virtual keyboard overlay.
+- Wire `keyboardOffset` into bottom sheets, `MobileWebFrame`, and modals with text inputs.
+- Layout size: `useLayoutViewportSize()` — not raw `window.innerWidth` alone.
+
+## Overlays & lines
+
+- Full-screen backdrops: `webFixedBackdropStyle` (`lib/ui/web-fixed-overlay.ts`).
+- 1px dividers on web: `WEB_LINE` / `webHairlineTop` / `WebDividerLine` — not `StyleSheet.hairlineWidth` alone.
+
+## Safe area
+
+- RN insets on phone web: `MobileWebSafeAreaOverride` (zero — matches Android).
+- Browser chrome: `env(safe-area-inset-bottom, 0px)` in `app/+html.tsx` only; no duplicate iOS-only RN padding.
+
+## When changing UI
+
+1. New pressable in a scrollable screen → `WebPressable` on web.
+2. New arrow icon on web → `ChevronIcon` or SVG.
+3. New bottom sheet with input → `useAdjustedHeight` for bottom padding.
+4. Sanity-check **both** mobile browsers; avoid Safari-only or Chrome-only hacks.

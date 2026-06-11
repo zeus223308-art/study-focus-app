@@ -42,4 +42,4 @@ Every UI change must work on **phone (Android/iOS browser), tablet, and desktop 
 - `lib/ui/viewport-layout.ts`, `useLayoutViewportSize`, `useSafeAreaInsets`, flex + `onLayout`
 - Modals at **root/tab provider**, not inside scroll content (native mobile web breaks otherwise)
 - Web drag: `Platform.OS === 'web'`; native: `PanResponder`
-- See `.cursor/rules/responsive-ui.mdc`
+- See `.cursor/rules/responsive-ui.mdc` and **`.cursor/rules/mobile-web-parity.mdc`** (WebPressable, ChevronIcon, keyboard viewport)
