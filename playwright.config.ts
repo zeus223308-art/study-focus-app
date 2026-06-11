@@ -21,7 +21,17 @@ export default defineConfig({
   projects: [
     {
       name: 'webkit-iphone',
+      testMatch: /webkit-mobile\.spec\.ts/,
       use: { ...devices['iPhone 13'] },
+    },
+    {
+      name: 'chromium-pixel',
+      testMatch: /chromium-mobile\.spec\.ts/,
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'mobile-parity',
+      testMatch: /mobile-parity\.spec\.ts/,
     },
   ],
   webServer: {

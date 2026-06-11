@@ -5,6 +5,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { theme } from '@/constants/theme';
 import { safeRouterBack } from '@/lib/navigation/safe-back';
+import { screenHeaderRowWeb } from '@/lib/ui/settings-row-web';
 
 type Props = {
   title: string;
@@ -28,8 +29,8 @@ export function ScreenHeader({
   center,
   compactBottom = false,
 }: Props) {
-  const rowStyle = [styles.row, compactBottom && styles.rowCompact];
-  const rowThreeStyle = [styles.rowThree, compactBottom && styles.rowCompact];
+  const rowStyle = [styles.row, screenHeaderRowWeb(), compactBottom && styles.rowCompact];
+  const rowThreeStyle = [styles.rowThree, screenHeaderRowWeb(), compactBottom && styles.rowCompact];
   const router = useRouter();
   const { t } = useTranslation();
 

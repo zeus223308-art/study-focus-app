@@ -3,12 +3,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
 import { WEB_LINE, webHairlineBottom } from '@/lib/ui/web-divider';
+import { settingsGroupTitleWeb, settingsRowBoxWeb } from '@/lib/ui/settings-row-web';
 import { settingsRowPad, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export function SettingsGroup({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <View style={styles.wrap}>
-      {title ? <Text style={styles.title}>{title}</Text> : null}
+      {title ? <Text style={[styles.title, settingsGroupTitleWeb()]}>{title}</Text> : null}
       <View style={styles.group}>{children}</View>
     </View>
   );
@@ -37,18 +38,20 @@ export function SettingsRow({
     </>
   );
 
+  const rowBox = settingsRowBoxWeb(!!right);
+
   if (onPress) {
     return (
       <Pressable
         onPress={onPress}
-        style={[styles.row, { paddingHorizontal: rowPad }, !last && styles.rowBorder]}>
+        style={[styles.row, rowBox, { paddingHorizontal: rowPad }, !last && styles.rowBorder]}>
         {content}
       </Pressable>
     );
   }
 
   return (
-    <View style={[styles.row, { paddingHorizontal: rowPad }, !last && styles.rowBorder]}>
+    <View style={[styles.row, rowBox, { paddingHorizontal: rowPad }, !last && styles.rowBorder]}>
       {content}
     </View>
   );

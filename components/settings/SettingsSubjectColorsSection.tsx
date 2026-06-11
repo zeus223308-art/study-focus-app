@@ -9,6 +9,7 @@ import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { normalizeSubjectColor, resolveSubjectColor } from '@/lib/domain/subject-colors';
 import { webHairlineBottom } from '@/lib/ui/web-divider';
+import { settingsRowBoxWeb } from '@/lib/ui/settings-row-web';
 import { settingsRowPad, useViewportLayout } from '@/lib/ui/viewport-layout';
 
 export function SettingsSubjectColorsSection() {
@@ -37,6 +38,7 @@ export function SettingsSubjectColorsSection() {
               onPress={() => setColorSubjectId(subject.id)}
               style={[
                 styles.row,
+                settingsRowBoxWeb(),
                 { paddingHorizontal: rowPad },
                 i < subjects.length - 1 && styles.rowBorder,
               ]}>

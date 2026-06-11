@@ -26,6 +26,7 @@ import { BUTTON_LABEL_DEFAULT, BUTTON_LABEL_EMPHASIS } from '@/lib/ui/button-lab
 import { resolveTagColorFor } from '@/lib/ui/tag-colors';
 import { showMessage } from '@/lib/ui/confirm';
 import { webHairlineBottom, webHairlineTop } from '@/lib/ui/web-divider';
+import { settingsRowBoxWeb } from '@/lib/ui/settings-row-web';
 import { stopSheetPress, webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
 type EditMode = { kind: 'edit'; original: string } | { kind: 'add' };
@@ -133,7 +134,7 @@ export function SettingsTagsSection() {
             <Pressable
               key={tag}
               onPress={() => openEdit(tag)}
-              style={[styles.row, i < tags.length - 1 && styles.rowBorder]}>
+              style={[styles.row, settingsRowBoxWeb(), i < tags.length - 1 && styles.rowBorder]}>
               <View style={styles.rowLeft}>
                 <View style={[styles.dot, { backgroundColor: colorForTag(tag) }]} />
                 <Text style={styles.label} numberOfLines={1}>
@@ -146,7 +147,7 @@ export function SettingsTagsSection() {
         )}
         <Pressable
           onPress={openAdd}
-          style={[styles.row, tags.length > 0 && styles.rowBorderTop, styles.addRow]}>
+          style={[styles.row, settingsRowBoxWeb(), tags.length > 0 && styles.rowBorderTop, styles.addRow]}>
           <Text style={styles.addLabel}>{t('settings.tagsAdd')}</Text>
         </Pressable>
       </SettingsGroup>

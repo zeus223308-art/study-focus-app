@@ -15,6 +15,7 @@ import { SettingsRow } from '@/components/SettingsGroup';
 import { theme } from '@/constants/theme';
 import { BUTTON_LABEL_DEFAULT } from '@/lib/ui/button-label';
 import { webHairlineBottom, webHairlineTop } from '@/lib/ui/web-divider';
+import { cloudBackupHeaderRowWeb, settingsRowBoxWeb } from '@/lib/ui/settings-row-web';
 import { useApp } from '@/context/AppContext';
 import { useGoogleDriveAuth } from '@/hooks/useGoogleDriveAuth';
 import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
@@ -174,7 +175,7 @@ export function CloudBackupSettings() {
 
   const headerBlock = (
     <View style={styles.headerBlock}>
-      <View style={styles.headerRow} pointerEvents="box-none">
+      <View style={[styles.headerRow, cloudBackupHeaderRowWeb()]} pointerEvents="box-none">
         <Text style={styles.headerLabel} pointerEvents="none">
           {t('settings.cloud')}
         </Text>
@@ -266,7 +267,7 @@ export function CloudBackupSettings() {
           />
           <Pressable
             onPress={busy ? undefined : handleRestoreDrive}
-            style={[styles.actionRow, styles.rowBorder]}
+            style={[styles.actionRow, settingsRowBoxWeb(), styles.rowBorder]}
             disabled={busy}>
             <Text style={styles.actionText}>{t('settings.cloudRestoreDrive')}</Text>
             {busy && <ActivityIndicator color={theme.orange} />}

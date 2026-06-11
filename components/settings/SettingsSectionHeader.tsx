@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { settingsSectionHeaderRowWeb } from '@/lib/ui/settings-row-web';
 
 type Props = {
   title: string;
@@ -11,7 +12,7 @@ type Props = {
 /** Uppercase section label with optional circular ? help button. */
 export function SettingsSectionHeader({ title, onHelpPress, helpAccessibilityLabel }: Props) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, settingsSectionHeaderRowWeb()]}>
       <Text style={styles.title}>{title}</Text>
       {onHelpPress ? (
         <Pressable

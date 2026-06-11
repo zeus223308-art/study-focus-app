@@ -52,10 +52,10 @@ jobs:
             exit 1
           fi
 
-      - name: Install Playwright WebKit
-        run: npx playwright install --with-deps webkit
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
 
-      - name: WebKit mobile smoke (Safari-class)
+      - name: Mobile web parity (Chrome baseline + WebKit)
         run: npm run test:e2e:ci
 
       - name: GitHub Pages SPA fallback + auto-update
