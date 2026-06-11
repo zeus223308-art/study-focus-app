@@ -21,3 +21,14 @@ export function showToast(
     durationMs: options?.durationMs ?? 2500,
   });
 }
+
+/** Playwright WebKit e2e — invoke `showToast` without OAuth. */
+declare global {
+  interface Window {
+    __MS_E2E__?: { showToast: typeof showToast };
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.__MS_E2E__ = { showToast };
+}

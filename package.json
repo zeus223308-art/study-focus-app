@@ -43,6 +43,7 @@
     "react-native-worklets": "0.8.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "@types/react": "~19.2.2",
     "@types/react-dom": "~19.2.2",
     "typescript": "~6.0.3"
@@ -53,7 +54,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "export:web": "expo export --platform web",
-    "serve:web": "npx --yes serve dist -s -l 4173",
+    "serve:web": "node scripts/serve-github-pages.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:webkit": "playwright test --project=webkit-iphone",
+    "test:e2e:ci": "playwright test --project=webkit-iphone",
     "setup:google-oauth": "node scripts/setup-google-oauth.mjs",
     "setup:google-native": "node scripts/setup-google-oauth-native.mjs",
     "prebuild:clean": "expo prebuild --clean",

@@ -26,6 +26,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { SPLASH_BLACK } from '@/components/MountainMLogo';
+import { isE2eMode } from '@/lib/e2e/mode';
 
 const mountainLogo = require('../assets/images/mountain-m-logo.png');
 
@@ -128,9 +129,10 @@ export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
-  const [animDone, setAnimDone] = useState(false);
+  const [animDone, setAnimDone] = useState(() => isE2eMode());
   const [appReady, setAppReady] = useState(false);
   const splashDone = animDone && appReady;
+  const skipSplash = isE2eMode();
 
   const onBrandFinish = useCallback(() => setAnimDone(true), []);
   const onAppReady = useCallback(() => setAppReady(true), []);
@@ -154,7 +156,7 @@ export default function RootLayout() {
           <AppRoot splashDone={splashDone} />
         </AppProvider>
       </SafeAreaProvider>
-      {!splashDone ? <SplashBrand onFinish={onBrandFinish} /> : null}
+      {!splashDone && !skipSplash ? <SplashBrand onFinish={onBrandFinish} /> : null}
     </GestureHandlerRootView>
   );
 }
