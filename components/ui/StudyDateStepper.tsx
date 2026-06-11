@@ -11,14 +11,14 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { SymbolView } from 'expo-symbols';
 
+import { ChevronIcon } from '@/components/ui/ChevronIcon';
 import { StudyDatePickSheet } from '@/components/ui/StudyDatePickSheet';
+import { WebPressable } from '@/components/ui/WebPressable';
 import { theme } from '@/constants/theme';
 import { useLanguage } from '@/context/AppContext';
 import { shiftStudyDateKey, studyDateBounds, todayKey } from '@/lib/domain/dates';
 import { WEB_LINE } from '@/lib/ui/web-divider';
-import { WebTapButton } from '@/lib/ui/WebTapButton';
 
 type Props = {
   studyDate: string;
@@ -32,6 +32,8 @@ type Props = {
 
 const STEPPER_DATASET =
   Platform.OS === 'web' ? ({ dataSet: { studyDateStepper: '1' } } as object) : {};
+
+const PressableBtn = Platform.OS === 'web' ? WebPressable : Pressable;
 
 function formatStepperLabel(
   studyDate: string,
@@ -55,45 +57,23 @@ function StepperArrow({
   label,
   onPress,
 }: {
-  direction: 'prev' | 'next';
+  direction: 'left' | 'right';
   disabled: boolean;
   tintColor: string;
   label: string;
   onPress: () => void;
 }) {
-  const glyph = direction === 'prev' ? '‹' : '›';
-
-  if (Platform.OS === 'web') {
-    return (
-      <WebTapButton
-        onPress={onPress}
-        disabled={disabled}
-        label={label}
-        style={styles.arrowBtn}>
-        <Text style={[styles.arrowGlyph, { color: tintColor }]} selectable={false}>
-          {glyph}
-        </Text>
-      </WebTapButton>
-    );
-  }
-
   return (
-    <Pressable
+    <PressableBtn
       onPress={onPress}
       disabled={disabled}
       style={[styles.arrowBtn, disabled && styles.arrowDisabled]}
       accessibilityRole="button"
-      accessibilityLabel={label}>
-      <SymbolView
-        name={
-          direction === 'prev'
-            ? { ios: 'chevron.left', android: 'chevron_left', web: 'arrow_back' }
-            : { ios: 'chevron.right', android: 'chevron_right', web: 'arrow_forward' }
-        }
-        size={22}
-        tintColor={tintColor}
-      />
-    </Pressable>
+      accessibilityLabel={label}
+      hitSlop={8}
+      pressRetentionOffset={16}>
+      <ChevronIcon direction={direction} size={22} color={tintColor} />
+    </PressableBtn>
   );
 }
 
@@ -117,34 +97,18 @@ function CenterDateLabel({
   const labelStyle = [styles.dateLabel, variant === 'inline' && styles.dateLabelInline];
 
   if (enablePickSheet) {
-    const content = (
-      <>
+    return (
+      <PressableBtn
+        onPress={onOpenPicker}
+        style={styles.centerPress}
+        accessibilityRole="button"
+        accessibilityLabel={pickLabel}
+        hitSlop={4}>
         <Text style={labelStyle} numberOfLines={1}>
           {label}
         </Text>
         <Text style={styles.pickHint}>{pickLabel}</Text>
-      </>
-    );
-
-    if (Platform.OS === 'web') {
-      return (
-        <WebTapButton
-          onPress={onOpenPicker}
-          label={pickLabel}
-          style={styles.centerPress}>
-          {content}
-        </WebTapButton>
-      );
-    }
-
-    return (
-      <Pressable
-        onPress={onOpenPicker}
-        style={styles.centerPress}
-        accessibilityRole="button"
-        accessibilityLabel={pickLabel}>
-        {content}
-      </Pressable>
+      </PressableBtn>
     );
   }
 
@@ -154,19 +118,14 @@ function CenterDateLabel({
         {label}
       </Text>
       {showJumpToday ? (
-        Platform.OS === 'web' ? (
-          <WebTapButton onPress={onJumpToday} label={pickLabel} style={styles.todayBtn}>
-            <Text style={styles.todayLink}>{pickLabel}</Text>
-          </WebTapButton>
-        ) : (
-          <Pressable
-            onPress={onJumpToday}
-            hitSlop={6}
-            accessibilityRole="button"
-            accessibilityLabel={pickLabel}>
-            <Text style={styles.todayLink}>{pickLabel}</Text>
-          </Pressable>
-        )
+        <PressableBtn
+          onPress={onJumpToday}
+          hitSlop={6}
+          style={styles.todayBtn}
+          accessibilityRole="button"
+          accessibilityLabel={pickLabel}>
+          <Text style={styles.todayLink}>{pickLabel}</Text>
+        </PressableBtn>
       ) : null}
     </>
   );
@@ -206,7 +165,7 @@ export function StudyDateStepper({
         style={[variant === 'card' ? styles.card : styles.inline, style]}
         {...STEPPER_DATASET}>
         <StepperArrow
-          direction="prev"
+          direction="left"
           disabled={!canPrev}
           tintColor={canPrev ? theme.black : theme.grayMuted}
           label={t('capture.datePrevDay')}
@@ -226,7 +185,7 @@ export function StudyDateStepper({
         </View>
 
         <StepperArrow
-          direction="next"
+          direction="right"
           disabled={!canNext}
           tintColor={canNext ? theme.black : theme.grayMuted}
           label={t('capture.dateNextDay')}
@@ -274,13 +233,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: theme.radius.sm,
     flexShrink: 0,
-  },
-  arrowGlyph: {
-    fontSize: 28,
-    fontWeight: '700',
-    lineHeight: 32,
-    textAlign: 'center',
-    includeFontPadding: false,
   },
   arrowDisabled: { opacity: 0.35 },
   center: {

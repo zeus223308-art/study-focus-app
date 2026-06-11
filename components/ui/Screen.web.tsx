@@ -1,8 +1,9 @@
 import { forwardRef, ReactNode } from 'react';
-import { ScrollView, View, type ViewStyle } from 'react-native';
+import { Platform, ScrollView, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { dockTopContentInset } from '@/components/DockTabBar';
 import { screenLayoutStyles } from '@/lib/ui/screen-layout';
+import { webScrollContentStyle, webScrollViewStyle } from '@/lib/ui/web-scroll';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 
 const SCROLL_BOTTOM_PAD = 24;
@@ -64,14 +65,19 @@ export const Screen = forwardRef<ScrollView, Props>(function Screen(
     return (
       <ScrollView
         ref={ref}
-        style={[screenLayoutStyles.root, fill && screenLayoutStyles.rootFill]}
+        {...(Platform.OS === 'web' ? ({ dataSet: { rnScroll: '1' } } as object) : {})}
+        style={[screenLayoutStyles.root, webScrollViewStyle, fill && screenLayoutStyles.rootFill]}
         scrollEnabled={scrollEnabled}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD + (viewport.isLandscape ? 32 : 0),
-        }}
+        contentContainerStyle={[
+          webScrollContentStyle,
+          {
+            paddingBottom: insets.bottom + SCROLL_BOTTOM_PAD + (viewport.isLandscape ? 32 : 0),
+          },
+        ]}
         showsVerticalScrollIndicator
         nestedScrollEnabled
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="always"
+        keyboardDismissMode="on-drag">
         {inner}
       </ScrollView>
     );

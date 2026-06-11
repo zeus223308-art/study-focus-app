@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { StudyDateStepper } from '@/components/ui/StudyDateStepper';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useAdjustedHeight } from '@/hooks/useAdjustedHeight';
 import { parseStudyDateInput } from '@/lib/domain/dates';
 import { webFixedBackdropStyle } from '@/lib/ui/web-fixed-overlay';
 
@@ -29,6 +30,7 @@ export function StudyDatePickSheet({
   const { t } = useTranslation();
   const { localToday } = useApp();
   const insets = useSafeAreaInsets();
+  const { keyboardOffset } = useAdjustedHeight();
   const [draftDate, setDraftDate] = useState(studyDate);
   const [draftInput, setDraftInput] = useState(studyDate);
   const [inputError, setInputError] = useState(false);
@@ -71,7 +73,10 @@ export function StudyDatePickSheet({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable
-          style={[styles.sheet, { paddingBottom: Math.max(24, insets.bottom + 12) }]}
+          style={[
+            styles.sheet,
+            { paddingBottom: Math.max(24, insets.bottom + 12, keyboardOffset + 12) },
+          ]}
           onPress={() => {}}>
           <View style={styles.handle} />
           <Text style={styles.title}>{t('capture.pickDateTitle')}</Text>

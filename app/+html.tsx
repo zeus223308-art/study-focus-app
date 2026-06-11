@@ -92,6 +92,7 @@ body {
   min-height: 100%;
   min-height: 100dvh;
   min-height: -webkit-fill-available;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 #root {
   display: flex;
@@ -101,6 +102,7 @@ body {
   min-height: 100dvh;
   min-height: -webkit-fill-available;
   overflow-x: clip;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (prefers-color-scheme: dark) {
   html {
@@ -190,11 +192,15 @@ img {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
-/* Study date stepper — native buttons inside scroll views (iOS Safari) */
-[data-study-date-stepper="1"] button {
-  touch-action: manipulation !important;
-  -webkit-tap-highlight-color: transparent !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
+/* Study date stepper — pressables inside scroll views (iOS Safari) */
+[data-study-date-stepper="1"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+/* RN Web vertical scroll areas */
+[data-rn-scroll="1"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 `;

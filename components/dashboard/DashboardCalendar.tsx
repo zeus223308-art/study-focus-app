@@ -16,14 +16,15 @@ import { enUS, ko } from 'date-fns/locale';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+
+import { ChevronIcon } from '@/components/ui/ChevronIcon';
+import { WebPressable } from '@/components/ui/WebPressable';
 
 import { CalendarTagDots } from '@/components/dashboard/CalendarTagDots';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
 import { formatStudyDateHeading } from '@/lib/ui/format-study-date';
 import { WEB_LINE } from '@/lib/ui/web-divider';
-import { WebTapButton } from '@/lib/ui/WebTapButton';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { buildReviewMarkForDate } from '@/lib/domain/ribbon';
 import type { DateRibbonMark } from '@/lib/domain/types';
@@ -38,6 +39,34 @@ type Props = {
 };
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+
+const NavPressable = Platform.OS === 'web' ? WebPressable : Pressable;
+
+function MonthNavBtn({
+  direction,
+  disabled,
+  label,
+  color,
+  onPress,
+}: {
+  direction: 'left' | 'right';
+  disabled: boolean;
+  label: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <NavPressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={12}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={[styles.navBtn, disabled && styles.navDisabled]}>
+      <ChevronIcon direction={direction} size={22} color={color} />
+    </NavPressable>
+  );
+}
 
 function formatMonthTitle(date: Date, language: 'ko' | 'en'): string {
   const year = date.getFullYear();
@@ -176,59 +205,21 @@ export function DashboardCalendar({
       </View>
 
       <View style={styles.monthNav}>
-        {Platform.OS === 'web' ? (
-          <WebTapButton
-            onPress={goPrevMonth}
-            disabled={!canGoPrevMonth}
-            label={t('dashboard.calendarPrevMonth')}
-            style={styles.navBtn}>
-            <Text
-              style={[styles.navGlyph, { color: canGoPrevMonth ? theme.black : theme.grayLight }]}
-              selectable={false}>
-              ‹
-            </Text>
-          </WebTapButton>
-        ) : (
-          <Pressable
-            onPress={goPrevMonth}
-            disabled={!canGoPrevMonth}
-            hitSlop={12}
-            accessibilityLabel={t('dashboard.calendarPrevMonth')}
-            style={[styles.navBtn, !canGoPrevMonth && styles.navDisabled]}>
-            <SymbolView
-              name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
-              size={22}
-              tintColor={canGoPrevMonth ? theme.black : theme.grayLight}
-            />
-          </Pressable>
-        )}
+        <MonthNavBtn
+          direction="left"
+          disabled={!canGoPrevMonth}
+          label={t('dashboard.calendarPrevMonth')}
+          color={canGoPrevMonth ? theme.black : theme.grayLight}
+          onPress={goPrevMonth}
+        />
         <Text style={styles.monthLabel}>{monthLabel}</Text>
-        {Platform.OS === 'web' ? (
-          <WebTapButton
-            onPress={goNextMonth}
-            disabled={!canGoNextMonth}
-            label={t('dashboard.calendarNextMonth')}
-            style={styles.navBtn}>
-            <Text
-              style={[styles.navGlyph, { color: canGoNextMonth ? theme.black : theme.grayLight }]}
-              selectable={false}>
-              ›
-            </Text>
-          </WebTapButton>
-        ) : (
-          <Pressable
-            onPress={goNextMonth}
-            disabled={!canGoNextMonth}
-            hitSlop={12}
-            accessibilityLabel={t('dashboard.calendarNextMonth')}
-            style={[styles.navBtn, !canGoNextMonth && styles.navDisabled]}>
-            <SymbolView
-              name={{ ios: 'chevron.right', android: 'arrow_forward', web: 'arrow_forward' }}
-              size={22}
-              tintColor={canGoNextMonth ? theme.black : theme.grayLight}
-            />
-          </Pressable>
-        )}
+        <MonthNavBtn
+          direction="right"
+          disabled={!canGoNextMonth}
+          label={t('dashboard.calendarNextMonth')}
+          color={canGoNextMonth ? theme.black : theme.grayLight}
+          onPress={goNextMonth}
+        />
       </View>
 
       <View style={styles.weekRow}>
@@ -358,13 +349,6 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  navGlyph: {
-    fontSize: 28,
-    fontWeight: '700',
-    lineHeight: 32,
-    textAlign: 'center',
-    includeFontPadding: false,
   },
   navDisabled: { opacity: 0.35 },
   weekRow: { flexDirection: 'row', marginBottom: 4 },

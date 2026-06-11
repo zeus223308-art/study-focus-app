@@ -2,6 +2,7 @@ import { ReactNode, useMemo } from 'react';
 import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { theme } from '@/constants/theme';
+import { useAdjustedHeight } from '@/hooks/useAdjustedHeight';
 import { getDeviceClass } from '@/lib/ui/viewport-layout';
 import { useLayoutViewportSize } from '@/lib/ui/mobile-web-viewport';
 
@@ -33,6 +34,7 @@ export function MobileWebFrame({ children }: Props) {
   }
 
   const { width: windowWidth, height: windowHeight } = useLayoutViewportSize();
+  const { viewportHeight, keyboardOffset } = useAdjustedHeight();
   const deviceClass = getDeviceClass(windowWidth, windowHeight);
   const isLandscape = windowWidth > windowHeight;
   const isPhone = deviceClass === 'phone';
@@ -61,6 +63,11 @@ export function MobileWebFrame({ children }: Props) {
           styles.frame,
           useFullBleed ? styles.frameFullBleed : { width: frameWidth },
           showBezel && WEB_BEZEL,
+          useFullBleed &&
+            viewportHeight > 0 && {
+              minHeight: viewportHeight,
+              paddingBottom: keyboardOffset,
+            },
         ]}>
         {children}
       </View>
