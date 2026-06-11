@@ -13,6 +13,7 @@ import { RecoveryBanner } from '@/components/RecoveryBanner';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
 import { GoogleOAuthReturnHandler } from '@/components/settings/GoogleOAuthReturnHandler';
 import { ChoiceConfirmHost } from '@/components/ui/ChoiceConfirmHost';
+import { ToastHost } from '@/components/ui/ToastHost';
 import { MobileWebFrame } from '@/components/MobileWebFrame';
 import { MobileWebSafeAreaOverride } from '@/components/MobileWebSafeAreaOverride';
 import { SplashBrand } from '@/components/SplashBrand';
@@ -90,6 +91,7 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
       </Stack>
       <PaywallGate />
       <ChoiceConfirmHost />
+      <ToastHost />
     </View>
   );
 }

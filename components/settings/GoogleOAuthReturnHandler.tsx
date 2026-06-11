@@ -6,6 +6,7 @@ import { useApp } from '@/context/AppContext';
 import { finishGoogleLogin } from '@/lib/cloud/finish-google-login';
 import { googleOAuthErrorMessage } from '@/lib/cloud/google-oauth-errors';
 import { showMessage } from '@/lib/ui/confirm';
+import { showToast } from '@/lib/ui/toast-registry';
 import { consumeGoogleOAuthCallbackFromUrl } from '@/services/cloud/google-oauth-callback';
 
 /** Handles Google OAuth full-page redirect on web (hash in URL → session → Settings). */
@@ -23,10 +24,10 @@ export function GoogleOAuthReturnHandler() {
       handledRef.current = true;
       if (result.type === 'success') {
         finishGoogleLogin({ updateSettings, reloadAccountData, syncCloud });
-        if (result.email) {
-          showMessage(t('settings.cloud'), t('settings.cloudWebLoginSuccess'));
-        }
         router.replace('/(tabs)/settings');
+        if (result.email) {
+          showToast(t('settings.cloudWebLoginSuccess'), { title: t('settings.cloud') });
+        }
         return;
       }
       showMessage(t('settings.cloud'), googleOAuthErrorMessage(result.message, t));
