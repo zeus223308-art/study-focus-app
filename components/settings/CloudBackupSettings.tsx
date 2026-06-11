@@ -20,6 +20,7 @@ import { useGoogleDriveAuth } from '@/hooks/useGoogleDriveAuth';
 import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
 import { finishGoogleLogin } from '@/lib/cloud/finish-google-login';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
+import { showToast } from '@/lib/ui/toast-registry';
 import { cleanGoogleOAuthUrl } from '@/services/cloud/google-oauth-callback';
 import { allowsDevClientIdOverride } from '@/services/cloud/google-client-store';
 import { googleOAuthErrorMessage } from '@/lib/cloud/google-oauth-errors';
@@ -153,10 +154,11 @@ export function CloudBackupSettings() {
       await signOut();
       await reloadAccountData();
       updateSettings({ cloudBackupEnabled: false });
+      showToast(t('settings.cloudSignOutSuccess'), { title: t('settings.cloud') });
     } finally {
       setBusy(false);
     }
-  }, [reloadAccountData, signOut, updateSettings]);
+  }, [reloadAccountData, signOut, t, updateSettings]);
 
   const statusText = (() => {
     if (!configured) {
@@ -188,6 +190,17 @@ export function CloudBackupSettings() {
             onPress={handleConnect}
             disabled={busy || inAppBrowserBlocked}
             loading={busy || authPreparing}
+          />
+        </View>
+      ) : null}
+
+      {session && configured ? (
+        <View style={styles.signInWrap}>
+          <GoogleSignInButton
+            label={busy ? t('settings.cloudSyncing') : t('settings.cloudSignOut')}
+            onPress={handleDisconnect}
+            disabled={busy}
+            loading={busy}
           />
         </View>
       ) : null}
@@ -257,12 +270,6 @@ export function CloudBackupSettings() {
             disabled={busy}>
             <Text style={styles.actionText}>{t('settings.cloudRestoreDrive')}</Text>
             {busy && <ActivityIndicator color={theme.orange} />}
-          </Pressable>
-          <Pressable
-            onPress={busy ? undefined : handleDisconnect}
-            style={styles.actionRow}
-            disabled={busy}>
-            <Text style={styles.signOutText}>{t('settings.cloudSignOut')}</Text>
           </Pressable>
         </>
       ) : null}
@@ -354,5 +361,4 @@ const styles = StyleSheet.create({
   },
   rowBorder: webHairlineTop,
   actionText: { ...BUTTON_LABEL_DEFAULT, color: theme.orange },
-  signOutText: { ...BUTTON_LABEL_DEFAULT, fontWeight: '600', color: theme.graySecondary },
 });
