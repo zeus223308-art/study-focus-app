@@ -15,7 +15,7 @@ import {
 import { enUS, ko } from 'date-fns/locale';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { CalendarTagDots } from '@/components/dashboard/CalendarTagDots';
@@ -37,6 +37,11 @@ type Props = {
 };
 
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+
+const WEB_NAV_BTN: ViewStyle =
+  Platform.OS === 'web'
+    ? ({ cursor: 'pointer', touchAction: 'manipulation' } as ViewStyle)
+    : {};
 
 function formatMonthTitle(date: Date, language: 'ko' | 'en'): string {
   const year = date.getFullYear();
@@ -158,22 +163,6 @@ export function DashboardCalendar({
     <View style={[styles.wrap, compact && styles.wrapCompact, theme.cardShadow]}>
       <View style={styles.titleBlock}>
         <Text style={styles.title}>{t('dashboard.calendarTitle')}</Text>
-        <View style={styles.selectedRow}>
-          <View style={styles.selectedPill}>
-            <Text style={styles.selectedPillText}>
-              {t('dashboard.calendarSelected', { date: selectedDateHeading })}
-            </Text>
-          </View>
-          {selectedDate !== localToday ? (
-            <Pressable
-              onPress={() => onSelectDate(localToday)}
-              hitSlop={8}
-              accessibilityLabel={t('dashboard.calendarJumpToday')}
-              style={styles.todayBtn}>
-              <Text style={styles.todayBtnText}>{t('dashboard.calendarJumpToday')}</Text>
-            </Pressable>
-          ) : null}
-        </View>
         <Text style={styles.dueSummary}>{dueSummary}</Text>
         {!selectedInViewMonth ? (
           <Pressable
@@ -196,12 +185,23 @@ export function DashboardCalendar({
           disabled={!canGoPrevMonth}
           hitSlop={12}
           accessibilityLabel={t('dashboard.calendarPrevMonth')}
-          style={[styles.navBtn, !canGoPrevMonth && styles.navDisabled]}>
-          <SymbolView
-            name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
-            size={22}
-            tintColor={canGoPrevMonth ? theme.black : theme.grayLight}
-          />
+          style={[styles.navBtn, WEB_NAV_BTN, !canGoPrevMonth && styles.navDisabled]}>
+          {Platform.OS === 'web' ? (
+            <Text
+              style={[
+                styles.navGlyph,
+                { color: canGoPrevMonth ? theme.black : theme.grayLight },
+              ]}
+              selectable={false}>
+              ‹
+            </Text>
+          ) : (
+            <SymbolView
+              name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }}
+              size={22}
+              tintColor={canGoPrevMonth ? theme.black : theme.grayLight}
+            />
+          )}
         </Pressable>
         <Text style={styles.monthLabel}>{monthLabel}</Text>
         <Pressable
@@ -209,12 +209,23 @@ export function DashboardCalendar({
           disabled={!canGoNextMonth}
           hitSlop={12}
           accessibilityLabel={t('dashboard.calendarNextMonth')}
-          style={[styles.navBtn, !canGoNextMonth && styles.navDisabled]}>
-          <SymbolView
-            name={{ ios: 'chevron.right', android: 'arrow_forward', web: 'arrow_forward' }}
-            size={22}
-            tintColor={canGoNextMonth ? theme.black : theme.grayLight}
-          />
+          style={[styles.navBtn, WEB_NAV_BTN, !canGoNextMonth && styles.navDisabled]}>
+          {Platform.OS === 'web' ? (
+            <Text
+              style={[
+                styles.navGlyph,
+                { color: canGoNextMonth ? theme.black : theme.grayLight },
+              ]}
+              selectable={false}>
+              ›
+            </Text>
+          ) : (
+            <SymbolView
+              name={{ ios: 'chevron.right', android: 'arrow_forward', web: 'arrow_forward' }}
+              size={22}
+              tintColor={canGoNextMonth ? theme.black : theme.grayLight}
+            />
+          )}
         </Pressable>
       </View>
 
@@ -312,39 +323,6 @@ const styles = StyleSheet.create({
   },
   titleBlock: { gap: 6, marginBottom: 10 },
   title: { fontSize: theme.font.body, fontWeight: '800', color: theme.black },
-  selectedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  selectedPill: {
-    backgroundColor: theme.orange,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: theme.radius.pill,
-    borderWidth: 1,
-    borderColor: theme.orange,
-  },
-  selectedPillText: {
-    fontSize: theme.font.caption,
-    fontWeight: '800',
-    color: theme.onAccent,
-  },
-  todayBtn: {
-    minHeight: 32,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: theme.radius.pill,
-    borderWidth: 1,
-    borderColor: theme.grayLight,
-    justifyContent: 'center',
-  },
-  todayBtnText: {
-    fontSize: theme.font.caption,
-    fontWeight: '700',
-    color: theme.gray,
-  },
   showSelectedBtn: {
     alignSelf: 'flex-start',
     paddingVertical: 2,
@@ -378,6 +356,13 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  navGlyph: {
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 32,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   navDisabled: { opacity: 0.35 },
   weekRow: { flexDirection: 'row', marginBottom: 4 },

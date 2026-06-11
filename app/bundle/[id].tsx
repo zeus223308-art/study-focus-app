@@ -360,16 +360,12 @@ export default function BundleScreen() {
         showSettings={false}
       />
       <View style={styles.titleBlock}>
-        <Text style={styles.changeDateLabel}>{t('capture.changeDate')}</Text>
         <StudyDateStepper
           studyDate={bundle.studyDate}
-          onChange={(next) => {
-            changeBundleStudyDate(bundle.id, next);
-            showMessage('', t('folder.dateChanged'));
-          }}
+          onChange={(next) => changeBundleStudyDate(bundle.id, next)}
           firstLaunchDate={data.settings.firstLaunchDate}
+          style={styles.dateStepper}
         />
-        <Text style={styles.changeDateHint}>{t('item.changeDateHint')}</Text>
         <CaptureTagPicker
           presets={tagPresets}
           selectedTags={page?.tags ?? []}
@@ -583,18 +579,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.grayLight,
   },
-  changeDateLabel: {
-    fontSize: theme.font.caption,
-    fontWeight: '700',
-    color: theme.graySecondary,
-    marginBottom: 4,
-  },
-  changeDateHint: {
-    marginTop: 6,
-    fontSize: theme.font.label,
-    color: theme.grayMuted,
-    lineHeight: 16,
-  },
+  dateStepper: { marginTop: 0 },
   photosColumn: {
     width: '100%',
     marginBottom: 4,

@@ -1,12 +1,21 @@
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { enUS, ko } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { theme } from '@/constants/theme';
 import { useLanguage } from '@/context/AppContext';
 import { shiftStudyDateKey, studyDateBounds, todayKey } from '@/lib/domain/dates';
+import { WEB_LINE } from '@/lib/ui/web-divider';
 
 type Props = {
   studyDate: string;
@@ -15,6 +24,11 @@ type Props = {
   variant?: 'inline' | 'card';
   style?: StyleProp<ViewStyle>;
 };
+
+const WEB_ARROW_BTN: ViewStyle =
+  Platform.OS === 'web'
+    ? ({ cursor: 'pointer', touchAction: 'manipulation' } as ViewStyle)
+    : {};
 
 function formatStepperLabel(
   studyDate: string,
@@ -31,6 +45,54 @@ function formatStepperLabel(
   return format(date, 'MMM d, yyyy (EEE)', { locale });
 }
 
+function StepperArrow({
+  direction,
+  disabled,
+  tintColor,
+  label,
+  onPress,
+}: {
+  direction: 'prev' | 'next';
+  disabled: boolean;
+  tintColor: string;
+  label: string;
+  onPress: () => void;
+}) {
+  if (Platform.OS === 'web') {
+    return (
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        style={[styles.arrowBtn, WEB_ARROW_BTN, disabled && styles.arrowDisabled]}
+        accessibilityRole="button"
+        accessibilityLabel={label}>
+        <Text style={[styles.arrowGlyph, { color: tintColor }]} selectable={false}>
+          {direction === 'prev' ? '‹' : '›'}
+        </Text>
+      </Pressable>
+    );
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={[styles.arrowBtn, disabled && styles.arrowDisabled]}
+      accessibilityRole="button"
+      accessibilityLabel={label}>
+      <SymbolView
+        name={
+          direction === 'prev'
+            ? { ios: 'chevron.left', android: 'chevron_left', web: 'arrow_back' }
+            : { ios: 'chevron.right', android: 'chevron_right', web: 'arrow_forward' }
+        }
+        size={22}
+        tintColor={tintColor}
+      />
+    </Pressable>
+  );
+}
+
 export function StudyDateStepper({
   studyDate,
   onChange,
@@ -45,7 +107,8 @@ export function StudyDateStepper({
   const canNext = studyDate < bounds.max;
 
   const step = (delta: number) => {
-    onChange(shiftStudyDateKey(studyDate, delta, bounds));
+    const next = shiftStudyDateKey(studyDate, delta, bounds);
+    if (next !== studyDate) onChange(next);
   };
 
   const label = formatStepperLabel(studyDate, language, {
@@ -57,18 +120,13 @@ export function StudyDateStepper({
 
   return (
     <View style={[variant === 'card' ? styles.card : styles.inline, style]}>
-      <Pressable
-        onPress={() => step(-1)}
+      <StepperArrow
+        direction="prev"
         disabled={!canPrev}
-        style={[styles.arrowBtn, !canPrev && styles.arrowDisabled]}
-        accessibilityRole="button"
-        accessibilityLabel={t('capture.datePrevDay')}>
-        <SymbolView
-          name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }}
-          size={22}
-          tintColor={canPrev ? theme.black : theme.grayMuted}
-        />
-      </Pressable>
+        tintColor={canPrev ? theme.black : theme.grayMuted}
+        label={t('capture.datePrevDay')}
+        onPress={() => step(-1)}
+      />
 
       <View style={styles.center}>
         <Text style={[styles.dateLabel, variant === 'inline' && styles.dateLabelInline]} numberOfLines={1}>
@@ -78,6 +136,7 @@ export function StudyDateStepper({
           <Pressable
             onPress={() => onChange(bounds.max)}
             hitSlop={6}
+            style={WEB_ARROW_BTN}
             accessibilityRole="button"
             accessibilityLabel={t('capture.dateJumpToday')}>
             <Text style={styles.todayLink}>{t('capture.dateJumpToday')}</Text>
@@ -85,18 +144,13 @@ export function StudyDateStepper({
         ) : null}
       </View>
 
-      <Pressable
-        onPress={() => step(1)}
+      <StepperArrow
+        direction="next"
         disabled={!canNext}
-        style={[styles.arrowBtn, !canNext && styles.arrowDisabled]}
-        accessibilityRole="button"
-        accessibilityLabel={t('capture.dateNextDay')}>
-        <SymbolView
-          name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
-          size={22}
-          tintColor={canNext ? theme.black : theme.grayMuted}
-        />
-      </Pressable>
+        tintColor={canNext ? theme.black : theme.grayMuted}
+        label={t('capture.dateNextDay')}
+        onPress={() => step(1)}
+      />
     </View>
   );
 }
@@ -107,7 +161,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.surface,
-    borderWidth: 1,
+    borderWidth: WEB_LINE,
     borderColor: theme.grayLight,
     borderRadius: theme.radius.md,
     paddingVertical: 10,
@@ -124,6 +178,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: theme.radius.sm,
+  },
+  arrowGlyph: {
+    fontSize: 28,
+    fontWeight: '700',
+    lineHeight: 32,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   arrowDisabled: { opacity: 0.35 },
   center: {
