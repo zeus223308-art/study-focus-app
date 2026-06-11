@@ -190,4 +190,11 @@ img {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
+/* Study date stepper — native buttons inside scroll views (iOS Safari) */
+[data-study-date-stepper="1"] button {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
 `;

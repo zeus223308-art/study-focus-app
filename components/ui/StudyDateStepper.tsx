@@ -16,6 +16,7 @@ import { theme } from '@/constants/theme';
 import { useLanguage } from '@/context/AppContext';
 import { shiftStudyDateKey, studyDateBounds, todayKey } from '@/lib/domain/dates';
 import { WEB_LINE } from '@/lib/ui/web-divider';
+import { WebTapButton } from '@/lib/ui/WebTapButton';
 
 type Props = {
   studyDate: string;
@@ -25,10 +26,8 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-const WEB_ARROW_BTN: ViewStyle =
-  Platform.OS === 'web'
-    ? ({ cursor: 'pointer', touchAction: 'manipulation' } as ViewStyle)
-    : {};
+const STEPPER_DATASET =
+  Platform.OS === 'web' ? ({ dataSet: { studyDateStepper: '1' } } as object) : {};
 
 function formatStepperLabel(
   studyDate: string,
@@ -58,18 +57,19 @@ function StepperArrow({
   label: string;
   onPress: () => void;
 }) {
+  const glyph = direction === 'prev' ? '‹' : '›';
+
   if (Platform.OS === 'web') {
     return (
-      <Pressable
+      <WebTapButton
         onPress={onPress}
         disabled={disabled}
-        style={[styles.arrowBtn, WEB_ARROW_BTN, disabled && styles.arrowDisabled]}
-        accessibilityRole="button"
-        accessibilityLabel={label}>
+        label={label}
+        style={styles.arrowBtn}>
         <Text style={[styles.arrowGlyph, { color: tintColor }]} selectable={false}>
-          {direction === 'prev' ? '‹' : '›'}
+          {glyph}
         </Text>
-      </Pressable>
+      </WebTapButton>
     );
   }
 
@@ -119,7 +119,9 @@ export function StudyDateStepper({
   const isTodaySelected = studyDate === todayKey();
 
   return (
-    <View style={[variant === 'card' ? styles.card : styles.inline, style]}>
+    <View
+      style={[variant === 'card' ? styles.card : styles.inline, style]}
+      {...STEPPER_DATASET}>
       <StepperArrow
         direction="prev"
         disabled={!canPrev}
@@ -133,14 +135,22 @@ export function StudyDateStepper({
           {label}
         </Text>
         {!isTodaySelected ? (
-          <Pressable
-            onPress={() => onChange(bounds.max)}
-            hitSlop={6}
-            style={WEB_ARROW_BTN}
-            accessibilityRole="button"
-            accessibilityLabel={t('capture.dateJumpToday')}>
-            <Text style={styles.todayLink}>{t('capture.dateJumpToday')}</Text>
-          </Pressable>
+          Platform.OS === 'web' ? (
+            <WebTapButton
+              onPress={() => onChange(bounds.max)}
+              label={t('capture.dateJumpToday')}
+              style={styles.todayBtn}>
+              <Text style={styles.todayLink}>{t('capture.dateJumpToday')}</Text>
+            </WebTapButton>
+          ) : (
+            <Pressable
+              onPress={() => onChange(bounds.max)}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={t('capture.dateJumpToday')}>
+              <Text style={styles.todayLink}>{t('capture.dateJumpToday')}</Text>
+            </Pressable>
+          )
         ) : null}
       </View>
 
@@ -178,6 +188,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: theme.radius.sm,
+    flexShrink: 0,
   },
   arrowGlyph: {
     fontSize: 28,
@@ -205,8 +216,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.white,
   },
-  todayLink: {
+  todayBtn: {
     marginTop: 4,
+    minHeight: 28,
+    alignSelf: 'center',
+  },
+  todayLink: {
     fontSize: theme.font.caption,
     fontWeight: '700',
     color: theme.orange,
