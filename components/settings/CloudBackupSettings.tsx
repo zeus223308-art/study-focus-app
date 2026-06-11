@@ -18,6 +18,7 @@ import { webHairlineBottom, webHairlineTop } from '@/lib/ui/web-divider';
 import { useApp } from '@/context/AppContext';
 import { useGoogleDriveAuth } from '@/hooks/useGoogleDriveAuth';
 import { formatRelativeSyncTime } from '@/lib/cloud/sync-label';
+import { finishGoogleLogin } from '@/lib/cloud/finish-google-login';
 import { confirmDestructive, showMessage } from '@/lib/ui/confirm';
 import { cleanGoogleOAuthUrl } from '@/services/cloud/google-oauth-callback';
 import { allowsDevClientIdOverride } from '@/services/cloud/google-client-store';
@@ -28,7 +29,8 @@ import { countAppPages } from '@/services/storage';
 export function CloudBackupSettings() {
   const { t } = useTranslation();
   const router = useRouter();
-  const { data, updateSettings, refresh, reloadAccountData, restoreFromCloudBackup } = useApp();
+  const { data, updateSettings, refresh, reloadAccountData, restoreFromCloudBackup, syncCloud } =
+    useApp();
   const {
     configured,
     session,
@@ -79,8 +81,7 @@ export function CloudBackupSettings() {
       if (connected) {
         cleanGoogleOAuthUrl();
         await reloadSession();
-        await reloadAccountData();
-        updateSettings({ cloudBackupEnabled: true });
+        finishGoogleLogin({ updateSettings, reloadAccountData, syncCloud });
         setNotice(null);
         router.replace('/(tabs)/settings');
         return;
@@ -90,8 +91,7 @@ export function CloudBackupSettings() {
       if (existing) {
         cleanGoogleOAuthUrl();
         await reloadSession();
-        await reloadAccountData();
-        updateSettings({ cloudBackupEnabled: true });
+        finishGoogleLogin({ updateSettings, reloadAccountData, syncCloud });
         setNotice(null);
         return;
       }
@@ -113,6 +113,7 @@ export function CloudBackupSettings() {
     reloadSession,
     router,
     signIn,
+    syncCloud,
     t,
     updateSettings,
   ]);

@@ -110,7 +110,7 @@ type AppContextValue = {
   setPaywallVisible: (visible: boolean, reason?: PaywallReason) => void;
   refresh: () => Promise<void>;
   /** After sign-in/out — reloads the correct per-account partition (and Drive if needed). */
-  reloadAccountData: () => Promise<void>;
+  reloadAccountData: (options?: { deferCloudSync?: boolean }) => Promise<void>;
   capturePhoto: (imageUri: string, subjectId: string, studyDate?: string) => Promise<string | null>;
   captureFlashcardPair: (
     frontUri: string,
@@ -346,7 +346,7 @@ export function AppProvider({
   }, [reorderInsertLineX]);
 
   const hydrateFromStorage = useCallback(
-    async (options?: { clearGuestFirst?: boolean }) => {
+    async (options?: { clearGuestFirst?: boolean; deferCloudSync?: boolean }) => {
       const guestSnapshot = options?.clearGuestFirst ? getGuestSessionData() : null;
       if (options?.clearGuestFirst) clearGuestSession();
       await ensureGoogleDriveSession();
@@ -354,7 +354,7 @@ export function AppProvider({
       let loaded = await storage.loadAppData();
       const token = await getValidAccessToken();
 
-      if (token && !hasRecoverableContent(loaded)) {
+      if (token && !options?.deferCloudSync && !hasRecoverableContent(loaded)) {
         const fromCloud = await storage.restoreFromCloudBackup();
         if (fromCloud && hasRecoverableContent(fromCloud)) {
           loaded = fromCloud;
@@ -366,7 +366,7 @@ export function AppProvider({
         }
       }
 
-      if (token) {
+      if (token && !options?.deferCloudSync) {
         const localPages = countAppPages(loaded);
         const manifest = await readRecoveryManifest();
         const expected = Math.max(
@@ -430,17 +430,23 @@ export function AppProvider({
     setReady(true);
   }, [hydrateFromStorage, applyLoadedData]);
 
-  const reloadAccountData = useCallback(async () => {
+  const reloadAccountData = useCallback(
+    async (options?: { deferCloudSync?: boolean }) => {
     skipPersistRef.current = true;
     storageEpochRef.current += 1;
     try {
-      const { next, recoveryNotice } = await hydrateFromStorage({ clearGuestFirst: true });
+      const { next, recoveryNotice } = await hydrateFromStorage({
+        clearGuestFirst: true,
+        deferCloudSync: options?.deferCloudSync,
+      });
       applyLoadedData(next, recoveryNotice);
     } finally {
       storageEpochRef.current += 1;
       skipPersistRef.current = false;
     }
-  }, [hydrateFromStorage, applyLoadedData]);
+  },
+    [hydrateFromStorage, applyLoadedData]
+  );
 
   const dismissAutoRecoveryNotice = useCallback(() => {
     setAutoRecoveryNotice(null);
