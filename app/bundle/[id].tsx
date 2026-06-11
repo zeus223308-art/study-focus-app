@@ -364,6 +364,7 @@ export default function BundleScreen() {
           studyDate={bundle.studyDate}
           onChange={(next) => changeBundleStudyDate(bundle.id, next)}
           firstLaunchDate={data.settings.firstLaunchDate}
+          enablePickSheet
           style={styles.dateStepper}
         />
         <CaptureTagPicker

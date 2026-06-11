@@ -1,5 +1,7 @@
-import { createElement, type ReactNode } from 'react';
+import { createElement, useRef, type ReactNode } from 'react';
 import { Platform, StyleSheet, type ViewStyle } from 'react-native';
+
+const TAP_COOLDOWN_MS = 450;
 
 type Props = {
   onPress: () => void;
@@ -14,6 +16,8 @@ type Props = {
  * RN Pressable often misses touch end inside overflow scrollers on Safari.
  */
 export function WebTapButton({ onPress, disabled = false, label, style, children }: Props) {
+  const lastTapRef = useRef(0);
+
   if (Platform.OS !== 'web') return null;
 
   const flat = StyleSheet.flatten(style) ?? {};
@@ -48,7 +52,11 @@ export function WebTapButton({ onPress, disabled = false, label, style, children
       onClick: (e: { preventDefault: () => void; stopPropagation: () => void }) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!disabled) onPress();
+        if (disabled) return;
+        const now = Date.now();
+        if (now - lastTapRef.current < TAP_COOLDOWN_MS) return;
+        lastTapRef.current = now;
+        onPress();
       },
       style: css,
     },

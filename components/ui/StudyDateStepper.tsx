@@ -1,5 +1,6 @@
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { enUS, ko } from 'date-fns/locale';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Platform,
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
+import { StudyDatePickSheet } from '@/components/ui/StudyDatePickSheet';
 import { theme } from '@/constants/theme';
 import { useLanguage } from '@/context/AppContext';
 import { shiftStudyDateKey, studyDateBounds, todayKey } from '@/lib/domain/dates';
@@ -24,6 +26,8 @@ type Props = {
   firstLaunchDate: string;
   variant?: 'inline' | 'card';
   style?: StyleProp<ViewStyle>;
+  /** Center tap opens a date picker sheet (photo detail). */
+  enablePickSheet?: boolean;
 };
 
 const STEPPER_DATASET =
@@ -93,15 +97,92 @@ function StepperArrow({
   );
 }
 
+function CenterDateLabel({
+  label,
+  variant,
+  enablePickSheet,
+  pickLabel,
+  onOpenPicker,
+  onJumpToday,
+  showJumpToday,
+}: {
+  label: string;
+  variant: 'inline' | 'card';
+  enablePickSheet: boolean;
+  pickLabel: string;
+  onOpenPicker: () => void;
+  onJumpToday: () => void;
+  showJumpToday: boolean;
+}) {
+  const labelStyle = [styles.dateLabel, variant === 'inline' && styles.dateLabelInline];
+
+  if (enablePickSheet) {
+    const content = (
+      <>
+        <Text style={labelStyle} numberOfLines={1}>
+          {label}
+        </Text>
+        <Text style={styles.pickHint}>{pickLabel}</Text>
+      </>
+    );
+
+    if (Platform.OS === 'web') {
+      return (
+        <WebTapButton
+          onPress={onOpenPicker}
+          label={pickLabel}
+          style={styles.centerPress}>
+          {content}
+        </WebTapButton>
+      );
+    }
+
+    return (
+      <Pressable
+        onPress={onOpenPicker}
+        style={styles.centerPress}
+        accessibilityRole="button"
+        accessibilityLabel={pickLabel}>
+        {content}
+      </Pressable>
+    );
+  }
+
+  return (
+    <>
+      <Text style={labelStyle} numberOfLines={1}>
+        {label}
+      </Text>
+      {showJumpToday ? (
+        Platform.OS === 'web' ? (
+          <WebTapButton onPress={onJumpToday} label={pickLabel} style={styles.todayBtn}>
+            <Text style={styles.todayLink}>{pickLabel}</Text>
+          </WebTapButton>
+        ) : (
+          <Pressable
+            onPress={onJumpToday}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={pickLabel}>
+            <Text style={styles.todayLink}>{pickLabel}</Text>
+          </Pressable>
+        )
+      ) : null}
+    </>
+  );
+}
+
 export function StudyDateStepper({
   studyDate,
   onChange,
   firstLaunchDate,
   variant = 'card',
   style,
+  enablePickSheet = false,
 }: Props) {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const [pickerOpen, setPickerOpen] = useState(false);
   const bounds = studyDateBounds(firstLaunchDate);
   const canPrev = studyDate > bounds.min;
   const canNext = studyDate < bounds.max;
@@ -117,51 +198,55 @@ export function StudyDateStepper({
   });
 
   const isTodaySelected = studyDate === todayKey();
+  const jumpTodayLabel = t('capture.dateJumpToday');
 
   return (
-    <View
-      style={[variant === 'card' ? styles.card : styles.inline, style]}
-      {...STEPPER_DATASET}>
-      <StepperArrow
-        direction="prev"
-        disabled={!canPrev}
-        tintColor={canPrev ? theme.black : theme.grayMuted}
-        label={t('capture.datePrevDay')}
-        onPress={() => step(-1)}
-      />
+    <>
+      <View
+        style={[variant === 'card' ? styles.card : styles.inline, style]}
+        {...STEPPER_DATASET}>
+        <StepperArrow
+          direction="prev"
+          disabled={!canPrev}
+          tintColor={canPrev ? theme.black : theme.grayMuted}
+          label={t('capture.datePrevDay')}
+          onPress={() => step(-1)}
+        />
 
-      <View style={styles.center}>
-        <Text style={[styles.dateLabel, variant === 'inline' && styles.dateLabelInline]} numberOfLines={1}>
-          {label}
-        </Text>
-        {!isTodaySelected ? (
-          Platform.OS === 'web' ? (
-            <WebTapButton
-              onPress={() => onChange(bounds.max)}
-              label={t('capture.dateJumpToday')}
-              style={styles.todayBtn}>
-              <Text style={styles.todayLink}>{t('capture.dateJumpToday')}</Text>
-            </WebTapButton>
-          ) : (
-            <Pressable
-              onPress={() => onChange(bounds.max)}
-              hitSlop={6}
-              accessibilityRole="button"
-              accessibilityLabel={t('capture.dateJumpToday')}>
-              <Text style={styles.todayLink}>{t('capture.dateJumpToday')}</Text>
-            </Pressable>
-          )
-        ) : null}
+        <View style={styles.center}>
+          <CenterDateLabel
+            label={label}
+            variant={variant}
+            enablePickSheet={enablePickSheet}
+            pickLabel={enablePickSheet ? t('capture.pickDateTap') : jumpTodayLabel}
+            onOpenPicker={() => setPickerOpen(true)}
+            onJumpToday={() => onChange(bounds.max)}
+            showJumpToday={!enablePickSheet && !isTodaySelected}
+          />
+        </View>
+
+        <StepperArrow
+          direction="next"
+          disabled={!canNext}
+          tintColor={canNext ? theme.black : theme.grayMuted}
+          label={t('capture.dateNextDay')}
+          onPress={() => step(1)}
+        />
       </View>
 
-      <StepperArrow
-        direction="next"
-        disabled={!canNext}
-        tintColor={canNext ? theme.black : theme.grayMuted}
-        label={t('capture.dateNextDay')}
-        onPress={() => step(1)}
-      />
-    </View>
+      {enablePickSheet ? (
+        <StudyDatePickSheet
+          visible={pickerOpen}
+          studyDate={studyDate}
+          firstLaunchDate={firstLaunchDate}
+          onClose={() => setPickerOpen(false)}
+          onConfirm={(next) => {
+            onChange(next);
+            setPickerOpen(false);
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -205,6 +290,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     minWidth: 0,
   },
+  centerPress: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    minHeight: 44,
+    maxWidth: '100%',
+  },
   dateLabel: {
     fontSize: theme.font.heading,
     fontWeight: '800',
@@ -215,6 +308,13 @@ const styles = StyleSheet.create({
     fontSize: theme.font.body,
     fontWeight: '700',
     color: theme.white,
+  },
+  pickHint: {
+    marginTop: 2,
+    fontSize: theme.font.caption,
+    fontWeight: '600',
+    color: theme.orange,
+    textAlign: 'center',
   },
   todayBtn: {
     marginTop: 4,
