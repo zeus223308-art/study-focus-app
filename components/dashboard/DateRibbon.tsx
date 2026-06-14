@@ -342,14 +342,6 @@ export function DateRibbon({
     const isToday = item.key === todayStr;
     const hasDue = (mark?.bundleCount ?? 0) > 0;
     const tagDots = mark?.tagDots ?? [];
-    const dotColor =
-      mark?.status === 'overdue'
-        ? theme.ribbon.overdue
-        : mark?.status === 'complete'
-          ? theme.ribbon.complete
-          : mark?.status === 'upcoming'
-            ? theme.orange
-            : 'transparent';
 
     return (
       <SpringPressable
@@ -357,10 +349,10 @@ export function DateRibbon({
         style={[styles.chip, selected && styles.chipSelected, isToday && !selected && styles.chipToday]}>
         <Text style={[styles.weekday, selected && styles.textSelected]}>{format(item.date, 'EEE')}</Text>
         <Text style={[styles.dayLabel, selected && styles.textSelected]}>{format(item.date, 'M/d')}</Text>
-        {hasDue && tagDots.length > 0 ? (
+        {hasDue ? (
           <CalendarTagDots colors={tagDots} size={4} gap={2} max={3} />
         ) : (
-          <View style={[styles.dot, { backgroundColor: dotColor }]} />
+          <View style={[styles.dot, { backgroundColor: 'transparent' }]} />
         )}
       </SpringPressable>
     );

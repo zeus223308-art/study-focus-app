@@ -1,4 +1,13 @@
-import { addDays, format, isBefore, isEqual, parseISO, startOfDay } from 'date-fns';
+import {
+  addDays,
+  differenceInCalendarDays,
+  format,
+  isAfter,
+  isBefore,
+  isEqual,
+  parseISO,
+  startOfDay,
+} from 'date-fns';
 
 import type { NoteBundle, ReviewSchedule } from '@/lib/domain/types';
 
@@ -17,56 +26,53 @@ export function getScheduleIntervals(schedule: ReviewSchedule): number[] {
   return schedule.customIntervals ?? [1, 3, 7, 14, 30];
 }
 
-export function getNextReviewDate(
-  bundle: NoteBundle,
-  schedule: ReviewSchedule,
-  from = new Date()
+/**
+ * Cumulative day numbers from the anchor (save date).
+ * e.g. [1, 3, 7, 14, 30] → save day, +2d, +6d, +13d, +29d; then +30d cycles.
+ */
+export function scheduledReviewDate(
+  anchor: Date,
+  stepIndex: number,
+  intervals: number[]
 ): Date {
-  if (bundle.archived) {
-    return addDays(dayStart(from), 36500);
-  }
-  const anchor = dayStart(bundle.review.reviewAnchorDate);
-  const today = dayStart(from);
-  const intervals = getScheduleIntervals(schedule);
+  if (intervals.length === 0) return anchor;
 
-  const stepGap = (stepIndex: number) => {
-    const gap =
-      intervals[Math.min(stepIndex, intervals.length - 1)] ??
-      intervals[intervals.length - 1] ??
-      1;
-    return Math.max(1, gap);
-  };
+  if (stepIndex < intervals.length) {
+    const dayNumber = intervals[stepIndex] ?? 1;
+    return addDays(anchor, Math.max(0, dayNumber - 1));
+  }
+
+  const lastInterval = intervals[intervals.length - 1] ?? 30;
+  const lastMilestoneOffset = Math.max(0, lastInterval - 1);
+  const overflowSteps = stepIndex - intervals.length + 1;
+  return addDays(anchor, lastMilestoneOffset + lastInterval * overflowSteps);
+}
+
+function pendingReviewDate(
+  bundle: NoteBundle,
+  schedule: ReviewSchedule
+): Date {
+  const anchor = dayStart(bundle.review.reviewAnchorDate);
+  const step = bundle.review.reviewStepIndex;
 
   if (schedule.mode === 'everyNDays' && schedule.everyNDays) {
     const stepDays = Math.max(1, schedule.everyNDays);
-    let candidate = anchor;
-    let guard = 0;
-    while (isBefore(candidate, today) && guard < 4000) {
-      candidate = addDays(candidate, stepDays);
-      guard += 1;
-    }
-    return guard >= 4000 ? today : candidate;
+    return addDays(anchor, step * stepDays);
   }
 
-  let step = bundle.review.reviewStepIndex;
-  let next = anchor;
-  if (step === 0) {
-    next = addDays(anchor, stepGap(0));
-  } else {
-    const last = bundle.review.lastReviewedAt
-      ? dayStart(bundle.review.lastReviewedAt)
-      : anchor;
-    next = addDays(last, stepGap(step));
-  }
+  return scheduledReviewDate(anchor, step, getScheduleIntervals(schedule));
+}
 
-  let guard = 0;
-  while (isBefore(next, today) && guard < 4000) {
-    step += 1;
-    next = addDays(next, stepGap(step));
-    guard += 1;
+/** Scheduled date for the current review step (may be overdue). */
+export function getNextReviewDate(
+  bundle: NoteBundle,
+  schedule: ReviewSchedule,
+  _from = new Date()
+): Date {
+  if (bundle.archived) {
+    return addDays(dayStart(_from), 36500);
   }
-
-  return guard >= 4000 ? today : next;
+  return pendingReviewDate(bundle, schedule);
 }
 
 export function isDueOnDate(
@@ -75,9 +81,40 @@ export function isDueOnDate(
   date = new Date()
 ): boolean {
   if (bundle.archived) return false;
-  const next = getNextReviewDate(bundle, schedule, date);
+  const pending = pendingReviewDate(bundle, schedule);
   const t = dayStart(date);
-  return isEqual(next, t) || isBefore(next, t);
+  return isEqual(pending, t) || isBefore(pending, t);
+}
+
+/** Whether a review is scheduled on this exact day (current step onward). */
+export function isReviewOnDate(
+  bundle: NoteBundle,
+  schedule: ReviewSchedule,
+  date: Date
+): boolean {
+  if (bundle.archived) return false;
+
+  const anchor = dayStart(bundle.review.reviewAnchorDate);
+  const t = dayStart(date);
+
+  if (isBefore(t, anchor)) return false;
+
+  if (schedule.mode === 'everyNDays' && schedule.everyNDays) {
+    const stepDays = Math.max(1, schedule.everyNDays);
+    const diff = differenceInCalendarDays(t, anchor);
+    if (diff < 0 || diff % stepDays !== 0) return false;
+    const step = diff / stepDays;
+    return step >= bundle.review.reviewStepIndex;
+  }
+
+  const intervals = getScheduleIntervals(schedule);
+  for (let step = bundle.review.reviewStepIndex, guard = 0; guard < 200; step += 1, guard += 1) {
+    const scheduled = scheduledReviewDate(anchor, step, intervals);
+    if (isEqual(scheduled, t)) return true;
+    if (isAfter(scheduled, t)) return false;
+  }
+
+  return false;
 }
 
 export function isDueToday(bundle: NoteBundle, schedule: ReviewSchedule): boolean {
@@ -124,15 +161,31 @@ export function getUpcomingReviewDates(
   from = new Date()
 ): string[] {
   if (bundle.archived) return [];
-  const dates: string[] = [];
-  let mock: NoteBundle = { ...bundle };
-  const today = dayStart(from);
 
-  for (let i = 0; i < count + 8 && dates.length < count; i++) {
-    const next = getNextReviewDate(mock, schedule, today);
-    const key = toKey(next);
-    if (!dates.includes(key)) dates.push(key);
-    mock = advanceAfterReview(mock);
+  const anchor = dayStart(bundle.review.reviewAnchorDate);
+  const today = dayStart(from);
+  const dates: string[] = [];
+  let step = bundle.review.reviewStepIndex;
+
+  if (schedule.mode === 'everyNDays' && schedule.everyNDays) {
+    const stepDays = Math.max(1, schedule.everyNDays);
+    for (let guard = 0; dates.length < count && guard < 200; guard += 1, step += 1) {
+      const scheduled = addDays(anchor, step * stepDays);
+      if (!isBefore(scheduled, today)) {
+        const key = toKey(scheduled);
+        if (!dates.includes(key)) dates.push(key);
+      }
+    }
+    return dates.slice(0, count);
+  }
+
+  const intervals = getScheduleIntervals(schedule);
+  for (let guard = 0; dates.length < count && guard < 200; guard += 1, step += 1) {
+    const scheduled = scheduledReviewDate(anchor, step, intervals);
+    if (!isBefore(scheduled, today)) {
+      const key = toKey(scheduled);
+      if (!dates.includes(key)) dates.push(key);
+    }
   }
 
   return dates.slice(0, count);

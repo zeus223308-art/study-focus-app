@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { CloudAutoSync } from '@/components/CloudAutoSync';
+import { ReviewReminderSync } from '@/components/ReviewReminderSync';
 import { GoogleAuthBootstrap } from '@/components/GoogleAuthBootstrap';
 import { RecoveryBanner } from '@/components/RecoveryBanner';
 import { PaywallGate } from '@/components/paywall/PaywallGate';
@@ -58,6 +59,7 @@ function RootNavigator({ splashDone }: RootNavigatorProps) {
     <View style={styles.appShell}>
       <GoogleAuthBootstrap />
       <CloudAutoSync />
+      <ReviewReminderSync />
       {autoRecoveryNotice ? (
         <RecoveryBanner
           source={autoRecoveryNotice}

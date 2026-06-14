@@ -575,8 +575,7 @@ export function AppProvider({
       getSchedule,
       data.settings.firstLaunchDate,
       localToday,
-      data.settings.tagColors,
-      data.settings.tagColor,
+      data.subjects,
       ribbonHorizon
     );
   }, [data, getSchedule, localToday, ribbonHorizon]);
@@ -789,18 +788,17 @@ export function AppProvider({
   const deleteSubjects = useCallback((subjectIds: string[]) => {
     const idSet = new Set(subjectIds);
     if (idSet.size === 0) return;
-    setData((prev) => {
-      if (!prev) return prev;
-      const deletedAt = new Date();
-      const trashEntries = buildTrashEntriesForDeletedSubjects(prev, subjectIds, deletedAt);
-      return {
-        ...prev,
-        subjects: prev.subjects.filter((s) => !idSet.has(s.id)),
-        bundles: prev.bundles.filter((b) => !idSet.has(b.subjectId)),
-        trash: [...trashEntries, ...prev.trash],
-      };
+    const prev = dataRef.current;
+    if (!prev) return;
+    const deletedAt = new Date();
+    const trashEntries = buildTrashEntriesForDeletedSubjects(prev, subjectIds, deletedAt);
+    persist({
+      ...prev,
+      subjects: prev.subjects.filter((s) => !idSet.has(s.id)),
+      bundles: prev.bundles.filter((b) => !idSet.has(b.subjectId)),
+      trash: [...trashEntries, ...prev.trash],
     });
-  }, []);
+  }, [persist]);
 
   const deleteSubject = useCallback(
     (subjectId: string) => {

@@ -1,4 +1,4 @@
-import { Platform, type ViewStyle } from 'react-native';
+import { Platform, type TextStyle, type ViewStyle } from 'react-native';
 
 /** Android Chrome baseline — Playwright parity locks WebKit to the same row box. */
 const ROW_HEIGHT = 46;
@@ -45,7 +45,7 @@ export function settingsSectionHeaderRowWeb(): ViewStyle {
   } as ViewStyle;
 }
 
-export function settingsGroupTitleWeb(): ViewStyle {
+export function settingsGroupTitleWeb(): TextStyle {
   if (Platform.OS !== 'web') return {};
   return {
     boxSizing: 'border-box',
@@ -53,7 +53,7 @@ export function settingsGroupTitleWeb(): ViewStyle {
     minHeight: GROUP_TITLE_HEIGHT,
     lineHeight: GROUP_TITLE_HEIGHT,
     marginBottom: 6,
-  } as ViewStyle;
+  } as TextStyle;
 }
 
 export function cloudBackupHeaderRowWeb(): ViewStyle {

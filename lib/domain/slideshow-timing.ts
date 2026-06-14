@@ -6,6 +6,19 @@ export const ANSWER_SLIDESHOW_SECONDS = [10, 30, 60, 90, 120, 180] as const;
 
 export const MAX_ANSWER_SLIDESHOW_SECONDS = 180;
 
+export function slideSecondsForSide(
+  page: { slideshowSeconds: number; answerSlideshowSeconds?: number },
+  side: 'front' | 'back'
+): number {
+  if (side === 'back') {
+    return Math.min(
+      page.answerSlideshowSeconds ?? page.slideshowSeconds ?? 10,
+      MAX_ANSWER_SLIDESHOW_SECONDS
+    );
+  }
+  return page.slideshowSeconds ?? 10;
+}
+
 export function formatAnswerSlideshowLabel(sec: number): string {
   if (sec === 180) return '3m';
   if (sec === 120) return '2m';
@@ -17,12 +30,5 @@ export function slideshowMsForSide(
   page: { slideshowSeconds: number; answerSlideshowSeconds?: number },
   side: 'front' | 'back'
 ): number {
-  const sec =
-    side === 'back'
-      ? Math.min(
-          page.answerSlideshowSeconds ?? page.slideshowSeconds ?? 10,
-          MAX_ANSWER_SLIDESHOW_SECONDS
-        )
-      : page.slideshowSeconds ?? 10;
-  return sec * 1000;
+  return slideSecondsForSide(page, side) * 1000;
 }

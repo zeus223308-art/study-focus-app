@@ -166,7 +166,7 @@ export type DateRibbonMark = {
   date: string;
   status: 'overdue' | 'complete' | 'upcoming' | 'none';
   bundleCount: number;
-  /** One dot color per due photo (first tag color, or default if untagged). */
+  /** One dot color per due subject (folder color). */
   tagDots: string[];
 };
 

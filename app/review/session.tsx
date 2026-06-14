@@ -34,6 +34,7 @@ import {
   ANSWER_SLIDESHOW_SECONDS,
   FRONT_SLIDESHOW_SECONDS,
   formatAnswerSlideshowLabel,
+  slideSecondsForSide,
   slideshowMsForSide,
 } from '@/lib/domain/slideshow-timing';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -45,6 +46,8 @@ import {
 } from '@/lib/review/parse-review-pages';
 
 const HINT_PEEK_MS = 8000;
+/** Pause before auto-slide countdown starts on the memorize screen. */
+const MEMORIZE_AUTO_GRACE_MS = 3000;
 
 /** Mobile Safari (RN Web): opacity with useNativeDriver often never runs — overlay stays invisible. */
 function runRevealAnim(passAnim: Animated.Value, passScale: Animated.Value) {
@@ -180,6 +183,8 @@ export default function ReviewSessionScreen() {
   }, [params.startPage]);
 
   const [index, setIndex] = useState(0);
+  const indexRef = useRef(0);
+  indexRef.current = index;
   const [phase, setPhase] = useState<Phase>('front');
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
@@ -200,6 +205,11 @@ export default function ReviewSessionScreen() {
   const [memorizeAuto, setMemorizeAuto] = useState(
     () => routeParamString(params.slideshow) === '1'
   );
+  const isMemorizeModeRef = useRef(isMemorizeMode);
+  isMemorizeModeRef.current = isMemorizeMode;
+  const memorizeAutoRef = useRef(memorizeAuto);
+  memorizeAutoRef.current = memorizeAuto;
+  const finishMemorizeRef = useRef<() => void>(() => {});
   const [recallScrollLocked, setRecallScrollLocked] = useState(false);
   const [submittedRecall, setSubmittedRecall] = useState<SubmittedRecall | null>(null);
   const [passAnim] = useState(() => new Animated.Value(0));
@@ -241,8 +251,14 @@ export default function ReviewSessionScreen() {
         Math.abs(g.dx) > 16 &&
         Math.abs(g.dx) > Math.abs(g.dy) * 1.25,
       onPanResponderRelease: (_, g) => {
-        if (g.dx < -48) goNextSlide();
-        else if (g.dx > 48) goPrevSlide();
+        if (g.dx < -48) {
+          const atLast = indexRef.current >= slideCountRef.current - 1;
+          if (isMemorizeModeRef.current && !memorizeAutoRef.current && atLast) {
+            finishMemorizeRef.current();
+          } else {
+            goNextSlide();
+          }
+        } else if (g.dx > 48) goPrevSlide();
       },
     })
   ).current;
@@ -379,14 +395,7 @@ export default function ReviewSessionScreen() {
     reviewDate,
     slides,
   ]);
-
-  const advanceMemorize = useCallback(() => {
-    if (index < slides.length - 1) {
-      setIndex((i) => i + 1);
-      return;
-    }
-    finishMemorizeSession();
-  }, [finishMemorizeSession, index, slides.length]);
+  finishMemorizeRef.current = finishMemorizeSession;
 
   const finishSession = useCallback(() => {
     if (params.bundleId) {
@@ -463,24 +472,45 @@ export default function ReviewSessionScreen() {
     }
     const ms = effectiveSlideMs(current.page, current.side);
     const totalSec = Math.max(1, Math.ceil(ms / 1000));
-    setSlideRemainingSec(totalSec);
-    const started = Date.now();
-    const tick = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - started) / 1000);
-      setSlideRemainingSec(Math.max(0, totalSec - elapsed));
-    }, 200);
-    const timer = setTimeout(() => {
-      if (index < slides.length - 1) {
-        setIndex((i) => i + 1);
-      } else if (isMemorizeMode) {
-        finishMemorizeSession();
-      }
-    }, ms);
+    const graceMs = isMemorizeMode ? MEMORIZE_AUTO_GRACE_MS : 0;
+
+    setSlideRemainingSec(0);
+
+    let tick: ReturnType<typeof setInterval> | undefined;
+    let slideTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const graceTimer = setTimeout(() => {
+      setSlideRemainingSec(totalSec);
+      const started = Date.now();
+      tick = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - started) / 1000);
+        setSlideRemainingSec(Math.max(0, totalSec - elapsed));
+      }, 200);
+      slideTimer = setTimeout(() => {
+        if (index < slides.length - 1) {
+          setIndex((i) => i + 1);
+        } else if (isMemorizeMode) {
+          finishMemorizeSession();
+        }
+      }, ms);
+    }, graceMs);
+
     return () => {
-      clearTimeout(timer);
-      clearInterval(tick);
+      clearTimeout(graceTimer);
+      if (tick) clearInterval(tick);
+      if (slideTimer) clearTimeout(slideTimer);
     };
-  }, [index, auto, current, phase, effectiveSlideMs, slides.length, isMemorizeMode, finishMemorizeSession]);
+  }, [
+    index,
+    auto,
+    current,
+    phase,
+    effectiveSlideMs,
+    slides.length,
+    isMemorizeMode,
+    finishMemorizeSession,
+    sessionSlideSec,
+  ]);
 
   if (slides.length === 0) {
     return (
@@ -514,39 +544,112 @@ export default function ReviewSessionScreen() {
   const timerDisplaySec = auto && phase === 'front' ? slideRemainingSec : null;
   const slideSecOptions =
     current.side === 'back' ? ANSWER_SLIDESHOW_SECONDS : FRONT_SLIDESHOW_SECONDS;
+  const defaultSlideSec = current
+    ? slideSecondsForSide(current.page, current.side)
+    : data.settings.defaultSlideshowSeconds;
+  const isSlideDurationSelected = (sec: number) =>
+    sessionSlideSec === sec || (sessionSlideSec === null && sec === defaultSlideSec);
+  const selectSlideDuration = (sec: number) => {
+    setSessionSlideSec(sec === defaultSlideSec ? null : sec);
+  };
+
+  const isMemorizeFront = isMemorizeMode && phase === 'front';
+  const slideDurationPicker = (overlay = false) => (
+    <>
+      {!overlay ? (
+        <Text style={styles.durationLabel}>{t('review.slideDuration')}</Text>
+      ) : null}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={[styles.durationRow, overlay && styles.durationRowOverlay]}>
+          {slideSecOptions.map((sec) => {
+            const selected = isSlideDurationSelected(sec);
+            return (
+              <Pressable
+                key={sec}
+                onPress={() => selectSlideDuration(sec)}
+                style={[
+                  overlay ? styles.durationChipOverlay : styles.durationChip,
+                  selected &&
+                    (overlay ? styles.durationChipOverlayOn : styles.durationChipOn),
+                ]}>
+                <Text
+                  style={[
+                    overlay ? styles.durationChipTextOverlay : styles.durationChipText,
+                    selected &&
+                      (overlay ? styles.durationChipTextOverlayOn : styles.durationChipTextOn),
+                  ]}>
+                  {current.side === 'back'
+                    ? formatAnswerSlideshowLabel(sec)
+                    : t('review.timerSec', { sec })}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </>
+  );
+
+  const memorizeModeToggle = (
+    <View style={styles.modeRowTop}>
+      <Pressable
+        onPress={() => setMemorizeAuto(false)}
+        style={[styles.modeChipTop, !auto && styles.modeChipTopOn]}>
+        <Text style={[styles.modeChipTextTop, !auto && styles.modeChipTextTopOn]}>
+          {t('review.modeManual')}
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={() => setMemorizeAuto(true)}
+        style={[styles.modeChipTop, auto && styles.modeChipTopOn]}>
+        <Text style={[styles.modeChipTextTop, auto && styles.modeChipTextTopOn]}>
+          {t('review.modeAuto')}
+        </Text>
+      </Pressable>
+    </View>
+  );
 
   return (
     <View style={[styles.root, (recallMode || debriefMode) && styles.rootRecall]}>
-      <View
-        style={[
-          styles.topBar,
-          { paddingTop: insets.top + 8 },
-          recallMode && styles.topBarRecall,
-          debriefMode && styles.topBarRecall,
-        ]}>
-        <View style={styles.topBarLeft}>
-          {auto ? (
-            <Text style={[styles.slideshowProgress, (recallMode || debriefMode) && styles.topBarDarkText]}>
-              {index + 1} / {slides.length}
-            </Text>
-          ) : null}
-        </View>
-        <View style={styles.topBarRight}>
-          {timerDisplaySec !== null && timerDisplaySec > 0 ? (
-            <View style={[styles.timerBadge, recallMode && styles.timerBadgeRecall]}>
-              <Text style={[styles.timerBadgeText, recallMode && styles.topBarDarkText]}>
-                {timerDisplaySec}
+      {!isMemorizeFront ? (
+        <View
+          style={[
+            styles.topBar,
+            { paddingTop: insets.top + 8 },
+            recallMode && styles.topBarRecall,
+            debriefMode && styles.topBarRecall,
+          ]}>
+          <View style={styles.topBarLeft}>
+            {auto ? (
+              <Text
+                style={[
+                  styles.slideshowProgress,
+                  (recallMode || debriefMode) && styles.topBarDarkText,
+                ]}>
+                {index + 1} / {slides.length}
               </Text>
-            </View>
-          ) : null}
-          <Pressable
-            style={styles.close}
-            onPress={finishSession}
-            hitSlop={12}>
-            <Text style={[styles.closeText, (recallMode || debriefMode) && styles.topBarDarkText]}>{t('common.close')}</Text>
-          </Pressable>
+            ) : null}
+          </View>
+          <View style={styles.topBarRight}>
+            {timerDisplaySec !== null && timerDisplaySec > 0 ? (
+              <View style={[styles.timerBadge, recallMode && styles.timerBadgeRecall]}>
+                <Text style={[styles.timerBadgeText, recallMode && styles.topBarDarkText]}>
+                  {timerDisplaySec}
+                </Text>
+              </View>
+            ) : null}
+            <Pressable style={styles.close} onPress={finishSession} hitSlop={12}>
+              <Text
+                style={[
+                  styles.closeText,
+                  (recallMode || debriefMode) && styles.topBarDarkText,
+                ]}>
+                {t('common.close')}
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      ) : null}
 
       {debriefMode && submittedRecall ? (
         <ReviewDebriefPanel
@@ -622,7 +725,7 @@ export default function ReviewSessionScreen() {
           ) : null}
         </ScrollView>
       ) : (
-        <>
+        <View style={styles.memorizeStageWrap}>
           <View
             style={styles.stage}
             {...(phase === 'front' && slides.length > 1 ? slideSwipePan.panHandlers : {})}>
@@ -648,116 +751,43 @@ export default function ReviewSessionScreen() {
           </View>
 
           {phase === 'front' && isMemorizeMode ? (
-            <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
-              <Text style={styles.progress}>
-                {index + 1} / {slides.length}
-              </Text>
-              {slides.length > 1 ? (
-                <Text style={styles.swipeHint}>{t('review.swipeProblems')}</Text>
-              ) : null}
-              <View style={styles.modeRow}>
-                <Pressable
-                  onPress={() => setMemorizeAuto(false)}
-                  style={[styles.modeChip, !auto && styles.modeChipOn]}>
-                  <Text style={[styles.modeChipText, !auto && styles.modeChipTextOn]}>
-                    {t('review.modeManual')}
+            <>
+              <View
+                style={[styles.memorizeChromeTop, { paddingTop: insets.top + 6 }]}
+                pointerEvents="box-none">
+                <View style={styles.memorizeTopBarInner}>
+                  <Text style={styles.memorizeProgress}>
+                    {index + 1} / {slides.length}
                   </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setMemorizeAuto(true)}
-                  style={[styles.modeChip, auto && styles.modeChipOn]}>
-                  <Text style={[styles.modeChipText, auto && styles.modeChipTextOn]}>
-                    {t('review.modeAuto')}
-                  </Text>
-                </Pressable>
+                  <View style={styles.memorizeTopBarRight}>
+                    {memorizeModeToggle}
+                    {timerDisplaySec !== null && timerDisplaySec > 0 ? (
+                      <View style={styles.timerBadge}>
+                        <Text style={styles.timerBadgeText}>{timerDisplaySec}</Text>
+                      </View>
+                    ) : null}
+                    <Pressable style={styles.close} onPress={finishSession} hitSlop={12}>
+                      <Text style={styles.closeText}>{t('common.close')}</Text>
+                    </Pressable>
+                  </View>
+                </View>
               </View>
               {auto ? (
-                <>
-                  <Text style={styles.durationLabel}>{t('review.slideDuration')}</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={styles.durationRow}>
-                      <Pressable
-                        onPress={() => setSessionSlideSec(null)}
-                        style={[styles.durationChip, sessionSlideSec === null && styles.durationChipOn]}>
-                        <Text
-                          style={[
-                            styles.durationChipText,
-                            sessionSlideSec === null && styles.durationChipTextOn,
-                          ]}>
-                          {t('common.default')}
-                        </Text>
-                      </Pressable>
-                      {slideSecOptions.map((sec) => (
-                        <Pressable
-                          key={sec}
-                          onPress={() => setSessionSlideSec(sec)}
-                          style={[
-                            styles.durationChip,
-                            sessionSlideSec === sec && styles.durationChipOn,
-                          ]}>
-                          <Text
-                            style={[
-                              styles.durationChipText,
-                              sessionSlideSec === sec && styles.durationChipTextOn,
-                            ]}>
-                            {current.side === 'back'
-                              ? formatAnswerSlideshowLabel(sec)
-                              : t('review.timerSec', { sec })}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </ScrollView>
-                </>
-              ) : (
-                <Button
-                  label={index < slides.length - 1 ? t('review.next') : t('common.done')}
-                  onPress={advanceMemorize}
-                />
-              )}
-            </View>
+                <View
+                  style={[styles.memorizeChromeBottom, { paddingBottom: insets.bottom + 8 }]}
+                  pointerEvents="box-none">
+                  {slideDurationPicker(true)}
+                </View>
+              ) : null}
+            </>
           ) : null}
 
           {phase === 'front' && !isMemorizeMode && auto ? (
             <View style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}>
-              <Text style={styles.durationLabel}>{t('review.slideDuration')}</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.durationRow}>
-                  <Pressable
-                    onPress={() => setSessionSlideSec(null)}
-                    style={[styles.durationChip, sessionSlideSec === null && styles.durationChipOn]}>
-                    <Text
-                      style={[
-                        styles.durationChipText,
-                        sessionSlideSec === null && styles.durationChipTextOn,
-                      ]}>
-                      {t('common.default')}
-                    </Text>
-                  </Pressable>
-                  {slideSecOptions.map((sec) => (
-                    <Pressable
-                      key={sec}
-                      onPress={() => setSessionSlideSec(sec)}
-                      style={[
-                        styles.durationChip,
-                        sessionSlideSec === sec && styles.durationChipOn,
-                      ]}>
-                      <Text
-                        style={[
-                          styles.durationChipText,
-                          sessionSlideSec === sec && styles.durationChipTextOn,
-                        ]}>
-                        {current.side === 'back'
-                          ? formatAnswerSlideshowLabel(sec)
-                          : t('review.timerSec', { sec })}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
+              {slideDurationPicker()}
             </View>
           ) : null}
-        </>
+        </View>
       )}
 
       {problemCompleteVisible ? (
@@ -842,6 +872,87 @@ const styles = StyleSheet.create({
   timerBadgeText: { color: theme.white, fontSize: 22, fontWeight: '900' },
   close: { padding: 4 },
   closeText: { color: theme.white, fontSize: 22 },
+  memorizeStageWrap: { flex: 1, minHeight: 0, position: 'relative' },
+  memorizeChromeTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  memorizeChromeBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    paddingTop: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  memorizeTopBarInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+    gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  memorizeTopBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 1,
+    justifyContent: 'flex-end',
+  },
+  memorizeProgress: {
+    color: theme.white,
+    fontSize: theme.font.caption,
+    fontWeight: '700',
+    flexShrink: 0,
+  },
+  modeRowTop: {
+    flexDirection: 'row',
+    gap: 6,
+    flexShrink: 1,
+  },
+  modeChipTop: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  modeChipTopOn: {
+    backgroundColor: theme.orange,
+    borderColor: theme.orange,
+  },
+  modeChipTextTop: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  modeChipTextTopOn: { color: theme.onAccent },
+  durationChipOverlay: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: theme.radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  durationChipOverlayOn: {
+    backgroundColor: theme.orange,
+    borderColor: theme.orange,
+  },
+  durationChipTextOverlay: {
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: theme.font.caption,
+  },
+  durationChipTextOverlayOn: { color: theme.onAccent },
   stage: { flex: 1, position: 'relative' },
   imageWrap: { flex: 1 },
   image: { flex: 1, width: '100%' },
@@ -913,6 +1024,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 8,
   },
+  durationRowOverlay: { marginBottom: 0 },
   durationChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,

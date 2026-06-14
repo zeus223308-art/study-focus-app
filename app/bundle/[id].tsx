@@ -69,7 +69,6 @@ export default function BundleScreen() {
     archiveBundle,
     unarchiveBundle,
     changeBundleStudyDate,
-    moveBundleToTrash,
     deletePage,
     applyLayerCycleChoice,
   } = useApp();
@@ -472,24 +471,6 @@ export default function BundleScreen() {
           label={t('item.deletePhoto')}
           variant="secondary"
           onPress={confirmDeleteCurrentPage}
-          style={styles.actionBtn}
-        />
-        <WebDividerLine />
-        <Button
-          label={t('item.deleteAll')}
-          variant="ghost"
-          onPress={() => {
-            confirmDestructive({
-              title: t('item.deletePhotoTitle'),
-              message: t('item.deleteAllMessage'),
-              cancelLabel: t('common.cancel'),
-              confirmLabel: t('item.deleteAll'),
-              onConfirm: () => {
-                moveBundleToTrash(bundle.id);
-                safeRouterBack(router, folderBack);
-              },
-            });
-          }}
           style={styles.actionBtn}
         />
       </View>

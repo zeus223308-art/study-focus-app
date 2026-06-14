@@ -1,10 +1,14 @@
 import { addDays, format, parseISO, startOfDay } from 'date-fns';
 
-import { primaryCaptureTagForBundle } from '@/lib/domain/capture-tags';
-import { resolveTagColorFor } from '@/lib/ui/tag-colors';
+import { resolveSubjectColor } from '@/lib/domain/subject-colors';
 import { buildRibbonDays } from './dates';
-import type { AppData, DateRibbonMark, NoteBundle, ReviewSchedule } from './types';
-import { getNextReviewDate, getUpcomingReviewDates, isDueOnDate } from '@/lib/spacing/engine';
+import type { AppData, DateRibbonMark, NoteBundle, ReviewSchedule, SubjectFolder } from './types';
+import {
+  getNextReviewDate,
+  getUpcomingReviewDates,
+  isDueOnDate,
+  isReviewOnDate,
+} from '@/lib/spacing/engine';
 
 const MAX_TAG_DOTS_PER_DAY = 5;
 const DEFAULT_FUTURE_HORIZON_DAYS = 120;
@@ -41,25 +45,30 @@ export function isCalendarDueOnDate(
 ): boolean {
   const dateKey = format(date, 'yyyy-MM-dd');
   if (dateKey > localToday) {
-    return format(getNextReviewDate(bundle, schedule, date), 'yyyy-MM-dd') === dateKey;
+    return isReviewOnDate(bundle, schedule, date);
   }
   return isDueOnDate(bundle, schedule, date);
 }
 
-/** One dot per tagged due photo — same tag/color rules as album thumbnails. */
-export function buildDueTagDotColors(
+/** One dot color per due subject (folder color). */
+export function buildDueSubjectDotColors(
   due: NoteBundle[],
-  tagColors?: Record<string, string>,
-  tagFallback?: string,
+  subjects: SubjectFolder[],
   max = MAX_TAG_DOTS_PER_DAY
 ): string[] {
+  const subjectById = new Map(subjects.map((s) => [s.id, s]));
   const colors: string[] = [];
+  const seenSubjectIds = new Set<string>();
+
   for (const bundle of due) {
-    const tag = primaryCaptureTagForBundle(bundle);
-    if (!tag) continue;
-    colors.push(resolveTagColorFor(tag, tagColors, tagFallback));
+    if (seenSubjectIds.has(bundle.subjectId)) continue;
+    const subject = subjectById.get(bundle.subjectId);
+    if (!subject) continue;
+    seenSubjectIds.add(bundle.subjectId);
+    colors.push(resolveSubjectColor(subject.color, subject.sortOrder));
     if (colors.length >= max) break;
   }
+
   return colors;
 }
 
@@ -68,8 +77,7 @@ export function buildReviewMarkForDate(
   bundles: NoteBundle[],
   getSchedule: (id: string) => ReviewSchedule | undefined,
   localToday: string,
-  tagColors?: Record<string, string>,
-  tagFallback?: string
+  subjects: SubjectFolder[]
 ): DateRibbonMark {
   const dateKey = format(date, 'yyyy-MM-dd');
   const due = bundles.filter((b) => {
@@ -91,8 +99,7 @@ export function buildReviewMarkForDate(
     else status = 'upcoming';
   }
 
-  const tagDots =
-    due.length > 0 ? buildDueTagDotColors(due, tagColors, tagFallback) : [];
+  const tagDots = due.length > 0 ? buildDueSubjectDotColors(due, subjects) : [];
 
   return { date: dateKey, status, bundleCount: due.length, tagDots };
 }
@@ -102,13 +109,12 @@ export function buildDateRibbonMarks(
   getSchedule: (id: string) => ReviewSchedule | undefined,
   firstLaunchDate: string,
   localToday = format(new Date(), 'yyyy-MM-dd'),
-  tagColors?: Record<string, string>,
-  tagFallback?: string,
+  subjects: SubjectFolder[] = [],
   horizonDate?: string
 ): DateRibbonMark[] {
   const end = horizonDate ?? localToday;
   return buildRibbonDays(firstLaunchDate, end).map((d) =>
-    buildReviewMarkForDate(d, bundles, getSchedule, localToday, tagColors, tagFallback)
+    buildReviewMarkForDate(d, bundles, getSchedule, localToday, subjects)
   );
 }
 

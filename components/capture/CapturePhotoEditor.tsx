@@ -43,6 +43,7 @@ type Props = {
   sideLabel: string;
   onConfirm: (result: { uri: string }) => void | Promise<void>;
   onRetake: () => void;
+  cancelLabel?: string;
   /** Reserved — crop reset no longer reverts rotation/ink. */
   restoreUri?: string;
   lockImagePosition?: boolean;
@@ -53,6 +54,7 @@ export function CapturePhotoEditor({
   sideLabel,
   onConfirm,
   onRetake,
+  cancelLabel,
   lockImagePosition = false,
 }: Props) {
   const { t } = useTranslation();
@@ -281,7 +283,7 @@ export function CapturePhotoEditor({
       <CaptureInkBakeHost job={bakeJob} onComplete={onBakeComplete} onError={onBakeError} />
       <View style={[styles.topBar, { paddingTop: insets.top + 6, paddingBottom: 10 }]}>
         <Pressable onPress={busy ? undefined : onRetake} hitSlop={12} style={styles.topAction}>
-          <Text style={styles.cancelText}>{t('capture.editorCancel')}</Text>
+          <Text style={styles.cancelText}>{cancelLabel ?? t('capture.editorCancel')}</Text>
         </Pressable>
         {sideLabel ? (
           <Text style={styles.topTitle} numberOfLines={1}>

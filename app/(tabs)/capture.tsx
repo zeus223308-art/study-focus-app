@@ -33,6 +33,7 @@ import { ensureManipulableImageUri } from '@/lib/files/ensure-manipulable-uri';
 import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
 import { verifyCaptureImageReadable } from '@/lib/files/verify-capture-image';
 import { BUTTON_LABEL_COMPACT, BUTTON_LABEL_LINK } from '@/lib/ui/button-label';
+import { reportImportPhotosResult } from '@/lib/ui/import-result-feedback';
 import { showMessage } from '@/lib/ui/confirm';
 import { stopSheetPress } from '@/lib/ui/web-fixed-overlay';
 import { SCREEN_HORIZONTAL_PAD } from '@/lib/ui/viewport-layout';
@@ -58,6 +59,7 @@ const importPickLabels = (t: (key: string) => string) => ({
   files: t('folder.importFiles'),
   cancel: t('common.cancel'),
   unsupportedOnly: t('folder.importUnsupportedOnly'),
+  unsupportedSkipped: t('folder.importUnsupportedSkipped'),
 });
 
 export default function CaptureTabScreen() {
@@ -70,6 +72,7 @@ export default function CaptureTabScreen() {
     data,
     localToday,
     captureFlashcardPair,
+    importPhotosToSubject,
     activeFolderCapture,
     updateSettings,
     setTagColorFor,
@@ -88,6 +91,7 @@ export default function CaptureTabScreen() {
   const [frontUri, setFrontUri] = useState<string | null>(null);
   const [backUri, setBackUri] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('idle');
+  const [batchImporting, setBatchImporting] = useState(false);
   const [subjectId, setSubjectId] = useState(
     () => activeFolderCapture?.subjectId ?? data.subjects[0]?.id ?? ''
   );
@@ -270,18 +274,28 @@ export default function CaptureTabScreen() {
 
   const onEditRetake = () => {
     setEditUri(null);
+    const returnStep = afterEditStepRef.current;
+    const existingUri = editSide === 'front' ? frontUri : backUri;
+    if (existingUri) {
+      setStep(returnStep);
+      return;
+    }
     if (editSource === 'gallery') {
-      const existingUri = editSide === 'front' ? frontUri : backUri;
-      if (existingUri) {
-        setStep(backUri ? 'save-sheet' : 'answer-prompt');
-        return;
-      }
       void pickFromGallery(editSide, { keepDraftOnCancel: true });
-      setStep(frontUri || backUri ? 'answer-prompt' : 'camera');
+      setStep(frontUri || backUri ? (backUri ? 'save-sheet' : 'answer-prompt') : 'camera');
       return;
     }
     setStep('camera');
   };
+
+  const normalizePickedUri = useCallback(async (rawUri: string) => {
+    try {
+      const manipulable = await ensureManipulableImageUri(rawUri);
+      return await stabilizeCaptureImageUri(manipulable);
+    } catch {
+      return rawUri;
+    }
+  }, []);
 
   const pickFromGallery = useCallback(
     async (
@@ -307,18 +321,67 @@ export default function CaptureTabScreen() {
         }
         return;
       }
+
+      if (isImportEntry && picked.files.length > 1) {
+        const targetSubjectId = activeFolderCapture?.subjectId ?? subjectId;
+        const studyDate = activeFolderCapture?.studyDate ?? localToday;
+        if (!targetSubjectId) return;
+
+        setBatchImporting(true);
+        try {
+          const imageUris = await Promise.all(
+            picked.files.map((file) => normalizePickedUri(file.uri))
+          );
+          const result = await importPhotosToSubject(targetSubjectId, imageUris, studyDate);
+
+          if (result.saved > 0 && result.skippedDueToLimit > 0) {
+            showMessage(
+              '',
+              t('folder.importPartialLimit', {
+                saved: result.saved,
+                skipped: result.skippedDueToLimit,
+              })
+            );
+          } else {
+            reportImportPhotosResult(result, t);
+          }
+
+          if (result.saved > 0 || result.skippedDueToLimit > 0) {
+            if (Platform.OS !== 'web') {
+              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+            resetCamera();
+            router.replace({
+              pathname: '/folder/[id]',
+              params: { id: targetSubjectId, studyDate },
+            });
+          }
+        } finally {
+          setBatchImporting(false);
+        }
+        return;
+      }
+
       const file = picked.files[0];
       if (!file) return;
-      let uri = file.uri;
-      try {
-        uri = await ensureManipulableImageUri(file.uri);
-        uri = await stabilizeCaptureImageUri(uri);
-      } catch {
-        uri = file.uri;
-      }
+      const uri = await normalizePickedUri(file.uri);
       openEditor(uri, targetSide, afterEditStepForSide(targetSide), 'gallery');
     },
-    [activeFolderCapture, backUri, editSide, frontUri, openEditor, router, t]
+    [
+      activeFolderCapture,
+      backUri,
+      editSide,
+      frontUri,
+      importPhotosToSubject,
+      isImportEntry,
+      localToday,
+      normalizePickedUri,
+      openEditor,
+      resetCamera,
+      router,
+      subjectId,
+      t,
+    ]
   );
 
   useFocusEffect(
@@ -480,7 +543,10 @@ export default function CaptureTabScreen() {
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
                 {frontUri ? (
-                  <Pressable onPress={() => frontUri && openEditor(frontUri, 'front', 'answer-prompt')}>
+                  <Pressable
+                    onPress={() => openEditor(frontUri, 'front', 'answer-prompt', editSource)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('capture.editPhoto')}>
                     <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="contain" />
                     <Text style={styles.editLink}>{t('capture.editPhoto')}</Text>
                   </Pressable>
@@ -527,17 +593,32 @@ export default function CaptureTabScreen() {
 
             <View style={styles.pairRow}>
               <View style={styles.pairSlot}>
+                <Text style={styles.pairLabel}>{t('capture.frontLabel')}</Text>
                 {frontUri ? (
-                  <Pressable onPress={() => openEditor(frontUri, 'front', 'save-sheet')}>
+                  <Pressable
+                    onPress={() => openEditor(frontUri, 'front', 'save-sheet', editSource)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('capture.editPhoto')}
+                    disabled={saveBusy}>
                     <CapturePreviewImage uri={frontUri} style={styles.pairThumb} resizeMode="contain" />
+                    {!saveBusy ? (
+                      <Text style={styles.editLink}>{t('capture.editPhoto')}</Text>
+                    ) : null}
                   </Pressable>
                 ) : null}
               </View>
               <View style={styles.pairSlot}>
                 <Text style={styles.pairLabel}>{t('capture.backLabel')}</Text>
                 {backUri ? (
-                  <Pressable onPress={() => openEditor(backUri, 'back', 'save-sheet')}>
+                  <Pressable
+                    onPress={() => openEditor(backUri, 'back', 'save-sheet', editSource)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('capture.editPhoto')}
+                    disabled={saveBusy}>
                     <CapturePreviewImage uri={backUri} style={styles.pairThumb} resizeMode="contain" />
+                    {!saveBusy ? (
+                      <Text style={styles.editLink}>{t('capture.editPhoto')}</Text>
+                    ) : null}
                   </Pressable>
                 ) : (
                   <View style={styles.pairEmpty}>
@@ -630,8 +711,25 @@ export default function CaptureTabScreen() {
   );
 
   const flowModals = renderModals();
+  const batchImportOverlay = batchImporting ? (
+    <View style={styles.batchImportOverlay}>
+      <View style={styles.batchImportCard}>
+        <ActivityIndicator size="large" color={theme.orange} />
+        <Text style={styles.batchImportText}>{t('folder.importing')}</Text>
+      </View>
+    </View>
+  ) : null;
+  const overlayFlow = (
+    <>
+      {batchImportOverlay}
+      {flowModals}
+    </>
+  );
   const inPostEditFlow =
     step === 'answer-prompt' || step === 'save-sheet' || Boolean(frontUri || backUri);
+
+  const reEditingConfirmedPhoto =
+    editSide === 'front' ? Boolean(frontUri) : Boolean(backUri);
 
   if (step === 'edit' && editUri) {
     return (
@@ -641,8 +739,9 @@ export default function CaptureTabScreen() {
           sideLabel={editSide === 'back' ? t('capture.backLabel') : ''}
           onConfirm={onEditConfirm}
           onRetake={onEditRetake}
+          cancelLabel={reEditingConfirmedPhoto ? t('capture.editorBack') : undefined}
         />
-        {flowModals}
+        {overlayFlow}
       </>
     );
   }
@@ -672,7 +771,7 @@ export default function CaptureTabScreen() {
             onPress={() => safeRouterBack(router, '/(tabs)/vault')}
           />
         </View>
-        {flowModals}
+        {overlayFlow}
       </View>
     );
   }
@@ -692,7 +791,7 @@ export default function CaptureTabScreen() {
             onPress={() => safeRouterBack(router, '/(tabs)/vault')}
           />
         </View>
-        {flowModals}
+        {overlayFlow}
       </View>
     );
   }
@@ -718,7 +817,7 @@ export default function CaptureTabScreen() {
         </>
       ) : null}
 
-      {flowModals}
+      {overlayFlow}
     </View>
   );
 }
@@ -859,4 +958,20 @@ const styles = StyleSheet.create({
   saveSpinner: { marginTop: 8 },
   retake: { marginTop: 14, alignItems: 'center' },
   retakeText: { ...BUTTON_LABEL_LINK, color: theme.gray },
+  batchImportOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+  },
+  batchImportCard: {
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 24,
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.surface,
+  },
+  batchImportText: { fontWeight: '700', color: theme.gray },
 });

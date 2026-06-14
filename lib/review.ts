@@ -1,4 +1,4 @@
-import { addDays, format, isAfter, isBefore, isEqual, parseISO, startOfDay } from 'date-fns';
+import { addDays, differenceInCalendarDays, format, isAfter, isBefore, isEqual, parseISO, startOfDay } from 'date-fns';
 
 import type { ReviewSchedule, StudyItem } from './types';
 
@@ -17,46 +17,40 @@ export function getScheduleIntervals(schedule: ReviewSchedule): number[] {
   return schedule.customIntervals ?? [1, 3, 7, 14, 30];
 }
 
-/** 다음 복습 예정일 (오늘 포함 이전이면 오늘 복습 대상) */
-export function getNextReviewDate(item: StudyItem, schedule: ReviewSchedule, from = new Date()): Date {
+function scheduledReviewDate(anchor: Date, stepIndex: number, intervals: number[]): Date {
+  if (intervals.length === 0) return anchor;
+  if (stepIndex < intervals.length) {
+    const dayNumber = intervals[stepIndex] ?? 1;
+    return addDays(anchor, Math.max(0, dayNumber - 1));
+  }
+  const lastInterval = intervals[intervals.length - 1] ?? 30;
+  const lastMilestoneOffset = Math.max(0, lastInterval - 1);
+  const overflowSteps = stepIndex - intervals.length + 1;
+  return addDays(anchor, lastMilestoneOffset + lastInterval * overflowSteps);
+}
+
+function pendingReviewDate(item: StudyItem, schedule: ReviewSchedule): Date {
   const anchor = dayStart(item.reviewAnchorDate);
-  const today = dayStart(from);
-  const intervals = getScheduleIntervals(schedule);
+  const step = item.reviewStepIndex;
 
   if (schedule.mode === 'everyNDays' && schedule.everyNDays) {
-    const n = schedule.everyNDays;
-    let candidate = anchor;
-    while (isBefore(candidate, today)) {
-      candidate = addDays(candidate, n);
-    }
-    return candidate;
+    const stepDays = Math.max(1, schedule.everyNDays);
+    return addDays(anchor, step * stepDays);
   }
 
-  let step = item.reviewStepIndex;
-  let next = anchor;
-  if (step === 0) {
-    next = addDays(anchor, intervals[0] ?? 1);
-  } else {
-    const last = item.lastReviewedAt ? dayStart(item.lastReviewedAt) : anchor;
-    const gap = intervals[Math.min(step, intervals.length - 1)] ?? intervals[intervals.length - 1];
-    next = addDays(last, gap);
-  }
+  return scheduledReviewDate(anchor, step, getScheduleIntervals(schedule));
+}
 
-  while (isBefore(next, today)) {
-    step += 1;
-    const gap = intervals[Math.min(step, intervals.length - 1)] ?? intervals[intervals.length - 1];
-    const base = item.lastReviewedAt ? dayStart(item.lastReviewedAt) : anchor;
-    next = addDays(base, gap);
-  }
-
-  return next;
+/** 다음 복습 예정일 (현재 단계 기준; 연체일 수 있음) */
+export function getNextReviewDate(item: StudyItem, schedule: ReviewSchedule, _from = new Date()): Date {
+  return pendingReviewDate(item, schedule);
 }
 
 export function isDueToday(item: StudyItem, schedule: ReviewSchedule, today = new Date()): boolean {
   if (item.archived) return false;
-  const next = getNextReviewDate(item, schedule, today);
+  const pending = pendingReviewDate(item, schedule);
   const t = dayStart(today);
-  return isEqual(next, t) || isBefore(next, t);
+  return isEqual(pending, t) || isBefore(pending, t);
 }
 
 export function getUpcomingReviewDates(
@@ -66,21 +60,31 @@ export function getUpcomingReviewDates(
   from = new Date()
 ): string[] {
   const dates: string[] = [];
-  let mock: StudyItem = { ...item };
+  const anchor = dayStart(item.reviewAnchorDate);
   const today = dayStart(from);
+  let step = item.reviewStepIndex;
 
-  for (let i = 0; i < count + 5 && dates.length < count; i++) {
-    const next = getNextReviewDate(mock, schedule, today);
-    const key = toDateKey(next);
-    if (!dates.includes(key)) dates.push(key);
-    mock = {
-      ...mock,
-      lastReviewedAt: key,
-      reviewStepIndex: mock.reviewStepIndex + 1,
-      reviewAnchorDate: mock.reviewAnchorDate,
-    };
-    if (dates.length >= count) break;
+  if (schedule.mode === 'everyNDays' && schedule.everyNDays) {
+    const stepDays = Math.max(1, schedule.everyNDays);
+    for (let guard = 0; dates.length < count && guard < 200; guard += 1, step += 1) {
+      const scheduled = addDays(anchor, step * stepDays);
+      if (!isBefore(scheduled, today)) {
+        const key = toDateKey(scheduled);
+        if (!dates.includes(key)) dates.push(key);
+      }
+    }
+    return dates.slice(0, count);
   }
+
+  const intervals = getScheduleIntervals(schedule);
+  for (let guard = 0; dates.length < count && guard < 200; guard += 1, step += 1) {
+    const scheduled = scheduledReviewDate(anchor, step, intervals);
+    if (!isBefore(scheduled, today)) {
+      const key = toDateKey(scheduled);
+      if (!dates.includes(key)) dates.push(key);
+    }
+  }
+
   return dates.slice(0, count);
 }
 

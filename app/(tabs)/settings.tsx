@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Platform, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -19,13 +19,13 @@ import {
   toggleFolderScheduleId,
 } from '@/lib/domain/folder-schedule';
 import type { Language } from '@/lib/domain/types';
-import { scheduleDailyReviewReminder, cancelAllReminders } from '@/lib/notifications';
+import { ensureNotificationPermission } from '@/lib/notifications';
 import { isOcrAvailable } from '@/lib/review/ocr-extract';
 import { showMessage } from '@/lib/ui/confirm';
 import { countAppPages } from '@/services/storage';
 
 export default function SettingsScreen() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const {
     data,
     updateSettings,
@@ -52,25 +52,6 @@ export default function SettingsScreen() {
       : isOcrAvailable()
         ? t('settings.ocrOnDevice')
         : t('settings.ocrUnsupported');
-
-  useEffect(() => {
-    if (settings.notificationsEnabled) {
-      scheduleDailyReviewReminder(
-        settings.notificationHour,
-        settings.notificationMinute,
-        t('settings.notificationTitle'),
-        t('settings.notificationBody')
-      );
-    } else {
-      cancelAllReminders();
-    }
-  }, [
-    settings.notificationsEnabled,
-    settings.notificationHour,
-    settings.notificationMinute,
-    i18n.language,
-    t,
-  ]);
 
   const folderIntervalLabel = (scheduleId: string) =>
     folderScheduleLabel(scheduleId, language, {
@@ -129,7 +110,16 @@ export default function SettingsScreen() {
             right={
               <Switch
                 value={settings.notificationsEnabled}
-                onValueChange={(v) => updateSettings({ notificationsEnabled: v })}
+                onValueChange={(v) => {
+                  updateSettings({ notificationsEnabled: v });
+                  if (v) {
+                    void ensureNotificationPermission().then((granted) => {
+                      if (!granted) {
+                        showMessage('', t('settings.notificationPermissionDenied'));
+                      }
+                    });
+                  }
+                }}
                 trackColor={{ true: theme.orange }}
               />
             }

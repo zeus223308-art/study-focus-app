@@ -125,13 +125,12 @@ export function DashboardCalendar({
           bundles,
           getSchedule,
           localToday,
-          data.settings.tagColors,
-          data.settings.tagColor
+          data.subjects
         );
       }
     }
     return map;
-  }, [monthKey, marks, days, bundles, getSchedule, localToday, data.settings.tagColors, data.settings.tagColor]);
+  }, [monthKey, marks, days, bundles, getSchedule, localToday, data.subjects]);
 
   const todayDate = startOfDay(parseISO(`${localToday}T12:00:00`));
   const horizonDate = startOfDay(parseISO(`${ribbonHorizon}T12:00:00`));
@@ -159,19 +158,6 @@ export function DashboardCalendar({
 
   const jumpToSelectedMonth = () => {
     setViewMonth(selectedMonth);
-  };
-
-  const statusColor = (status: DateRibbonMark['status'] | undefined) => {
-    switch (status) {
-      case 'overdue':
-        return theme.orange;
-      case 'upcoming':
-        return theme.graySecondary;
-      case 'complete':
-        return theme.grayMuted;
-      default:
-        return theme.grayLight;
-    }
   };
 
   const goPrevMonth = () => {
@@ -271,21 +257,7 @@ export function DashboardCalendar({
                   {format(day, 'd')}
                 </Text>
                 {mark && mark.bundleCount > 0 ? (
-                  tagDots.length > 0 ? (
-                    <CalendarTagDots colors={tagDots} size={5} gap={2} max={4} />
-                  ) : (
-                    <View
-                      style={[
-                        styles.dot,
-                        selected && styles.dotSelected,
-                        {
-                          backgroundColor: selected
-                            ? theme.onAccent
-                            : statusColor(mark.status),
-                        },
-                      ]}
-                    />
-                  )
+                  <CalendarTagDots colors={tagDots} size={5} gap={2} max={4} />
                 ) : (
                   <View style={styles.dotPlaceholder} />
                 )}
