@@ -153,7 +153,7 @@
     "toolRotate": "Rotate",
     "drawInkHint": "Pen, highlighter, and eraser work like in the file viewer",
     "editorUndo": "Undo",
-    "editorRestoreOriginal": "Restore original",
+    "editorRestoreOriginal": "Reset crop",
     "kakaoCropHint": "Drag photo · use ± to zoom",
     "cropDragRegionHint": "Drag the photo to reposition; use corners and edges to resize. Drag the white bar above the frame to move the crop region",
     "editHint": "Adjust the photo, then tap Done",

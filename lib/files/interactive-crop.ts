@@ -104,6 +104,27 @@ export function initialCropSelection(
   });
 }
 
+/** Undo crop pan/zoom — full image in frame; keeps editor rotation and ink. */
+export function resetCropSelectionToFull(selection: CropSelection): CropSelection {
+  const image = imageContainRect(
+    selection.imageWidth,
+    selection.imageHeight,
+    selection.viewportWidth,
+    selection.viewportHeight
+  );
+  return clampCropSelection({
+    ...selection,
+    imageOffsetX: 0,
+    imageOffsetY: 0,
+    crop: {
+      left: image.left,
+      top: image.top,
+      width: image.width,
+      height: image.height,
+    },
+  });
+}
+
 function clampCropRectWithinImage(selection: CropSelection): CropSelection {
   const image = imageDisplayRect(selection);
 

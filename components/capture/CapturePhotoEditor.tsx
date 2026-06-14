@@ -26,7 +26,7 @@ import {
   mapStrokesToFullImage,
 } from '@/lib/files/bake-capture-ink';
 import type { CropSelection } from '@/lib/files/interactive-crop';
-import { cropRegionFromSelection, exportCropSelection } from '@/lib/files/interactive-crop';
+import { cropRegionFromSelection, exportCropSelection, resetCropSelectionToFull } from '@/lib/files/interactive-crop';
 import { resolveImageUriForProcessing } from '@/hooks/useResolvedImageUri';
 import { ensureManipulableImageUri } from '@/lib/files/ensure-manipulable-uri';
 import { stabilizeCaptureImageUri } from '@/lib/files/stabilize-capture-uri';
@@ -43,7 +43,7 @@ type Props = {
   sideLabel: string;
   onConfirm: (result: { uri: string }) => void | Promise<void>;
   onRetake: () => void;
-  /** Reset target — defaults to `uri` (original before rotate/crop in this session). */
+  /** Reserved — crop reset no longer reverts rotation/ink. */
   restoreUri?: string;
   lockImagePosition?: boolean;
 };
@@ -53,13 +53,11 @@ export function CapturePhotoEditor({
   sideLabel,
   onConfirm,
   onRetake,
-  restoreUri,
   lockImagePosition = false,
 }: Props) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const layout = useFullscreenViewerLayout();
-  const originalUri = restoreUri ?? uri;
   const [workingUri, setWorkingUri] = useState(uri);
   const [surfaceKey, setSurfaceKey] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -153,11 +151,13 @@ export function CapturePhotoEditor({
     setStrokes((prev) => prev.slice(0, -1));
   };
 
-  const restoreOriginal = () => {
+  const restoreCrop = () => {
     if (busy) return;
-    setWorkingUri(originalUri);
-    setStrokes([]);
-    setSeedSelection(null);
+    const sel = cropSelectionRef.current;
+    if (sel) {
+      applyCropSelection(resetCropSelectionToFull(sel));
+      return;
+    }
     applyCropSelection(null);
     setSurfaceKey((k) => k + 1);
   };
@@ -323,7 +323,7 @@ export function CapturePhotoEditor({
         {mode === 'crop' ? (
           <Pressable
             style={styles.toolChip}
-            onPress={busy ? undefined : restoreOriginal}
+            onPress={busy ? undefined : restoreCrop}
             disabled={busy}>
             <Text style={[styles.toolChipText, styles.toolChipTextRestore]}>
               {t('capture.editorRestoreOriginal')}
