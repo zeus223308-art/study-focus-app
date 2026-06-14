@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useState } from 'react';
+import { createElement, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
   Platform,
@@ -16,13 +16,18 @@ import {
   getPreviewUriCandidates,
 } from '@/lib/files/asset-uri-utils';
 import { isDirectImageUri } from '@/lib/files/direct-image-uri';
+import { getTrashPreviewCandidates } from '@/lib/files/trash-preview-uri';
 import { resolveFirstReadableUri } from '@/lib/files/resolve-image-uri';
 
 type Props = Omit<ImageProps, 'source'> & {
   uri?: string | null | undefined;
   asset?: CloudAsset | null;
   preferPreview?: boolean;
+  /** Trash snapshots — prefer canonical IndexedDB keys for this page. */
+  bundleId?: string;
+  pageId?: string;
   style?: StyleProp<ImageStyle>;
+  onError?: () => void;
 };
 
 function webObjectFit(resizeMode: NonNullable<ImageProps['resizeMode']>): React.CSSProperties['objectFit'] {
@@ -76,21 +81,37 @@ export function ResolvedImage({
   uri,
   asset,
   preferPreview = true,
+  bundleId,
+  pageId,
   style,
   resizeMode = 'cover',
+  onError,
   ...rest
 }: Props) {
   const candidates = useMemo(() => {
+    if (bundleId && pageId) {
+      return getTrashPreviewCandidates(bundleId, pageId, asset, preferPreview);
+    }
     if (asset) {
       return preferPreview ? getPreviewUriCandidates(asset) : getFullUriCandidates(asset);
     }
     return uri ? [uri] : [];
-  }, [asset, uri, preferPreview]);
+  }, [asset, uri, preferPreview, bundleId, pageId]);
 
   const [resolved, setResolved] = useState<string | null>(() => {
     const first = candidates[0];
     return first && isDirectImageUri(first) ? first : null;
   });
+
+  const reload = useCallback(() => {
+    if (candidates.length === 0) {
+      setResolved(null);
+      return;
+    }
+    void resolveFirstReadableUri(candidates).then((u) => {
+      setResolved(u);
+    });
+  }, [candidates]);
 
   useEffect(() => {
     if (candidates.length === 0) {
@@ -125,12 +146,29 @@ export function ResolvedImage({
           src: resolved,
           alt: '',
           style: webImgStyle(style, resizeMode),
+          onError: () => {
+            setResolved(null);
+            onError?.();
+            reload();
+          },
         })}
       </View>
     );
   }
 
-  return <Image {...rest} source={{ uri: resolved }} style={style} resizeMode={resizeMode} />;
+  return (
+    <Image
+      {...rest}
+      source={{ uri: resolved }}
+      style={style}
+      resizeMode={resizeMode}
+      onError={() => {
+        setResolved(null);
+        onError?.();
+        reload();
+      }}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

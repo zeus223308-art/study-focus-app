@@ -3,11 +3,10 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ResolvedImage } from '@/components/ui/ResolvedImage';
+import { TrashCoverImage } from '@/components/trash/TrashCoverImage';
 import { Button } from '@/components/ui/Button';
 import { theme } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { getPreviewImageUri } from '@/lib/files/display-image-uri';
 import {
   canRestoreFromBackup,
   filterActiveTrash,
@@ -77,18 +76,16 @@ export function SubjectTrashModal({ visible, subjectId, subjectName, onClose }: 
               entries.map((entry) => (
                 <View key={entry.id} style={styles.row}>
                   <View style={styles.thumbWrap}>
-                    {entry.bundleSnapshot.pages.map((page) => {
-                      const cover = getPreviewImageUri(page.asset);
-                      return (
+                    {entry.bundleSnapshot.pages.map((page) => (
                         <View key={page.id} style={styles.thumbSlot}>
-                          {cover ? (
-                            <ResolvedImage uri={cover} asset={page.asset} style={styles.thumb} />
-                          ) : (
-                            <View style={[styles.thumb, styles.thumbEmpty]} />
-                          )}
+                          <TrashCoverImage
+                            bundleId={entry.bundleSnapshot.id}
+                            pageId={page.id}
+                            asset={page.asset}
+                            style={styles.thumb}
+                          />
                         </View>
-                      );
-                    })}
+                      ))}
                   </View>
                   <Pressable
                     onPress={() => restoreTrash(entry.id)}
@@ -180,7 +177,6 @@ const styles = StyleSheet.create({
   },
   thumbSlot: { width: THUMB, height: THUMB },
   thumb: { width: THUMB, height: THUMB, borderRadius: 8 },
-  thumbEmpty: { backgroundColor: theme.grayLight },
   restoreBtn: {
     flexShrink: 0,
     paddingHorizontal: 14,

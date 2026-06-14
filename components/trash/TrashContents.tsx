@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { settingsGroupStyles } from '@/components/SettingsGroup';
+import { TrashCoverImage, TRASH_COVER_SIZE } from '@/components/trash/TrashCoverImage';
 import { WEB_LINE } from '@/lib/ui/web-divider';
 import { theme } from '@/constants/theme';
 import { useApp, useLanguage } from '@/context/AppContext';
@@ -17,10 +18,13 @@ import {
 
 const TRASH_INNER_PAD = 16;
 
+type TrashCoverRef = { bundleId: string; page: NotePage };
+
 type DeletedSubject = {
   subjectId: string;
   name: string;
   pages: NotePage[];
+  cover: TrashCoverRef | null;
   deletedAt: string;
   backupExpiresAt: string;
 };
@@ -44,12 +48,19 @@ export function useTrashContents() {
             subjectId: entry.subjectSnapshot.id,
             name: entry.subjectSnapshot.name,
             pages: [],
+            cover: null,
             deletedAt: entry.deletedAt,
             backupExpiresAt: entry.backupExpiresAt,
           };
           subjectMap.set(entry.subjectSnapshot.id, group);
         }
         for (const page of entry.bundleSnapshot.pages) group.pages.push(page);
+        if (!group.cover && entry.bundleSnapshot.pages[0]) {
+          group.cover = {
+            bundleId: entry.bundleSnapshot.id,
+            page: entry.bundleSnapshot.pages[0],
+          };
+        }
         if (entry.deletedAt > group.deletedAt) group.deletedAt = entry.deletedAt;
         if (entry.backupExpiresAt < group.backupExpiresAt) {
           group.backupExpiresAt = entry.backupExpiresAt;
@@ -100,6 +111,7 @@ function CountdownBlock({ backupExpiresAt }: { backupExpiresAt: string }) {
 }
 
 type TrashRowProps = {
+  cover?: TrashCoverRef | null;
   name: string;
   meta: string;
   backupExpiresAt: string;
@@ -109,6 +121,7 @@ type TrashRowProps = {
 };
 
 function TrashRow({
+  cover,
   name,
   meta,
   backupExpiresAt,
@@ -119,6 +132,15 @@ function TrashRow({
   return (
     <View style={styles.rowOuter}>
       <View style={[styles.rowInner, !last && settingsGroupStyles.rowBorder]}>
+        {cover ? (
+          <TrashCoverImage
+            bundleId={cover.bundleId}
+            pageId={cover.page.id}
+            asset={cover.page.asset}
+          />
+        ) : (
+          <View style={styles.coverEmpty} />
+        )}
         <View style={styles.info}>
           <Text style={styles.itemName} numberOfLines={1}>
             {name}
@@ -150,6 +172,7 @@ export function TrashContents({ showNotice = true }: Props) {
     return (
       <TrashRow
         key={group.subjectId}
+        cover={group.cover}
         name={group.name}
         meta={
           group.pages.length > 0
@@ -166,9 +189,14 @@ export function TrashContents({ showNotice = true }: Props) {
 
   const photoRows = photoEntries.map((entry, index) => {
     const pages = entry.bundleSnapshot.pages;
+    const cover =
+      pages[0] != null
+        ? { bundleId: entry.bundleSnapshot.id, page: pages[0] }
+        : null;
     return (
       <TrashRow
         key={entry.id}
+        cover={cover}
         name={entry.subjectSnapshot?.name ?? t('trash.photosHeader')}
         meta={t('trash.subjectPages', { count: pages.length })}
         backupExpiresAt={entry.backupExpiresAt}
@@ -257,6 +285,13 @@ const styles = StyleSheet.create({
     gap: 12,
     width: '100%',
     minWidth: 0,
+  },
+  coverEmpty: {
+    width: TRASH_COVER_SIZE,
+    height: TRASH_COVER_SIZE,
+    borderRadius: 8,
+    flexShrink: 0,
+    backgroundColor: theme.grayLight,
   },
   info: { flex: 1, minWidth: 0, gap: 4, alignItems: 'flex-start' },
   itemName: {
