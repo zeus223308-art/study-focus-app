@@ -26,9 +26,6 @@ import { computeReviewCardSizes } from '@/lib/ui/landscape-card-layout';
 import { useViewportLayout } from '@/lib/ui/viewport-layout';
 import { useApp } from '@/context/AppContext';
 import type { InkStroke, NoteBundle, NotePage } from '@/lib/domain/types';
-import {
-  buildCountdownSteps,
-} from '@/lib/review/blackout';
 import { getFullImageUri } from '@/lib/files/display-image-uri';
 import { getFullUriCandidates } from '@/lib/files/asset-uri-utils';
 import { resolveFirstReadableUri, resolveImageUri } from '@/lib/files/resolve-image-uri';
@@ -65,7 +62,7 @@ function runRevealAnim(passAnim: Animated.Value, passScale: Animated.Value) {
 }
 type SlideSide = 'front' | 'back';
 type Slide = { bundle: NoteBundle; page: NotePage; side: SlideSide };
-type Phase = 'front' | 'countdown' | 'recall-work' | 'peek' | 'debrief';
+type Phase = 'front' | 'recall-work' | 'peek' | 'debrief';
 
 type SubmittedRecall = {
   strokes: InkStroke[];
@@ -196,7 +193,6 @@ export default function ReviewSessionScreen() {
     }
     setIndex(Math.min(initialSlideIndex, slides.length - 1));
   }, [slides.length, initialSlideIndex]);
-  const [countdown, setCountdown] = useState<number | null>(null);
   const [recallStrokes, setRecallStrokes] = useState<InkStroke[]>([]);
   const [textBoxes, setTextBoxes] = useState<ScratchTextBox[]>([]);
   const [problemCompleteVisible, setProblemCompleteVisible] = useState(false);
@@ -226,10 +222,8 @@ export default function ReviewSessionScreen() {
   const workCardH = reviewCards.height;
   const [resolvedFrontUri, setResolvedFrontUri] = useState<string | null>(null);
   const [resolvedAnswerUri, setResolvedAnswerUri] = useState<string | null>(null);
-  const recallCountdownSec = 3;
   const [sessionSlideSec, setSessionSlideSec] = useState<number | null>(null);
   const [slideRemainingSec, setSlideRemainingSec] = useState(0);
-  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const goPrevSlide = useCallback(() => {
     setIndex((i) => Math.max(0, i - 1));
@@ -252,12 +246,6 @@ export default function ReviewSessionScreen() {
       },
     })
   ).current;
-
-  useEffect(() => {
-    return () => {
-      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-    };
-  }, []);
 
   const current = slides[index];
   const frontUri = getFullImageUri(current?.page.asset);
@@ -312,7 +300,6 @@ export default function ReviewSessionScreen() {
 
   const resetSlide = useCallback(() => {
     setPhase('front');
-    setCountdown(null);
     setRecallStrokes([]);
     setTextBoxes([]);
     problemShift.setValue(0);
@@ -361,30 +348,11 @@ export default function ReviewSessionScreen() {
     problemShift.setValue(0);
   };
 
-  const startCountdown = () => {
-    if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-    const steps = buildCountdownSteps(recallCountdownSec);
-    setPhase('countdown');
-    let step = 0;
-    setCountdown(steps[0]);
-    countdownTimerRef.current = setInterval(() => {
-      step += 1;
-      if (step < steps.length) {
-        setCountdown(steps[step]);
-      } else {
-        setCountdown(null);
-        enterRecallPhase();
-        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-        countdownTimerRef.current = null;
-      }
-    }, 1000);
-  };
-
   useEffect(() => {
     if (!isBlackout || auto || isMemorizeMode || phase !== 'front' || !current) return;
     if (blackoutStartedRef.current) return;
     blackoutStartedRef.current = true;
-    startCountdown();
+    enterRecallPhase();
   }, [index, isBlackout, auto, isMemorizeMode, phase, current]);
 
   const finishMemorizeSession = useCallback(() => {
@@ -535,9 +503,7 @@ export default function ReviewSessionScreen() {
   const hasAnswer = Boolean(answerUri);
   const recallMode =
     !isMemorizeMode &&
-    (phase === 'recall-work' ||
-      phase === 'countdown' ||
-      (isBlackout && phase === 'front'));
+    (phase === 'recall-work' || (isBlackout && phase === 'front'));
   const debriefMode = phase === 'debrief';
   const problemLiftY = problemShift.interpolate({
     inputRange: [0, 1],
@@ -545,8 +511,7 @@ export default function ReviewSessionScreen() {
   });
   const showingBack = current.side === 'back' && Boolean(answerUri);
   const displayUri = showingBack ? resolvedAnswerUri : resolvedFrontUri;
-  const timerDisplaySec =
-    phase === 'countdown' ? null : auto && phase === 'front' ? slideRemainingSec : null;
+  const timerDisplaySec = auto && phase === 'front' ? slideRemainingSec : null;
   const slideSecOptions =
     current.side === 'back' ? ANSWER_SLIDESHOW_SECONDS : FRONT_SLIDESHOW_SECONDS;
 
@@ -636,11 +601,6 @@ export default function ReviewSessionScreen() {
             ) : (
               <View style={[styles.imageMissing, { width: workCardW, height: problemCardH }]} />
             )}
-            {phase === 'countdown' && countdown !== null ? (
-              <View style={styles.countdownOnImage}>
-                <Text style={styles.countdownOnImageText}>{countdown}</Text>
-              </View>
-            ) : null}
           </Animated.View>
 
           {phase === 'recall-work' && !problemCompleteVisible ? (
@@ -941,23 +901,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   problemCompleteBtn: { minWidth: 160 },
-  countdownOnImage: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    minWidth: 44,
-    minHeight: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,107,0,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-  },
-  countdownOnImageText: {
-    color: theme.white,
-    fontWeight: '900',
-    fontSize: 22,
-  },
   durationLabel: {
     fontSize: theme.font.caption,
     fontWeight: '700',
